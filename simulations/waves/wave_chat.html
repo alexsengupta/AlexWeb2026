@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wave Superposition App — Conversation Transcript</title>
+  <!-- KaTeX for pretty math -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <!-- highlight.js for code formatting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // First, highlight code blocks.
+      try {
+        hljs.highlightAll();
+      } catch (e) {
+        console.error("Highlight.js error:", e);
+      }
+
+      document.querySelectorAll('.toggle-code').forEach(button => {
+        button.addEventListener('click', () => {
+          const codeBlock = button.previousElementSibling;
+          const isExpanded = codeBlock.classList.toggle('expanded');
+          button.textContent = isExpanded ? 'Show less' : 'Show more';
+        });
+      });
+
+      const messages = document.querySelectorAll('.chat-message');
+      let currentMessage = 0;
+      messages.forEach(msg => msg.style.display = 'none'); // Hide all messages initially
+
+      const nextButton = document.getElementById('next-message-btn');
+      nextButton.addEventListener('click', () => {
+        if (currentMessage < messages.length) {
+          const messageToShow = messages[currentMessage];
+          messageToShow.style.display = 'flex';
+          messageToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          currentMessage++;
+        }
+        if (currentMessage >= messages.length) {
+          nextButton.style.display = 'none'; // Hide button when all messages are shown
+        }
+      });
+    });
+  </script>
+  <style>
+    :root {
+      --sidebar-bg: #202123;
+      --main-bg: #ffffff;
+      --text-color: #000000;
+      --sidebar-text: #ececf1;
+      --sidebar-text-muted: #8e8e9f;
+      --border-color: #e5e5e5;
+      --user-bubble-bg: #eaf4ff;
+      --gpt-bubble-bg: #f7f7f8;
+    }
+
+    body {
+      background-color: var(--main-bg);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+      background-color: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 6px;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .light.red {
+      background-color: #ff5f56;
+    }
+
+    .light.yellow {
+      background-color: #ffbd2e;
+    }
+
+    .light.green {
+      background-color: #27c93f;
+    }
+
+    .search-bar {
+      background-color: #343541;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 8px;
+      margin: 10px 0;
+      color: var(--sidebar-text-muted);
+    }
+
+    .menu-item {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .menu-item.active {
+      background-color: #343541;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 10px;
+      border-top: 1px solid #343541;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .main-content {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--main-bg);
+      overflow-y: auto;
+    }
+
+    .header {
+      width: 100%;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border-color);
+      box-sizing: border-box;
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .header .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      flex-grow: 1;
+    }
+
+    .chat-message {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+    }
+
+    .chat-message.user-message {
+      justify-content: flex-start;
+    }
+
+    .chat-message.chatgpt-message {
+      justify-content: flex-end;
+    }
+
+    .message-bubble {
+      padding: 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+      border: 1px solid var(--border-color);
+      max-width: 85%;
+      overflow-x: auto;
+    }
+
+    .user-message .message-bubble {
+      background-color: var(--user-bubble-bg);
+      font-style: italic;
+    }
+
+    .chatgpt-message .message-bubble {
+      background-color: var(--gpt-bubble-bg);
+    }
+
+    .message-bubble p {
+      margin: 1em 0;
+    }
+
+    .message-bubble p:first-child {
+      margin-top: 0;
+    }
+
+    .message-bubble p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message-bubble ul {
+      padding-left: 20px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .message-bubble li {
+      margin-bottom: 8px;
+    }
+
+    .message-bubble code:not(pre > code) {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      background-color: #eef2ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .message-bubble pre,
+    .message-bubble .sourceCode {
+      margin: 1em 0;
+    }
+
+    /* Custom code block styling from .tex file */
+    .message-bubble pre,
+    .message-bubble .sourceCode {
+      background-color: #FAFAFA !important;
+      /* codebg */
+      border: 1px solid #D2D2D2;
+      /* framec */
+      padding: 1em;
+      border-radius: 8px;
+      display: block;
+      white-space: pre;
+      color: #111827;
+    }
+
+    .message-bubble .sourceCode code {
+      background-color: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .hljs-keyword,
+    .sourceCode .kw {
+      color: #1E64C8 !important;
+    }
+
+    .hljs-string,
+    .sourceCode .st {
+      color: #A05000 !important;
+    }
+
+    .hljs-comment,
+    .sourceCode .co {
+      color: #006E6E !important;
+    }
+
+    .hljs-tag .hljs-name,
+    .sourceCode .dt,
+    .sourceCode .fu {
+      color: #1E64C8 !important;
+    }
+
+    .hljs-attr,
+    .sourceCode .ot {
+      color: #A05000 !important;
+    }
+
+    .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .code-container {
+      position: relative;
+    }
+
+    .collapsible-code {
+      max-height: 240px;
+      /* Approx 10 lines */
+      overflow: hidden;
+      transition: max-height 0.4s ease-in-out;
+      position: relative;
+    }
+
+    .collapsible-code:not(.expanded)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(to bottom, rgba(250, 250, 250, 0), #FAFAFA 90%);
+    }
+
+    .collapsible-code.expanded {
+      max-height: 2000px;
+      /* Large enough for any code block */
+    }
+
+    .toggle-code {
+      margin-top: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+
+    .code-link {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+
+    #next-message-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 40px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: #007aff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      animation: flash 1.5s infinite;
+      z-index: 100;
+    }
+
+    @keyframes flash {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-blue-50">
+  <!-- Standardized floating navigation -->
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(255,255,255,0.8); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(4px);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(255,255,255,0.8); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(4px);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="traffic-lights">
+        <div class="light red"></div>
+        <div class="light yellow"></div>
+        <div class="light green"></div>
+      </div>
+    </div>
+    <div class="search-bar">Search</div>
+    <div class="menu-item active">Wave Superposition App</div>
+    <div class="sidebar-footer">
+      <span>Alex Sen Gupta</span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="header">
+      <h1>Wave Superposition App — ChatGPT - Conversation Transcript</h1>
+      <div class="subtitle">conceptual models/apps</div>
+    </div>
+    <div class="chat-container">
+
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Id like to build a web app to help students understand wave interactions/superposition. The student should
+            be able to select between 1–5 sine waves. For each wave they can choose the wavelength, amplitude and speed.
+            Then the app would show the animated individual waves (translucent in the background) with the sum of the
+            waves (solid in the foreground). Without doing any coding: does this make sense? Is there anything else I
+            should be including?</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Yes, it makes sense — it’s a clear, educational setup. You might also include:</p>
+          <ul>
+            <li>A <strong>pause/play</strong> and <strong>reset</strong> option.</li>
+            <li>A <strong>time slider</strong> to view snapshots.</li>
+            <li>Option to <strong>toggle visibility</strong> of individual waves.</li>
+            <li>Maybe a <strong>preset examples</strong> dropdown (e.g. constructive, destructive, beats).</li>
+          </ul>
+          <p>Otherwise, your concept is solid.</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Can we start with a single standalone web app in HTML/JS that has an input box for a single wave that
+            controls wavelength, speed, amplitude and phase, using sliders. Plus a display window that renders the
+            moving wave?</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Yes — that’s a good starting point. Begin with one sine wave controlled by sliders for wavelength,
+            amplitude, speed, and phase, rendered in an animated canvas. Once that’s working smoothly, it’ll be easy to
+            expand to multiple waves later.</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Please provide the code</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Here’s a minimal standalone HTML/JS app for a single animated sine wave with sliders for wavelength,
+            amplitude, speed, and phase:</p>
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;Sine Wave Visualizer&lt;/title&gt;
+&lt;style&gt;
+  body { font-family: sans-serif; text-align: center; background: #f5f5f5; }
+  canvas { border: 1px solid #ccc; background: white; margin-top: 10px; }
+  .controls { margin: 10px auto; width: 300px; text-align: left; }
+  label { display: block; margin: 6px 0 2px; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h2&gt;Single Wave Visualizer&lt;/h2&gt;
+
+&lt;div class="controls"&gt;
+  &lt;label&gt;Wavelength: &lt;span id="wlVal"&gt;100&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="wavelength" min="20" max="300" value="100"&gt;
+  
+  &lt;label&gt;Amplitude: &lt;span id="ampVal"&gt;50&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="amplitude" min="10" max="100" value="50"&gt;
+  
+  &lt;label&gt;Speed: &lt;span id="spdVal"&gt;0.05&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="speed" min="0.01" max="0.2" step="0.01" value="0.05"&gt;
+  
+  &lt;label&gt;Phase: &lt;span id="phVal"&gt;0&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="phase" min="0" max="6.28" step="0.1" value="0"&gt;
+&lt;/div&gt;
+
+&lt;canvas id="waveCanvas" width="600" height="300"&gt;&lt;/canvas&gt;
+
+&lt;script&gt;
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+
+let wavelength = 100, amplitude = 50, speed = 0.05, phase = 0, t = 0;
+
+const controls = ['wavelength','amplitude','speed','phase'];
+controls.forEach(id =&gt; {
+  document.getElementById(id).oninput = e =&gt; {
+    window[id] = parseFloat(e.target.value);
+    document.getElementById(id.slice(0,2)+'Val').textContent = e.target.value;
+  };
+});
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  for (let x = 0; x &lt; canvas.width; x++) {
+    const y = canvas.height/2 + amplitude * Math.sin((2*Math.PI/wavelength)*x - speed*t + phase);
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#0077cc';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  t += 1;
+  requestAnimationFrame(draw);
+}
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w1.html" class="code-link" target="_blank">Open page in browser</a>
+          <p>You can open this as a <code>.html</code> file — the sliders will adjust the wave in real time.</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>The sliders dont seem to be changing anything, can you try again. Also Id like speeds that could be
+            positive or negative</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Here’s a corrected version — sliders now update live, and speed can be positive or negative:</p>
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;Sine Wave Visualizer&lt;/title&gt;
+&lt;style&gt;
+  body { font-family: sans-serif; text-align: center; background: #f5f5f5; }
+  canvas { border: 1px solid #ccc; background: white; margin-top: 10px; }
+  .controls { margin: 10px auto; width: 320px; text-align: left; }
+  label { display: block; margin: 6px 0 2px; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h2&gt;Single Wave Visualizer&lt;/h2&gt;
+
+&lt;div class="controls"&gt;
+  &lt;label&gt;Wavelength: &lt;span id="wlVal"&gt;100&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="wavelength" min="20" max="300" value="100"&gt;
+
+  &lt;label&gt;Amplitude: &lt;span id="ampVal"&gt;50&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="amplitude" min="10" max="100" value="50"&gt;
+
+  &lt;label&gt;Speed: &lt;span id="spdVal"&gt;0.05&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="speed" min="-0.2" max="0.2" step="0.01" value="0.05"&gt;
+
+  &lt;label&gt;Phase: &lt;span id="phVal"&gt;0&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="range" id="phase" min="0" max="6.28" step="0.1" value="0"&gt;
+&lt;/div&gt;
+
+&lt;canvas id="waveCanvas" width="600" height="300"&gt;&lt;/canvas&gt;
+
+&lt;script&gt;
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+
+let params = {
+  wavelength: 100,
+  amplitude: 50,
+  speed: 0.05,
+  phase: 0
+};
+
+for (let key in params) {
+  const slider = document.getElementById(key);
+  const label = document.getElementById(key.slice(0,2) + 'Val');
+  slider.addEventListener('input', e =&gt; {
+    params[key] = parseFloat(e.target.value);
+    label.textContent = e.target.value;
+  });
+}
+
+let t = 0;
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  for (let x = 0; x &lt; canvas.width; x++) {
+    const y = canvas.height/2 + params.amplitude *
+      Math.sin((2 * Math.PI / params.wavelength) * x - params.phase - params.speed * t);
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#0077cc';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  t += 1;
+  requestAnimationFrame(draw);
+}
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w2.html" class="code-link" target="_blank">Open page in browser</a>
+          <p>This version correctly binds each slider to its value and allows reversing wave direction by setting a
+            negative speed.</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>That works, except the numbers over the sliders dont change (except for phase). Can we now include the
+            possibility to add extra waves. As we add a eave we get an additional input box where we can change
+            parameters of the new wave. The individual waves can appear translucent on the main display, with the
+            superposition solid and slightly thicker. We could also have an X on each input box that allows us to delete
+            individual waves. If that makes sense please go ahead and update the code, if you have any questions let me
+            know?</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>That makes perfect sense — dynamic wave panels (each with wavelength, amplitude, speed, phase, and delete
+            button), translucent individual waves, and a solid summed wave. No questions — I can implement all that
+            cleanly. Would you like me to keep the styling minimal (like before) or add some light color accents to make
+            each wave panel visually distinct?</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Yep please add in some colours, and adjust the layout so that the main display comes directly below the app
+            title</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Got it — I’ll add soft color accents for each wave control panel, position the canvas directly under the
+            title, and keep the layout clean and readable. Ready to show the full updated code?</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Yep</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Here’s the complete, colorful, multi-wave version:</p>
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;Wave Superposition App&lt;/title&gt;
+&lt;style&gt;
+  body { font-family: sans-serif; background: #f5f5f5; text-align: center; }
+  h2 { margin-top: 20px; }
+  canvas { display: block; margin: 10px auto; background: white; border: 1px solid #ccc; }
+  #controls { width: 90%; max-width: 700px; margin: 15px auto; text-align: left; }
+  .wave-box {
+    background: #eaf4ff;
+    border: 1px solid #bcd4f6;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .wave-box:nth-child(odd) { background: #eaf9ea; border-color: #bde5b8; }
+  .wave-box label { display: block; margin: 4px 0 2px; font-size: 0.9em; }
+  .wave-box input[type=range] { width: 100%; }
+  .remove-btn {
+    position: absolute; top: 6px; right: 8px;
+    background: #ff6666; color: white; border: none;
+    border-radius: 50%; width: 22px; height: 22px; cursor: pointer;
+  }
+  #addWave {
+    background: #0077cc; color: white; border: none;
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; margin-top: 10px;
+  }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h2&gt;Wave Superposition Visualizer&lt;/h2&gt;
+&lt;canvas id="canvas" width="800" height="300"&gt;&lt;/canvas&gt;
+
+&lt;div id="controls"&gt;&lt;/div&gt;
+&lt;button id="addWave"&gt;+ Add Wave&lt;/button&gt;
+
+&lt;script&gt;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const controlsDiv = document.getElementById('controls');
+const addBtn = document.getElementById('addWave');
+
+let waves = [];
+let t = 0;
+
+function createWavePanel(id) {
+  const box = document.createElement('div');
+  box.className = 'wave-box';
+  box.innerHTML = `
+    &lt;button class="remove-btn"&gt;&amp;times;&lt;/button&gt;
+    &lt;label&gt;Wavelength: &lt;span class="wlVal"&gt;100&lt;/span&gt;&lt;/label&gt;
+    &lt;input type="range" class="wavelength" min="20" max="300" value="100"&gt;
+    &lt;label&gt;Amplitude: &lt;span class="ampVal"&gt;50&lt;/span&gt;&lt;/label&gt;
+    &lt;input type="range" class="amplitude" min="10" max="100" value="50"&gt;
+    &lt;label&gt;Speed: &lt;span class="spdVal"&gt;0.05&lt;/span&gt;&lt;/label&gt;
+    &lt;input type="range" class="speed" min="-0.2" max="0.2" step="0.01" value="0.05"&gt;
+    &lt;label&gt;Phase: &lt;span class="phVal"&gt;0&lt;/span&gt;&lt;/label&gt;
+    &lt;input type="range" class="phase" min="0" max="6.28" step="0.1" value="0"&gt;
+  `;
+  const wave = { wavelength:100, amplitude:50, speed:0.05, phase:0, color:getColor() };
+  waves.push(wave);
+
+  const update = () =&gt; {
+    wave.wavelength = parseFloat(box.querySelector('.wavelength').value);
+    wave.amplitude = parseFloat(box.querySelector('.amplitude').value);
+    wave.speed = parseFloat(box.querySelector('.speed').value);
+    wave.phase = parseFloat(box.querySelector('.phase').value);
+    box.querySelector('.wlVal').textContent = wave.wavelength;
+    box.querySelector('.ampVal').textContent = wave.amplitude;
+    box.querySelector('.spdVal').textContent = wave.speed.toFixed(2);
+    box.querySelector('.phVal').textContent = wave.phase.toFixed(1);
+  };
+
+  box.querySelectorAll('input').forEach(input =&gt; input.addEventListener('input', update));
+  box.querySelector('.remove-btn').onclick = () =&gt; {
+    controlsDiv.removeChild(box);
+    waves.splice(id,1);
+  };
+
+  controlsDiv.appendChild(box);
+  update();
+}
+
+function getColor() {
+  const colors = ['#ff6666','#66b3ff','#66cc66','#ffcc66','#cc99ff'];
+  return colors[waves.length % colors.length];
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const yCenter = canvas.height / 2;
+
+  // Draw each individual wave
+  waves.forEach(w =&gt; {
+    ctx.beginPath();
+    for (let x = 0; x &lt; canvas.width; x++) {
+      const y = yCenter + w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = w.color + '80'; // translucent
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // Draw sum wave
+  ctx.beginPath();
+  for (let x = 0; x &lt; canvas.width; x++) {
+    let ySum = 0;
+    waves.forEach(w =&gt; {
+      ySum += w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+    });
+    const y = yCenter + ySum;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  t += 1;
+  requestAnimationFrame(draw);
+}
+
+addBtn.onclick = () =&gt; createWavePanel(waves.length);
+createWavePanel(0);
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w3.html" class="code-link" target="_blank">Open page in browser</a>
+          <p>✅ Features:</p>
+          <ul>
+            <li>Add/delete waves dynamically</li>
+            <li>Color-coded translucent individual waves</li>
+            <li>Solid black summed wave</li>
+            <li>Responsive sliders with live value display</li>
+            <li>Canvas sits directly under the title for clarity</li>
+          </ul>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Can we include some present examples. 1. Destructive interference (2 waves with equal speed but 180 degrees
+            out of phase) 2. constructive interference (2 waves with slightly different amplitudes but same phase and
+            speed) 3. standing wave, 4. spring neap cycle (2 waves, with slightly different wavelengths creating a
+            modulated tidal like pattern), 5. deep water wave where the speed of the wave is set proportional to the
+            root of the wavelength (can add as many waves as desired but speeds are constrained). Does this make sense?
+            Are there any other useful scenarios?</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Yes, that makes perfect sense — those five presets neatly cover the main interference and wave interaction
+            phenomena students should explore.</p>
+          <p>Additional useful scenarios you might consider:</p>
+          <ul>
+            <li><strong>Beats</strong> (two close frequencies, highlighting amplitude modulation — distinct from the
+              spring-neap example if you vary speed instead of wavelength).</li>
+            <li><strong>Dispersion</strong> (multiple wavelengths with speeds increasing with wavelength, showing wave
+              packet spreading).</li>
+            <li><strong>Random superposition</strong> (several random waves to illustrate how complex patterns can
+              emerge).</li>
+          </ul>
+          <p>Would you like me to add a dropdown for these presets next (to auto-load example parameters)?</p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>yes my no.5 was meant to be Dispersion. SO we would need to fix the wave speeds to be proportional to the
+            root of the wavelength, And beats is my spring neap scenario. So lets just go with my options. Can you
+            include them as preset buttons. We should still be able add and modify waves after clicking on a preset. For
+            the dispersion case we just need to make it clear that the speed is constrained. Could we also add an
+            educational help box that explains the various scenarios e.g. for Constructive interference: The complex
+            ocean surface patterns arise from multiple waves superimposing as they interact. When waves meet, the water
+            displacement at any point equals the sum of the individual wave displacements. Constructive interference
+            occurs when this sum produces a larger displacement—for example, when two crests (or troughs) align, the
+            resulting wave height momentarily equals the sum of both wave heights before the waves continue propagating
+            separately.</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+&lt;title&gt;Wave Superposition App&lt;/title&gt;
+&lt;style&gt;
+  :root { --bg:#f6f7fb; --card:#ffffff; --ink:#111; --muted:#666; --accent:#2563eb; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell; background:var(--bg); color:var(--ink); }
+  h1 { text-align:center; margin:18px 0 8px; font-weight:700; }
+  .sub { text-align:center; color:var(--muted); margin-bottom:10px; }
+  canvas { display:block; margin:8px auto 14px; background: #fff; border:1px solid #ddd; border-radius:10px; max-width:900px; width:95%; height:360px }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:0 auto 8px; max-width:960px; }
+  .btn { border:1px solid #cfd6e4; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font-weight:600; }
+  .btn:hover { border-color:#9fb3d9; }
+  .btn.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  .flag { font-size:12px; color:#0a6; font-weight:600; display:none; align-items:center; gap:6px; }
+  .flag.on { display:inline-flex; }
+  #help { max-width:960px; margin:6px auto 10px; }
+  details { background:var(--card); border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
+  summary { cursor:pointer; font-weight:700; }
+  .help-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px; }
+  .help-card { background:#fafafa; border:1px dashed #e2e8f0; border-radius:10px; padding:8px 10px; font-size:14px; line-height:1.35; }
+  #controls { width:95%; max-width:960px; margin:12px auto 60px; display:grid; gap:10px; }
+  .wave-box {
+    position:relative; border-radius:12px; padding:10px 12px; border:1px solid #e5e7eb; background:#fff;
+  }
+  .wave-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .tag { display:inline-block; font-weight:700; font-size:13px; padding:2px 8px; border-radius:999px; color:#fff; }
+  .remove { border:none; background:#ef4444; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-weight:700; }
+  .row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  label { font-size:12px; color:#334155; display:block; margin-bottom:2px; }
+  .sl { width:100%; }
+  .val { font-variant-numeric:tabular-nums; color:#0f172a; font-weight:700; }
+  .muted { color:#64748b; font-size:12px }
+  @media (max-width:720px) { .row { grid-template-columns:1fr; } }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Wave Superposition Visualizer&lt;/h1&gt;
+  &lt;div class="sub"&gt;
+    &lt;span id="dispersionFlag" class="flag"&gt;• Dispersion mode (speed ∝ √wavelength)&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;canvas id="canvas"&gt;&lt;/canvas&gt;
+
+  &lt;div class="bar"&gt;
+    &lt;button class="btn primary" data-preset="destructive"&gt;Destructive interference&lt;/button&gt;
+    &lt;button class="btn" data-preset="constructive"&gt;Constructive interference&lt;/button&gt;
+    &lt;button class="btn" data-preset="standing"&gt;Standing wave&lt;/button&gt;
+    &lt;button class="btn" data-preset="springneap"&gt;Spring–neap (beats)&lt;/button&gt;
+    &lt;button class="btn" data-preset="dispersion"&gt;Dispersion&lt;/button&gt;
+    &lt;button class="btn" id="addWaveBtn"&gt;+ Add wave&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div id="help"&gt;
+    &lt;details&gt;
+      &lt;summary&gt;Educational notes (click to expand)&lt;/summary&gt;
+      &lt;div class="help-grid"&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Constructive interference&lt;/b&gt;&lt;br&gt;
+          The surface displacement equals the sum of all waves. When crests (or troughs) align, the resulting height momentarily equals the sum of their heights before they continue propagating independently.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Destructive interference&lt;/b&gt;&lt;br&gt;
+          Two equal-amplitude waves 180° out of phase cancel: crest meets trough → near-zero net displacement.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Standing wave&lt;/b&gt;&lt;br&gt;
+          Two equal waves traveling in opposite directions form nodes (no motion) and antinodes (max motion).
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Spring–neap (beats)&lt;/b&gt;&lt;br&gt;
+          Slightly different frequencies (or wavelengths) produce slow amplitude modulation: alternating large (“spring”) and small (“neap”) envelopes.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Dispersion&lt;/b&gt;&lt;br&gt;
+          In deep water, phase speed increases with wavelength. Here we constrain speed ∝ √λ for all waves; adjusting λ updates speed automatically.
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/details&gt;
+  &lt;/div&gt;
+
+  &lt;div id="controls"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+/* ---------- Canvas setup ---------- */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+function fitCanvas() {
+  const w = Math.min(900, Math.floor(window.innerWidth * 0.95));
+  canvas.width = w; canvas.height = 360;
+}
+fitCanvas(); addEventListener('resize', fitCanvas);
+
+/* ---------- State ---------- */
+const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7'];
+let waves = []; // {λ, A, s, φ, color}
+let t = 0;
+let dispersionMode = false; // when true, lock s = k*sqrt(λ)
+const SPEED_K = 0.018;      // proportionality constant for dispersion
+const MAX_WAVES = 5;
+
+const controlsDiv = document.getElementById('controls');
+const addWaveBtn = document.getElementById('addWaveBtn');
+const dispersionFlag = document.getElementById('dispersionFlag');
+
+/* ---------- Helpers ---------- */
+function makeTagStyle(i){ return `background:${colors[i%colors.length]}`; }
+function rad(v){ return Number(v).toFixed(2); }
+
+function addWave({wavelength=120, amplitude=50, speed=0.05, phase=0} = {}) {
+  if (waves.length &gt;= MAX_WAVES) return;
+
+  const idx = waves.length;
+  const wave = { wavelength, amplitude, speed, phase, color: colors[idx%colors.length] };
+  waves.push(wave);
+
+  const box = document.createElement('div');
+  box.className = 'wave-box';
+  box.innerHTML = `
+    &lt;div class="wave-head"&gt;
+      &lt;span class="tag" style="${makeTagStyle(idx)}"&gt;Wave ${idx+1}&lt;/span&gt;
+      &lt;button class="remove" title="Remove wave"&gt;×&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;
+      &lt;div&gt;
+        &lt;label&gt;Wavelength λ: &lt;span class="val wlVal"&gt;${wavelength}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl wavelength" type="range" min="20" max="300" value="${wavelength}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Amplitude A: &lt;span class="val ampVal"&gt;${amplitude}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl amplitude" type="range" min="5" max="120" value="${amplitude}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Speed s: &lt;span class="val spdVal"&gt;${speed.toFixed(3)}&lt;/span&gt; &lt;span class="muted spdNote"&gt;&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl speed" type="range" min="-0.25" max="0.25" step="0.005" value="${speed}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Phase φ (rad): &lt;span class="val phVal"&gt;${rad(phase)}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl phase" type="range" min="0" max="6.283" step="0.05" value="${phase}"&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  `;
+  controlsDiv.appendChild(box);
+
+  const q = {
+    wl:   box.querySelector('.wavelength'),
+    amp:  box.querySelector('.amplitude'),
+    spd:  box.querySelector('.speed'),
+    ph:   box.querySelector('.phase'),
+    wlVal: box.querySelector('.wlVal'),
+    ampVal: box.querySelector('.ampVal'),
+    spdVal: box.querySelector('.spdVal'),
+    phVal: box.querySelector('.phVal'),
+    spdNote: box.querySelector('.spdNote')
+  };
+
+  function syncFromUI() {
+    wave.wavelength = parseFloat(q.wl.value);
+    wave.amplitude  = parseFloat(q.amp.value);
+    if (!dispersionMode) {
+      wave.speed = parseFloat(q.spd.value);
+      q.spdNote.textContent = '';
+    } else {
+      wave.speed = Math.sign(wave.speed||1) * SPEED_K * Math.sqrt(wave.wavelength);
+      q.spd.value = wave.speed;
+      q.spdNote.textContent = '(locked to √λ)';
+    }
+    wave.phase     = parseFloat(q.ph.value);
+
+    q.wlVal.textContent = wave.wavelength;
+    q.ampVal.textContent = wave.amplitude;
+    q.spdVal.textContent = Number(wave.speed).toFixed(3);
+    q.phVal.textContent  = rad(wave.phase);
+  }
+
+  [q.wl,q.amp,q.spd,q.ph].forEach(inp =&gt; inp.addEventListener('input', syncFromUI));
+  box.querySelector('.remove').addEventListener('click', () =&gt; {
+    waves = waves.filter(w =&gt; w !== wave);
+    box.remove();
+    relabel();
+  });
+
+  // Disable/enable speed control depending on mode
+  function applyDispersionLock() {
+    if (dispersionMode) {
+      q.spd.disabled = true;
+      q.spdNote.textContent = '(locked to √λ)';
+    } else {
+      q.spd.disabled = false;
+      q.spdNote.textContent = '';
+    }
+  }
+
+  applyDispersionLock();
+  syncFromUI();
+  return wave;
+}
+
+function relabel() {
+  [...document.querySelectorAll('.wave-box .tag')].forEach((el,i)=&gt;{
+    el.textContent = `Wave ${i+1}`;
+    el.style = makeTagStyle(i);
+  });
+}
+
+function clearWaves() {
+  waves = [];
+  controlsDiv.innerHTML = '';
+}
+
+function setDispersion(on) {
+  dispersionMode = on;
+  dispersionFlag.classList.toggle('on', on);
+  document.querySelectorAll('.wave-box').forEach(box=&gt;{
+    const spd = box.querySelector('.speed');
+    const note = box.querySelector('.spdNote');
+    spd.disabled = on;
+    note.textContent = on ? '(locked to √λ)' : '';
+  });
+  // Update speeds for all waves when turning on
+  if (on) {
+    waves.forEach(w =&gt; { w.speed = Math.sign(w.speed||1) * SPEED_K * Math.sqrt(w.wavelength); });
+    // reflect in UI
+    document.querySelectorAll('.wave-box').forEach((box,i)=&gt;{
+      const spdVal = box.querySelector('.spdVal');
+      const spd = box.querySelector('.speed');
+      spd.value = waves[i].speed;
+      spdVal.textContent = waves[i].speed.toFixed(3);
+    });
+  }
+}
+
+/* ---------- Presets ---------- */
+const presets = {
+  destructive() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:0          });
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:Math.PI    });
+  },
+  constructive() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:140, amplitude:50, speed:0.05, phase:0 });
+    addWave({ wavelength:140, amplitude:35, speed:0.05, phase:0 });
+  },
+  standing() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:150, amplitude:45, speed: 0.07, phase:0 });
+    addWave({ wavelength:150, amplitude:45, speed:-0.07, phase:0 }); // opposite direction
+  },
+  springneap() { // beats via close wavelengths
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:140, amplitude:45, speed:0.06, phase:0   });
+    addWave({ wavelength:150, amplitude:45, speed:0.06, phase:0.0 });
+  },
+  dispersion() {
+    clearWaves();
+    setDispersion(true);
+    addWave({ wavelength:80,  amplitude:35, speed:SPEED_K*Math.sqrt(80),  phase:0 });
+    addWave({ wavelength:140, amplitude:28, speed:SPEED_K*Math.sqrt(140), phase:1.2 });
+    addWave({ wavelength:220, amplitude:22, speed:SPEED_K*Math.sqrt(220), phase:2.0 });
+  }
+};
+
+document.querySelectorAll('[data-preset]').forEach(b=&gt;{
+  b.addEventListener('click', () =&gt; {
+    presetsb.dataset.preset;
+  });
+});
+addWaveBtn.addEventListener('click', () =&gt; addWave());
+
+/* ---------- Animation ---------- */
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const H = canvas.height, W = canvas.width, yc = H/2;
+
+  // individual waves (translucent)
+  waves.forEach((w,i)=&gt;{
+    ctx.beginPath();
+    for (let x=0; x&lt;W; x++) {
+      const y = yc + w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = hexToRgba(w.color, 0.55);
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  });
+
+  // sum wave (solid)
+  ctx.beginPath();
+  for (let x=0; x&lt;W; x++) {
+    let s = 0;
+    for (const w of waves) {
+      s += w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+    }
+    const y = yc + s;
+    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.8;
+  ctx.stroke();
+
+  t += 1;
+  requestAnimationFrame(draw);
+}
+
+function hexToRgba(hex, a){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const r = parseInt(m[1],16), g = parseInt(m[2],16), b = parseInt(m[3],16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ---------- Boot ---------- */
+presets.constructive(); // default
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w4.html" class="code-link" target="_blank">Open page in browser</a>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Looks good. Can we add a scenario called default that is our starting single wave configuration. Also
+            another scenario called Wave Sets, that show that a combination of waves with different phase speeds can
+            generate wave sets with a different group speed</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <p>Yes. I’ll add two preset buttons:</p>
+          <ul>
+            <li><strong>Default</strong> — clears to a single traveling wave (e.g., λ=160, A=60, s=0.06, φ=0),
+              dispersion <strong>off</strong>.</li>
+            <li><strong>Wave Sets</strong> — enables dispersion mode (speed ∝ √λ) and loads a narrow-band packet (e.g.,
+              λ ≈ [140,150,155,160,170] with tapered amplitudes). The crests run through the envelope while the envelope
+              (group) moves more slowly, illustrating distinct <strong>phase vs group speed</strong>.</li>
+          </ul>
+          <p>You’ll still be able to add/edit waves after selecting either preset.<br>Want me to post the updated code?
+          </p>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>Yes can still edit after pressing on presets. Yes please provide the code. Also the sqare root in the seep
+            water explanation isnt rendering - I see (cproptosqrt{lambda})</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+&lt;title&gt;Wave Superposition App&lt;/title&gt;
+&lt;style&gt;
+  :root { --bg:#f6f7fb; --card:#ffffff; --ink:#111; --muted:#666; --accent:#2563eb; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell; background:var(--bg); color:var(--ink); }
+  h1 { text-align:center; margin:18px 0 8px; font-weight:700; }
+  .sub { text-align:center; color:var(--muted); margin-bottom:10px; }
+  canvas { display:block; margin:8px auto 14px; background:#fff; border:1px solid #ddd; border-radius:10px; max-width:900px; width:95%; height:360px }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:0 auto 8px; max-width:960px; }
+  .btn { border:1px solid #cfd6e4; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font-weight:600; }
+  .btn:hover { border-color:#9fb3d9; }
+  .btn.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  .flag { font-size:12px; color:#0a6; font-weight:600; display:none; align-items:center; gap:6px; }
+  .flag.on { display:inline-flex; }
+  #help { max-width:960px; margin:6px auto 10px; }
+  details { background:var(--card); border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
+  summary { cursor:pointer; font-weight:700; }
+  .help-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px; }
+  .help-card { background:#fafafa; border:1px dashed #e2e8f0; border-radius:10px; padding:8px 10px; font-size:14px; line-height:1.35; }
+  #controls { width:95%; max-width:960px; margin:12px auto 60px; display:grid; gap:10px; }
+  .wave-box { position:relative; border-radius:12px; padding:10px 12px; border:1px solid #e5e7eb; background:#fff; }
+  .wave-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .tag { display:inline-block; font-weight:700; font-size:13px; padding:2px 8px; border-radius:999px; color:#fff; }
+  .remove { border:none; background:#ef4444; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-weight:700; }
+  .row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  label { font-size:12px; color:#334155; display:block; margin-bottom:2px; }
+  .sl { width:100%; }
+  .val { font-variant-numeric:tabular-nums; color:#0f172a; font-weight:700; }
+  .muted { color:#64748b; font-size:12px }
+  @media (max-width:720px) { .row { grid-template-columns:1fr; } }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Wave Superposition Visualizer&lt;/h1&gt;
+  &lt;div class="sub"&gt;
+    &lt;span id="dispersionFlag" class="flag"&gt;• Dispersion mode (speed ∝ √λ)&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;canvas id="canvas"&gt;&lt;/canvas&gt;
+
+  &lt;div class="bar"&gt;
+    &lt;button class="btn primary" data-preset="default"&gt;Default&lt;/button&gt;
+    &lt;button class="btn" data-preset="destructive"&gt;Destructive&lt;/button&gt;
+    &lt;button class="btn" data-preset="constructive"&gt;Constructive&lt;/button&gt;
+    &lt;button class="btn" data-preset="standing"&gt;Standing&lt;/button&gt;
+    &lt;button class="btn" data-preset="springneap"&gt;Spring–neap&lt;/button&gt;
+    &lt;button class="btn" data-preset="wavesets"&gt;Wave Sets&lt;/button&gt;
+    &lt;button class="btn" data-preset="dispersion"&gt;Dispersion&lt;/button&gt;
+    &lt;button class="btn" id="addWaveBtn"&gt;+ Add wave&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div id="help"&gt;
+    &lt;details&gt;
+      &lt;summary&gt;Educational notes (click to expand)&lt;/summary&gt;
+      &lt;div class="help-grid"&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Default&lt;/b&gt;&lt;br&gt;Single traveling sine wave you can modify freely.&lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Constructive interference&lt;/b&gt;&lt;br&gt;
+          When crests (or troughs) align, the summed displacement increases; height ≈ sum of the individual heights.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Destructive interference&lt;/b&gt;&lt;br&gt;
+          Equal-amplitude waves 180° out of phase cancel (crest + trough → near-zero net displacement).
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Standing wave&lt;/b&gt;&lt;br&gt;
+          Two equal waves traveling in opposite directions create nodes (no motion) and antinodes (max motion).
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Spring–neap (beats)&lt;/b&gt;&lt;br&gt;
+          Slightly different wavelengths (or frequencies) produce a slow amplitude envelope: alternating “spring” and “neap”.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Wave Sets&lt;/b&gt;&lt;br&gt;
+          A narrow band of wavelengths forms a moving envelope (group). Crests move through the envelope (phase speed) while the envelope itself moves at a different group speed.
+        &lt;/div&gt;
+        &lt;div class="help-card"&gt;&lt;b&gt;Dispersion&lt;/b&gt;&lt;br&gt;
+          Deep water: phase speed increases with wavelength. Here speed is constrained: speed ∝ √λ (adjusting λ updates speed).
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/details&gt;
+  &lt;/div&gt;
+
+  &lt;div id="controls"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+/* ---------- Canvas ---------- */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+function fitCanvas(){ const w=Math.min(900,Math.floor(window.innerWidth*0.95)); canvas.width=w; canvas.height=360; }
+fitCanvas(); addEventListener('resize', fitCanvas);
+
+/* ---------- State ---------- */
+const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7'];
+let waves = []; // {wavelength, amplitude, speed, phase, color}
+let t = 0;
+let dispersionMode = false;
+const SPEED_K = 0.018; // speed = ±K*sqrt(lambda) in dispersion mode
+const MAX_WAVES = 5;
+
+const controlsDiv = document.getElementById('controls');
+const addWaveBtn = document.getElementById('addWaveBtn');
+const dispersionFlag = document.getElementById('dispersionFlag');
+
+/* ---------- UI helpers ---------- */
+function makeTagStyle(i){ return `background:${colors[i%colors.length]}`; }
+function rad(v){ return Number(v).toFixed(2); }
+function hexToRgba(hex, a){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ---------- Wave panels ---------- */
+function addWave({wavelength=160, amplitude=60, speed=0.06, phase=0} = {}) {
+  if (waves.length &gt;= MAX_WAVES) return;
+  const idx = waves.length;
+  const wave = { wavelength, amplitude, speed, phase, color: colors[idx%colors.length] };
+  waves.push(wave);
+
+  const box = document.createElement('div');
+  box.className = 'wave-box';
+  box.innerHTML = `
+    &lt;div class="wave-head"&gt;
+      &lt;span class="tag" style="${makeTagStyle(idx)}"&gt;Wave ${idx+1}&lt;/span&gt;
+      &lt;button class="remove" title="Remove wave"&gt;×&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div class="row"&gt;
+      &lt;div&gt;
+        &lt;label&gt;Wavelength λ: &lt;span class="val wlVal"&gt;${wavelength}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl wavelength" type="range" min="20" max="300" value="${wavelength}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Amplitude A: &lt;span class="val ampVal"&gt;${amplitude}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl amplitude" type="range" min="5" max="120" value="${amplitude}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Speed s: &lt;span class="val spdVal"&gt;${speed.toFixed(3)}&lt;/span&gt; &lt;span class="muted spdNote"&gt;&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl speed" type="range" min="-0.25" max="0.25" step="0.005" value="${speed}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Phase φ (rad): &lt;span class="val phVal"&gt;${rad(phase)}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl phase" type="range" min="0" max="6.283" step="0.05" value="${phase}"&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  `;
+  controlsDiv.appendChild(box);
+
+  const q = {
+    wl: box.querySelector('.wavelength'),
+    amp: box.querySelector('.amplitude'),
+    spd: box.querySelector('.speed'),
+    ph: box.querySelector('.phase'),
+    wlVal: box.querySelector('.wlVal'),
+    ampVal: box.querySelector('.ampVal'),
+    spdVal: box.querySelector('.spdVal'),
+    phVal: box.querySelector('.phVal'),
+    spdNote: box.querySelector('.spdNote')
+  };
+
+  function syncFromUI(){
+    wave.wavelength = parseFloat(q.wl.value);
+    wave.amplitude  = parseFloat(q.amp.value);
+    if (!dispersionMode) {
+      wave.speed = parseFloat(q.spd.value);
+      q.spdNote.textContent = '';
+    } else {
+      const sign = Math.sign(wave.speed||1); // keep previous direction
+      wave.speed = sign * SPEED_K * Math.sqrt(wave.wavelength);
+      q.spd.value = wave.speed;
+      q.spdNote.textContent = '(locked to √λ)';
+    }
+    wave.phase = parseFloat(q.ph.value);
+
+    q.wlVal.textContent = wave.wavelength;
+    q.ampVal.textContent = wave.amplitude;
+    q.spdVal.textContent = Number(wave.speed).toFixed(3);
+    q.phVal.textContent  = rad(wave.phase);
+  }
+
+  [q.wl,q.amp,q.spd,q.ph].forEach(inp =&gt; inp.addEventListener('input', syncFromUI));
+  box.querySelector('.remove').addEventListener('click', () =&gt; {
+    waves = waves.filter(w =&gt; w !== wave);
+    box.remove();
+    relabel();
+  });
+
+  function applyDispersionLock(){
+    if (dispersionMode) { q.spd.disabled = true; q.spdNote.textContent='(locked to √λ)'; }
+    else { q.spd.disabled = false; q.spdNote.textContent=''; }
+  }
+
+  applyDispersionLock();
+  syncFromUI();
+  return wave;
+}
+
+function relabel(){
+  [...document.querySelectorAll('.wave-box .tag')].forEach((el,i)=&gt;{
+    el.textContent = `Wave ${i+1}`;
+    el.style = makeTagStyle(i);
+  });
+}
+
+function clearWaves(){ waves=[]; controlsDiv.innerHTML=''; }
+
+function setDispersion(on){
+  dispersionMode = on;
+  dispersionFlag.classList.toggle('on', on);
+  document.querySelectorAll('.wave-box').forEach(box=&gt;{
+    const spd = box.querySelector('.speed');
+    const note = box.querySelector('.spdNote');
+    spd.disabled = on; note.textContent = on ? '(locked to √λ)' : '';
+  });
+  if (on) {
+    waves.forEach(w =&gt; { const sign=Math.sign(w.speed||1); w.speed = sign*SPEED_K*Math.sqrt(w.wavelength); });
+    document.querySelectorAll('.wave-box').forEach((box,i)=&gt;{
+      box.querySelector('.speed').value = waves[i].speed;
+      box.querySelector('.spdVal').textContent = waves[i].speed.toFixed(3);
+    });
+  }
+}
+
+/* ---------- Presets ---------- */
+const presets = {
+  default() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:160, amplitude:60, speed:0.06, phase:0 });
+  },
+  destructive() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:0 });
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:Math.PI });
+  },
+  constructive() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:140, amplitude:50, speed:0.05, phase:0 });
+    addWave({ wavelength:140, amplitude:35, speed:0.05, phase:0 });
+  },
+  standing() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:150, amplitude:45, speed: 0.07, phase:0 });
+    addWave({ wavelength:150, amplitude:45, speed:-0.07, phase:0 });
+  },
+  springneap() {
+    setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:140, amplitude:45, speed:0.06, phase:0 });
+    addWave({ wavelength:150, amplitude:45, speed:0.06, phase:0 });
+  },
+  wavesets() {
+    // Narrow-band packet; dispersion ON. Keep mixed phase directions to show crests running through envelope.
+    clearWaves();
+    setDispersion(true);
+    const specs = [
+      { λ:150, A:22, φ:0.0,  sg:+1 },
+      { λ:155, A:28, φ:0.6,  sg:+1 },
+      { λ:160, A:34, φ:1.0,  sg:+1 },
+      { λ:165, A:28, φ:1.5,  sg:+1 },
+      { λ:170, A:22, φ:2.2,  sg:+1 }
+    ];
+    specs.forEach(s=&gt;{
+      const spd = s.sg * SPEED_K * Math.sqrt(s.λ);
+      addWave({ wavelength:s.λ, amplitude:s.A, speed:spd, phase:s.φ });
+    });
+  },
+  dispersion() {
+    clearWaves();
+    setDispersion(true);
+    addWave({ wavelength:80,  amplitude:35, speed:SPEED_K*Math.sqrt(80),  phase:0 });
+    addWave({ wavelength:140, amplitude:28, speed:SPEED_K*Math.sqrt(140), phase:1.2 });
+    addWave({ wavelength:220, amplitude:22, speed:SPEED_K*Math.sqrt(220), phase:2.0 });
+  }
+};
+
+document.querySelectorAll('[data-preset]').forEach(b=&gt;{
+  b.addEventListener('click', () =&gt; presetsb.dataset.preset);
+});
+addWaveBtn.addEventListener('click', () =&gt; addWave());
+
+/* ---------- Animation ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const H=canvas.height, W=canvas.width, yc=H/2;
+
+  // individual waves
+  for (const w of waves){
+    ctx.beginPath();
+    for (let x=0;x&lt;W;x++){
+      const y = yc + w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = hexToRgba(w.color,0.55);
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+
+  // sum wave
+  ctx.beginPath();
+  for (let x=0;x&lt;W;x++){
+    let s=0;
+    for (const w of waves){
+      s += w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+    }
+    const y = yc + s;
+    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.8;
+  ctx.stroke();
+
+  t += 1;
+  requestAnimationFrame(draw);
+}
+
+/* ---------- Boot ---------- */
+presets.default();
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w6.html" class="code-link" target="_blank">Open page in browser</a>
+        </div>
+      </div>
+      <div class="chat-message user-message">
+        <div class="message-bubble">
+          <p>We have lost some of the changes made previously e.g. the add wave seperate to the scenarios; the zero
+            speed and shorter wavelengths for the spring neaps; the vertical zoom; highlighting the active scenario
+            button I want the educational notes panel to always be open, but the content changes depending on which
+            scenario is presses. For the defaul we can add instructions ". you can add multiple waves, change their
+            characteristics and see how they combine (superposition). You can also try out some preset scenarios that
+            demonstrate some special cases". The sets scenario doesnt work very well, we could do it with just two waves
+            L=-49, A=-50, s=-0.05, phase =0 and L=53, A=50, s=0.06 phase =0. Do these changes make sense?</p>
+        </div>
+      </div>
+      <div class="chat-message chatgpt-message">
+        <div class="message-bubble">
+          <div class="code-container">
+            <pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+&lt;title&gt;Wave Superposition App&lt;/title&gt;
+&lt;style&gt;
+  :root { --bg:#f6f7fb; --card:#ffffff; --ink:#111; --muted:#667085; --accent:#2563eb; }
+  *{box-sizing:border-box}
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell; background:var(--bg); color:var(--ink); }
+  h1 { text-align:center; margin:18px 0 6px; font-weight:700; }
+  .sub { text-align:center; color:var(--muted); margin:0 0 8px; }
+  .flag { font-size:12px; color:#0a6; font-weight:600; display:none; }
+  .flag.on { display:inline; }
+  canvas { display:block; margin:10px auto; background:#fff; border:1px solid #ddd; border-radius:10px; max-width:900px; width:95%; height:360px }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px auto 8px; max-width:980px; }
+  .btn { border:1px solid #cfd6e4; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font-weight:600; }
+  .btn:hover { border-color:#9fb3d9; }
+  .btn.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  .btn.active { outline:2px solid var(--accent); }
+  .controls-wrap { width:95%; max-width:980px; margin:10px auto 60px; display:grid; gap:10px; }
+  .panel { background:var(--card); border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
+  .panel h3 { margin:0 0 6px; font-size:15px; }
+  #edu { line-height:1.4; font-size:14px; }
+  /* wave panels */
+  #controls { display:grid; gap:10px; }
+  .wave-box { position:relative; border-radius:12px; padding:10px 12px; border:1px solid #e5e7eb; background:#fff; }
+  .wave-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .tag { display:inline-block; font-weight:700; font-size:13px; padding:2px 8px; border-radius:999px; color:#fff; }
+  .remove { border:none; background:#ef4444; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-weight:700; }
+  .row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  label { font-size:12px; color:#334155; display:block; margin-bottom:2px; }
+  .sl { width:100%; }
+  .val { font-variant-numeric:tabular-nums; color:#0f172a; font-weight:700; }
+  .muted { color:#64748b; font-size:12px }
+  @media (max-width:720px) { .row { grid-template-columns:1fr; } }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Wave Superposition Visualizer&lt;/h1&gt;
+  &lt;div class="sub"&gt;
+    &lt;span id="dispersionFlag" class="flag"&gt;• Dispersion mode (speed ∝ √λ)&lt;/span&gt;
+  &lt;/div&gt;
+
+  &lt;canvas id="canvas"&gt;&lt;/canvas&gt;
+
+  &lt;div class="bar" id="presetBar"&gt;
+    &lt;button class="btn primary" data-preset="default"&gt;Default&lt;/button&gt;
+    &lt;button class="btn" data-preset="destructive"&gt;Destructive&lt;/button&gt;
+    &lt;button class="btn" data-preset="constructive"&gt;Constructive&lt;/button&gt;
+    &lt;button class="btn" data-preset="standing"&gt;Standing&lt;/button&gt;
+    &lt;button class="btn" data-preset="springneap"&gt;Spring–neap&lt;/button&gt;
+    &lt;button class="btn" data-preset="wavesets"&gt;Wave Sets&lt;/button&gt;
+    &lt;button class="btn" data-preset="dispersion"&gt;Dispersion&lt;/button&gt;
+    &lt;button class="btn" id="addWaveBtn"&gt;+ Add wave&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class="controls-wrap"&gt;
+    &lt;div class="panel"&gt;
+      &lt;h3&gt;View controls&lt;/h3&gt;
+      &lt;label&gt;Vertical zoom (applies to all waves): &lt;span id="zoomVal" class="val"&gt;1.00×&lt;/span&gt;&lt;/label&gt;
+      &lt;input id="zoom" class="sl" type="range" min="0.25" max="3" step="0.05" value="1"&gt;
+    &lt;/div&gt;
+
+    &lt;div class="panel"&gt;
+      &lt;h3&gt;Educational notes&lt;/h3&gt;
+      &lt;div id="edu"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div id="controls"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;script&gt;
+/* ---------- Canvas ---------- */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+function fitCanvas(){ const w=Math.min(900,Math.floor(window.innerWidth*0.95)); canvas.width=w; canvas.height=360; }
+fitCanvas(); addEventListener('resize', fitCanvas);
+
+/* ---------- State ---------- */
+const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7'];
+let waves = []; // {wavelength, amplitude, speed, phase, color}
+let t = 0;
+let dispersionMode = false;
+let yZoom = 1;
+const SPEED_K = 0.018; // speed = ±K*sqrt(lambda) in dispersion mode
+const MAX_WAVES = 5;
+
+const controlsDiv = document.getElementById('controls');
+const addWaveBtn = document.getElementById('addWaveBtn');
+const dispersionFlag = document.getElementById('dispersionFlag');
+const zoom = document.getElementById('zoom');
+const zoomVal = document.getElementById('zoomVal');
+const edu = document.getElementById('edu');
+
+/* ---------- UI helpers ---------- */
+function makeTagStyle(i){ return `background:${colors[i%colors.length]}`; }
+function rad(v){ return Number(v).toFixed(2); }
+function hexToRgba(hex, a){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function setActivePreset(btn){
+  document.querySelectorAll('#presetBar .btn[data-preset]').forEach(b=&gt;b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+/* ---------- Wave panels ---------- */
+function addWave({wavelength=160, amplitude=60, speed=0.06, phase=0} = {}) {
+  if (waves.length &gt;= MAX_WAVES) return;
+  const idx = waves.length;
+  const wave = { wavelength, amplitude, speed, phase, color: colors[idx%colors.length] };
+  waves.push(wave);
+
+  const box = document.createElement('div');
+  box.className = 'wave-box';
+  box.innerHTML = `
+    &lt;div class="wave-head"&gt;
+      &lt;span class="tag" style="${makeTagStyle(idx)}"&gt;Wave ${idx+1}&lt;/span&gt;
+      &lt;button class="remove" title="Remove wave"&gt;×&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div class="row"&gt;
+      &lt;div&gt;
+        &lt;label&gt;Wavelength λ: &lt;span class="val wlVal"&gt;${wavelength}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl wavelength" type="range" min="20" max="300" value="${wavelength}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Amplitude A: &lt;span class="val ampVal"&gt;${amplitude}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl amplitude" type="range" min="5" max="120" value="${amplitude}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Speed s: &lt;span class="val spdVal"&gt;${speed.toFixed(3)}&lt;/span&gt; &lt;span class="muted spdNote"&gt;&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl speed" type="range" min="-0.25" max="0.25" step="0.005" value="${speed}"&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;label&gt;Phase φ (rad): &lt;span class="val phVal"&gt;${rad(phase)}&lt;/span&gt;&lt;/label&gt;
+        &lt;input class="sl phase" type="range" min="0" max="6.283" step="0.05" value="${phase}"&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  `;
+  controlsDiv.appendChild(box);
+
+  const q = {
+    wl: box.querySelector('.wavelength'),
+    amp: box.querySelector('.amplitude'),
+    spd: box.querySelector('.speed'),
+    ph: box.querySelector('.phase'),
+    wlVal: box.querySelector('.wlVal'),
+    ampVal: box.querySelector('.ampVal'),
+    spdVal: box.querySelector('.spdVal'),
+    phVal: box.querySelector('.phVal'),
+    spdNote: box.querySelector('.spdNote')
+  };
+
+  function syncFromUI(){
+    wave.wavelength = parseFloat(q.wl.value);
+    wave.amplitude  = parseFloat(q.amp.value);
+    if (!dispersionMode) {
+      wave.speed = parseFloat(q.spd.value);
+      q.spdNote.textContent = '';
+    } else {
+      const sign = Math.sign(wave.speed||1); // keep previous direction
+      wave.speed = sign * SPEED_K * Math.sqrt(wave.wavelength);
+      q.spd.value = wave.speed;
+      q.spdNote.textContent = '(locked to √λ)';
+    }
+    wave.phase = parseFloat(q.ph.value);
+
+    q.wlVal.textContent = wave.wavelength;
+    q.ampVal.textContent = wave.amplitude;
+    q.spdVal.textContent = Number(wave.speed).toFixed(3);
+    q.phVal.textContent  = rad(wave.phase);
+  }
+
+  [q.wl,q.amp,q.spd,q.ph].forEach(inp =&gt; inp.addEventListener('input', syncFromUI));
+  box.querySelector('.remove').addEventListener('click', () =&gt; {
+    waves = waves.filter(w =&gt; w !== wave);
+    box.remove();
+    relabel();
+  });
+
+  function applyDispersionLock(){
+    if (dispersionMode) { q.spd.disabled = true; q.spdNote.textContent='(locked to √λ)'; }
+    else { q.spd.disabled = false; q.spdNote.textContent=''; }
+  }
+
+  applyDispersionLock();
+  syncFromUI();
+  return wave;
+}
+
+function relabel(){
+  [...document.querySelectorAll('.wave-box .tag')].forEach((el,i)=&gt;{
+    el.textContent = `Wave ${i+1}`;
+    el.style = makeTagStyle(i);
+  });
+}
+
+function clearWaves(){ waves=[]; controlsDiv.innerHTML=''; }
+
+function setDispersion(on){
+  dispersionMode = on;
+  dispersionFlag.classList.toggle('on', on);
+  document.querySelectorAll('.wave-box').forEach(box=&gt;{
+    const spd = box.querySelector('.speed');
+    const note = box.querySelector('.spdNote');
+    spd.disabled = on; note.textContent = on ? '(locked to √λ)' : '';
+  });
+  if (on) {
+    waves.forEach(w =&gt; { const sign=Math.sign(w.speed||1); w.speed = sign*SPEED_K*Math.sqrt(w.wavelength); });
+    document.querySelectorAll('.wave-box').forEach((box,i)=&gt;{
+      box.querySelector('.speed').value = waves[i].speed;
+      box.querySelector('.spdVal').textContent = waves[i].speed.toFixed(3);
+    });
+  }
+}
+
+/* ---------- Presets &amp; notes ---------- */
+const NOTES = {
+  default: `You can add multiple waves, change their characteristics and see how they combine (superposition).
+  You can also try out some preset scenarios that demonstrate some special cases.`,
+  destructive: `Two waves with equal amplitude and speed but 180° out of phase cancel: crest + trough → near-zero displacement.`,
+  constructive: `Two nearly identical waves in phase add to produce larger peaks and troughs (height ≈ sum of heights).`,
+  standing: `Equal waves traveling in opposite directions form nodes (no motion) and antinodes (max motion): a standing pattern.`,
+  springneap: `Two close wavelengths produce a slow amplitude envelope (beats): alternating “spring” (large) and “neap” (small) amplitudes.`,
+  wavesets: `A narrow band creates a moving envelope (group). Crests (phase) move through the envelope; the envelope travels at a distinct group speed.`,
+  dispersion: `Deep water dispersion: phase speed increases with wavelength. Here speed is constrained: speed ∝ √λ (adjusting λ updates speed).`
+};
+
+function setNotes(key){ edu.textContent = NOTES[key]; }
+
+const presets = {
+  default(btn) {
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:160, amplitude:60, speed:0.06, phase:0 });
+    setNotes('default');
+  },
+  destructive(btn) {
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:0 });
+    addWave({ wavelength:160, amplitude:60, speed: 0.06, phase:Math.PI });
+    setNotes('destructive');
+  },
+  constructive(btn) {
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:140, amplitude:50, speed:0.05, phase:0 });
+    addWave({ wavelength:140, amplitude:35, speed:0.05, phase:0 });
+    setNotes('constructive');
+  },
+  standing(btn) {
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:150, amplitude:45, speed: 0.07, phase:0 });
+    addWave({ wavelength:150, amplitude:45, speed:-0.07, phase:0 });
+    setNotes('standing');
+  },
+  springneap(btn) {
+    // As requested: zero speeds and shorter wavelengths for a static beats pattern snapshot
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:40, amplitude:45, speed:0.00, phase:0 });
+    addWave({ wavelength:44, amplitude:45, speed:0.00, phase:0 });
+    setNotes('springneap');
+  },
+  wavesets(btn) {
+    // Two-wave packet illustrating phase vs group speed (using your numbers; negatives interpreted as signs)
+    setActivePreset(btn); setDispersion(false);
+    clearWaves();
+    addWave({ wavelength:49, amplitude:50, speed:-0.05, phase:0 });
+    addWave({ wavelength:53, amplitude:50, speed: 0.06, phase:0 });
+    setNotes('wavesets');
+  },
+  dispersion(btn) {
+    setActivePreset(btn);
+    clearWaves(); setDispersion(true);
+    addWave({ wavelength:80,  amplitude:35, speed:SPEED_K*Math.sqrt(80),  phase:0 });
+    addWave({ wavelength:140, amplitude:28, speed:SPEED_K*Math.sqrt(140), phase:1.2 });
+    addWave({ wavelength:220, amplitude:22, speed:SPEED_K*Math.sqrt(220), phase:2.0 });
+    setNotes('dispersion');
+  }
+};
+
+/* ---------- Preset wiring ---------- */
+document.querySelectorAll('[data-preset]').forEach(b=&gt;{
+  b.addEventListener('click', () =&gt; presetsb.dataset.preset);
+});
+addWaveBtn.addEventListener('click', () =&gt; addWave());
+
+/* ---------- View controls ---------- */
+zoom.addEventListener('input', e=&gt;{ yZoom = parseFloat(e.target.value); zoomVal.textContent = `${yZoom.toFixed(2)}×`; });
+
+/* ---------- Animation ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const H=canvas.height, W=canvas.width, yc=H/2;
+
+  // individual waves
+  for (const w of waves){
+    ctx.beginPath();
+    for (let x=0;x&lt;W;x++){
+      const y = yc + yZoom * ( w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t) );
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = hexToRgba(w.color,0.55);
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+
+  // sum wave
+  ctx.beginPath();
+  for (let x=0;x&lt;W;x++){
+    let s=0;
+    for (const w of waves){
+      s += w.amplitude * Math.sin((2*Math.PI/w.wavelength)*x - w.phase - w.speed*t);
+    }
+    const y = yc + yZoom * s;
+    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.8;
+  ctx.stroke();
+
+  t += 1;
+  requestAnimationFrame(draw);
+}
+
+/* ---------- Boot ---------- */
+presets.default(document.querySelector('[data-preset="default"]'));
+setNotes('default');
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+            <button class="toggle-code">Show more</button>
+          </div>
+          <a href="w7.html" class="code-link" target="_blank">Open page in browser</a>
+        </div>
+      </div>
+    </div>
+    <button id="next-message-btn">↓</button>
+  </div>
+</body>
+
+</html>

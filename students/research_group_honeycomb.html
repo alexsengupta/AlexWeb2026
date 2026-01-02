@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Group - Honeycomb</title>
+    <style>
+        :root {
+            --hex-width: 150px;
+            --hex-height: 173px;
+            --hex-gap: 12px;
+            --hex-row-gap: -16px;
+            --hex-offset: 41px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            text-align: center;
+            color: #8B4513;
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .section-title {
+            text-align: center;
+            color: #8B4513;
+            font-size: 1.8em;
+            margin: 60px 0 40px;
+            opacity: 0.9;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Honeycomb grid with spacing for lattice effect */
+        .honeycomb {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 0 auto;
+            max-width: 1200px;
+        }
+
+        .hex-row {
+            display: flex;
+            justify-content: center;
+            margin: var(--hex-row-gap) 0;
+        }
+
+        .hex-row.offset-right {
+            transform: translateX(var(--hex-offset));
+        }
+
+        .hex-row.offset-left {
+            transform: translateX(calc(var(--hex-offset) * -1));
+        }
+
+        .hexagon {
+            width: var(--hex-width);
+            height: var(--hex-height);
+            margin: 0 calc(var(--hex-gap) / 2);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            outline: none;
+        }
+
+        .hexagon:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .hex-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+            overflow: visible;
+        }
+
+        .hex-frame polygon {
+            fill: none;
+            stroke: rgba(0, 0, 0, 0.65);
+            stroke-width: 5;
+            stroke-linejoin: round;
+            vector-effect: non-scaling-stroke;
+            transition: stroke 0.2s ease;
+        }
+
+        .hexagon:hover .hex-frame polygon,
+        .hexagon:focus-visible .hex-frame polygon,
+        .hexagon:focus-within .hex-frame polygon {
+            stroke: rgba(0, 0, 0, 0.88);
+        }
+
+        /* Empty honeycomb cells - decorative */
+        .hexagon.empty {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .hexagon.empty:hover {
+            transform: none;
+        }
+
+        .hex-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: none;
+            transition: all 0.3s ease;
+            padding: 18px;
+        }
+
+        /* Decorative hexagons (empty cells) */
+        .hexagon.empty .hex-inner {
+            background: #f4c16e;
+            position: relative;
+        }
+
+        .hexagon.empty .hex-inner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            clip-path: inherit;
+            background: linear-gradient(130deg, rgba(255, 255, 255, 0.45), transparent 65%);
+            opacity: 0.3;
+            transition: opacity 0.4s ease;
+        }
+
+        .hexagon.empty:hover .hex-inner::before {
+            opacity: 0.55;
+        }
+
+        /* Filled cells with people - fixed colors with DARKER borders */
+        .hex-inner.postdoc {
+            background: #d68910;
+            box-shadow: inset 0 0 0 4px #a86809;
+        }
+
+        .hex-inner.phd {
+            background: #e59866;
+            box-shadow: inset 0 0 0 4px #b8794f;
+        }
+
+        .hex-inner.honours {
+            background: #f5b041;
+            box-shadow: inset 0 0 0 4px #c48d34;
+        }
+
+        .hex-inner.masters {
+            background: #dc7633;
+            box-shadow: inset 0 0 0 4px #af5e29;
+        }
+
+        /* Hover state - darker brown */
+        .hexagon:not(.empty):hover .hex-inner {
+            background: #8B4513 !important;
+            box-shadow: inset 0 0 0 4px #5d2e0c !important;
+        }
+
+        /* Current members - same colors but can be distinguished by position */
+        .hex-inner.current.postdoc {
+            background: #d68910;
+        }
+
+        .hex-inner.current.phd {
+            background: #e59866;
+        }
+
+        .hex-inner.current.honours {
+            background: #f5b041;
+        }
+
+        .hex-inner.current.masters {
+            background: #dc7633;
+        }
+
+        .hex-content {
+            text-align: center;
+            color: white;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+            padding: 12px;
+        }
+
+        .hex-name {
+            font-size: 0.85em;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            line-height: 1.2;
+        }
+
+        .hex-role {
+            font-size: 0.65em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.85);
+            opacity: 0.9;
+        }
+
+        .hex-research {
+            font-size: 0.68em;
+            opacity: 1;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            font-style: italic;
+            line-height: 1.3;
+            max-height: 3.9em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Modal/Overlay for expanded view */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: #8B4513;
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+
+        .modal-header.postdoc {
+            background: #d68910;
+        }
+
+        .modal-header.phd {
+            background: #e59866;
+        }
+
+        .modal-header.honours {
+            background: #f5b041;
+        }
+
+        .modal-header.masters {
+            background: #dc7633;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-photo {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-name {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .modal-role {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .info-section {
+            margin-bottom: 25px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #d68910;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .info-value a {
+            color: #d68910;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .info-value a:hover {
+            color: #8B4513;
+            text-decoration: underline;
+        }
+
+        .award-badge {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+            box-shadow: 0 2px 8px rgba(243, 156, 18, 0.4);
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .legend-color.postdoc {
+            background: #d68910;
+            box-shadow: inset 0 0 0 2px #a86809;
+        }
+
+        .legend-color.phd {
+            background: #e59866;
+            box-shadow: inset 0 0 0 2px #b8794f;
+        }
+
+        .legend-color.honours {
+            background: #f5b041;
+            box-shadow: inset 0 0 0 2px #c48d34;
+        }
+
+        .legend-color.masters {
+            background: #dc7633;
+            box-shadow: inset 0 0 0 2px #af5e29;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            :root {
+                --hex-width: 110px;
+                --hex-height: 127px;
+                --hex-gap: 8px;
+                --hex-row-gap: -10px;
+                --hex-offset: 41px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .hex-inner {
+                padding: 15px;
+            }
+
+            .hex-name {
+                font-size: 0.7em;
+            }
+
+            .hex-research {
+                font-size: 0.58em;
+            }
+
+            .modal-content {
+                margin: 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 1000;">
+        <a href="../index.html" aria-label="Back to home"
+            style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; text-decoration: none; background: rgba(0,0,0,0.05); color: #333; border-radius: 12px; transition: all 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+        </a>
+    </div>
+
+    <div class="container">
+        <h1>Research Group</h1>
+
+        <div class="section-title">Current Members</div>
+
+        <!-- Current Members -->
+        <div class="honeycomb" id="currentHoneycomb"></div>
+
+        <div class="section-title">Alumni</div>
+
+        <!-- Alumni -->
+        <div class="honeycomb" id="alumniHoneycomb"></div>
+
+
+        <!-- Modal Structure -->
+        <div id="modal" class="modal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header" id="modalHeader">
+                    <span class="close-btn" onclick="closeModal()">&times;</span>
+                    <div style="text-align: center;">
+                        <img id="modalPhoto" class="modal-photo" src="" alt="" style="display: none;">
+                        <div class="modal-name" id="modalName"></div>
+                        <div class="modal-role" id="modalRole"></div>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="info-section" id="yearSection">
+                        <div class="info-label">Year</div>
+                        <div class="info-value" id="modalYear"></div>
+                    </div>
+
+                    <div class="info-section" id="currentSection">
+                        <div class="info-label">Current Position</div>
+                        <div class="info-value" id="modalCurrent"></div>
+                    </div>
+
+                    <div class="info-section" id="webSection">
+                        <div class="info-label">Website</div>
+                        <div class="info-value" id="modalWeb"></div>
+                    </div>
+
+                    <div class="info-section" id="awardSection" style="display: none;">
+                        <div class="info-label">Awards</div>
+                        <div class="info-value" id="modalAwards"></div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="info-label">Research</div>
+                        <div class="info-value" id="modalResearch"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const DATA_URL = 'research_group_data.json';
+            const PERSONS_PER_ROW = 2;
+            const ROW_CELLS = 5;
+            let members = {};
+
+            document.addEventListener('DOMContentLoaded', () => {
+                loadResearchGroup();
+            });
+
+            async function loadResearchGroup() {
+                try {
+                    const response = await fetch(DATA_URL, { cache: 'no-cache' });
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    populateHoneycombs(data);
+                } catch (err) {
+                    console.error('Failed to load research group data', err);
+                    showDataLoadError();
+                }
+            }
+
+            function showDataLoadError() {
+                ['currentHoneycomb', 'alumniHoneycomb'].forEach((id) => {
+                    const container = document.getElementById(id);
+                    if (container) {
+                        container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(228,233,250,0.7);">Unable to load data</div>';
+                    }
+                });
+            }
+
+            function populateHoneycombs(data) {
+                if (!data || !data.members) {
+                    showDataLoadError();
+                    return;
+                }
+
+                members = data.members || {};
+                renderHoneycomb('currentHoneycomb', data.orders?.current || [], true);
+                renderHoneycomb('alumniHoneycomb', data.orders?.alumni || [], false);
+                applyDecorativeHexColors();
+                attachHexFrames();
+                updateHexFrameColors();
+            }
+
+            function renderHoneycomb(containerId, ids, isCurrentSection) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (!ids.length) {
+                    container.innerHTML = '<div class="hex-row"><div class="hexagon empty"><div class="hex-inner"></div></div></div>';
+                    return;
+                }
+
+                addDecorativeRow(container, 'offset', ROW_CELLS);
+
+                let rowIndex = 0;
+                for (let i = 0; i < ids.length; i += PERSONS_PER_ROW) {
+                    const slice = ids.slice(i, i + PERSONS_PER_ROW);
+                    const row = document.createElement('div');
+                    const isOffsetRow = rowIndex % 2 === 1;
+                    const direction = isOffsetRow ? 'left' : 'right';
+
+                    row.className = 'hex-row';
+                    if (direction === 'right') {
+                        row.classList.add('offset-right');
+                    } else {
+                        row.classList.add('offset-left');
+                    }
+
+                    if (direction === 'right') {
+                        row.appendChild(createEmptyHex());
+                    }
+
+                    slice.forEach((id) => {
+                        row.appendChild(createMemberHex(id, isCurrentSection));
+                        if (row.children.length < ROW_CELLS) {
+                            row.appendChild(createEmptyHex());
+                        }
+                    });
+
+                    while (row.children.length < ROW_CELLS) {
+                        row.appendChild(createEmptyHex());
+                    }
+
+                    container.appendChild(row);
+                    rowIndex += 1;
+                }
+
+                addDecorativeRow(container, 'right', ROW_CELLS);
+            }
+
+            function createMemberHex(memberId, isCurrentSection) {
+                const member = members[memberId];
+                if (!member) return createEmptyHex();
+
+                const hex = document.createElement('div');
+                hex.className = 'hexagon';
+                hex.dataset.memberId = memberId;
+                hex.addEventListener('click', () => showModal(memberId));
+
+                const inner = document.createElement('div');
+                inner.className = `hex-inner ${isCurrentSection ? 'current ' : ''}${member.type || ''}`.trim();
+
+                const content = document.createElement('div');
+                content.className = 'hex-content';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'hex-name';
+                nameEl.textContent = member.name;
+
+                const roleEl = document.createElement('div');
+                roleEl.className = 'hex-role';
+                roleEl.textContent = member.role || member.type || '';
+
+                const researchEl = document.createElement('div');
+                researchEl.className = 'hex-research';
+                researchEl.textContent = member.research_area || '';
+
+                content.appendChild(nameEl);
+                if (roleEl.textContent) {
+                    content.appendChild(roleEl);
+                }
+                if (researchEl.textContent) {
+                    content.appendChild(researchEl);
+                }
+
+                inner.appendChild(content);
+                hex.appendChild(inner);
+                return hex;
+            }
+
+            function createEmptyHex() {
+                const hex = document.createElement('div');
+                hex.className = 'hexagon empty';
+                const inner = document.createElement('div');
+                inner.className = 'hex-inner';
+                hex.appendChild(inner);
+                return hex;
+            }
+
+            function addDecorativeRow(container, mode = 'right', cellCount = ROW_CELLS) {
+                const row = document.createElement('div');
+                row.className = 'hex-row';
+                if (mode === 'offset') {
+                    row.classList.add('offset-left');
+                } else if (mode === 'right') {
+                    row.classList.add('offset-right');
+                }
+                for (let i = 0; i < cellCount; i += 1) {
+                    row.appendChild(createEmptyHex());
+                }
+                container.appendChild(row);
+            }
+
+            function applyDecorativeHexColors() {
+                const palette = ['#f6c667', '#f29d35', '#c76d33', '#f1d9b5'];
+                document.querySelectorAll('.hexagon.empty .hex-inner').forEach((inner) => {
+                    const color = palette[Math.floor(Math.random() * palette.length)];
+                    inner.style.background = color;
+                });
+            }
+
+            function attachHexFrames() {
+                const NS = 'http://www.w3.org/2000/svg';
+                const points = '100,0 200,57.5 200,172.5 100,230 0,172.5 0,57.5';
+
+                document.querySelectorAll('.hexagon').forEach((hex) => {
+                    if (hex.querySelector('.hex-frame')) return;
+                    const svg = document.createElementNS(NS, 'svg');
+                    svg.classList.add('hex-frame');
+                    svg.setAttribute('viewBox', '0 0 200 230');
+                    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+                    const polygon = document.createElementNS(NS, 'polygon');
+                    polygon.setAttribute('points', points);
+
+                    svg.appendChild(polygon);
+                    hex.insertBefore(svg, hex.firstChild);
+                });
+            }
+
+            function updateHexFrameColors() {
+                const darken = (rgbString, factor = 0.35) => {
+                    const match = rgbString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+                    if (!match) {
+                        return 'rgba(0, 0, 0, 0.65)';
+                    }
+                    const r = Math.max(0, Math.floor(Number(match[1]) * (1 - factor)));
+                    const g = Math.max(0, Math.floor(Number(match[2]) * (1 - factor)));
+                    const b = Math.max(0, Math.floor(Number(match[3]) * (1 - factor)));
+                    return `rgb(${r}, ${g}, ${b})`;
+                };
+
+                document.querySelectorAll('.hexagon').forEach((hex) => {
+                    const inner = hex.querySelector('.hex-inner');
+                    const border = hex.querySelector('.hex-frame polygon');
+                    if (!inner || !border) return;
+                    const bg = getComputedStyle(inner).backgroundColor;
+                    border.style.stroke = darken(bg);
+                });
+            }
+
+            function showModal(memberId) {
+                const member = members[memberId];
+                if (!member) return;
+                const modal = document.getElementById('modal');
+                const modalHeader = document.getElementById('modalHeader');
+
+                // Set header class based on type
+                modalHeader.className = 'modal-header ' + member.type;
+
+                // Set photo if available
+                const photoEl = document.getElementById('modalPhoto');
+                if (member.photo) {
+                    photoEl.src = member.photo;
+                    photoEl.style.display = 'block';
+                    photoEl.onerror = function () {
+                        this.style.display = 'none';
+                    };
+                } else {
+                    photoEl.style.display = 'none';
+                }
+
+                // Set basic info
+                document.getElementById('modalName').textContent = member.name;
+                document.getElementById('modalRole').textContent = member.role;
+                document.getElementById('modalYear').textContent = member.year;
+                document.getElementById('modalCurrent').textContent = member.current;
+
+                // Set website
+                const webEl = document.getElementById('modalWeb');
+                if (member.web) {
+                    webEl.innerHTML = '<a href="' + member.web + '" target="_blank">' + member.web + '</a>';
+                    document.getElementById('webSection').style.display = 'block';
+                } else {
+                    document.getElementById('webSection').style.display = 'none';
+                }
+
+                // Set awards
+                if (member.awards) {
+                    document.getElementById('modalAwards').innerHTML = '<span class="award-badge">🏆 ' + member.awards + '</span>';
+                    document.getElementById('awardSection').style.display = 'block';
+                } else {
+                    document.getElementById('awardSection').style.display = 'none';
+                }
+
+                // Set research
+                document.getElementById('modalResearch').textContent = member.research;
+
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                const modal = document.getElementById('modal');
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+
+            function closeModalOnBackdrop(event) {
+                if (event.target.id === 'modal') {
+                    closeModal();
+                }
+            }
+
+            // Close modal on escape key
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        </script>
+</body>
+
+</html>

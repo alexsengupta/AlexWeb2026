@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Predator–Prey with Delay — Full Recompute (Forward Euler)</title>
+  <style>
+    :root {
+      --fg: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --bg: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--fg);
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .row label {
+      width: 150px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .val {
+      min-width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    canvas {
+      width: 100%;
+      height: 360px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.prey {
+      background: #16a34a;
+    }
+
+    .dot.pred {
+      background: #ef4444;
+    }
+
+    .dot.phase {
+      background: #0ea5e9;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+
+  <header>
+    <h1>Predator–Prey with Discrete Delay — Full Time Series (Forward Euler)</h1>
+  </header>
+
+  <main>
+    <!-- Controls -->
+    <section class="panel">
+      <h3 style="margin:0 0 8px 0;">Parameters</h3>
+
+      <div class="row"><label for="r">Prey growth r</label>
+        <input id="r" type="range" min="0" max="3" step="0.01" value="1.0" />
+        <div class="val" id="r_val">1.00</div>
+      </div>
+
+      <div class="row"><label for="K">Carrying capacity K</label>
+        <input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0" />
+        <div class="val" id="K_val">1.0</div>
+      </div>
+
+      <div class="row"><label for="m">Attack rate m</label>
+        <input id="m" type="range" min="0" max="5" step="0.01" value="1.0" />
+        <div class="val" id="m_val">1.00</div>
+      </div>
+
+      <div class="row"><label for="s">Predator death s</label>
+        <input id="s" type="range" min="0" max="1" step="0.001" value="0.02" />
+        <div class="val" id="s_val">0.020</div>
+      </div>
+
+      <div class="row"><label for="Y">Conversion Y</label>
+        <input id="Y" type="range" min="0" max="2" step="0.01" value="0.6" />
+        <div class="val" id="Y_val">0.60</div>
+      </div>
+
+      <div class="row"><label for="tau">Delay τ (time)</label>
+        <input id="tau" type="range" min="0" max="200" step="0.1" value="0" />
+        <div class="val" id="tau_val">0.0</div>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Initial conditions & numerics</h3>
+      <div class="row"><label for="x0">Prey x(≤0)</label>
+        <input id="x0" type="range" min="0" max="2" step="0.01" value="0.1" />
+        <div class="val" id="x0_val">0.10</div>
+      </div>
+
+      <div class="row"><label for="y0">Predator y(≤0)</label>
+        <input id="y0" type="range" min="0" max="2" step="0.01" value="0.1" />
+        <div class="val" id="y0_val">0.10</div>
+      </div>
+
+      <div class="row"><label for="dt">Time step Δt</label>
+        <input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.01" />
+        <div class="val" id="dt_val">0.0100</div>
+      </div>
+
+      <div class="row"><label for="T">Duration T</label>
+        <input id="T" type="range" min="50" max="5000" step="10" value="1200" />
+        <div class="val" id="T_val">1200</div>
+      </div>
+
+      <div class="btns">
+        <button id="export">Export CSV</button>
+      </div>
+
+      <p class="small" style="margin-top:10px;">
+        <strong>Model (unscaled):</strong>
+        <span>dx/dt = r·x·(1 − x/K) − m·x·y</span>,
+        <span>dy/dt = −s·y + Y·e<sup>−sτ</sup>·m·x(t−τ)·y(t−τ)</span>.
+        Forward Euler; delay index <em>d = round(τ/Δt)</em>. History for <em>t ≤ 0</em>: x = x₀, y = y₀.
+      </p>
+      <p class="small">If curves look numerically unstable, reduce Δt.</p>
+    </section>
+
+    <!-- Plots -->
+    <section class="panel">
+      <h3 style="margin:0 0 8px 0;">Time series</h3>
+      <canvas id="ts"></canvas>
+      <div class="legend">
+        <span class="dot prey"></span> Prey x(t)
+        <span class="dot pred"></span> Predator y(t)
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 style="margin:0 0 8px 0;">Phase plane (x vs y)</h3>
+      <canvas id="phase"></canvas>
+      <div class="legend"><span class="dot phase"></span> Trajectory</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      // --- Elements & state ---
+      const el = id => document.getElementById(id);
+      const sliders = ["r", "K", "m", "s", "Y", "tau", "x0", "y0", "dt", "T"];
+      const state = {};
+      let ts = [], xs = [], ys = [];
+
+      // canvases
+      const tsCanvas = el("ts"), tsCtx = tsCanvas.getContext("2d");
+      const phCanvas = el("phase"), phCtx = phCanvas.getContext("2d");
+
+      function resizeCanvases() {
+        const setSize = (cv) => {
+          const rect = cv.getBoundingClientRect();
+          cv.width = Math.max(600, Math.round(rect.width * devicePixelRatio));
+          cv.height = Math.max(250, Math.round(rect.height * devicePixelRatio));
+        };
+        setSize(tsCanvas); setSize(phCanvas);
+        drawAll();
+      }
+      window.addEventListener("resize", resizeCanvases, { passive: true });
+
+      function syncVal(id) {
+        const v = parseFloat(el(id).value);
+        state[id] = v;
+        const target = el(id + "_val");
+        if (!target) return;
+        let text;
+        if (id === "K" || id === "T") text = v.toFixed(0);
+        else if (id === "s") text = v.toFixed(3);
+        else if (id === "dt") text = v.toFixed(4);
+        else if (id === "tau") text = v.toFixed(1);
+        else text = v.toFixed(2);
+        target.textContent = text;
+      }
+
+      sliders.forEach(id => {
+        syncVal(id);
+        el(id).addEventListener("input", () => { syncVal(id); recompute(); });
+      });
+
+      // --- Simulation (full recompute) ---
+      function recompute() {
+        const r = state.r, K = state.K, m = state.m, s = state.s, Y = state.Y, tau = state.tau;
+        const x0 = state.x0, y0 = state.y0, dt = state.dt, T = state.T;
+
+        // guardrails
+        const N = Math.max(2, Math.floor(T / dt) + 1);
+        const d = Math.max(0, Math.round(tau / dt));
+
+        xs = new Array(N + d);
+        ys = new Array(N + d);
+        ts = new Array(N + d);
+
+        // fill history for t ≤ 0
+        for (let i = 0; i < d; i++) {
+          xs[i] = x0; ys[i] = y0; ts[i] = (i - d) * dt; // negative times
+        }
+
+        // set initial current point at t=0
+        xs[d] = x0; ys[d] = y0; ts[d] = 0;
+
+        // integrate forward
+        for (let n = d; n < d + N - 1; n++) {
+          const x = xs[n], y = ys[n];
+          const xd = xs[n - d], yd = ys[n - d]; // delayed
+          const dx = r * x * (1 - x / K) - m * x * y;
+          const dy = -s * y + Y * Math.exp(-s * tau) * m * xd * yd;
+          const xn = Math.max(0, x + dt * dx);
+          const yn = Math.max(0, y + dt * dy);
+          xs[n + 1] = xn; ys[n + 1] = yn; ts[n + 1] = ts[n] + dt;
+        }
+
+        // trim off the negative-time history for plotting/export
+        if (d > 0) {
+          xs = xs.slice(d); ys = ys.slice(d); ts = ts.slice(d);
+        }
+        drawAll();
+      }
+
+      // --- Plotting ---
+      function autoscale(arr, pad = 0.08) {
+        let min = Infinity, max = -Infinity;
+        for (let v of arr) { if (Number.isFinite(v)) { if (v < min) min = v; if (v > max) max = v; } }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) { min = 0; max = 1; }
+        if (Math.abs(max - min) < 1e-12) { max = min + 1; }
+        const span = max - min;
+        return { min: Math.max(0, min - pad * span), max: max + pad * span };
+      }
+
+      function drawAll() { drawTimeSeries(); drawPhase(); }
+
+      function drawTimeSeries() {
+        const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // axes
+        ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(40, 10); ctx.lineTo(40, H - 30); ctx.lineTo(W - 10, H - 30); ctx.stroke();
+
+        const tmin = 0, tmax = ts.length ? ts[ts.length - 1] : state.T;
+        const xRange = autoscale([...xs, ...ys]);
+
+        const sx = v => 40 + (W - 50) * (v - tmin) / (tmax - tmin + 1e-12);
+        const sy = v => (H - 30) - (H - 40) * (v - xRange.min) / (xRange.max - xRange.min + 1e-12);
+
+        // labels
+        ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText("t", W - 24, H - 10);
+        ctx.save(); ctx.translate(12, 18); ctx.rotate(-Math.PI / 2); ctx.fillText("population", 0, 0); ctx.restore();
+
+        // prey
+        ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < xs.length; i++) { const px = sx(ts[i]); const py = sy(xs[i]); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+
+        // predator
+        ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < ys.length; i++) { const px = sx(ts[i]); const py = sy(ys[i]); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+
+        // series tags
+        ctx.fillStyle = "#16a34a"; ctx.fillText("x(t)", 50, 18);
+        ctx.fillStyle = "#ef4444"; ctx.fillText("y(t)", 86, 18);
+      }
+
+      function drawPhase() {
+        const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // axes
+        ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(40, 10); ctx.lineTo(40, H - 30); ctx.lineTo(W - 10, H - 30); ctx.stroke();
+
+        const xr = autoscale(xs), yr = autoscale(ys);
+        const sx = v => 40 + (W - 50) * (v - xr.min) / (xr.max - xr.min + 1e-12);
+        const sy = v => (H - 30) - (H - 40) * (v - yr.min) / (yr.max - yr.min + 1e-12);
+
+        ctx.strokeStyle = "#0ea5e9"; ctx.lineWidth = 1.4; ctx.beginPath();
+        for (let i = 0; i < xs.length; i++) { const px = sx(xs[i]); const py = sy(ys[i]); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+
+        ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText("prey x", 50, 18);
+        ctx.save(); ctx.translate(12, 60); ctx.rotate(-Math.PI / 2); ctx.fillText("predator y", 0, 0); ctx.restore();
+      }
+
+      // --- Export ---
+      el("export").addEventListener("click", () => {
+        let csv = "t,x,y\n";
+        for (let i = 0; i < ts.length; i++) csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "pred_prey_delay.csv";
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+      });
+
+      // initial layout + compute
+      resizeCanvases();
+      recompute();
+    })();
+  </script>
+</body>
+
+</html>

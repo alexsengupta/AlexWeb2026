@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synthetic SST Generator</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" defer></script>
+</head>
+
+<body>
+  <main>
+    <header>
+      <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+        <a href="../../../app_playground.html"
+          style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Playground
+        </a>
+        <a href="../../../index.html"
+          style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Home
+        </a>
+      </div>
+      <h1>Synthetic SST Generator</h1>
+      <p>Load a daily SST time series, compute diagnostics, and export a synthetic series.</p>
+    </header>
+
+    <section class="top-panels">
+      <div class="panel controls-panel">
+        <div class="control-group">
+          <label for="fileInput">SST CSV input</label>
+          <input id="fileInput" type="file" accept=".csv" />
+          <small>Columns required: time, sst (lat/lon optional). A sample dataset loads automatically for
+            testing.</small>
+        </div>
+        <div class="control-group">
+          <label for="yearsInput">Synthetic years</label>
+          <input id="yearsInput" type="number" min="1" max="10000" value="1000" />
+        </div>
+        <button id="runButton" type="button">Generate Synthetic SST</button>
+        <div id="status" role="status">Loading Pyodide…</div>
+      </div>
+
+      <div class="panel data-preview">
+        <h2>Input Data Preview</h2>
+        <div class="table-container">
+          <table id="dataTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="preview-actions">
+          <button id="viewRawButton" type="button" disabled>View Raw Timeseries</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="equations panel" id="equationsSection" hidden>
+      <div class="equations-header">
+        <button id="equationsToggle" type="button" aria-expanded="true" aria-controls="equationsContent">▽</button>
+        <h2>Synthetic Model</h2>
+        <button id="helpButton" type="button" aria-haspopup="dialog">Help</button>
+      </div>
+      <div id="equationsContent" class="equations-body">
+        <!-- MathJax content injected here -->
+      </div>
+    </section>
+
+    <section class="plots" id="plotsSection" hidden>
+      <h2>Diagnostics</h2>
+      <div class="plot-card">
+        <h3>Observed vs Synthetic SSTA</h3>
+        <div id="plot-first3" class="plot"></div>
+      </div>
+      <div class="plot-card">
+        <h3>Seasonal Cycle of Daily Variance</h3>
+        <div id="plot-variance" class="plot"></div>
+      </div>
+      <div class="plot-card">
+        <h3>ACF (0–60 days) — anomalies</h3>
+        <div id="plot-acf" class="plot"></div>
+      </div>
+    </section>
+
+    <section class="download panel" id="downloadSection" hidden>
+      <h2>Download Synthetic Series</h2>
+      <button id="downloadButton" type="button" disabled>Download CSV</button>
+      <p id="fitSummary"></p>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+
+  <div id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <header>
+        <h2 id="helpTitle">How the Synthetic SST is Generated</h2>
+        <button id="closeHelpButton" type="button" aria-label="Close">×</button>
+      </header>
+      <div class="modal-body">
+        <p>
+          The workflow follows the conceptual model outlined in <em>synthetic_SST_zijie.pdf</em>.
+          Key steps:
+        </p>
+        <ol>
+          <li>Derive a seasonal climatology using harmonic regression and remove a linear trend to obtain anomalies.
+          </li>
+          <li>Estimate the seasonal cycle of variance via log-harmonic regression, yielding daily scale factors.</li>
+          <li>Standardise anomalies by those scale factors and fit an ARMA(1,1) process that captures high-frequency
+            variability.</li>
+          <li>Calibrate a slow AR(1) component against the observed 10–60 day autocorrelation, then mix the two
+            processes.</li>
+          <li>Simulate the mixed process for the requested number of years, rescale by the seasonal variance, and add
+            back the harmonic seasonal mean.</li>
+          <li>Diagnostics compare observed and synthetic anomalies, daily variance, and the lag-0–60 autocorrelation.
+          </li>
+        </ol>
+        <p>
+          The resulting series preserves the seasonal mean, variance structure, and autocorrelation characteristics of
+          the input record while extending it synthetically.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

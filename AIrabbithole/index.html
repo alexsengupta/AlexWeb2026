@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Down the AI Rabbit Hole | Alex Sen Gupta</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-start: #020513;
+      --bg-end: #0f1c2f;
+      --accent: #7ff8ff;
+      --accent-2: #ff72d0;
+      --panel: rgba(6, 12, 28, 0.85);
+      font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(255, 114, 208, 0.15), transparent 45%),
+        radial-gradient(circle at 80% 0%, rgba(69, 168, 255, 0.2), transparent 35%),
+        linear-gradient(140deg, var(--bg-start), var(--bg-end));
+      color: #f5fcff;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+      background-size: 120px 120px;
+      opacity: 0.15;
+      animation: drift 30s linear infinite;
+      pointer-events: none;
+    }
+
+    body::after {
+      animation-duration: 45s;
+      background-size: 180px 180px;
+      opacity: 0.1;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-200px);
+      }
+    }
+
+    .particle-field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle-field span {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.8);
+      animation: twinkle var(--duration) linear infinite;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+      opacity: 0.7;
+    }
+
+    @keyframes twinkle {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.3;
+      }
+
+      50% {
+        transform: translateY(-15px) scale(1.4);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.3;
+      }
+    }
+
+    .data-stream {
+      position: absolute;
+      left: -30%;
+      top: 50%;
+      width: 160%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(127, 248, 255, 0.45), transparent);
+      filter: blur(0.4px);
+      animation: stream 6s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes stream {
+      from {
+        transform: translateX(-10%) rotate(2deg);
+        opacity: 0;
+      }
+
+      30% {
+        opacity: 1;
+      }
+
+      to {
+        transform: translateX(10%) rotate(2deg);
+        opacity: 0;
+      }
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: clamp(20px, 5vw, 60px);
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .hero {
+      border-radius: 28px;
+      padding: clamp(24px, 4vw, 48px);
+      border: 1px solid rgba(127, 248, 255, 0.25);
+      box-shadow: 0 25px 60px rgba(2, 6, 20, 0.65);
+      position: relative;
+      overflow: hidden;
+      min-height: 260px;
+      background: linear-gradient(135deg, rgba(4, 10, 26, 0.95), rgba(4, 6, 18, 0.85));
+    }
+
+    #wormholeCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      opacity: 0.9;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+      }
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .home-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(100, 255, 251, 0.25), rgba(36, 68, 146, 0.95));
+      border: 1px solid rgba(127, 248, 255, 0.4);
+      box-shadow: 0 8px 20px rgba(8, 12, 32, 0.7);
+      text-decoration: none;
+    }
+
+    .home-chip svg {
+      width: 26px;
+      height: 26px;
+      fill: #e8f9ff;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      display: none;
+    }
+
+    h2.section-title {
+      margin: 0 0 18px;
+      font-size: 1.8rem;
+      letter-spacing: 0.04em;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: 22px;
+      border: 1px solid rgba(127, 248, 255, 0.2);
+      padding: clamp(20px, 3vw, 36px);
+      box-shadow: 0 18px 40px rgba(3, 6, 18, 0.65);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .module-card {
+      background: linear-gradient(140deg, rgba(18, 32, 52, 0.9), rgba(9, 15, 30, 0.9));
+      border-radius: 18px;
+      padding: 20px;
+      border: 1px solid rgba(255, 114, 208, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .module-card::before {
+      content: '';
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(255, 114, 208, 0.35), transparent 60%);
+      top: -50px;
+      right: -30px;
+      opacity: 0.4;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+    }
+
+    .module-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .module-card p {
+      margin: 0;
+      color: rgba(233, 244, 255, 0.85);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .module-links {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .module-card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .module-card a::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -2px;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: 0.6;
+    }
+
+    .conversation-stream {
+      display: grid;
+      gap: 14px;
+    }
+
+    .conversation-card {
+      background: rgba(8, 16, 36, 0.9);
+      border: 1px solid rgba(127, 248, 255, 0.2);
+      border-radius: 16px;
+      padding: 18px;
+      display: grid;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .conversation-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    .conversation-card::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 60%);
+      mix-blend-mode: screen;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .conversation-card:hover::after {
+      opacity: 1;
+    }
+
+    .conversation-card h4 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .conversation-meta {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    .conversation-card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      align-self: flex-start;
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .signal-card {
+      background: rgba(20, 24, 48, 0.9);
+      border: 1px solid rgba(255, 114, 208, 0.3);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .signal-card a {
+      color: white;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--accent-2), var(--accent));
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .status-footer {
+      background: rgba(7, 10, 26, 0.95);
+      border-radius: 20px;
+      border: 1px solid rgba(127, 248, 255, 0.2);
+      padding: 22px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      font-size: 0.9rem;
+    }
+
+    .status-footer span {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.6;
+      font-size: 0.75rem;
+    }
+
+    .status-footer strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    @media (max-width: 700px) {
+      .hero-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="particle-field" aria-hidden="true">
+    <span style="top:10%;left:15%;--duration:8s"></span>
+    <span style="top:35%;left:70%;--duration:12s"></span>
+    <span style="top:60%;left:30%;--duration:10s"></span>
+    <span style="top:80%;left:55%;--duration:14s"></span>
+    <span style="top:25%;left:85%;--duration:9s"></span>
+  </div>
+  <div class="wrapper">
+    <header class="hero" aria-labelledby="hero-title">
+      <canvas id="wormholeCanvas" aria-hidden="true"></canvas>
+      <div class="hero-top">
+        <div style="margin-bottom: 20px;">
+          <a class="home-chip" href="../index.html" aria-label="Back to home">
+            <svg viewBox="0 0 24 24">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+        </div>
+        <div>
+          <span style="opacity:0.7; letter-spacing:0.6em; font-size:0.75rem; text-transform:uppercase;">Alex Sen
+            Gupta</span>
+          <h1 id="hero-title">Down the AI Rabbit Hole</h1>
+        </div>
+      </div>
+    </header>
+
+    <section class="panel" aria-labelledby="apps-title">
+      <h2 id="apps-title" class="section-title">AI Lab Modules</h2>
+      <div class="grid">
+        <a href="claude_PhD_conversation.html" class="module-card" style="text-decoration: none; color: inherit;">
+          <img src="PhD_matix.png" alt="Reimagining the PhD in the age of AI"
+            style="width: 100%; border-radius: 10px; margin-bottom: 12px;">
+          <h3>Reimagining the PhD in the Age of AI</h3>
+          <p>A conversation with a future AI research assistant about how AI will reshape doctoral training.</p>
+        </a>
+
+        <a href="conceptual_models.html" class="module-card" style="text-decoration: none; color: inherit;">
+          <img src="conceptual_model_AI.png" alt="Conceptual Models with AI"
+            style="width: 100%; border-radius: 10px; margin-bottom: 12px;">
+          <h3>Conceptual Models</h3>
+          <p>Ever wondered how scientists predict climate change or how epidemiologists model disease spread? They use
+            conceptual models - basically simplified versions of reality that capture the important bits.</p>
+        </a>
+
+        <a href="../app_playground.html" class="module-card" style="text-decoration: none; color: inherit;">
+          <img src="web_apps.jpg" alt="AI Augmented Apps"
+            style="width: 100%; border-radius: 10px; margin-bottom: 12px;">
+          <h3>AI Augmented Apps</h3>
+          <p>These apps were built with the the help of Claude, AI Studio or ChatGPT. They demonstrate how we can easily
+            build apps that can help us with teaching & research.</p>
+        </a>
+      </div>
+    </section>
+
+
+  </div>
+  <script>
+    (() => {
+      const canvas = document.getElementById('wormholeCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0, centerX = 0, centerY = 0;
+      let stars = [];
+      let time = 0;
+      const speed = 2;
+      const STAR_COUNT = 700;
+
+      const resize = () => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        width = rect.width;
+        height = rect.height;
+        centerX = width / 2;
+        centerY = height / 2;
+        initStars();
+      };
+
+      const initStars = () => {
+        stars = [];
+        for (let i = 0; i < STAR_COUNT; i++) {
+          stars.push({
+            x: Math.random() * width - centerX,
+            y: Math.random() * height - centerY,
+            z: Math.random() * width,
+            color: Math.random() > 0.7
+              ? `hsl(${180 + Math.random() * 60}, 70%, ${50 + Math.random() * 30}%)`
+              : `rgba(255, 255, 255, ${0.5 + Math.random() * 0.5})`
+          });
+        }
+      };
+
+      const draw = () => {
+        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.max(width, height));
+        gradient.addColorStop(0, '#040615');
+        gradient.addColorStop(0.6, '#01030a');
+        gradient.addColorStop(1, '#000000');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        const bendX = Math.sin(time * 0.003) * Math.min(width, height) * 0.12;
+        const bendY = Math.cos(time * 0.002) * Math.min(width, height) * 0.08;
+        ctx.save();
+        ctx.translate(centerX + bendX, centerY + bendY);
+        const spirals = 3;
+        for (let s = 0; s < spirals; s++) {
+          ctx.beginPath();
+          const rotation = (time * 0.001) + (s * Math.PI * 2 / spirals);
+          for (let i = 0; i < 100; i++) {
+            const t = i / 100;
+            const angle = rotation + t * Math.PI * 8;
+            const radius = t * Math.min(width, height) * 0.6;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          const alpha = 0.02 + Math.sin(time * 0.002 + s) * 0.01;
+          ctx.strokeStyle = `rgba(100, 150, 255, ${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        stars.forEach((star) => {
+          star.z -= speed;
+          if (star.z <= 0) {
+            star.x = Math.random() * width - centerX;
+            star.y = Math.random() * height - centerY;
+            star.z = width;
+          }
+
+          const k = 128 / star.z;
+          const distance = Math.sqrt(star.x ** 2 + star.y ** 2);
+          const distortion = (distance / width) * 0.3 * Math.sin(time * 0.001);
+          const angle = Math.atan2(star.y, star.x) + distortion;
+          const bendOffsetX = Math.sin(time * 0.003 + star.z * 0.01) * 80;
+          const bendOffsetY = Math.cos(time * 0.002 + star.z * 0.008) * 50;
+          const distortedX = centerX + Math.cos(angle) * distance * k + bendOffsetX;
+          const distortedY = centerY + Math.sin(angle) * distance * k + bendOffsetY;
+          const size = Math.max((1 - star.z / width) * 3, 0.4);
+
+          if (star.z < width * 0.8) {
+            const dx = (centerX + bendX) - distortedX;
+            const dy = (centerY + bendY) - distortedY;
+            const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 0.001);
+            const trailLength = size * 8;
+            const trailEndX = distortedX + (dx / dist) * trailLength;
+            const trailEndY = distortedY + (dy / dist) * trailLength;
+            ctx.beginPath();
+            ctx.moveTo(distortedX, distortedY);
+            ctx.lineTo(trailEndX, trailEndY);
+            ctx.strokeStyle = star.color.replace(/[\d.]+\)$/, '0.3)');
+            ctx.lineWidth = size * 0.6;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(distortedX, distortedY, size, 0, Math.PI * 2);
+          ctx.fillStyle = star.color;
+          ctx.fill();
+
+          if (size > 1.4) {
+            ctx.beginPath();
+            ctx.arc(distortedX, distortedY, size * 2, 0, Math.PI * 2);
+            const glowAlpha = (size / 3) * 0.3;
+            ctx.fillStyle = star.color.replace(/[\d.]+\)$/,
+              `${glowAlpha})`);
+            ctx.fill();
+          }
+        });
+
+        const glowX = centerX + bendX;
+        const glowY = centerY + bendY;
+        const centerGlow = ctx.createRadialGradient(glowX, glowY, 0, glowX, glowY, Math.min(width, height) * 0.25);
+        centerGlow.addColorStop(0, 'rgba(150, 200, 255, 0.1)');
+        centerGlow.addColorStop(0.5, 'rgba(100, 150, 255, 0.05)');
+        centerGlow.addColorStop(1, 'rgba(50, 100, 200, 0)');
+        ctx.fillStyle = centerGlow;
+        ctx.fillRect(0, 0, width, height);
+
+        time++;
+        requestAnimationFrame(draw);
+      };
+
+      resize();
+      window.addEventListener('resize', () => {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        resize();
+      });
+      draw();
+    })();
+  </script>
+</body>
+
+</html>

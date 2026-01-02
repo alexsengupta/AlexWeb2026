@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0, .st1 {
+        fill: #df7926;
+      }
+
+      .st1 {
+        opacity: .15;
+      }
+
+      .st1, .st2, .st3, .st4, .st5 {
+        isolation: isolate;
+      }
+
+      .st1, .st2, .st6 {
+        stroke-width: 1.5px;
+      }
+
+      .st1, .st7, .st6 {
+        stroke: #df7926;
+      }
+
+      .st8, .st2, .st3, .st4, .st5 {
+        fill: #486072;
+      }
+
+      .st9 {
+        fill: #f4f4f4;
+      }
+
+      .st10 {
+        fill: #aec2d3;
+      }
+
+      .st2 {
+        opacity: .49;
+      }
+
+      .st2, .st11 {
+        stroke: #486072;
+      }
+
+      .st7 {
+        stroke-width: 1.8px;
+      }
+
+      .st7, .st6, .st11 {
+        fill: none;
+      }
+
+      .st12 {
+        fill: #e8b84a;
+      }
+
+      .st3 {
+        opacity: .4;
+      }
+
+      .st4 {
+        opacity: .65;
+      }
+
+      .st13 {
+        fill: #5eb86c;
+      }
+
+      .st5 {
+        opacity: .18;
+        stroke: #003556;
+        stroke-width: 1.2px;
+      }
+
+      .st6, .st11 {
+        stroke-linecap: round;
+      }
+
+      .st11 {
+        stroke-linejoin: round;
+        stroke-width: 2.5px;
+      }
+
+      .st14 {
+        fill: #e05d5d;
+      }
+    </style>
+  </defs>
+  <rect class="st9" x="4.43" y="22.38" width="70.59" height="48.63"/>
+  <rect class="st10" x="4.43" y="9.27" width="70.59" height="12.69"/>
+  <rect class="st11" x="3.94" y="8.45" width="72.1" height="63.09" rx="4" ry="4"/>
+  <line class="st11" x1="3.94" y1="21.97" x2="76.04" y2="21.97"/>
+  <circle class="st14" cx="12.96" cy="15.21" r="2.82"/>
+  <circle class="st12" cx="21.97" cy="15.21" r="2.82"/>
+  <circle class="st13" cx="30.98" cy="15.21" r="2.82"/>
+  <path class="st4" d="M45.63,11.83h20.28c1.87,0,3.38,1.51,3.38,3.38h0c0,1.87-1.51,3.38-3.38,3.38h-20.28c-1.87,0-3.38-1.51-3.38-3.38h0c0-1.87,1.51-3.38,3.38-3.38Z"/>
+  <rect class="st2" x="10.7" y="28.73" width="24.78" height="18.02" rx="2" ry="2"/>
+  <rect class="st1" x="44.5" y="28.73" width="24.78" height="18.02" rx="2" ry="2"/>
+  <polygon class="st8" points="19.71 34.36 19.71 43.37 27.6 38.87 19.71 34.36"/>
+  <circle class="st7" cx="56.89" cy="37.74" r="4.51"/>
+  <g>
+    <line class="st6" x1="56.89" y1="30.98" x2="56.89" y2="33.23"/>
+    <line class="st6" x1="56.89" y1="42.25" x2="56.89" y2="44.5"/>
+    <line class="st6" x1="50.13" y1="37.74" x2="52.38" y2="37.74"/>
+    <line class="st6" x1="61.4" y1="37.74" x2="63.65" y2="37.74"/>
+    <line class="st6" x1="52.16" y1="33.01" x2="53.74" y2="34.59"/>
+    <line class="st6" x1="60.05" y1="40.89" x2="61.62" y2="42.47"/>
+    <line class="st6" x1="52.16" y1="42.47" x2="53.74" y2="40.89"/>
+    <line class="st6" x1="60.05" y1="34.59" x2="61.62" y2="33.01"/>
+  </g>
+  <rect class="st5" x="10.7" y="53.51" width="58.58" height="11.27" rx="2" ry="2"/>
+  <circle class="st0" cx="19.71" cy="59.14" r="2.25"/>
+  <rect class="st3" x="28.73" y="56.89" width="9.01" height="4.51" rx="1" ry="1"/>
+  <rect class="st3" x="42.25" y="56.89" width="9.01" height="4.51" rx="1" ry="1"/>
+  <polygon class="st0" points="58.02 56.89 62.52 59.14 58.02 61.4 58.02 56.89"/>
+</svg>

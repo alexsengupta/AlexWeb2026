@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Alex Sen Gupta - Paper Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Color Variables - Earthy Forest Green/Terracotta/Brown Theme */
+    :root {
+      --primary: #1e5245;
+      /* Deep Forest Green */
+      --primary-dark: #163d33;
+      /* Darker Forest */
+      --primary-light: #2d6b5a;
+      /* Light Forest Green */
+      --accent: #c4704f;
+      /* Warm Terracotta */
+      --accent-light: #d4886b;
+      /* Light Terracotta */
+      --secondary: #8b5a3c;
+      /* Rich Brown */
+      --secondary-light: #a87454;
+      /* Light Brown */
+      --highlight: #d4a574;
+      /* Warm Sand/Tan */
+      --dark: #3e2723;
+      /* Deep Chocolate Brown */
+      --bg-gradient-start: #f5f1ed;
+      /* Warm Cream */
+      --bg-gradient-end: #e8e3db;
+      /* Warm Beige */
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      min-height: 100vh;
+    }
+
+    /* Animated Home Button */
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      box-shadow: 0 4px 12px rgba(30, 82, 69, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .home-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+    }
+
+    .home-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 24px rgba(30, 82, 69, 0.4);
+    }
+
+    .home-btn:hover::before {
+      width: 100px;
+      height: 100px;
+      top: -25px;
+      left: -25px;
+    }
+
+    .home-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.3s ease;
+    }
+
+    .home-btn:hover svg {
+      transform: scale(1.15) rotate(-5deg);
+    }
+
+    /* Card Improvements - Earthy tones */
+    .card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid transparent;
+      background: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 50%, var(--secondary) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 16px 32px rgba(30, 82, 69, 0.2);
+      transform: translateY(-6px);
+      border-color: var(--primary-light);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    /* Header gradient background */
+    .header-bg {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.06) 0%, rgba(196, 112, 79, 0.06) 100%);
+      border-bottom: 2px solid;
+      border-image: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%) 1;
+    }
+
+    /* Button Styles - Earthy gradients */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      box-shadow: 0 6px 16px rgba(30, 82, 69, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+      box-shadow: 0 6px 16px rgba(196, 112, 79, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* Chip Improvements - Earthy */
+    .chip-active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(30, 82, 69, 0.3);
+    }
+
+    .chip-inactive {
+      background: white;
+      color: #5d4e37;
+      border-color: #d4c4b0;
+    }
+
+    .chip-inactive:hover {
+      border-color: var(--primary-light);
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.05) 0%, rgba(196, 112, 79, 0.05) 100%);
+    }
+
+    /* Filter boxes with earthy backgrounds */
+    .filter-box {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.04) 0%, rgba(196, 112, 79, 0.04) 100%);
+      border: 1px solid rgba(30, 82, 69, 0.15);
+    }
+
+    /* Active filters badge */
+    .active-filter-badge {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+      box-shadow: 0 2px 8px rgba(196, 112, 79, 0.3);
+    }
+
+    /* Year badge on cards */
+    .year-badge {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+      color: white;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 2px 4px rgba(139, 90, 60, 0.3);
+    }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .backdrop {
+      background: rgba(30, 82, 69, 0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .backdrop.open {
+      opacity: 1;
+    }
+
+    .modal {
+      transform: translateY(10px);
+      opacity: 0;
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+
+    .modal.open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Dual-handle range slider - Earthy gradient */
+    .range-slider-container {
+      position: relative;
+      height: 40px;
+    }
+
+    .range-slider-track {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, #e8dfd0 0%, #f0e6d8 100%);
+      border-radius: 4px;
+    }
+
+    .range-slider-range {
+      position: absolute;
+      height: 8px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(30, 82, 69, 0.3);
+    }
+
+    .range-slider-input {
+      position: absolute;
+      width: 100%;
+      height: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+
+    .range-slider-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 3px solid white;
+      box-shadow: 0 3px 8px rgba(30, 82, 69, 0.5);
+    }
+
+    .range-slider-input::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 3px solid white;
+      box-shadow: 0 3px 8px rgba(30, 82, 69, 0.5);
+    }
+
+    .range-slider-input:focus {
+      outline: none;
+    }
+
+    /* Keyword tags with earthy colors */
+    .keyword-tag {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.1) 0%, rgba(196, 112, 79, 0.1) 100%);
+      border-color: rgba(30, 82, 69, 0.25);
+      color: var(--dark);
+    }
+
+    /* Clear filters button */
+    .btn-clear-active {
+      background: linear-gradient(135deg, #c4704f 0%, #8b5a3c 100%);
+      box-shadow: 0 2px 8px rgba(196, 112, 79, 0.3);
+    }
+
+    .btn-clear-active:hover {
+      background: linear-gradient(135deg, #8b5a3c 0%, #c4704f 100%);
+      box-shadow: 0 4px 12px rgba(196, 112, 79, 0.4);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <!-- React 18 (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for in-browser JSX (fine for demos) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
+
+    // ------- Parse MD files to extract paper data -------
+    function parseMarkdownFile(filename, content) {
+      const lines = content.split('\n');
+      const paper = {
+        id: filename.replace('.md', '').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        title: '',
+        authors: [],
+        year: null,
+        venue: '',
+        keywords: [],
+        summary: '',
+        doi: '',
+        link: '',
+        filename: filename
+      };
+
+      let inQuickSummary = false;
+      let inDetailedBriefing = false;
+      let summaryLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Extract metadata
+        if (line.startsWith('**Title:**')) {
+          paper.title = line.replace('**Title:**', '').trim();
+        } else if (line.startsWith('**Authors:**')) {
+          const authorsText = line.replace('**Authors:**', '').trim();
+          if (authorsText && authorsText !== 'Not found') {
+            paper.authors = authorsText.split(';').map(a => a.trim()).filter(Boolean);
+          }
+        } else if (line.startsWith('**Year:**')) {
+          const yearText = line.replace('**Year:**', '').trim();
+          paper.year = yearText && yearText !== 'Not found' ? parseInt(yearText, 10) : null;
+        } else if (line.startsWith('**Journal/Conference:**')) {
+          const venue = line.replace('**Journal/Conference:**', '').trim();
+          paper.venue = venue !== 'Not found' ? venue : '';
+        } else if (line.startsWith('**Keywords:**')) {
+          const keywordsText = line.replace('**Keywords:**', '').trim();
+          if (keywordsText && keywordsText !== 'Not found') {
+            paper.keywords = keywordsText.split(',').map(k => k.trim()).filter(k => k && k !== 'Not found');
+          }
+        } else if (line.startsWith('**DOI:**')) {
+          const doi = line.replace('**DOI:**', '').trim();
+          paper.doi = doi !== 'Not found' ? doi : '';
+          if (paper.doi && !paper.doi.startsWith('http')) {
+            paper.link = `https://doi.org/${paper.doi}`;
+          }
+        }
+
+        // Extract quick summary for preview
+        if (line.includes('## Quick Summary')) {
+          inQuickSummary = true;
+          inDetailedBriefing = false;
+          summaryLines = [];
+        } else if (line.includes('## Detailed Briefing')) {
+          inQuickSummary = false;
+          inDetailedBriefing = true;
+        } else if (line === '---' && inQuickSummary) {
+          inQuickSummary = false;
+        } else if (inQuickSummary && line.trim() && !line.startsWith('#')) {
+          summaryLines.push(line.trim());
+        }
+      }
+
+      paper.summary = summaryLines.join(' ').substring(0, 300); // First 300 chars
+
+      // If no title found, try to extract from filename
+      if (!paper.title) {
+        paper.title = filename.replace('.md', '').replace(/_/g, ' ');
+      }
+
+      return paper;
+    }
+
+    async function loadPapersFromManifest() {
+      try {
+        const manifestResponse = await fetch('./pdf-summarizer/summaries/manifest.json');
+        if (!manifestResponse.ok) {
+          throw new Error('Manifest file not found. Please run: python pdf-summarizer/create_manifest.py');
+        }
+
+        const manifest = await manifestResponse.json();
+        const papers = await Promise.all(
+          manifest.files.map(async (filename) => {
+            try {
+              // Properly encode the filename for the URL
+              const encodedFilename = encodeURIComponent(filename);
+              const response = await fetch(`./pdf-summarizer/summaries/${encodedFilename}`);
+              if (!response.ok) {
+                console.warn(`Failed to load ${filename}: ${response.status} ${response.statusText}`);
+                return null;
+              }
+              const content = await response.text();
+              return parseMarkdownFile(filename, content);
+            } catch (err) {
+              console.error(`Error loading ${filename}:`, err);
+              return null;
+            }
+          })
+        );
+
+        return papers.filter(p => p !== null && p.title);
+      } catch (error) {
+        console.error('Error loading papers:', error);
+        return [];
+      }
+    }
+
+    // ------- Utils -------
+    const uniq = (arr) => Array.from(new Set(arr));
+    const normalize = (s) => (s || "").toLowerCase();
+
+    // Normalize author names: "Sen Gupta, Alexander" → "Sen Gupta, A."
+    // This helps group "Sen Gupta, A", "Sen Gupta, Alex", "Sen Gupta, Alexander"
+    function normalizeAuthorName(name) {
+      if (!name) return '';
+      const parts = name.split(',').map(p => p.trim());
+      if (parts.length < 2) return name; // No comma, return as-is
+      const lastName = parts[0].trim();
+      const firstName = parts[1].trim();
+      const firstInitial = firstName.charAt(0).toUpperCase();
+      return `${lastName}, ${firstInitial}.`;
+    }
+
+    // Normalize journal names to handle abbreviations
+    function normalizeJournalName(venue) {
+      if (!venue) return '';
+      let normalized = venue
+        .replace(/\bJ\.\s*/gi, 'Journal ')
+        .replace(/\bProc\.\s*/gi, 'Proceedings ')
+        .replace(/\bInt\.\s*/gi, 'International ')
+        .replace(/\bSci\.\s*/gi, 'Science ')
+        .replace(/\bRes\.\s*/gi, 'Research ')
+        .replace(/\bGeophys\.\s*/gi, 'Geophysical ')
+        .replace(/\bAtmos\.\s*/gi, 'Atmospheric ')
+        .replace(/\bOcean\.\s*/gi, 'Oceanographic ')
+        .replace(/\bMar\.\s*/gi, 'Marine ')
+        .replace(/\bClim\.\s*/gi, 'Climate ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return normalized;
+    }
+
+    function computeAllFacets(papers) {
+      const allKeywords = uniq(papers.flatMap(p => p.keywords)).sort((a, b) => a.localeCompare(b));
+
+      // Group authors by normalized name
+      const authorMap = new Map();
+      papers.forEach(p => {
+        p.authors.forEach(author => {
+          const normalized = normalizeAuthorName(author);
+          if (!authorMap.has(normalized)) {
+            authorMap.set(normalized, author); // Keep first occurrence as display name
+          }
+        });
+      });
+      const allAuthors = Array.from(authorMap.values()).sort((a, b) => a.localeCompare(b));
+
+      // Group journals by normalized name
+      const journalMap = new Map();
+      papers.forEach(p => {
+        if (p.venue) {
+          const normalized = normalizeJournalName(p.venue);
+          if (!journalMap.has(normalized)) {
+            journalMap.set(normalized, p.venue); // Keep original as display
+          }
+        }
+      });
+      const allJournals = Array.from(journalMap.values()).sort((a, b) => a.localeCompare(b));
+
+      // Filter to only valid years (not null, not 0, and reasonable range)
+      const validYears = papers.map(p => p.year).filter(y => y && y >= 1900 && y <= new Date().getFullYear());
+      const minYear = validYears.length > 0 ? Math.min(...validYears) : 2000;
+      const maxYear = validYears.length > 0 ? Math.max(...validYears) : new Date().getFullYear();
+      return { allKeywords, allAuthors, allJournals, minYear, maxYear };
+    }
+    function scorePaper(p, q) {
+      if (!q) return 1;
+      const hay = [p.title, ...(p.keywords || []), ...(p.authors || []), p.venue].join(" ").toLowerCase();
+      const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+      let score = 0;
+      tokens.forEach(t => {
+        if (hay.includes(t)) score += 1;
+        if (normalize(p.title).includes(t)) score += 2;
+      });
+      return score;
+    }
+
+    function Chip({ label, active, onClick }) {
+      return (
+        <button
+          onClick={onClick}
+          className={"px-3 py-1 rounded-full border text-sm shadow-sm hover:shadow transition-all " +
+            (active ? "chip-active" : "chip-inactive")}>
+          {label}
+        </button>
+      );
+    }
+
+    function Modal({ open, onClose, paper, onOpenContent }) {
+      return (
+        <div className={"fixed inset-0 z-50 " + (open ? "" : "pointer-events-none")}>
+          <div className={"absolute inset-0 backdrop " + (open ? "open" : "")} onClick={onClose}></div>
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className={"modal max-w-2xl w-[92vw] md:w-[800px] bg-white rounded-2xl shadow-2xl p-6 " + (open ? "open" : "")}>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <h2 className="text-xl md:text-2xl font-semibold leading-tight">{paper?.title}</h2>
+                  <p className="mt-2 text-sm md:text-base text-gray-700">
+                    <span className="font-medium">Authors:</span> {paper?.authors.join(", ")}
+                  </p>
+                  <p className="text-sm md:text-base text-gray-700">
+                    <span className="font-medium">Year:</span> {paper?.year} · <span className="font-medium">Venue:</span> {paper?.venue}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(paper?.keywords || []).map(k => (
+                      <span key={k} className="text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-200">{k}</span>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-gray-900 leading-relaxed">{paper?.summary}...</p>
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    <button onClick={() => onOpenContent(paper, 'summary')}
+                      className="px-4 py-2 btn-primary text-white rounded-lg text-sm">
+                      📄 Quick Summary
+                    </button>
+                    <button onClick={() => onOpenContent(paper, 'briefing')}
+                      className="px-4 py-2 btn-secondary text-white rounded-lg text-sm">
+                      📖 Detailed Briefing
+                    </button>
+                    {paper?.doi && (
+                      <a href={`https://doi.org/${paper.doi}`} target="_blank" rel="noreferrer"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">DOI</a>
+                    )}
+                    {paper?.link && paper.link !== '#' && (
+                      <a href={paper.link} target="_blank" rel="noreferrer"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Publisher</a>
+                    )}
+                  </div>
+                </div>
+                <button onClick={onClose} className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" aria-label="Close">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Function to fetch and extract summary or briefing from MD file
+    async function fetchMDContent(filename, section) {
+      try {
+        const encodedFilename = encodeURIComponent(filename);
+        const response = await fetch(`./pdf-summarizer/summaries/${encodedFilename}`);
+        if (!response.ok) {
+          throw new Error(`Failed to load ${filename}`);
+        }
+        const content = await response.text();
+        const lines = content.split('\n');
+
+        let inSection = false;
+        let sectionLines = [];
+        const sectionHeader = section === 'summary' ? '## Quick Summary' : '## Detailed Briefing';
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          if (line.includes(sectionHeader)) {
+            inSection = true;
+            continue;
+          }
+
+          if (inSection) {
+            if (line.startsWith('##') || line === '---') {
+              break; // End of section
+            }
+            if (line.trim()) {
+              sectionLines.push(line);
+            }
+          }
+        }
+
+        return sectionLines.join('\n\n');
+      } catch (err) {
+        console.error('Error fetching MD content:', err);
+        return 'Failed to load content.';
+      }
+    }
+
+    function ContentModal({ open, onClose, title, content, loading }) {
+      return (
+        <div className={"fixed inset-0 z-50 " + (open ? "" : "pointer-events-none")}>
+          <div className={"absolute inset-0 backdrop " + (open ? "open" : "")} onClick={onClose}></div>
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className={"modal max-w-3xl w-[95vw] md:w-[900px] max-h-[85vh] bg-white rounded-2xl shadow-2xl " + (open ? "open" : "")}>
+              <div className="flex items-start justify-between p-6 border-b sticky top-0 bg-white rounded-t-2xl">
+                <h2 className="text-xl md:text-2xl font-semibold leading-tight pr-4">{title}</h2>
+                <button onClick={onClose} className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" aria-label="Close">✕</button>
+              </div>
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-gray-500">Loading...</div>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm md:prose max-w-none">
+                    <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{content}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PaperBrowser() {
+      const [papers, setPapers] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        loadPapersFromManifest()
+          .then(loadedPapers => {
+            if (loadedPapers.length === 0) {
+              setError('No papers found. Please generate summaries first and run: python pdf-summarizer/create_manifest.py');
+            }
+            setPapers(loadedPapers);
+          })
+          .catch(err => {
+            setError(err.message);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }, []);
+
+      const { allKeywords, allAuthors, allJournals, minYear, maxYear } = useMemo(() => {
+        if (papers.length === 0) return { allKeywords: [], allAuthors: [], allJournals: [], minYear: 2000, maxYear: new Date().getFullYear() };
+        return computeAllFacets(papers);
+      }, [papers]);
+
+      const [selectedAuthor, setSelectedAuthor] = useState("");
+      const [selectedJournal, setSelectedJournal] = useState("");
+      const [activeKeywords, setActiveKeywords] = useState([]);
+      const [yearRange, setYearRange] = useState([minYear, maxYear]);
+      const [sortBy, setSortBy] = useState("year-desc");
+
+      const [open, setOpen] = useState(false);
+      const [selected, setSelected] = useState(null);
+
+      const [contentModalOpen, setContentModalOpen] = useState(false);
+      const [contentModalTitle, setContentModalTitle] = useState('');
+      const [contentModalContent, setContentModalContent] = useState('');
+      const [contentModalLoading, setContentModalLoading] = useState(false);
+
+      const openContentModal = async (paper, section) => {
+        const title = section === 'summary' ? `Quick Summary: ${paper.title}` : `Detailed Briefing: ${paper.title}`;
+        setContentModalTitle(title);
+        setContentModalContent('');
+        setContentModalLoading(true);
+        setContentModalOpen(true);
+
+        const content = await fetchMDContent(paper.filename, section);
+        setContentModalContent(content);
+        setContentModalLoading(false);
+      };
+
+      useEffect(() => {
+        setYearRange([minYear, maxYear]);
+      }, [minYear, maxYear]);
+
+      const filtered = useMemo(() => papers
+        .filter(p => p.year >= yearRange[0] && p.year <= yearRange[1])
+        .filter(p => activeKeywords.length ? activeKeywords.every(k => p.keywords.includes(k)) : true)
+        .filter(p => {
+          if (!selectedAuthor) return true;
+          // Check if any author matches when normalized
+          return p.authors.some(a => normalizeAuthorName(a) === normalizeAuthorName(selectedAuthor));
+        })
+        .filter(p => {
+          if (!selectedJournal) return true;
+          // Check if journal matches when normalized
+          return normalizeJournalName(p.venue) === normalizeJournalName(selectedJournal);
+        })
+        , [papers, activeKeywords, selectedAuthor, selectedJournal, yearRange]);
+
+      const sorted = useMemo(() => {
+        const copy = [...filtered];
+        switch (sortBy) {
+          case "year-asc": copy.sort((a, b) => a.year - b.year); break;
+          case "title": copy.sort((a, b) => a.title.localeCompare(b.title)); break;
+          case "year-desc":
+          default: copy.sort((a, b) => b.year - a.year);
+        }
+        return copy;
+      }, [filtered, sortBy]);
+
+      const toggle = (setter, current, item) => {
+        setter(current.includes(item) ? current.filter(x => x !== item) : [...current, item]);
+      };
+
+      const clearAll = () => {
+        setSelectedAuthor("");
+        setSelectedJournal("");
+        setActiveKeywords([]);
+        setYearRange([minYear, maxYear]);
+        setSortBy("year-desc");
+      };
+
+      const hasActiveFilters = selectedAuthor || selectedJournal || activeKeywords.length > 0 ||
+        yearRange[0] !== minYear || yearRange[1] !== maxYear;
+
+      if (loading) {
+        return (
+          <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl mb-4">📚</div>
+              <div className="text-lg text-gray-600">Loading publications...</div>
+            </div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
+            <div className="max-w-2xl bg-white border border-red-200 rounded-2xl p-8 shadow-lg">
+              <div className="text-4xl mb-4">⚠️</div>
+              <h2 className="text-xl font-semibold mb-4">Setup Required</h2>
+              <p className="text-gray-700 mb-4">{error}</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
+                <p className="font-medium mb-2">Steps to get started:</p>
+                <ol className="list-decimal list-inside space-y-1 text-gray-700">
+                  <li>Generate summaries: <code className="bg-white px-2 py-1 rounded">python pdf-summarizer/pdf_summarizer.py</code></li>
+                  <li>Create manifest: <code className="bg-white px-2 py-1 rounded">python pdf-summarizer/create_manifest.py</code></li>
+                  <li>Start server: <code className="bg-white px-2 py-1 rounded">python3 -m http.server 8000</code></li>
+                  <li>Reload this page</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white text-gray-900">
+          <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/80 header-bg">
+            <div className="mx-auto max-w-7xl px-4 py-4 md:py-5 flex items-center gap-4">
+              <a href="../index.html" class="home-btn" aria-label="Home">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+              </a>
+              <div className="flex-1">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ background: 'linear-gradient(to right, #1e5245, #c4704f, #8b5a3c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  Alex Sen Gupta
+                </h1>
+                <p className="text-sm font-semibold" style={{ color: '#1e5245' }}>Paper Browser</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50" aria-label="Sort results">
+                  <option value="year-desc">Sort: New → Old</option>
+                  <option value="year-asc">Sort: Old → New</option>
+                  <option value="title">Sort: Title A–Z</option>
+                </select>
+                <button onClick={clearAll}
+                  className={"rounded-lg px-4 py-2 text-sm font-medium transition-all " +
+                    (hasActiveFilters ? "btn-clear-active text-white" : "bg-gray-100 text-gray-400 cursor-not-allowed")}
+                  disabled={!hasActiveFilters}>
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section className="mx-auto max-w-7xl px-4 pt-4 md:pt-6 pb-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Author Dropdown */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#1e5245' }}>Filter by Author</label>
+                <select
+                  value={selectedAuthor}
+                  onChange={e => setSelectedAuthor(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black">
+                  <option value="">All Authors</option>
+                  {allAuthors.map(author => (
+                    <option key={author} value={author}>{author}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Journal Dropdown */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#1e5245' }}>Filter by Journal</label>
+                <select
+                  value={selectedJournal}
+                  onChange={e => setSelectedJournal(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black">
+                  <option value="">All Journals</option>
+                  {allJournals.map(journal => (
+                    <option key={journal} value={journal}>{journal}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Year Range Slider - Dual Handle */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between text-sm mb-3">
+                  <span className="font-semibold" style={{ color: '#1e5245' }}>Year Range</span>
+                  <span className="font-bold" style={{ background: 'linear-gradient(to right, #1e5245, #c4704f)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{yearRange[0]} – {yearRange[1]}</span>
+                </div>
+                <div className="range-slider-container">
+                  <div className="range-slider-track"></div>
+                  <div className="range-slider-range" style={{
+                    left: `${((yearRange[0] - minYear) / (maxYear - minYear)) * 100}%`,
+                    right: `${100 - ((yearRange[1] - minYear) / (maxYear - minYear)) * 100}%`
+                  }}></div>
+                  <input type="range" min={minYear} max={maxYear} value={yearRange[0]}
+                    onChange={e => {
+                      const newFrom = Math.max(minYear, Math.min(Number(e.target.value), yearRange[1]));
+                      setYearRange([newFrom, yearRange[1]]);
+                    }}
+                    className="range-slider-input" style={{ zIndex: yearRange[0] > maxYear - (maxYear - minYear) / 2 ? 5 : 3 }} />
+                  <input type="range" min={minYear} max={maxYear} value={yearRange[1]}
+                    onChange={e => {
+                      const newTo = Math.min(maxYear, Math.max(Number(e.target.value), yearRange[0]));
+                      setYearRange([yearRange[0], newTo]);
+                    }}
+                    className="range-slider-input" style={{ zIndex: 4 }} />
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                  <span>{minYear}</span>
+                  <span>{maxYear}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {hasActiveFilters && (
+              <div className="mt-4 rounded-2xl filter-box px-4 py-3 shadow-lg border-2" style={{ borderColor: '#2d6b5a' }}>
+                <div className="text-sm font-bold mb-2" style={{ color: '#1e5245' }}>Active Filters:</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {selectedAuthor && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Author: {selectedAuthor}</span>
+                      <button onClick={() => setSelectedAuthor("")} className="hover:brightness-110 rounded-full px-1">✕</button>
+                    </div>
+                  )}
+                  {selectedJournal && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Journal: {selectedJournal}</span>
+                      <button onClick={() => setSelectedJournal("")} className="hover:brightness-110 rounded-full px-1">✕</button>
+                    </div>
+                  )}
+                  {activeKeywords.map(k => (
+                    <div key={k} className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>{k}</span>
+                      <button onClick={() => toggle(setActiveKeywords, activeKeywords, k)} className="hover:brightness-110 rounded-full px-1">✕</button>
+                    </div>
+                  ))}
+                  {(yearRange[0] !== minYear || yearRange[1] !== maxYear) && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Years: {yearRange[0]}–{yearRange[1]}</span>
+                      <button onClick={() => setYearRange([minYear, maxYear])} className="hover:brightness-110 rounded-full px-1">✕</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Keyword Filter Chips */}
+            <div className="mt-4">
+              <div className="text-sm mb-2 font-bold" style={{ color: '#1e5245' }}>Filter by Keywords:</div>
+              <div className="flex flex-wrap gap-2">
+                {allKeywords.map(k => (
+                  <Chip key={k} label={k} active={activeKeywords.includes(k)} onClick={() => toggle(setActiveKeywords, activeKeywords, k)} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <main className="mx-auto max-w-7xl px-4 pb-12">
+            <div className="flex items-center justify-between mt-4 mb-2 text-sm text-gray-600">
+              <span>Showing <span className="font-medium">{sorted.length}</span> of {papers.length}</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {sorted.map((p) => {
+                return (
+                  <article key={p.id} className="card group rounded-2xl border bg-white shadow-sm transition overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="text-xs mt-1 px-2 py-1 rounded-lg year-badge">{p.year}</div>
+                        <h3 className="text-base md:text-lg font-semibold leading-snug">
+                          <button onClick={() => { window.location.hash = p.id; setSelected(p); setOpen(true); }}
+                            className="text-left hover:underline decoration-2 underline-offset-2">{p.title}</button>
+                        </h3>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-700">{p.authors.join(", ")} · <span className="italic">{p.venue}</span></p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {p.keywords.slice(0, 6).map(k => (
+                          <span key={k} className="text-[11px] px-2 py-1 rounded-full keyword-tag font-medium">{k}</span>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-sm text-gray-900 line-clamp-3">{p.summary}</p>
+                      <div className="mt-4 flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <button onClick={() => openContentModal(p, 'summary')}
+                            className="flex-1 text-center text-xs rounded-lg btn-primary text-white px-2 py-1.5">
+                            Quick Summary
+                          </button>
+                          <button onClick={() => openContentModal(p, 'briefing')}
+                            className="flex-1 text-center text-xs rounded-lg btn-secondary text-white px-2 py-1.5">
+                            Briefing
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          {p.link && p.link !== '#' ? (
+                            <a href={p.link} target="_blank" rel="noreferrer" className="underline opacity-80 hover:opacity-100">Publisher</a>
+                          ) : (
+                            <span className="text-gray-400">No DOI link</span>
+                          )}
+                          <button onClick={() => { window.location.hash = p.id; setSelected(p); setOpen(true); }}
+                            className="rounded-lg border border-gray-300 px-3 py-1 hover:bg-gray-50">Details</button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </main>
+
+          <footer className="mx-auto max-w-7xl px-4 pb-10 text-xs text-gray-500">
+            <p>Tip: Click keywords or authors to filter. Use the search box for full-text search across titles, authors, and keywords.</p>
+            <p className="mt-1">Data loaded from your generated MD summaries. To refresh, run: <code className="bg-gray-100 px-2 py-0.5 rounded">python pdf-summarizer/create_manifest.py</code></p>
+          </footer>
+
+          <Modal open={open} onClose={() => setOpen(false)} paper={selected} onOpenContent={openContentModal} />
+          <ContentModal
+            open={contentModalOpen}
+            onClose={() => setContentModalOpen(false)}
+            title={contentModalTitle}
+            content={contentModalContent}
+            loading={contentModalLoading}
+          />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<PaperBrowser />);
+  </script>
+</body>
+
+</html>

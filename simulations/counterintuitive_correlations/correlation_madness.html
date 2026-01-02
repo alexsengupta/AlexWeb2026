@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Winds → Ice tendency: local vs summed correlation (paradox demo)</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #fff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --ok: #16a34a;
+      --warn: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px;
+      flex-shrink: 0;
+    }
+
+    .top {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      margin: 0 0 8px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 140px;
+    }
+
+    .control label {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control output {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 4px 0 0;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      height: 36px;
+    }
+
+    .layout-main {
+      flex-grow: 1;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .grid-plots {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      min-height: 0;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .mini-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .mini label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .mini output {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .canvas-wrap {
+      flex-grow: 1;
+      position: relative;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      border-radius: 8px;
+      background: #fff;
+      object-fit: contain;
+    }
+
+    .eq-small {
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--muted);
+      margin-top: auto;
+      min-height: 45px;
+    }
+
+    .bottom-box {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+      padding: 10px;
+      display: flex;
+      gap: 16px;
+      overflow-y: auto;
+      font-size: 13px;
+      align-items: start;
+    }
+
+    .col-text {
+      flex: 2;
+    }
+
+    .col-metrics {
+      flex: 1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre;
+      border-left: 1px solid #e2e8f0;
+      padding-left: 16px;
+    }
+
+    .box h2 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+
+    .klabel {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      vertical-align: middle;
+    }
+
+    .ok {
+      background: var(--ok);
+    }
+
+    .bad {
+      background: var(--warn);
+    }
+
+    @media (max-width: 900px) {
+      body {
+        height: auto;
+        overflow: auto;
+      }
+
+      .grid-plots {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-box {
+        flex-direction: column;
+      }
+
+      .col-metrics {
+        border-left: 0;
+        padding-left: 0;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 12px;
+        margin-top: 8px;
+        width: 100%;
+      }
+    }
+
+    /* KaTeX size override */
+    .katex {
+      font-size: 0.95em !important;
+    }
+
+    /* Modal */
+    dialog {
+      border: 0;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      font-family: inherit;
+      color: var(--ink);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    dialog h2 {
+      margin-top: 0;
+    }
+
+    dialog p {
+      line-height: 1.5;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    dialog ul {
+      font-size: 14px;
+      padding-left: 20px;
+      line-height: 1.5;
+    }
+
+    dialog li {
+      margin-bottom: 6px;
+    }
+
+    .close-btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: var(--muted);
+      color: #fff;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .close-btn:hover {
+      background: var(--ink);
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+  <h1>“Local positive” vs “sum weak/negative” — causal model with separate noise</h1>
+
+  <div class="top">
+    <div class="control"><label>Samples \(n\) <output id="out-n">1000</output></label><input id="n" type="range"
+        min="200" max="10000" step="100" value="1000"></div>
+    <div class="control"><label>Wind noise \(\sigma_v\) <output id="out-sigmaV">1.5</output></label><input id="sigmaV"
+        type="range" min="0" max="5" step="0.05" value="1.5"></div>
+    <div class="control"><label>Ice noise \(\sigma_{st}\) <output id="out-sigmaST">1.5</output></label><input
+        id="sigmaST" type="range" min="0" max="5" step="0.05" value="1.5"></div>
+    <button class="btn" id="regen" style="margin-right:auto;">Regenerate</button>
+    <button class="btn" id="infoBtn" style="background:var(--muted);">Info / Help</button>
+  </div>
+
+  <div class="layout-main">
+    <div class="grid-plots">
+      <!-- Sector 1 -->
+      <div class="card">
+        <div class="title">Sector 1 <span class="sub">\(v_1\) vs \(st_1\)</span></div>
+        <div class="mini-controls">
+          <div class="mini control"><label>\(a_1\) <output id="out-a1">5.0</output></label><input id="a1" type="range"
+              min="-12" max="12" step="0.1" value="5"></div>
+          <div class="mini control"><label>\(b_1\) <output id="out-b1">1.0</output></label><input id="b1" type="range"
+              min="-12" max="12" step="0.1" value="1"></div>
+        </div>
+        <div class="canvas-wrap"><canvas id="c1"></canvas></div>
+        <div class="eq-small" id="eq1"></div>
+      </div>
+
+      <!-- Sector 2 -->
+      <div class="card">
+        <div class="title">Sector 2 <span class="sub">\(v_2\) vs \(st_2\)</span></div>
+        <div class="mini-controls">
+          <div class="mini control"><label>\(a_2\) <output id="out-a2">-4.0</output></label><input id="a2" type="range"
+              min="-12" max="12" step="0.1" value="-4"></div>
+          <div class="mini control"><label>\(b_2\) <output id="out-b2">10.0</output></label><input id="b2" type="range"
+              min="-12" max="12" step="0.1" value="10"></div>
+        </div>
+        <div class="canvas-wrap"><canvas id="c2"></canvas></div>
+        <div class="eq-small" id="eq2"></div>
+      </div>
+
+      <!-- Sums -->
+      <div class="card">
+        <div class="title">Sums <span class="sub">\((v_1{+}v_2)\) vs \((st_1{+}st_2)\)</span></div>
+        <div class="mini-controls">
+          <div class="mini control"><label>\(a_{sum}\) <output id="out-Asum">1.0</output></label><input id="Asum"
+              type="range" disabled></div>
+          <div class="mini control"><label>\(b_{mix}\) <output id="out-Bmix">? </output></label><input id="Bmix"
+              type="range" disabled></div>
+        </div>
+        <div class="canvas-wrap"><canvas id="c3"></canvas></div>
+        <div class="eq-small" id="eq3"></div>
+      </div>
+    </div>
+
+    <!-- Condition & Decomposition -->
+    <div class="bottom-box" id="conditionBox">
+      <div class="col-text">
+        <h2>Paradox condition & Decomposition</h2>
+        <div id="condMath" style="margin-bottom:8px;"></div>
+        <div style="margin-bottom:8px;">
+          <span class="klabel" id="localSign1">local 1</span>&nbsp;
+          <span class="klabel" id="localSign2">local 2</span>&nbsp;
+          <span class="klabel" id="sumSign">sum</span>
+        </div>
+        <div id="decomp"></div>
+      </div>
+      <div class="col-metrics" id="metrics"></div>
+    </div>
+  </div>
+
+  <dialog id="infoDialog">
+    <h2>Scenario: Sea Ice Paradox</h2>
+    <p>This simulation explores how local correlations can be reversed when aggregated (a form of Simpson's Paradox or
+      Ecological Fallacy). We model two sea ice regions driven by a common climate mode.</p>
+
+    <h3>Key Variables</h3>
+    <ul>
+      <li><b>Meridional Wind (\(v\))</b>: Modeled as $v = a \cdot z + \text{noise}$. The wind in each sector depends on
+        the climate mode $z$.</li>
+      <li><b>Sea Ice Tendency (\(st\))</b>: Modeled as $st = b \cdot v + \text{noise}$. Physically, wind pushes ice,
+        driving changes in concentration.</li>
+      <li><b>Climate Mode (\(z\))</b>: The hidden large-scale atmospheric pattern (e.g., NAO, SAM) driving winds in both
+        sectors.</li>
+    </ul>
+
+    <h3>Parameters</h3>
+    <ul>
+      <li><b>\(a_1, a_2\)</b> (Climate Coupling): Determine the sign of the wind in each sector for a given climate mode
+        phase. If they have opposite signs, the climate mode creates a "dipole" pattern.</li>
+      <li><b>\(b_1, b_2\)</b> (Wind Forcing): Determine how wind affects ice locally. Usually positive (wind pushes
+        ice).</li>
+    </ul>
+
+    <p><b>The Paradox:</b> Even if wind increases ice locally in both sectors ($b_1, b_2 > 0$), the <i>summed</i>
+      correlation can be negative. This happens if the climate mode drives winds in opposite directions ($a_1, a_2$
+      opposite), causing the "signal" term to be negative and overwhelm the positive noise coupling.</p>
+
+    <button class="close-btn" onclick="document.getElementById('infoDialog').close()">Close</button>
+  </dialog>
+
+  <script>
+    /* ---- Info Modal ---- */
+    const modal = document.getElementById('infoDialog');
+    document.getElementById('infoBtn').addEventListener('click', () => modal.showModal());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+
+    /* ---- KaTeX ---- */
+    function typeset(root = document.body) {
+      if (window.renderMathInElement) {
+        renderMathInElement(root, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "$", right: "$", display: false }
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    /* ---- UI helpers ---- */
+    const $ = id => document.getElementById(id);
+    function hook(id, outId, d = 1) {
+      const el = $(id), out = $(outId);
+      const fmt = (x) => id === 'n' ? String(x) : Number(x).toFixed(d);
+      const upd = () => out.textContent = fmt(el.value);
+      el.addEventListener('input', upd); upd();
+    }
+    [['n', 'out-n', 0], ['sigmaV', 'out-sigmaV', 2], ['sigmaST', 'out-sigmaST', 2],
+    ['a1', 'out-a1', 1], ['b1', 'out-b1', 1], ['a2', 'out-a2', 1], ['b2', 'out-b2', 1]]
+      .forEach(([i, o, d]) => hook(i, o, d));
+
+    /* ---- Stats ---- */
+    function mean(a) { return a.reduce((s, x) => s + x, 0) / a.length; }
+    function variance(a) { const m = mean(a); let s = 0; for (const x of a) s += (x - m) * (x - m); return s / (a.length - 1); }
+    function covariance(x, y) { const mx = mean(x), my = mean(y); let s = 0; for (let i = 0; i < x.length; i++) s += (x[i] - mx) * (y[i] - my); return s / (x.length - 1); }
+    function correlation(x, y) { return covariance(x, y) / Math.sqrt(variance(x) * variance(y)); }
+    const fmt = (x, dec = 3) => (Math.abs(x) >= 1e5 || Math.abs(x) < 1e-4) ? Number(x).toExponential(2) : Number(x).toFixed(dec);
+
+    /* ---- RNG ---- */
+    function makeNormal() {
+      let spare = null;
+      return function () {
+        if (spare !== null) { const s = spare; spare = null; return s; }
+        let u = 0, v = 0, r = 0;
+        do { u = Math.random() * 2 - 1; v = Math.random() * 2 - 1; r = u * u + v * v; } while (r === 0 || r >= 1);
+        const mul = Math.sqrt(-2 * Math.log(r) / r);
+        spare = v * mul; return u * mul;
+      };
+    }
+
+    /* ---- DPI-aware canvas ---- */
+    function resizeCanvasForDPI(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const needW = Math.round(rect.width * dpr);
+      const needH = Math.round(rect.height * dpr);
+      if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return ctx;
+    }
+
+    /* ---- Plot ---- */
+    function scatter(canvas, x, y, xlabel, ylabel) {
+      const ctx = resizeCanvasForDPI(canvas);
+      const rect = canvas.getBoundingClientRect();
+      const W = rect.width, H = rect.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const pad = 36; // Reduced padding
+      const xmin = Math.min(...x), xmax = Math.max(...x);
+      const ymin = Math.min(...y), ymax = Math.max(...y);
+      const xspan = (xmax - xmin) || 1, yspan = (ymax - ymin) || 1;
+      const x0 = xmin - 0.05 * xspan, x1 = xmax + 0.05 * xspan;
+      const y0 = ymin - 0.05 * yspan, y1 = ymax + 0.05 * yspan;
+      const X = v => pad + (v - x0) / (x1 - x0) * (W - 2 * pad);
+      const Y = v => H - pad - (v - y0) / (y1 - y0) * (H - 2 * pad);
+
+      // axes
+      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.25;
+      ctx.beginPath(); ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, H - pad); ctx.stroke();
+
+      // labels
+      ctx.fillStyle = '#0f172a'; ctx.font = '12px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif'; // smaller font
+      ctx.textAlign = 'center'; ctx.fillText(xlabel, W / 2, H - 8); // closer to bottom
+      ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(ylabel, 0, 0); ctx.restore();
+
+      // ticks
+      ctx.fillStyle = '#64748b'; ctx.strokeStyle = '#e2e8f0'; ctx.font = '10px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif'; // smaller font
+      const xt = 5, yt = 5;
+      for (let i = 0; i <= xt; i++) {
+        const xv = x0 + i * (x1 - x0) / xt, xx = X(xv);
+        ctx.beginPath(); ctx.moveTo(xx, H - pad); ctx.lineTo(xx, H - pad + 4); ctx.stroke();
+        ctx.textAlign = 'center'; ctx.fillText(xv.toFixed(1), xx, H - pad + 14);
+      }
+      for (let i = 0; i <= yt; i++) {
+        const yv = y0 + i * (y1 - y0) / yt, yy = Y(yv);
+        ctx.beginPath(); ctx.moveTo(pad - 4, yy); ctx.lineTo(pad, yy); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.fillText(yv.toFixed(1), pad - 6, yy + 3);
+      }
+
+      // points
+      ctx.fillStyle = '#2563eb22'; ctx.strokeStyle = '#2563eb99';
+      for (let i = 0; i < x.length; i++) {
+        const xx = X(x[i]), yy = Y(y[i]);
+        ctx.beginPath(); ctx.arc(xx, yy, 2.0, 0, Math.PI * 2); // slightly smaller dots
+        ctx.fill(); ctx.stroke();
+      }
+    }
+    /* ---- Model ---- */
+    function params() {
+      return {
+        n: +$('n').value,
+        sigmaV: +$('sigmaV').value,
+        sigmaST: +$('sigmaST').value,
+        a1: +$('a1').value, b1: +$('b1').value,
+        a2: +$('a2').value, b2: +$('b2').value
+      };
+    }
+    function simulate(P) {
+      const { n, sigmaV, sigmaST, a1, b1, a2, b2 } = P;
+      const Nz = makeNormal(), Ne1 = makeNormal(), Ne2 = makeNormal(), Ne3 = makeNormal(), Ne4 = makeNormal();
+      const z = Array.from({ length: n }, () => Nz());
+      const ev1 = Array.from({ length: n }, () => Ne1() * sigmaV);
+      const ev2 = Array.from({ length: n }, () => Ne2() * sigmaV);
+      const es1 = Array.from({ length: n }, () => Ne3() * sigmaST);
+      const es2 = Array.from({ length: n }, () => Ne4() * sigmaST);
+
+      const v1 = z.map((zz, i) => a1 * zz + ev1[i]);
+      const st1 = v1.map((vv, i) => b1 * vv + es1[i]);
+      const v2 = z.map((zz, i) => a2 * zz + ev2[i]);
+      const st2 = v2.map((vv, i) => b2 * vv + es2[i]);
+
+      const V = v1.map((d, i) => d + v2[i]);
+      const ST = st1.map((d, i) => d + st2[i]);
+
+      return { v1, st1, v2, st2, V, ST };
+    }
+
+    /* ---- Theory ---- */
+    // Local (sector i): cov = b (a^2 + σv^2); var(v)=a^2+σv^2; var(st)=b^2 (a^2+σv^2) + σst^2
+    function theoryLocal(a, b, sV, sST) {
+      const varv = a * a + sV * sV;
+      const cov = b * varv;
+      const varst = b * b * varv + sST * sST;
+      return { cov, varv, varst, corr: cov / Math.sqrt(varv * varst) };
+    }
+    // Sums:
+    // Cov(V,ST) = (a1+a2)(b1 a1 + b2 a2)  +  (b1 + b2) σv^2   = signal + noise-coupling
+    // Var(V)    = (a1+a2)^2 + 2 σv^2
+    // Var(ST)   = b1^2(a1^2+σv^2) + b2^2(a2^2+σv^2) + 2 b1 b2 a1 a2 + 2 σst^2
+    function theorySums(a1, b1, a2, b2, sV, sST) {
+      const A = a1 + a2;
+      const Bmix = b1 * a1 + b2 * a2;
+      const cov_signal = A * Bmix;
+      const cov_noise = (b1 + b2) * sV * sV;
+      const cov = cov_signal + cov_noise;
+      const varV = A * A + 2 * sV * sV;
+      const varST = b1 * b1 * (a1 * a1 + sV * sV) + b2 * b2 * (a2 * a2 + sV * sV) + 2 * b1 * b2 * a1 * a2 + 2 * sST * sST;
+      return { A, Bmix, cov_signal, cov_noise, cov, varV, varST, corr: cov / Math.sqrt(varV * varST) };
+    }
+
+    /* ---- Render ---- */
+    function signStr(x) { return x > 0 ? '+' : (x < 0 ? '-' : '0'); }
+    function badge(el, s) {
+      el.className = 'klabel ' + (s === '+' ? 'ok' : (s === '-' ? 'bad' : ''));
+      el.textContent = (s === '+' ? 'positive' : (s === '-' ? 'negative' : 'zero'));
+    }
+    function render() {
+      const P = params();
+      const { n, sigmaV, sigmaST, a1, b1, a2, b2 } = P;
+
+      // Simulate & empirical stats
+      const S = simulate(P);
+      const c1 = correlation(S.v1, S.st1);
+      const c2 = correlation(S.v2, S.st2);
+      const cS = correlation(S.V, S.ST);
+
+      // Theory
+      const T1 = theoryLocal(a1, b1, sigmaV, sigmaST);
+      const T2 = theoryLocal(a2, b2, sigmaV, sigmaST);
+      const TS = theorySums(a1, b1, a2, b2, sigmaV, sigmaST);
+
+      // Derived displays
+      $('out-Asum').textContent = fmt(TS.A, 1);
+      $('out-Bmix').textContent = fmt(TS.Bmix, 1);
+
+      // Plots
+      scatter($('c1'), S.v1, S.st1, 'v₁ (wind, sector 1)', 'st₁ (ice tendency)');
+      scatter($('c2'), S.v2, S.st2, 'v₂ (wind, sector 2)', 'st₂ (ice tendency)');
+      scatter($('c3'), S.V, S.ST, 'v₁ + v₂', 'st₁ + st₂');
+
+      // Local simplified intuition (no messy formula)
+      $('eq1').innerHTML =
+        `Local sign: if $b_1>0$ then $\\mathrm{corr}(v_1,st_1)>0$ (since $st_1=b_1 v_1+\\epsilon$ and $\\operatorname{Var}(v_1)>0$). 
+     Empirical: ${fmt(c1)}.`;
+      $('eq2').innerHTML =
+        `Local sign: if $b_2>0$ then $\\mathrm{corr}(v_2,st_2)>0$. 
+     Empirical: ${fmt(c2)}.`;
+
+      // Sums: signal vs noise + correlation
+      $('eq3').innerHTML =
+        `Aggregate covariance decomposition:
+     $$\\underbrace{\\operatorname{Cov}(V,ST)}_{\\text{controls sum-corr sign}}
+       = \\underbrace{(a_1{+}a_2)(b_1a_1{+}b_2a_2)}_{\\text{signal term }=\\,${fmt(TS.cov_signal)}} 
+         + \\underbrace{(b_1{+}b_2)\\,\\sigma_v^2}_{\\text{noise coupling }=\\,${fmt(TS.cov_noise)}}\\;=\\;${fmt(TS.cov)}.$$
+     Aggregate correlation (theory): 
+     $$\\mathrm{corr}(V,ST)=\\dfrac{${fmt(TS.cov)}}{\\sqrt{${fmt(TS.varV)}\\cdot${fmt(TS.varST)}}}\\;=\\;${fmt(TS.corr)}.$$
+     Empirical: ${fmt(cS)}.
+    `;
+
+      // Condition box
+      const cond = `Paradox occurs when:
+  $$\\operatorname{sign}\\big[(a_1{+}a_2)(b_1a_1{+}b_2a_2) + (b_1{+}b_2)\\,\\sigma_v^2\\big] \\ne \\operatorname{sign}(b_1) = \\operatorname{sign}(b_2).$$`;
+      $('condMath').innerHTML = cond;
+
+      // Live sign badges
+      const local1Sign = (b1 > 0 ? '+' : (b1 < 0 ? '-' : '0'));
+      const local2Sign = (b2 > 0 ? '+' : (b2 < 0 ? '-' : '0'));
+      const sumSign = (TS.cov > 0 ? '+' : (TS.cov < 0 ? '-' : '0'));
+      badge($('localSign1'), local1Sign);
+      badge($('localSign2'), local2Sign);
+      badge($('sumSign'), sumSign);
+
+      // Decomposition box text
+      $('decomp').innerHTML =
+        `With current parameters:
+     $$\\text{signal}=(a_1{+}a_2)(b_1a_1{+}b_2a_2)=(${fmt(TS.A)})\\,(${fmt(TS.Bmix)})=${fmt(TS.cov_signal)},\\quad
+       \\text{noise}=(b_1{+}b_2)\\sigma_v^2=(${fmt(b1)}+${fmt(b2)})\\,${fmt(sigmaV * sigmaV)}=${fmt(TS.cov_noise)}.$$
+     If they oppose in sign and $|\\text{noise}|>|\\text{signal}|$, the sum correlation will be pulled toward the noise term.`;
+
+      // Metrics
+      $('metrics').textContent =
+        `Empirical correlations (n=${n},  σv=${fmt(sigmaV, 2)},  σst=${fmt(sigmaST, 2)})
+corr(v1, st1) = ${fmt(c1)}
+corr(v2, st2) = ${fmt(c2)}
+corr(V,  ST ) = ${fmt(cS)}`;
+
+      typeset(document.body);
+    }
+
+    /* ---- Wire up ---- */
+    ['n', 'sigmaV', 'sigmaST', 'a1', 'b1', 'a2', 'b2'].forEach(id => $(id).addEventListener('input', render));
+    $('regen').addEventListener('click', render);
+    window.addEventListener('resize', render);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const ready = setInterval(() => { if (window.renderMathInElement) { clearInterval(ready); render(); } }, 50);
+    });
+  </script>
+</body>
+
+</html>

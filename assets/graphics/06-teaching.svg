@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #df7926;
+      }
+
+      .st1 {
+        fill: #2d4a3e;
+        stroke-width: 2.5px;
+      }
+
+      .st1, .st2 {
+        stroke: #486072;
+      }
+
+      .st1, .st2, .st3 {
+        stroke-linejoin: round;
+      }
+
+      .st1, .st2, .st3, .st4 {
+        stroke-linecap: round;
+      }
+
+      .st2, .st3, .st4 {
+        fill: none;
+        stroke-width: 2px;
+      }
+
+      .st3 {
+        stroke: #df7926;
+      }
+
+      .st5 {
+        font-family: ArialMT, Arial;
+      }
+
+      .st5, .st6, .st7 {
+        isolation: isolate;
+      }
+
+      .st5, .st7 {
+        fill: #fff;
+        font-size: 6.62px;
+      }
+
+      .st4 {
+        stroke: #e8e4dc;
+      }
+
+      .st7 {
+        font-family: Helvetica, Helvetica;
+      }
+    </style>
+  </defs>
+  <rect class="st1" x="4" y="3.89" width="70.61" height="40.01" rx="1" ry="1"/>
+  <path class="st4" d="M25.04,32.62c4.86-4.28,9.7-4.28,14.56,0s9.7,4.28,14.56,0,9.7-4.28,14.56,0"/>
+  <g>
+    <circle class="st2" cx="42.52" cy="63.16" r="5.35"/>
+    <path class="st2" d="M36.1,76c0-4.28,2.14-6.42,6.42-6.42s6.42,2.14,6.42,6.42"/>
+  </g>
+  <g>
+    <circle class="st2" cx="63.91" cy="61.02" r="5.35"/>
+    <path class="st2" d="M57.49,76c0-5.7,2.14-8.56,6.42-8.56s6.42,2.86,6.42,8.56"/>
+  </g>
+  <g class="st6">
+    <g class="st6">
+      <text class="st5" transform="translate(8.31 12.65)"><tspan x="0" y="0">∂u/∂t + (u·</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st7" transform="translate(37.89 12.65)"><tspan x="0" y="0">∇</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st5" transform="translate(31.87 22.02)"><tspan x="0" y="0">= −</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st7" transform="translate(41.9 22.02)"><tspan x="0" y="0">∇</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st5" transform="translate(46.7 22.02)"><tspan x="0" y="0">p + ν</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st7" transform="translate(61.25 22.02)"><tspan x="0" y="0">∇</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st5" transform="translate(65.67 22.02)"><tspan x="0" y="0">²u</tspan></text>
+    </g>
+    <g class="st6">
+      <text class="st5" transform="translate(42.91 12.65)"><tspan x="0" y="0">) u</tspan></text>
+    </g>
+  </g>
+  <g>
+    <circle class="st0" cx="12.56" cy="33.2" r="6.42"/>
+    <path class="st3" d="M12.56,39.62v19.26"/>
+    <path class="st3" d="M12.56,46.04l-8.56,6.42"/>
+    <path class="st3" d="M12.56,46.04l8.56-2.14"/>
+    <path class="st3" d="M12.56,58.88l-6.42,12.84"/>
+    <path class="st3" d="M12.56,58.88l6.42,12.84"/>
+  </g>
+  <g>
+    <circle class="st2" cx="21.12" cy="61.02" r="5.35"/>
+    <path class="st2" d="M14.7,76c0-5.7,2.14-8.56,6.42-8.56s6.42,2.86,6.42,8.56"/>
+  </g>
+</svg>

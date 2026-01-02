@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Monte Carlo Simulations – Block Bootstrap</title>
+  <style>
+    :root {
+      --bg: #3e3a36;
+      --pane: #5a534d;
+      --text: #d9cbb6;
+      --accent: #a67c00;
+      --inactive: #7a6f63;
+      --trend: #000;
+      --randTrend: #ffeb3b;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      text-align: center;
+    }
+
+    #topChart {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      background: var(--pane);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    #topChart .innerLegend,
+    #topChart .innerCount {
+      position: absolute;
+      font-size: 14px;
+      color: #d9cbb6;
+      background: rgba(0, 0, 0, .55);
+      padding: 6px 8px;
+      border-radius: 4px;
+      pointer-events: none
+    }
+
+    #topChart .innerLegend {
+      left: 50px;
+      bottom: 50px;
+      line-height: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    #topChart .innerCount {
+      right: 50px;
+      bottom: 50px
+    }
+
+    #bottomRow {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    #acfOrHist {
+      flex: 2 1 420px;
+      height: 280px;
+      background: var(--pane);
+      border-radius: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    #steps {
+      flex: 1 1 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stepBox {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .step {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity .3s;
+    }
+
+    .step:disabled {
+      opacity: .4;
+      cursor: default;
+    }
+
+    #significance {
+      margin-top: 15px;
+      display: none;
+      background: var(--pane);
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+
+    input[type=range] {
+      width: 80px;
+      margin: 0 8px;
+    }
+
+    .help-icon {
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--accent);
+      margin-left: 5px;
+    }
+
+    .help-box {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--pane);
+      border: 1px solid var(--accent);
+      padding: 20px;
+      border-radius: 8px;
+      z-index: 1000;
+      width: 80%;
+      max-width: 500px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .help-box h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+
+    .help-box .close-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text);
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(255,255,255,0.1); color: #d9cbb6; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(255,255,255,0.2);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(255,255,255,0.1); color: #d9cbb6; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(255,255,255,0.2);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+  <h1>Monte Carlo Simulations – Block Bootstrap</h1>
+
+  <div id="topChart">
+    <canvas id="timeCanvas"></canvas>
+    <div class="innerLegend">
+      <svg width="160" height="90">
+        <line x1="0" y1="8" x2="20" y2="8" stroke="#a67c00" stroke-width="3" />
+        <text x="24" y="12" fill="#d9cbb6">Original</text>
+
+        <line x1="0" y1="26" x2="20" y2="26" stroke="#000" stroke-width="2" stroke-dasharray="4 2" />
+        <text x="24" y="30" fill="#d9cbb6">Original trend</text>
+
+        <line x1="0" y1="44" x2="20" y2="44" stroke="#fff" stroke-width="2" stroke-dasharray="2 2" />
+        <text x="24" y="48" fill="#d9cbb6">Random series</text>
+
+        <line x1="0" y1="62" x2="20" y2="62" stroke="#ffeb3b" stroke-width="2" />
+        <text x="24" y="66" fill="#d9cbb6">Random trend</text>
+      </svg>
+    </div>
+    <div class="innerCount" id="iterDisplay">Iterations: 0</div>
+  </div>
+
+  <!-- bottom row -->
+  <div id="bottomRow">
+    <div id="acfOrHist">
+      <canvas id="acfCanvas"></canvas>
+      <canvas id="histCanvas" style="display:none"></canvas>
+    </div>
+
+    <div id="steps">
+      <!-- Step 0 removed; Step 1 now active -->
+      <div class="stepBox">Step 1: Select block length&nbsp;
+        <input type="range" id="blockLengthSlider" min="1" max="50" value="1" />
+        <span id="blockLengthValue">1</span>
+        <span class="help-icon" onclick="showHelp('s1-block')">?</span>
+        <button id="s1" class="step">Visualize Blocks</button>
+      </div>
+      <div class="stepBox">Step 2: Remove trend <button id="s2" class="step" disabled>Remove trend</button></div>
+      <div class="stepBox">Step 3: Resample points <button id="s3" class="step" disabled>Resample Blocks</button></div>
+      <div class="stepBox" id="s4Box">Step 4: Build histogram <button id="s4" class="step" disabled>Repeat
+          1000×</button></div>
+      <div class="stepBox">Step 5: Compare <button id="s5" class="step" disabled>Compare actual</button></div>
+    </div>
+  </div>
+
+  <div id="significance"></div>
+
+  <div id="helpBox" class="help-box">
+    <span class="close-button" onclick="hideHelp()">×</span>
+    <h2 id="helpTitle"></h2>
+    <p id="helpBody"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.7.0/dist/simple-statistics.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script>
+    /* ---------- helpers ---------- */
+    const P = new URLSearchParams(location.search);
+    const L = +P.get('length') || 100, σ = +P.get('stdDev') || 1, tr = +P.get('trend') || 0, ar = +P.get('autoCorr') || 0, seed = +P.get('randomSeed') || Math.random();
+    const mul = s => { return () => (s = Math.imul(s ^ s >>> 15, s | 1), s += Math.imul(s ^ s >>> 7, s | 61), ((s ^ s >>> 14) >>> 0) / 4294967296) };
+    const randn = r => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) };
+    const rng = mul(Math.floor(seed * 4294967296));
+
+    function gen(len, std, trend, ac, rng) {
+      const y = [], tLine = []; let prev = 0;
+      for (let i = 0; i < len; i++) {
+        tLine.push(trend * i);
+        prev = ac * prev + (1 - Math.abs(ac)) * randn(rng) * std;
+        y.push(trend * i + prev);
+      }
+      return { y, tLine };
+    }
+    const { y: original, tLine: origTrend } = gen(L, σ, tr, ar, rng);
+    const labels = [...Array(L).keys()].map(i => i + 1);
+    const yMax = Math.max(...original, ...origTrend.map(v => Math.abs(v))) * 1.1;
+
+    /* ---------- top chart ---------- */
+    const tCtx = document.getElementById('timeCanvas').getContext('2d');
+    const tChart = new Chart(tCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Original', data: original, borderColor: '#a67c00', backgroundColor: '#a67c00', fill: false, pointRadius: 0, borderWidth: 3, tension: .2 },
+          { label: 'Original trend', data: origTrend, borderColor: '#000', borderDash: [5, 5], fill: false, pointRadius: 0, borderWidth: 2 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { ticks: { color: '#d9cbb6' }, grid: { color: '#7a6f63' } }, y: { min: -yMax, max: yMax, ticks: { color: '#d9cbb6' }, grid: { color: '#7a6f63' } } }, plugins: { legend: { display: false } } }
+    });
+
+    /* ---------- ACF helpers ---------- */
+    /* ---------- ACF helpers ---------- */
+    function lagkacf(arr, k) {
+      const n = arr.length, mean = arr.reduce((a, b) => a + b) / n;
+      const denom = arr.reduce((s, v) => s + (v - mean) ** 2, 0);
+      let numer = 0;
+      for (let i = 0; i < n - k; i++) numer += (arr[i] - mean) * (arr[i + k] - mean);
+      return denom === 0 ? 0 : numer / denom;
+    }
+    const r1 = lagkacf(original, 1);
+    const recommended = Math.round((1 + r1) / (1 - r1));
+    const maxLag = Math.max(10, 2 * recommended);
+    const acfLabels = [...Array(maxLag + 1).keys()];
+    const acfData = acfLabels.map(k => lagkacf(original, k));
+
+    /* ---------- ACF canvas ---------- */
+    const acfCtx = document.getElementById('acfCanvas').getContext('2d');
+    let blockLength = recommended;
+    const acfChart = new Chart(acfCtx, {
+      type: 'bar',
+      data: {
+        labels: acfLabels,
+        datasets: [{ label: 'Autocorrelation', data: acfData, backgroundColor: '#a67c00', barPercentage: 1, categoryPercentage: 0.8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false }, annotation: { annotations: {} } },
+        scales: {
+          x: { title: { display: true, text: 'Lag', color: '#d9cbb6' }, ticks: { color: '#d9cbb6' }, grid: { color: '#7a6f63' } },
+          y: { title: { display: true, text: 'Lagged autocorrelation', color: '#d9cbb6' }, ticks: { color: '#d9cbb6' }, grid: { color: '#7a6f63' } }
+        }
+      }
+    });
+
+    function updateAcfAnnotations() {
+      acfChart.options.plugins.annotation.annotations = {
+        rec: {
+          type: 'line',
+          xMin: recommended,
+          xMax: recommended,
+          borderColor: '#ffeb3b',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          label: { display: true, content: `Rec: ${recommended}`, position: 'top' }
+        },
+        user: {
+          type: 'line',
+          xMin: blockLength,
+          xMax: blockLength,
+          borderColor: '#fff',
+          borderWidth: 2,
+          label: { display: true, content: `User: ${blockLength}`, position: 'top' }
+        }
+      };
+      acfChart.update('none');
+    }
+    updateAcfAnnotations();
+
+    /* ---------- slider ---------- */
+    const blockLengthSlider = document.getElementById('blockLengthSlider');
+    const blockLengthValue = document.getElementById('blockLengthValue');
+    blockLengthSlider.max = 50;
+    blockLengthSlider.value = blockLength;
+    blockLengthValue.textContent = blockLength;
+    blockLengthSlider.addEventListener('input', e => {
+      blockLength = +e.target.value;
+      blockLengthValue.textContent = blockLength;
+      updateAcfAnnotations();
+    });
+
+    /* ---------- histogram canvas ---------- */
+    const hCtx = document.getElementById('histCanvas').getContext('2d');
+    let hChart, binCount = 15, binMin, binMax, binWidth;
+    hChart = new Chart(hCtx, {
+      type: 'bar',
+      data: { datasets: [{ label: 'Frequency', data: [], backgroundColor: '#a67c00', barPercentage: 1, categoryPercentage: 1 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { type: 'linear', title: { display: true, text: 'Trend', color: '#d9cbb6' }, ticks: { color: '#d9cbb6' }, grid: { color: '#7a6f63' } }, y: { title: { display: true, text: 'Count', color: '#d9cbb6' }, ticks: { color: '#d9cbb6', precision: 0 }, grid: { color: '#7a6f63' } } } }
+    });
+
+    /* ---------- state ---------- */
+    let detrended = [], colors = [], trends = [], iters = 0, manualCount = 0, latestSlope = null;
+    const colorArray = n => [...Array(n)].map((_, i) => `hsl(${(i * 137.508) % 360},70%,60%)`);
+    const addDs = (l, d, opt = {}) => { if (!tChart.data.datasets.find(ds => ds.label === l)) { tChart.data.datasets.push({ label: l, data: d, ...opt }); tChart.update('none') } };
+    const remDs = l => { const i = tChart.data.datasets.findIndex(ds => ds.label === l); if (i > -1) { tChart.data.datasets.splice(i, 1); tChart.update('none') } };
+    const disable = b => { b.disabled = true; b.style.opacity = '0.4' };
+    const enable = b => { b.disabled = false; b.style.opacity = '1' };
+
+    /* ---------- buttons ---------- */
+    const s1 = document.getElementById('s1'), s2 = document.getElementById('s2'), s3 = document.getElementById('s3'), s4 = document.getElementById('s4'), s4Box = document.getElementById('s4Box'), s5 = document.getElementById('s5'), sig = document.getElementById('significance');
+
+    s1.onclick = () => {
+      const numBlocks = Math.ceil(L / blockLength);
+      const blockColors = colorArray(numBlocks);
+      colors = Array.from({ length: L }, (_, i) => blockColors[Math.floor(i / blockLength)]);
+
+      // Fade original line so colored blocks are fully visible but original is still there
+      const origDs = tChart.data.datasets.find(ds => ds.label === 'Original');
+      if (origDs) {
+        origDs.borderColor = 'rgba(166, 124, 0, 0.2)';
+        origDs.backgroundColor = 'rgba(166, 124, 0, 0.2)';
+      }
+
+      addDs('Points', original.map((y, i) => ({ x: i + 1, y })), {
+        showLine: true,
+        pointRadius: 5,
+        pointBackgroundColor: colors,
+        borderWidth: 3,
+        segment: { borderColor: ctx => colors[ctx.p0DataIndex] }
+      });
+      disable(s1); enable(s2);
+    };
+
+    s2.onclick = () => {
+      detrended = original.map((v, i) => v - origTrend[i]);
+      remDs('Points');
+      addDs('Detrended', detrended.map((v, i) => ({ x: i + 1, y: v })), {
+        showLine: true,
+        pointRadius: 5,
+        pointBackgroundColor: colors,
+        segment: { borderColor: ctx => colors[ctx.p0DataIndex] }
+      });
+      disable(s2); enable(s3);
+    };
+
+    const swapToHist = () => {
+      document.getElementById('acfCanvas').style.display = 'none';
+      document.getElementById('histCanvas').style.display = 'block';
+    };
+
+    s3.onclick = () => {
+      swapToHist();
+      remDs('Detrended');
+      doSim();
+      manualCount++;
+      if (manualCount >= 30) { s4Box.style.display = 'flex'; enable(s4); }
+    };
+
+    s4.onclick = () => {
+      disable(s3); disable(s4);
+      const todo = 1000 - iters; let done = 0;
+      const fastLoop = () => {
+        const batchSize = done < 10 ? 1 : 10;
+        for (let i = 0; i < batchSize && done < todo; i++, done++)doSim();
+        if (done < todo) { requestAnimationFrame(fastLoop); } else { enable(s5); }
+      };
+      fastLoop();
+    };
+
+    s5.onclick = () => {
+      const pct = (trends.filter(t => t <= tr).length / trends.length) * 100;
+      const dir = tr >= 0 ? 'larger' : 'smaller';
+      const pct2 = tr >= 0 ? pct.toFixed(1) : (100 - pct).toFixed(1);
+      sig.innerHTML = `Actual trend is ${dir} than ${pct2}% of the randomised trends.<br><br>If the trend lies outside of 90/95 or 99 % of the randomised trends that would suggest the original trend is significant at the p<0.1, p<0.05 or p<0.01 level.<br><br>This block bootstrap method is a more robust way to test for significance in time series data. By resampling blocks of data instead of individual points, it preserves the short-term autocorrelation ('memory') that was present in the original series.<br>Compare the width of this histogram to the one from the 'Simple Bootstrap'. If the original data had autocorrelation, this histogram will be wider, providing a more realistic (and often less significant) assessment of the trend. This method correctly acknowledges that 'drifting' data can create large apparent trends by chance alone.`;
+      sig.style.display = 'block';
+      updateBins();
+      updateHist(tr, `Actual Trend (${pct2}th percentile)`);
+      disable(s5);
+    };
+
+    /* ---------- simulation ---------- */
+    function doSim() {
+      if (!detrended.length) return;
+      iters++;
+      const r = mul(Math.random() * 4294967296);
+      const numBlocks = Math.ceil(L / blockLength);
+      const sampledBlockIndices = [...Array(numBlocks)].map(() => Math.floor(r() * numBlocks));
+
+      let sample = [], idx = [];
+      for (const blockIndex of sampledBlockIndices) {
+        for (let i = 0; i < blockLength; i++) {
+          const originalIndex = blockIndex * blockLength + i;
+          if (originalIndex < L) {
+            sample.push(detrended[originalIndex]);
+            idx.push(originalIndex);
+          }
+        }
+      }
+      sample = sample.slice(0, L);
+      idx = idx.slice(0, L);
+      const resampledColors = idx.map(i => colors[i]);
+
+      remDs('Detrended'); remDs('ResampledPoints'); remDs('ResampledLine'); remDs('ResampledTrend');
+      addDs('ResampledPoints', sample.map((v, i) => ({ x: i + 1, y: v })), {
+        showLine: true,
+        pointRadius: 5,
+        pointBackgroundColor: resampledColors,
+        borderColor: 'rgba(0,0,0,0)', // Hide default line color so segment color shows? or just skip it.
+        borderWidth: 3,
+        segment: {
+          borderColor: ctx => {
+            const ds = tChart.data.datasets[ctx.datasetIndex];
+            return ds._customColors ? ds._customColors[ctx.p0DataIndex] : '#fff';
+          }
+        },
+        _customColors: resampledColors
+      });
+
+      const { m, b } = ss.linearRegression(sample.map((v, i) => [i, v]));
+      latestSlope = m;
+      const trendLine = sample.map((_, i) => m * i + b);
+      addDs('ResampledTrend', trendLine.map((v, i) => ({ x: i + 1, y: v })), { borderColor: '#ffeb3b', fill: false, pointRadius: 0, borderWidth: 3 });
+
+      trends.push(m);
+      document.getElementById('iterDisplay').textContent = 'Iterations: ' + iters;
+      updateBins();
+      updateHist();
+    }
+
+    function updateBins() {
+      if (trends.length) {
+        const pad = Math.max((Math.max(...trends) - Math.min(...trends)) * 0.1, 1e-6);
+        binMin = Math.min(...trends) - pad;
+        binMax = Math.max(...trends) + pad;
+      } else {
+        binMin = -Math.max(Math.abs(tr), σ * 2);
+        binMax = Math.max(Math.abs(tr), σ * 2);
+      }
+      binWidth = (binMax - binMin) / binCount;
+    }
+    function updateHist(actual = null, label = '') {
+      const data = [...Array(binCount)].map((_, i) => {
+        const left = binMin + i * binWidth;
+        const right = left + binWidth;
+        const c = trends.filter(v => v >= left && v < right).length;
+        return { x: left + binWidth / 2, y: c };
+      });
+      hChart.data.datasets[0].data = data;
+      const ann = {};
+      if (latestSlope !== null) {
+        ann.line = { type: 'line', xMin: latestSlope, xMax: latestSlope, borderColor: '#ffeb3b', borderWidth: 2, label: { content: 'Latest slope', display: true, position: 'top' } };
+        ann.lab = { type: 'label', xValue: latestSlope, yValue: hChart.scales?.y?.max * 0.9 ?? 10, backgroundColor: 'rgba(255,255,255,.8)', borderColor: '#3e3a36', color: '#3e3a36', font: { size: 12 }, content: latestSlope.toFixed(4) };
+      }
+      if (actual !== null) {
+        ann.actLine = { type: 'line', xMin: actual, xMax: actual, borderColor: '#ff6384', borderWidth: 2, label: { content: 'Actual', display: true, position: 'top' } };
+      }
+      hChart.options.plugins.annotation = { annotations: ann };
+      hChart.update('none');
+    }
+
+    const helpContent = {
+      's1-block': {
+        title: 'Choosing a Block Length',
+        body: `The block length is the most important choice in a block bootstrap. It's a trade-off:
+Short Blocks: Better for having lots of independent blocks to shuffle, but might not be long enough to capture the full 'memory' of the data.
+Long Blocks: Better for preserving the memory, but you end up with fewer blocks to shuffle, which can make the resampling less effective.
+The 'Rec' value is a common rule-of-thumb based on the data's first-order autocorrelation. The ideal block length is an area of active research, but the key is that it should be long enough to contain most of the data's dependency structure.`
+      }
+    };
+
+    function showHelp(id) {
+      const helpBox = document.getElementById('helpBox');
+      const helpTitle = document.getElementById('helpTitle');
+      const helpBody = document.getElementById('helpBody');
+
+      helpTitle.textContent = helpContent[id].title;
+      helpBody.textContent = helpContent[id].body;
+      helpBox.style.display = 'block';
+    }
+
+    function hideHelp() {
+      document.getElementById('helpBox').style.display = 'none';
+    }
+  </script>
+</body>
+
+</html>

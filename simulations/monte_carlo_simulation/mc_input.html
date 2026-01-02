@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Time Series Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      /* max-width removed to allow full width */
+      background-color: #3e3a36;
+      color: #d9cbb6;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-height: 100vh;
+      /* Changed to min-height */
+    }
+
+    h1 {
+      margin: 0;
+      padding-bottom: 10px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #d9cbb6;
+      user-select: none;
+    }
+
+    #main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    #chart-container {
+      height: 480px;
+      /* Explicit height */
+      flex: none;
+      /* Do not grow or shrink */
+      width: 100%;
+      background-color: #5a534d;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 10px #2f2b28;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    #timeSeriesChart {
+      flex-grow: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    #bottom-row {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      width: 100%;
+      flex-wrap: wrap;
+      /* responsive wrapping */
+    }
+
+    #instructions {
+      flex: 1 1 400px;
+      padding: 10px;
+      line-height: 1.5;
+    }
+
+    #controls-container {
+      flex: 1 1 400px;
+      /* Stop it from expanding */
+      display: flex;
+      flex-direction: row;
+      /* Layout controls in a row/grid */
+      flex-wrap: wrap;
+      gap: 15px;
+      /* Reduced gap */
+      background-color: transparent;
+      /* Remove container bg to let controls float or keep it if preferred. Let's keep it but adjust */
+      background-color: #5a534d;
+      border-radius: 8px;
+      padding: 10px;
+      /* Reduced padding */
+      box-shadow: 0 0 10px #2f2b28;
+      height: auto;
+      box-sizing: border-box;
+      align-items: center;
+      /* Center items vertically if they wrap */
+    }
+
+    .slider-container {
+      flex: 1 1 200px;
+      /* narrowed base width */
+      margin-bottom: 0;
+      font-size: 0.9rem;
+      /* Slightly smaller font for compactness */
+    }
+
+    .slider-container input[type="range"] {
+      margin: 5px 0 0 0;
+      /* Tighten up slider spacing */
+    }
+
+    #buttons-container {
+      flex: 1 1 100%;
+      /* Force buttons to new line or take full width if needed, or just let them wrap */
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    button {
+      width: auto;
+      min-width: 120px;
+      background-color: #8a7f73;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 16px;
+      /* slightly smaller padding */
+      font-weight: bold;
+      color: #3e3a36;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .slider-container {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #d9cbb6;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: none;
+      font-size: 1rem;
+      background-color: #7a6f63;
+      color: #d9cbb6;
+      cursor: pointer;
+    }
+
+    select option {
+      background-color: #7a6f63;
+      color: #d9cbb6;
+    }
+
+    button {
+      background-color: #8a7f73;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      font-weight: bold;
+      color: #3e3a36;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 48%;
+    }
+
+    button:hover {
+      background-color: #a89f94;
+    }
+
+    #buttons-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .help-icon {
+      cursor: pointer;
+      font-weight: bold;
+      color: #d9cbb6;
+      margin-left: 5px;
+      border: 1px solid #d9cbb6;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      text-align: center;
+      line-height: 20px;
+    }
+
+    .help-modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .help-modal-content {
+      background-color: #5a534d;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    }
+
+    .close-help {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close-help:hover,
+    .close-help:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 10px;">
+    <a href="../../app_playground.html"
+      style="color: #d9cbb6; text-decoration: none; background: #5a534d; padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #7a6f63;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="color: #d9cbb6; text-decoration: none; background: #5a534d; padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #7a6f63;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+  <h1>Time Series Generator & Test Setup</h1>
+  <div id="main-content">
+    <div id="chart-container">
+      <canvas id="timeSeriesChart"></canvas>
+    </div>
+
+    <div id="bottom-row">
+      <div id="instructions">
+        Our object is to use 'bootstrapping' or 'monte carlo resampling' to test if trend in your data is statistically
+        significant.
+        <br><br>
+        <b>Step 1:</b> Adjust the timeseries length, standard deviation, trend, and lag 1 autocorrelation (memory), to
+        create an input timeseries. You can also re-randomise the timeseries to generate alternative timeseries with
+        the
+        same properties.
+        <br><br>
+        <b>Step 2:</b> Select the Bootstrap Method that you want to try and press the Analyze this Series button.
+      </div>
+
+      <div id="controls-container">
+        <div class="slider-container">
+          <label for="lengthSlider">Length: <span id="lengthValue">100</span></label>
+          <input type="range" id="lengthSlider" min="10" max="500" step="1" value="100" />
+        </div>
+
+        <div class="slider-container">
+          <label for="stdDevSlider">Standard Deviation: <span id="stdDevValue">1.0</span></label>
+          <input type="range" id="stdDevSlider" min="0" max="5" step="0.1" value="1.0" />
+        </div>
+
+        <div class="slider-container">
+          <label for="trendSlider">Trend: <span id="trendValue">0.00</span></label>
+          <input type="range" id="trendSlider" min="-0.01" max="0.01" step="0.0001" value="0" />
+        </div>
+
+        <div class="slider-container">
+          <label for="autoCorrSlider">Temporal Autocorrelation: <span id="autoCorrValue">0.00</span></label> <span
+            class="help-icon" onclick="showHelp('ac')">?</span>
+          <input type="range" id="autoCorrSlider" min="0" max="0.99" step="0.01" value="0" />
+        </div>
+
+        <div class="slider-container">
+          <label for="bootstrapMethod">Bootstrap Method:</label> <span class="help-icon"
+            onclick="showHelp('bootstrap-methods')">?</span>
+          <select id="bootstrapMethod">
+            <option value="simple">Simple Bootstrap</option>
+            <option value="block">Block Bootstrap</option>
+            <option value="synthetic">Synthetic AR(1) timeseries</option>
+          </select>
+        </div>
+
+        <div id="buttons-container">
+          <button id="randomiseBtn">Randomise</button>
+          <button id="lockInBtn">Analyze this Series with a Bootstrap Test</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpModal" class="help-modal">
+    <div class="help-modal-content">
+      <span class="close-help" onclick="closeHelp()">&times;</span>
+      <h2 id="helpTitle"></h2>
+      <p id="helpBody"></p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const lengthSlider = document.getElementById('lengthSlider');
+    const stdDevSlider = document.getElementById('stdDevSlider');
+    const trendSlider = document.getElementById('trendSlider');
+    const autoCorrSlider = document.getElementById('autoCorrSlider');
+    const bootstrapMethodSelect = document.getElementById('bootstrapMethod');
+    const randomiseBtn = document.getElementById('randomiseBtn');
+    const lockInBtn = document.getElementById('lockInBtn');
+
+    const lengthValue = document.getElementById('lengthValue');
+    const stdDevValue = document.getElementById('stdDevValue');
+    const trendValue = document.getElementById('trendValue');
+    const autoCorrValue = document.getElementById('autoCorrValue');
+
+    // Initialize Chart.js chart
+    const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+    let chart = null;
+
+    // Seed for random number generation to allow randomise functionality
+    let randomSeed = Math.random();
+
+    // Simple seeded random number generator (Mulberry32)
+    function mulberry32(seed) {
+      return function () {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+    }
+
+    // Standard normal random number generator (Box-Muller transform) using seeded RNG
+    function randn_bm(rng) {
+      let u = 0, v = 0;
+      while (u === 0) u = rng();
+      while (v === 0) v = rng();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function generateTimeSeries(length, stdDev, trend, autoCorr, rng) {
+      const series = new Array(length);
+      const trendLine = new Array(length);
+      let noisePrev = 0;
+
+      for (let t = 0; t < length; t++) {
+        trendLine[t] = trend * t;
+        const noise = autoCorr * noisePrev + (1 - Math.abs(autoCorr)) * randn_bm(rng) * stdDev;
+        series[t] = trendLine[t] + noise;
+        noisePrev = noise;
+      }
+      return { series, trendLine };
+    }
+
+    function updateChart() {
+      const length = parseInt(lengthSlider.value);
+      const stdDev = parseFloat(stdDevSlider.value);
+      const trend = parseFloat(trendSlider.value);
+      const autoCorr = parseFloat(autoCorrSlider.value);
+
+      lengthValue.textContent = length;
+      stdDevValue.textContent = stdDev.toFixed(2);
+      trendValue.textContent = trend.toFixed(3);
+      autoCorrValue.textContent = autoCorr.toFixed(2);
+
+      const rng = mulberry32(Math.floor(randomSeed * 4294967296));
+      const { series, trendLine } = generateTimeSeries(length, stdDev, trend, autoCorr, rng);
+
+      const labels = Array.from({ length }, (_, i) => i + 1);
+
+      const data = {
+        labels: labels,
+        datasets: [
+          {
+            // No label to remove legend entry for time series
+            data: series,
+            borderColor: '#a67c00',
+            backgroundColor: '#a67c00',
+            fill: false,
+            pointRadius: 0,
+            borderWidth: 3,
+            tension: 0.2,
+          },
+          {
+            // No label to remove legend entry for trend line
+            data: trendLine,
+            borderColor: '#000',
+            backgroundColor: '#d9cbb6',
+            fill: false,
+            pointRadius: 0,
+            borderWidth: 2,
+            borderDash: [5, 5],
+            tension: 0,
+          }
+        ]
+      };
+
+      const options = {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: false
+            },
+            grid: {
+              color: '#7a6f63'
+            },
+            ticks: {
+              color: '#d9cbb6'
+            }
+          },
+          y: {
+            title: {
+              display: false
+            },
+            grid: {
+              color: '#7a6f63'
+            },
+            ticks: {
+              color: '#d9cbb6'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      };
+
+      if (chart) {
+        chart.data = data;
+        chart.options = options;
+        chart.update();
+      } else {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: data,
+          options: options
+        });
+      }
+    }
+
+    // Add event listeners to sliders for realtime update
+    lengthSlider.addEventListener('input', updateChart);
+    stdDevSlider.addEventListener('input', updateChart);
+    trendSlider.addEventListener('input', updateChart);
+    autoCorrSlider.addEventListener('input', updateChart);
+
+    // Randomise button generates new random seed and updates chart
+    randomiseBtn.addEventListener('click', () => {
+      randomSeed = Math.random();
+      updateChart();
+    });
+
+    // Lock in button currently just logs the current settings and series to console
+    lockInBtn.addEventListener('click', () => {
+      const length = parseInt(lengthSlider.value);
+      const stdDev = parseFloat(stdDevSlider.value);
+      const trend = parseFloat(trendSlider.value);
+      const autoCorr = parseFloat(autoCorrSlider.value);
+      const bootstrapMethod = bootstrapMethodSelect.value;
+
+      // Pass parameters including randomSeed via URL query parameters to mc_simulations.html
+      const params = new URLSearchParams({
+        length: length,
+        stdDev: stdDev,
+        trend: trend,
+        autoCorr: autoCorr,
+        bootstrapMethod: bootstrapMethod,
+        randomSeed: randomSeed
+      });
+
+      let targetUrl = 'mc_simulations.html';
+      if (bootstrapMethod === 'block') {
+        targetUrl = 'mc_simulations_block.html';
+      } else if (bootstrapMethod === 'synthetic') {
+        targetUrl = 'mc_simulations_ar.html';
+      }
+
+      window.open(`${targetUrl}?${params.toString()}`, '_blank');
+    });
+
+    const helpModal = document.getElementById('helpModal');
+    const helpTitle = document.getElementById('helpTitle');
+    const helpBody = document.getElementById('helpBody');
+
+    const helpContent = {
+      'ac': {
+        title: 'What is Autocorrelation?',
+        body: "Autocorrelation, or 'serial correlation', is the 'memory' in a time series. It measures how much the value at one point in time is related to the values at previous points.<br><br><b>High Autocorrelation (e.g., 0.9):</b> The series is smooth and 'drifts'. Today's value is very similar to yesterday's. This is common in physical or economic data.<br><br><b>Zero Autocorrelation:</b> The series is 'spiky' like random noise. Today's value has no relation to yesterday's.<br><br><b>Why it Matters:</b> The amount of autocorrelation dramatically affects significance testing. A high autocorrelation can create the illusion of a trend where none exists. Your choice of bootstrap method must account for this!"
+      },
+      'bootstrap-methods': {
+        title: 'Choosing the Right Test',
+        body: "The goal of a bootstrap is to simulate thousands of new time series that are like your original one, but with the trend removed. The key question is: how do you 'scramble' the data to create new series while respecting its properties?<br><br><b>Simple Bootstrap:</b> Assumes each data point is independent (zero autocorrelation). It scrambles all the individual noise points. This is usually wrong for time series data but is a useful starting point to see why it's wrong.<br><br><b>Block Bootstrap:</b> Acknowledges that data points have 'memory'. It breaks the noise into blocks and shuffles the blocks. This preserves the short-term autocorrelation structure. This is a much better approach for most time series.<br><br><b>Synthetic AR(1):</b> Assumes the 'memory' can be described by a simple mathematical model (an Autoregressive model of order 1). It estimates the model's parameters from your data and then generates brand new, completely synthetic noise based on that model. This is a parametric bootstrap."
+      }
+    };
+
+    function showHelp(topic) {
+      helpTitle.textContent = helpContent[topic].title;
+      helpBody.innerHTML = helpContent[topic].body;
+      helpModal.style.display = 'block';
+    }
+
+    function closeHelp() {
+      helpModal.style.display = 'none';
+    }
+
+    window.onclick = function (event) {
+      if (event.target == helpModal) {
+        closeHelp();
+      }
+    }
+
+    // Initial chart render
+    updateChart();
+  </script>
+</body>
+
+</html>

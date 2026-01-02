@@ -1,0 +1,876 @@
+#!/usr/bin/env python3
+"""
+AI News & Podcast Scanner v2
+============================
+Improved version with:
+- Better keyword matching (regex-based, case-insensitive)
+- Stronger model prompting to retain AI-related podcasts
+- Separate podcast-only model call to avoid drowning in news items
+"""
+
+import os
+import re
+import time
+import hashlib
+import subprocess
+import email.utils
+from datetime import datetime, timedelta
+
+import feedparser
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# ----------------- CONFIG -----------------
+
+# News RSS feeds
+NEWS_FEEDS = {
+    "Science": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+    "Nature": "https://www.nature.com/nature.rss",
+    "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
+    "Anthropic": "https://www.anthropic.com/news/rss.xml",
+    "Center for AI Safety": "https://www.safe.ai/blog?format=rss",
+    "Future of Life Institute": "https://futureoflife.org/feed/",
+    "AI Now Institute": "https://ainowinstitute.org/feed.xml",
+    "OpenAI": "https://openai.com/blog/rss.xml",
+    "DeepMind": "https://deepmind.google/feed/basic.xml",
+    "Brookings – AI & Emerging Tech": "https://www.brookings.edu/series/artificial-intelligence/feed/",
+    "MIT Technology Review": "https://www.technologyreview.com/feed/",
+    "The Conversation – Technology": "https://theconversation.com/us/technology/articles.atom",
+    "The Conversation – Education": "https://theconversation.com/us/education/articles.atom",
+}
+
+# Podcast RSS feeds – broad, big-picture shows.
+PODCAST_FEEDS = {
+    "The Daily": "https://feeds.simplecast.com/54nAGcIl",
+    "Lex Fridman Podcast": "https://lexfridman.com/feed/podcast/",
+    "Making Sense with Sam Harris": "https://wakingup.libsyn.com/rss",
+    "The Ezra Klein Show": "https://feeds.megaphone.fm/ezrakleinshow",
+    "Eye on A.I.": "https://rss.art19.com/eye-on-ai",
+    "The Last Invention": "https://feeds.megaphone.fm/thelastinvention",
+    "The Diary Of A CEO": "https://rss2.flightcast.com/xmsftuzjjykcmqwolaqn6mdn",
+    "The Good Fight": "https://feeds.megaphone.fm/thegoodfight",
+    "In Machines We Trust (MIT Tech Review)": "https://feeds.megaphone.fm/inmachineswetrust",
+    "In Machines We Trust AI": "https://feeds.megaphone.fm/inmachineswetrustai",
+    "DeepMind: The Podcast": "https://feeds.simplecast.com/JT6pbPkg",
+    "Google DeepMind: The Podcast": "https://feeds.simplecast.com/JT6pbPkg",  # alias in case title differs
+}
+
+OUTPUT_DIR = "ai_news_outputs"
+USAGE_LOG_FILE = "ai_usage_log.csv"
+
+# Max total items in final briefing (news + podcasts together)
+MAX_ITEMS_TOTAL = 12
+
+# Max number of candidate items we ever send to the model
+MAX_CANDIDATES_FOR_MODEL = 120
+
+# Max characters of summary per item passed into the model
+MAX_SUMMARY_CHARS = 800
+
+# --- MODEL & PRICING ---
+
+MODEL_NAME = "gpt-4o-mini"  # Changed from gpt-5-mini which doesn't exist
+
+# Pricing for gpt-4o-mini (USD per 1M tokens)
+MODEL_PRICING = {
+    "gpt-4o-mini": {
+        "input_per_million": 0.15,
+        "output_per_million": 0.60,
+    },
+    "gpt-4o": {
+        "input_per_million": 2.50,
+        "output_per_million": 10.00,
+    },
+}
+
+# ----------------- IMPROVED AI KEYWORD DETECTION -----------------
+
+# Regex patterns for AI relevance (case-insensitive, word-boundary aware)
+AI_PATTERNS = [
+    r'\bai\b',                      # "AI" as a word (not "said", "wait", etc.)
+    r'\ba\.i\.\b',                  # "A.I."
+    r'\bartificial intelligence\b',
+    r'\bagi\b',                     # Artificial General Intelligence
+    r'\bmachine learning\b',
+    r'\bdeep learning\b',
+    r'\bneural network',            # neural network(s)
+    r'\blarge language model',      # LLM(s)
+    r'\bllm\b',
+    r'\bgpt[-\s]?\d',               # GPT-4, GPT 5, etc.
+    r'\bchatgpt\b',
+    r'\bclaude\b',                  # Anthropic's Claude
+    r'\bgemini\b',                  # Google's Gemini (context-dependent but worth catching)
+    r'\bopenai\b',
+    r'\banthropic\b',
+    r'\bdeepmi?nd\b',               # DeepMind
+    r'\balignment\b',               # AI alignment
+    r'\bai safety\b',
+    r'\bai risk',
+    r'\bai polic',                  # policy, policies
+    r'\bai govern',                 # governance, government
+    r'\bai regulation',
+    r'\bai ethics\b',
+    r'\bgenerative ai\b',
+    r'\bfoundation model',
+    r'\btransformer\s*(model|architecture)?\b',
+    r'\breinforcement learning\b',
+    r'\bautonomous\s+(weapon|system|agent)',
+    r'\brobot(ic)?s?\b.*\b(ai|intelligen)',  # robotics + AI context
+    r'\b(ai|intelligen).*\brobot',
+]
+
+# Compile patterns for efficiency
+_AI_REGEX = re.compile('|'.join(AI_PATTERNS), re.IGNORECASE)
+
+
+def is_ai_related_text(text: str) -> bool:
+    """
+    Check if text is AI-related using regex patterns.
+    More robust than simple substring matching.
+    """
+    if not text:
+        return False
+    return bool(_AI_REGEX.search(text))
+
+
+# ----------------- SETUP -----------------
+
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# ----------------- UTILITIES -----------------
+
+def get_entry_summary(entry):
+    """
+    Try to get a short textual summary/description from the RSS entry.
+    """
+    for attr in ["summary", "description"]:
+        if getattr(entry, attr, None):
+            return getattr(entry, attr)
+    return getattr(entry, "title", "")
+
+
+def notify_mac(message: str):
+    """
+    Show a macOS notification (no-op if osascript is unavailable).
+    """
+    try:
+        subprocess.run(
+            [
+                "osascript",
+                "-e",
+                f'display notification "{message}" with title "AI Feeds"'
+            ],
+            check=False,
+        )
+    except Exception:
+        pass
+
+
+def log_usage(model_name: str, usage, cost_usd: float):
+    """
+    Append usage info to a CSV file: timestamp, model, tokens, cost.
+    """
+    timestamp = datetime.now().isoformat(timespec="seconds")
+
+    prompt_tokens = getattr(usage, "prompt_tokens", None)
+    completion_tokens = getattr(usage, "completion_tokens", None)
+    total_tokens = getattr(usage, "total_tokens", None)
+
+    file_exists = os.path.exists(USAGE_LOG_FILE)
+
+    with open(USAGE_LOG_FILE, "a", encoding="utf-8") as f:
+        if not file_exists:
+            f.write(
+                "timestamp,model,prompt_tokens,completion_tokens,total_tokens,cost_usd\n"
+            )
+        f.write(
+            f"{timestamp},{model_name},{prompt_tokens},{completion_tokens},"
+            f"{total_tokens},{cost_usd:.6f}\n"
+        )
+
+
+def compute_cost(model_name: str, usage):
+    """
+    Compute rough cost in USD from token usage and MODEL_PRICING.
+    """
+    prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
+    completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+
+    pricing = MODEL_PRICING.get(model_name)
+    if not pricing:
+        return 0.0
+
+    input_rate = pricing["input_per_million"] / 1_000_000.0
+    output_rate = pricing["output_per_million"] / 1_000_000.0
+
+    return prompt_tokens * input_rate + completion_tokens * output_rate
+
+
+def parse_entry_date(entry):
+    """
+    Try to parse a feed entry's published/updated date.
+    Returns a naive datetime (local time) or None if not parseable.
+    """
+    for attr in ["published_parsed", "updated_parsed"]:
+        parsed = getattr(entry, attr, None)
+        if parsed is not None:
+            try:
+                return datetime.fromtimestamp(time.mktime(parsed))
+            except Exception:
+                pass
+
+    for attr in ["published", "updated", "pubDate"]:
+        val = getattr(entry, attr, None)
+        if val:
+            try:
+                dt = email.utils.parsedate_to_datetime(val)
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone().replace(tzinfo=None)
+                return dt
+            except Exception:
+                pass
+
+    return None
+
+
+def make_uid(feed_url, entry, dt):
+    """
+    Create a reasonably stable ID per entry.
+    """
+    candidates = []
+    if getattr(entry, "id", None):
+        candidates.append(str(entry.id))
+    if getattr(entry, "link", None):
+        candidates.append(str(entry.link))
+    if getattr(entry, "title", None):
+        candidates.append(str(entry.title))
+    if dt is not None:
+        candidates.append(dt.isoformat())
+
+    base = "|".join(candidates) if candidates else f"{feed_url}|{time.time()}"
+    return hashlib.sha256(base.encode("utf-8")).hexdigest()
+
+
+def get_entry_link(entry):
+    """
+    Try to get a usable URL for an entry.
+    """
+    link = getattr(entry, "link", None)
+    if link:
+        return link
+
+    links = getattr(entry, "links", None)
+    if links:
+        for l in links:
+            if isinstance(l, dict):
+                href = l.get("href")
+                if href:
+                    return href
+
+    enclosures = getattr(entry, "enclosures", None)
+    if enclosures:
+        for enc in enclosures:
+            if isinstance(enc, dict):
+                href = enc.get("href")
+                if href:
+                    return href
+
+    entry_id = getattr(entry, "id", None)
+    if isinstance(entry_id, str) and entry_id.startswith("http"):
+        return entry_id
+
+    return None
+
+
+# ----------------- FETCH FEEDS (LAST 7 DAYS) -----------------
+
+def collect_items_last_week():
+    """
+    Fetch items from news & podcast feeds published in the last 7 days.
+
+    Returns:
+      news_items: all news items (model will filter for AI relevance)
+      podcast_items: AI-keyword-matched podcast episodes
+      podcast_debug: all podcast episodes for debugging
+      feed_stats: per-feed statistics
+    """
+    seven_days_ago = datetime.now() - timedelta(days=7)
+
+    news_items = []
+    podcast_items = []
+    podcast_debug = []
+    seen_uids = set()
+
+    # Track per-feed statistics
+    feed_stats = {}
+
+    def process_feed(feed_name, feed_url, item_type):
+        nonlocal news_items, podcast_items, seen_uids, podcast_debug, feed_stats
+        if not feed_url:
+            return
+
+        # Initialize stats for this feed
+        feed_stats[feed_name] = {
+            'type': item_type,
+            'total_7days': 0,
+            'ai_matched': 0,
+            'error': None
+        }
+
+        try:
+            parsed = feedparser.parse(feed_url)
+        except Exception as e:
+            print(f"  Warning: Failed to parse {feed_name}: {e}")
+            feed_stats[feed_name]['error'] = str(e)
+            return
+
+        feed_title = getattr(parsed.feed, "title", feed_name) or feed_name
+
+        for entry in getattr(parsed, "entries", []):
+            entry_date = parse_entry_date(entry)
+            if entry_date is None:
+                continue
+
+            if entry_date < seven_days_ago:
+                continue
+
+            link = get_entry_link(entry) or ""
+            title = (getattr(entry, "title", "") or "").strip()
+            if not title:
+                continue
+
+            summary = (get_entry_summary(entry) or "").strip()
+
+            uid = make_uid(feed_url, entry, entry_date)
+            if uid in seen_uids:
+                continue
+            seen_uids.add(uid)
+
+            # Count this item for the feed
+            feed_stats[feed_name]['total_7days'] += 1
+
+            item_data = {
+                "uid": uid,
+                "source": feed_title,
+                "title": title,
+                "summary": summary,
+                "link": link,
+                "item_type": item_type,
+                "date": entry_date.isoformat(),
+            }
+
+            if item_type == "podcast":
+                combined_text = f"{title}\n{summary}"
+                ai_match = is_ai_related_text(combined_text)
+
+                # Debug list: all podcasts
+                podcast_debug.append({
+                    **item_data,
+                    "ai_keyword_match": ai_match,
+                })
+
+                # Only include AI-related podcasts for model
+                if ai_match:
+                    podcast_items.append(item_data)
+                    feed_stats[feed_name]['ai_matched'] += 1
+            else:
+                news_items.append(item_data)
+                # News items all go to model, so count them as "matched" for now
+                # (actual AI filtering happens at model level)
+                feed_stats[feed_name]['ai_matched'] += 1
+
+    print("Fetching news feeds...")
+    for name, url in NEWS_FEEDS.items():
+        print(f"  {name}")
+        process_feed(name, url, "news")
+
+    print("Fetching podcast feeds...")
+    for name, url in PODCAST_FEEDS.items():
+        print(f"  {name}")
+        process_feed(name, url, "podcast")
+
+    # Sort newest first
+    news_items.sort(key=lambda x: x["date"], reverse=True)
+    podcast_items.sort(key=lambda x: x["date"], reverse=True)
+    podcast_debug.sort(key=lambda x: x["date"], reverse=True)
+
+    print(f"\nFound {len(news_items)} news items, {len(podcast_items)} AI-related podcasts "
+          f"(of {len(podcast_debug)} total podcasts)")
+
+    return news_items, podcast_items, podcast_debug, feed_stats
+
+
+# ----------------- LLM CALLS -----------------
+
+def build_items_text(items):
+    """
+    Construct plain-text blocks describing each item for the model.
+    """
+    blocks = []
+    for i, item in enumerate(items, start=1):
+        truncated_summary = (item["summary"] or "").replace("\n", " ")
+        if len(truncated_summary) > MAX_SUMMARY_CHARS:
+            truncated_summary = truncated_summary[:MAX_SUMMARY_CHARS] + "..."
+
+        block = [
+            f"Item {i}:",
+            f"Type: {item['item_type']}",
+            f"Source: {item['source']}",
+            f"Title: {item['title']}",
+            f"Date: {item['date']}",
+            f"Summary: {truncated_summary}",
+            f"Link: {item['link']}",
+        ]
+        blocks.append("\n".join(block))
+    return "\n\n".join(blocks)
+
+
+def call_model_for_news(news_items):
+    """
+    Call model to filter and summarize AI-related NEWS items.
+    """
+    if not news_items:
+        return "No news items to process.", None
+        
+    items_text = build_items_text(news_items[:MAX_CANDIDATES_FOR_MODEL])
+
+    system_prompt = """
+You are an AI research analyst producing a structured news briefing.
+Output ONLY the markdown format described below, with NO extra commentary.
+
+Include news items whose main subject is substantially about:
+- AI, machine learning, deep learning, AGI, LLMs
+- AI safety, alignment, governance, ethics, regulation
+- AI's impact on education, research, climate, economics, policy, society
+- AI harms, misuse, or major deployments
+
+EXCLUDE items that only mention AI in passing or are primarily about unrelated topics.
+
+OUTPUT FORMAT:
+# AI & AGI News Briefing
+
+## N1. <Title>
+- **Source:** <Source>
+- **URL:** <Link>
+- **One-line summary:** <~25 words>
+- **Detailed summary:** <~150 words>
+- **Keywords:** keyword1; keyword2; keyword3
+
+[Continue for all qualifying items...]
+
+If no items qualify, write: "No strongly AI-related news items found."
+""".strip()
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"NEWS ITEMS:\n\n{items_text}"},
+        ],
+    )
+
+    return response.choices[0].message.content, response.usage
+
+
+def call_model_for_podcasts(podcast_items):
+    """
+    Call model to summarize AI-related PODCAST episodes.
+    These have already been pre-filtered by keywords, so we're more inclusive.
+    """
+    if not podcast_items:
+        return "# AI & AGI Podcast Episodes\n\nNo AI-related podcast episodes found.", None
+
+    items_text = build_items_text(podcast_items)
+
+    system_prompt = """
+You are an AI research analyst summarizing podcast episodes about AI.
+Output ONLY the markdown format below, NO extra commentary.
+
+IMPORTANT: These episodes have already been pre-filtered as AI-related.
+Your job is to summarize ALL of them, not to filter further.
+Include EVERY episode provided unless it is clearly a false positive
+(e.g., "AI" in the title refers to something other than artificial intelligence).
+
+OUTPUT FORMAT:
+# AI & AGI Podcast Episodes
+
+## P1. <Show> – <Episode Title>
+- **Show:** <Show name>
+- **Episode:** <Title>
+- **Date:** <Date>
+- **Summary:** <~150 words, accessible to general audience>
+- **URL:** <Link>
+
+[Continue for ALL episodes...]
+""".strip()
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"PODCAST EPISODES (all pre-filtered as AI-related):\n\n{items_text}"},
+        ],
+    )
+
+    return response.choices[0].message.content, response.usage
+
+
+# ----------------- STATISTICS OUTPUT -----------------
+
+def print_feed_statistics(feed_stats):
+    """
+    Print per-feed statistics to console in a formatted table.
+    """
+    print("\n" + "=" * 80)
+    print("PER-FEED STATISTICS (Last 7 Days)")
+    print("=" * 80)
+
+    # Separate news and podcast feeds
+    news_feeds = {k: v for k, v in feed_stats.items() if v['type'] == 'news'}
+    podcast_feeds = {k: v for k, v in feed_stats.items() if v['type'] == 'podcast'}
+
+    def print_section(title, feeds):
+        print(f"\n{title}")
+        print("-" * 80)
+        print(f"{'Feed Name':<40} {'Total':<10} {'AI Match':<12} {'Status'}")
+        print("-" * 80)
+
+        for name, stats in sorted(feeds.items()):
+            total = stats['total_7days']
+            matched = stats['ai_matched']
+            error = stats.get('error')
+
+            if error:
+                status = f"ERROR: {error[:30]}"
+            elif total == 0:
+                status = "⚠️ NO ITEMS"
+            elif matched == 0:
+                status = "No AI matches"
+            else:
+                status = "✓"
+
+            # Truncate long feed names
+            display_name = name[:38] + ".." if len(name) > 40 else name
+            print(f"{display_name:<40} {total:<10} {matched:<12} {status}")
+
+        # Summary
+        total_items = sum(s['total_7days'] for s in feeds.values())
+        total_matched = sum(s['ai_matched'] for s in feeds.values())
+        zero_feeds = sum(1 for s in feeds.values() if s['total_7days'] == 0 and not s.get('error'))
+        error_feeds = sum(1 for s in feeds.values() if s.get('error'))
+
+        print("-" * 80)
+        print(f"{'TOTAL:':<40} {total_items:<10} {total_matched:<12}")
+        if zero_feeds > 0:
+            print(f"\n⚠️  {zero_feeds} feed(s) with no items in last 7 days")
+        if error_feeds > 0:
+            print(f"❌ {error_feeds} feed(s) with errors")
+
+    print_section("📰 NEWS FEEDS", news_feeds)
+    print_section("🎙️  PODCAST FEEDS", podcast_feeds)
+    print("=" * 80 + "\n")
+
+
+def write_feed_statistics_file(feed_stats, timestamp_str):
+    """
+    Write detailed feed statistics to a markdown file.
+    """
+    stats_path = os.path.join(OUTPUT_DIR, f"feed_stats_{timestamp_str}.md")
+
+    lines = []
+    lines.append("# RSS Feed Statistics Report\n")
+    lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+    lines.append("**Period:** Last 7 days\n")
+
+    # Summary
+    news_feeds = {k: v for k, v in feed_stats.items() if v['type'] == 'news'}
+    podcast_feeds = {k: v for k, v in feed_stats.items() if v['type'] == 'podcast'}
+
+    total_news = sum(s['total_7days'] for s in news_feeds.values())
+    total_podcasts = sum(s['total_7days'] for s in podcast_feeds.values())
+    matched_news = sum(s['ai_matched'] for s in news_feeds.values())
+    matched_podcasts = sum(s['ai_matched'] for s in podcast_feeds.values())
+
+    lines.append("\n## Summary\n")
+    lines.append(f"- **News Feeds:** {len(news_feeds)} configured, {total_news} items found, {matched_news} sent to model\n")
+    lines.append(f"- **Podcast Feeds:** {len(podcast_feeds)} configured, {total_podcasts} items found, {matched_podcasts} AI-matched\n")
+
+    def write_section(title, feeds):
+        lines.append(f"\n## {title}\n")
+        lines.append("| Feed Name | Total Items (7d) | AI Matched | Status |")
+        lines.append("|-----------|------------------|------------|--------|")
+
+        for name, stats in sorted(feeds.items()):
+            total = stats['total_7days']
+            matched = stats['ai_matched']
+            error = stats.get('error')
+
+            if error:
+                status = f"ERROR: {error}"
+            elif total == 0:
+                status = "⚠️ No items"
+            elif matched == 0:
+                status = "No AI matches"
+            else:
+                status = "✓ Active"
+
+            lines.append(f"| {name} | {total} | {matched} | {status} |")
+
+        # Find feeds with issues
+        zero_feeds = [name for name, s in feeds.items() if s['total_7days'] == 0 and not s.get('error')]
+        error_feeds = [name for name, s in feeds.items() if s.get('error')]
+
+        if zero_feeds:
+            lines.append(f"\n**⚠️ Feeds with no items:** {', '.join(zero_feeds)}\n")
+        if error_feeds:
+            lines.append(f"\n**❌ Feeds with errors:** {', '.join(error_feeds)}\n")
+
+    write_section("News Feeds", news_feeds)
+    write_section("Podcast Feeds", podcast_feeds)
+
+    with open(stats_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    print(f"Wrote feed statistics to {stats_path}")
+
+
+# ----------------- DEBUG FILES -----------------
+
+def write_news_debug_file(news_items, timestamp_str):
+    """
+    Write debug file listing all news items seen.
+    """
+    if not news_items:
+        return
+
+    debug_path = os.path.join(OUTPUT_DIR, f"news_last7days_{timestamp_str}.md")
+    lines = []
+    lines.append("# News articles seen in the last 7 days\n")
+    lines.append(
+        "_This file lists **all** news articles fetched from your feeds in the last 7 days, "
+        "before model-level filtering. All items are sent to the model for AI-relevance assessment._\n"
+    )
+    lines.append(f"\n**Total items:** {len(news_items)}\n")
+
+    # Group by source for easier review
+    by_source = {}
+    for item in news_items:
+        source = item['source']
+        if source not in by_source:
+            by_source[source] = []
+        by_source[source].append(item)
+
+    for source in sorted(by_source.keys()):
+        items = by_source[source]
+        lines.append(f"\n## {source} ({len(items)} items)\n")
+
+        for i, article in enumerate(items, start=1):
+            lines.append(f"### {i}. {article['title']}")
+            lines.append(f"- **Date:** {article['date']}")
+            lines.append(f"- **URL:** {article['link']}")
+
+            # Check if it contains AI keywords (informational only - all items go to model anyway)
+            combined_text = f"{article['title']}\n{article['summary']}"
+            has_ai_keywords = is_ai_related_text(combined_text)
+            lines.append(f"- **Contains AI keywords:** {'yes' if has_ai_keywords else 'no'}")
+
+            if article["summary"]:
+                short_summary = article["summary"].replace("\n", " ")
+                if len(short_summary) > 400:
+                    short_summary = short_summary[:400] + "..."
+                lines.append(f"- **Summary excerpt:** {short_summary}")
+            lines.append("")
+
+    with open(debug_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    print(f"Wrote news debug file with {len(news_items)} articles")
+
+
+def write_podcast_debug_file(podcast_debug, timestamp_str):
+    """
+    Write debug file listing all podcast episodes seen.
+    """
+    if not podcast_debug:
+        return
+
+    debug_path = os.path.join(OUTPUT_DIR, f"podcasts_last7days_{timestamp_str}.md")
+    lines = []
+    lines.append("# Podcast episodes seen in the last 7 days\n")
+    lines.append(
+        "_This file lists **all** podcast episodes fetched from your feeds in the last 7 days, "
+        "before model-level curation. It is for debugging and manual review._\n"
+    )
+
+    for i, ep in enumerate(podcast_debug, start=1):
+        lines.append(f"## P{i}. {ep['source']} – {ep['title']}")
+        lines.append(f"- **Date:** {ep['date']}")
+        lines.append(f"- **URL:** {ep['link']}")
+        lines.append(f"- **AI keyword match:** {'yes' if ep['ai_keyword_match'] else 'no'}")
+        if ep["summary"]:
+            short_summary = ep["summary"].replace("\n", " ")
+            if len(short_summary) > 400:
+                short_summary = short_summary[:400] + "..."
+            lines.append(f"- **Summary excerpt:** {short_summary}")
+        lines.append("")
+
+    with open(debug_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    print(f"Wrote podcast debug file with {len(podcast_debug)} episodes")
+
+
+# ----------------- ARCHIVE INDEX -----------------
+
+def generate_archive_index():
+    """
+    Generate an index of all archived AI news markdown files.
+    Excludes the latest file since it's already shown as ai_news_latest.md.
+    """
+    import json
+    import glob
+
+    # Find all timestamped ai_news files
+    pattern = os.path.join(OUTPUT_DIR, "ai_news_[0-9]*-[0-9]*.md")
+    all_files = glob.glob(pattern)
+
+    if not all_files:
+        # No archives yet
+        index_path = os.path.join(OUTPUT_DIR, "archive_index.json")
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump({"archives": []}, f, indent=2)
+        return
+
+    # Sort by filename (which sorts by timestamp due to YYYYMMDD-HHMM format)
+    all_files.sort(reverse=True)  # Newest first
+
+    # Exclude the newest file (it's the same as ai_news_latest.md)
+    archive_files = all_files[1:] if len(all_files) > 1 else []
+
+    archives = []
+    for filepath in archive_files:
+        filename = os.path.basename(filepath)
+
+        # Extract timestamp from filename: ai_news_20251222-2008.md
+        try:
+            timestamp_part = filename.replace("ai_news_", "").replace(".md", "")
+            # Parse YYYYMMDD-HHMM format
+            date_str, time_str = timestamp_part.split("-")
+            year = date_str[:4]
+            month = date_str[4:6]
+            day = date_str[6:8]
+            hour = time_str[:2]
+            minute = time_str[2:4]
+
+            # Create ISO datetime string
+            iso_date = f"{year}-{month}-{day}T{hour}:{minute}"
+            # Create display date (DD/MM/YYYY HH:MM)
+            display_date = f"{day}/{month}/{year} {hour}:{minute}"
+
+            archives.append({
+                "filename": filename,
+                "timestamp": timestamp_part,
+                "date": iso_date,
+                "display_date": display_date
+            })
+        except Exception as e:
+            print(f"Warning: Could not parse timestamp from {filename}: {e}")
+            continue
+
+    # Write the index
+    index_path = os.path.join(OUTPUT_DIR, "archive_index.json")
+    index_data = {
+        "archives": archives,
+        "generated": datetime.now().isoformat(),
+        "latest_file": os.path.basename(all_files[0]) if all_files else None
+    }
+
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(index_data, f, indent=2)
+
+    print(f"Generated archive index with {len(archives)} archived files")
+
+
+# ----------------- MAIN -----------------
+
+def main():
+    news_items, podcast_items, podcast_debug, feed_stats = collect_items_last_week()
+
+    # Print feed statistics
+    print_feed_statistics(feed_stats)
+
+    if not news_items and not podcast_items:
+        print("No items from the last 7 days.")
+        notify_mac("No items from the last 7 days in RSS/podcast feeds.")
+        return
+
+    total_cost = 0.0
+    total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    # Process news
+    print("\nProcessing news items with model...")
+    news_markdown, news_usage = call_model_for_news(news_items)
+    if news_usage:
+        total_cost += compute_cost(MODEL_NAME, news_usage)
+        total_usage["prompt_tokens"] += news_usage.prompt_tokens or 0
+        total_usage["completion_tokens"] += news_usage.completion_tokens or 0
+        total_usage["total_tokens"] += news_usage.total_tokens or 0
+
+    # Process podcasts (separate call to avoid them being drowned out)
+    print("Processing podcast episodes with model...")
+    podcast_markdown, podcast_usage = call_model_for_podcasts(podcast_items)
+    if podcast_usage:
+        total_cost += compute_cost(MODEL_NAME, podcast_usage)
+        total_usage["prompt_tokens"] += podcast_usage.prompt_tokens or 0
+        total_usage["completion_tokens"] += podcast_usage.completion_tokens or 0
+        total_usage["total_tokens"] += podcast_usage.total_tokens or 0
+
+    # Combine outputs
+    combined_markdown = f"{news_markdown}\n\n{podcast_markdown}"
+
+    # Log usage
+    class UsageWrapper:
+        def __init__(self, d):
+            self.prompt_tokens = d["prompt_tokens"]
+            self.completion_tokens = d["completion_tokens"]
+            self.total_tokens = d["total_tokens"]
+    
+    log_usage(MODEL_NAME, UsageWrapper(total_usage), total_cost)
+
+    # Save files
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    output_path = os.path.join(OUTPUT_DIR, f"ai_news_{timestamp}.md")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(combined_markdown)
+        f.write(
+            f"\n\n---\n"
+            f"_Generated: {datetime.now().isoformat(timespec='minutes')}_\n"
+            f"_Tokens: {total_usage['prompt_tokens']} prompt + {total_usage['completion_tokens']} completion_\n"
+            f"_Cost: ~${total_cost:.4f}_\n"
+        )
+
+    # Also update "latest" file
+    latest_path = os.path.join(OUTPUT_DIR, "ai_news_latest.md")
+    import shutil
+    shutil.copyfile(output_path, latest_path)
+
+    # Write debug and statistics files
+    write_news_debug_file(news_items, timestamp)
+    write_podcast_debug_file(podcast_debug, timestamp)
+    write_feed_statistics_file(feed_stats, timestamp)
+
+    # Generate archive index for web display
+    generate_archive_index()
+
+    print(f"\nUsage: prompt={total_usage['prompt_tokens']}, "
+          f"completion={total_usage['completion_tokens']}, "
+          f"cost=${total_cost:.4f}")
+    print(f"Wrote briefing to {output_path}")
+    notify_mac(f"AI briefing updated (cost ${total_cost:.4f})")
+
+
+if __name__ == "__main__":
+    main()

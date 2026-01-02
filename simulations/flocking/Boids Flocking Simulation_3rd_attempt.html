@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boids Flocking Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        #container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            border: 1px solid #444;
+            background: #0a0a0a;
+            display: block;
+        }
+        
+        #controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .value {
+            text-align: right;
+            font-size: 12px;
+            color: #66d9ff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .info-button {
+            width: 100%;
+            background: #2196F3;
+            margin-top: 10px;
+        }
+        
+        .info-button:hover {
+            background: #1976D2;
+        }
+        
+        .help-btn {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #555;
+            color: #fff;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 5px;
+            float: right;
+        }
+        
+        .help-btn:hover {
+            background: #777;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: #2a2a2a;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #444;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            color: #fff;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h2 {
+            color: #66d9ff;
+            margin-top: 0;
+        }
+        
+        .modal-content h3 {
+            color: #66d9ff;
+            margin-top: 20px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #fff;
+        }
+        
+        .equation {
+            background: #1a1a1a;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .parameter-group {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        code {
+            background: #1a1a1a;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        h3 {
+            margin-top: 0;
+            color: #66d9ff;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="controls">
+            <h3>Flocking Parameters</h3>
+            
+            <div class="control-group">
+                <label for="separation">Separation Force <span class="help-btn" data-help="separation">?</span></label>
+                <input type="range" id="separation" min="0" max="3" step="0.1" value="1.5">
+                <div class="value" id="separationValue">1.5</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="alignment">Alignment Force <span class="help-btn" data-help="alignment">?</span></label>
+                <input type="range" id="alignment" min="0" max="3" step="0.1" value="1.0">
+                <div class="value" id="alignmentValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="cohesion">Cohesion Force <span class="help-btn" data-help="cohesion">?</span></label>
+                <input type="range" id="cohesion" min="0" max="3" step="0.1" value="1.0">
+                <div class="value" id="cohesionValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="perception">Perception Radius <span class="help-btn" data-help="perception">?</span></label>
+                <input type="range" id="perception" min="20" max="150" step="5" value="50">
+                <div class="value" id="perceptionValue">50px</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="maxSpeed">Max Speed <span class="help-btn" data-help="maxSpeed">?</span></label>
+                <input type="range" id="maxSpeed" min="1" max="6" step="0.5" value="3">
+                <div class="value" id="maxSpeedValue">3.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="numBoids">Number of Boids <span class="help-btn" data-help="numBoids">?</span></label>
+                <input type="range" id="numBoids" min="10" max="300" step="10" value="100">
+                <div class="value" id="numBoidsValue">100</div>
+            </div>
+            
+            <div class="control-group" style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                <label for="numPredators" style="color: #ff6666;">Number of Predators <span class="help-btn" data-help="predators">?</span></label>
+                <input type="range" id="numPredators" min="0" max="3" step="1" value="0">
+                <div class="value" id="numPredatorsValue" style="color: #ff6666;">0</div>
+            </div>
+            
+            <button id="reset">Reset Simulation</button>
+            <button id="showInfo" class="info-button">Model Information</button>
+            
+            <div class="stats">
+                <div>FPS: <span id="fps">0</span></div>
+                <div>Avg Neighbors: <span id="avgNeighbors">0</span></div>
+                <div id="catchStats" style="color: #ff6666; display: none;">Catches: <span id="catches">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dialogs -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="helpTitle">Parameter Information</h2>
+            <div id="helpContent"></div>
+        </div>
+    </div>
+    
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Boids Flocking Model - Complete Information</h2>
+            
+            <h3>Overview</h3>
+            <p>This is an implementation of Craig Reynolds' boids model (1986), which demonstrates emergent flocking behavior from simple local rules. The model simulates agent-based collective motion similar to bird flocks, fish schools, or insect swarms.</p>
+            
+            <h3>Mathematical Foundation</h3>
+            <p>The model uses a discrete-time simulation where each agent (boid) updates its position and velocity at each timestep Δt.</p>
+            
+            <div class="equation">
+                Position Update: <strong>x</strong>(t+1) = <strong>x</strong>(t) + <strong>v</strong>(t) · Δt
+                <br>
+                Velocity Update: <strong>v</strong>(t+1) = <strong>v</strong>(t) + <strong>a</strong>(t) · Δt
+                <br>
+                where Δt = 1 (frame-based timestep)
+            </div>
+            
+            <h3>Core Flocking Rules</h3>
+            
+            <h4>1. Separation (Collision Avoidance)</h4>
+            <p>Prevents crowding by steering away from nearby neighbors. The force increases with proximity.</p>
+            <div class="equation">
+                <strong>F</strong>_sep = Σ[((<strong>p</strong>_self - <strong>p</strong>_neighbor) / |<strong>p</strong>_self - <strong>p</strong>_neighbor|²)] / n
+                <br>
+                Applied when: distance &lt; separation_radius (25px default)
+                <br>
+                Force weighted by: 1/distance (inverse square law)
+            </div>
+            
+            <h4>2. Alignment (Velocity Matching)</h4>
+            <p>Steers toward the average heading of local flockmates to create coordinated movement.</p>
+            <div class="equation">
+                <strong>v</strong>_desired = (Σ <strong>v</strong>_neighbor) / n
+                <br>
+                <strong>F</strong>_align = (<strong>v</strong>_desired · max_speed / |<strong>v</strong>_desired|) - <strong>v</strong>_self
+            </div>
+            
+            <h4>3. Cohesion (Flock Centering)</h4>
+            <p>Steers toward the average position of local flockmates to maintain group cohesion.</p>
+            <div class="equation">
+                <strong>p</strong>_center = (Σ <strong>p</strong>_neighbor) / n
+                <br>
+                <strong>v</strong>_desired = <strong>p</strong>_center - <strong>p</strong>_self
+                <br>
+                <strong>F</strong>_cohesion = (<strong>v</strong>_desired · max_speed / |<strong>v</strong>_desired|) - <strong>v</strong>_self
+            </div>
+            
+            <h3>Force Calculation and Limiting</h3>
+            <p>All forces are calculated as steering forces (desired velocity - current velocity) and limited to prevent instantaneous direction changes:</p>
+            <div class="equation">
+                <strong>a</strong>_total = w_sep·<strong>F</strong>_sep + w_align·<strong>F</strong>_align + w_coh·<strong>F</strong>_cohesion
+                <br>
+                If |<strong>a</strong>_total| > max_force: <strong>a</strong>_total = <strong>a</strong>_total · (max_force / |<strong>a</strong>_total|)
+                <br>
+                If |<strong>v</strong>| > max_speed: <strong>v</strong> = <strong>v</strong> · (max_speed / |<strong>v</strong>|)
+            </div>
+            
+            <h3>Predator-Prey Dynamics</h3>
+            
+            <h4>Predator Behavior</h4>
+            <div class="parameter-group">
+                <strong>Target Selection:</strong>
+                <div class="equation">
+                    Score = distance_to_boid - (5 - num_neighbors) · 30
+                    <br>
+                    Target = boid with minimum score
+                </div>
+                <p>Predators preferentially hunt isolated boids (fewer neighbors within 50px).</p>
+                
+                <strong>Pursuit Strategy:</strong>
+                <div class="equation">
+                    <strong>p</strong>_predicted = <strong>p</strong>_target + <strong>v</strong>_target · (distance / predator_speed)
+                    <br>
+                    <strong>v</strong>_desired = (<strong>p</strong>_predicted - <strong>p</strong>_predator) · predator_speed / |<strong>p</strong>_predicted - <strong>p</strong>_predator|
+                </div>
+                <p>Uses predictive targeting (aims where prey will be, not where it is).</p>
+                
+                <strong>Parameters:</strong>
+                <ul>
+                    <li>Speed: 4.5 px/frame (150% of boid speed)</li>
+                    <li>Max Force: 0.03 (60% of boid agility)</li>
+                    <li>Catch Radius: 10px</li>
+                    <li>Detection Range: 300px</li>
+                </ul>
+            </div>
+            
+            <h4>Boid Fear Response</h4>
+            <div class="parameter-group">
+                <div class="equation">
+                    urgency = 1 - (distance_to_predator / fear_radius)
+                    <br>
+                    panic_factor = urgency² · 10
+                    <br>
+                    <strong>F</strong>_flee = (<strong>p</strong>_boid - <strong>p</strong>_predator) · panic_factor / distance
+                    <br>
+                    max_panic_force = max_force · (1 + urgency · 4)
+                </div>
+                <p>Fear response increases quadratically with proximity. When fleeing, normal flocking weights are reduced by (1 - 0.7 · flee_weight).</p>
+            </div>
+            
+            <h3>Initial Conditions</h3>
+            <div class="parameter-group">
+                <strong>Boids:</strong>
+                <ul>
+                    <li>Position: Uniform random distribution across canvas</li>
+                    <li>Velocity: Random direction, magnitude = max_speed</li>
+                    <li>Initial heading: Random angle ∈ [0, 2π]</li>
+                </ul>
+                
+                <strong>Predators:</strong>
+                <ul>
+                    <li>Position: Uniform random distribution</li>
+                    <li>Velocity: Random direction, magnitude = predator_speed</li>
+                </ul>
+                
+                <strong>Respawning:</strong>
+                <p>Caught boids respawn at random canvas edge with velocity directed inward.</p>
+            </div>
+            
+            <h3>Numerical Integration</h3>
+            <p>The simulation uses Euler's method for integration with fixed timestep:</p>
+            <div class="equation">
+                For each frame:
+                <br>
+                1. Calculate neighbors within perception_radius (O(n²) complexity)
+                <br>
+                2. Compute steering forces for each rule
+                <br>
+                3. Apply weights and sum forces
+                <br>
+                4. Limit acceleration to max_force
+                <br>
+                5. Update velocity: <strong>v</strong> += <strong>a</strong>
+                <br>
+                6. Limit velocity to max_speed
+                <br>
+                7. Update position: <strong>p</strong> += <strong>v</strong>
+                <br>
+                8. Handle boundary conditions (toroidal wrap)
+            </div>
+            
+            <h3>Emergent Behaviors</h3>
+            <ul>
+                <li><strong>Murmuration:</strong> Wave-like patterns when flock responds to predators</li>
+                <li><strong>Selfish Herd:</strong> Increased density under predation pressure</li>
+                <li><strong>Fountain Effect:</strong> Flock splitting and flowing around threats</li>
+                <li><strong>Mill Formation:</strong> Circular motion when cohesion dominates</li>
+                <li><strong>Parallel Groups:</strong> Linear movement when alignment dominates</li>
+                <li><strong>Dynamic Clusters:</strong> Multiple sub-flocks when separation is high</li>
+            </ul>
+            
+            <h3>Computational Complexity</h3>
+            <p>Current implementation: O(n²) for neighbor detection per frame. Could be optimized to O(n log n) using spatial partitioning (quadtree or spatial hashing).</p>
+            
+            <h3>References</h3>
+            <ul>
+                <li>Reynolds, C. W. (1987). "Flocks, herds and schools: A distributed behavioral model"</li>
+                <li>Heppner, F. & Grenander, U. (1990). "A stochastic nonlinear model for coordinated bird flocks"</li>
+                <li>Couzin, I. D. et al. (2002). "Collective memory and spatial sorting in animal groups"</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 600;
+        
+        // Configuration
+        let config = {
+            numBoids: 100,
+            numPredators: 0,
+            separationWeight: 1.5,
+            alignmentWeight: 1.0,
+            cohesionWeight: 1.0,
+            perceptionRadius: 50,
+            maxSpeed: 3,
+            maxForce: 0.05,
+            separationRadius: 25,
+            // Predator-specific
+            predatorSpeed: 4.5,
+            predatorForce: 0.03,
+            fearRadius: 150,
+            catchRadius: 10
+        };
+        
+        // Boid class
+        class Boid {
+            constructor(x, y) {
+                this.position = { x, y };
+                // Random initial velocity
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: Math.cos(angle) * config.maxSpeed,
+                    y: Math.sin(angle) * config.maxSpeed
+                };
+                this.acceleration = { x: 0, y: 0 };
+            }
+            
+            // Find neighboring boids within perception radius
+            getNeighbors(boids) {
+                const neighbors = [];
+                for (let other of boids) {
+                    if (other === this) continue;
+                    const d = this.distance(other.position);
+                    if (d < config.perceptionRadius) {
+                        neighbors.push(other);
+                    }
+                }
+                return neighbors;
+            }
+            
+            // Calculate distance between two points
+            distance(point) {
+                const dx = this.position.x - point.x;
+                const dy = this.position.y - point.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Separation: steer to avoid crowding local flockmates
+            separation(neighbors) {
+                const steering = { x: 0, y: 0 };
+                let count = 0;
+                
+                for (let other of neighbors) {
+                    const d = this.distance(other.position);
+                    if (d > 0 && d < config.separationRadius) {
+                        // Calculate vector pointing away from neighbor
+                        const diff = {
+                            x: this.position.x - other.position.x,
+                            y: this.position.y - other.position.y
+                        };
+                        // Weight by inverse of distance (closer = stronger repulsion)
+                        const norm = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+                        if (norm > 0) {
+                            diff.x = (diff.x / norm) / d;  // Normalize and weight
+                            diff.y = (diff.y / norm) / d;
+                        }
+                        steering.x += diff.x;
+                        steering.y += diff.y;
+                        count++;
+                    }
+                }
+                
+                if (count > 0) {
+                    steering.x /= count;
+                    steering.y /= count;
+                    
+                    // Normalize to max speed
+                    const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                    if (mag > 0) {
+                        steering.x = (steering.x / mag) * config.maxSpeed;
+                        steering.y = (steering.y / mag) * config.maxSpeed;
+                        
+                        // Calculate steering force (desired - current velocity)
+                        steering.x -= this.velocity.x;
+                        steering.y -= this.velocity.y;
+                        
+                        // Limit to max force
+                        return this.limitVector(steering, config.maxForce);
+                    }
+                }
+                
+                return steering;
+            }
+            
+            // Alignment: steer towards the average heading of local flockmates
+            alignment(neighbors) {
+                const steering = { x: 0, y: 0 };
+                
+                if (neighbors.length === 0) return steering;
+                
+                for (let other of neighbors) {
+                    steering.x += other.velocity.x;
+                    steering.y += other.velocity.y;
+                }
+                
+                steering.x /= neighbors.length;
+                steering.y /= neighbors.length;
+                
+                // Normalize to max speed
+                const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                if (mag > 0) {
+                    steering.x = (steering.x / mag) * config.maxSpeed;
+                    steering.y = (steering.y / mag) * config.maxSpeed;
+                    
+                    // Steering force
+                    steering.x -= this.velocity.x;
+                    steering.y -= this.velocity.y;
+                    
+                    return this.limitVector(steering, config.maxForce);
+                }
+                
+                return steering;
+            }
+            
+            // Cohesion: steer to move toward the average position of local flockmates
+            cohesion(neighbors) {
+                const steering = { x: 0, y: 0 };
+                
+                if (neighbors.length === 0) return steering;
+                
+                const center = { x: 0, y: 0 };
+                for (let other of neighbors) {
+                    center.x += other.position.x;
+                    center.y += other.position.y;
+                }
+                
+                center.x /= neighbors.length;
+                center.y /= neighbors.length;
+                
+                // Seek that point
+                steering.x = center.x - this.position.x;
+                steering.y = center.y - this.position.y;
+                
+                // Normalize to max speed
+                const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                if (mag > 0) {
+                    steering.x = (steering.x / mag) * config.maxSpeed;
+                    steering.y = (steering.y / mag) * config.maxSpeed;
+                    
+                    // Steering force
+                    steering.x -= this.velocity.x;
+                    steering.y -= this.velocity.y;
+                    
+                    return this.limitVector(steering, config.maxForce);
+                }
+                
+                return steering;
+            }
+            
+            // Flee from predators
+            flee(predators) {
+                const steering = { x: 0, y: 0 };
+                let closestDist = Infinity;
+                let urgency = 0;
+                
+                for (let predator of predators) {
+                    const d = this.distance(predator.position);
+                    if (d < config.fearRadius) {
+                        // Calculate escape vector
+                        const diff = {
+                            x: this.position.x - predator.position.x,
+                            y: this.position.y - predator.position.y
+                        };
+                        
+                        // Weight by inverse square of distance (panic increases rapidly)
+                        const weight = 1 - (d / config.fearRadius);
+                        const panicFactor = weight * weight * 10; // Quadratic panic response
+                        
+                        if (d > 0) {
+                            steering.x += (diff.x / d) * panicFactor;
+                            steering.y += (diff.y / d) * panicFactor;
+                        }
+                        
+                        if (d < closestDist) {
+                            closestDist = d;
+                            urgency = weight;
+                        }
+                    }
+                }
+                
+                // Allow breaking speed limit when panicking
+                const maxPanicForce = config.maxForce * (1 + urgency * 4);
+                return this.limitVector(steering, maxPanicForce);
+            }
+            
+            // Limit vector magnitude
+            limitVector(vector, max) {
+                const mag = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                if (mag > max) {
+                    vector.x = (vector.x / mag) * max;
+                    vector.y = (vector.y / mag) * max;
+                }
+                return vector;
+            }
+            
+            // Apply flocking rules
+            flock(boids, predators) {
+                const neighbors = this.getNeighbors(boids);
+                
+                // Calculate predator avoidance first (highest priority)
+                const flee = this.flee(predators);
+                
+                // Calculate normal flocking forces
+                const sep = this.separation(neighbors);
+                const ali = this.alignment(neighbors);
+                const coh = this.cohesion(neighbors);
+                
+                // If predator is very close, flee overrides everything
+                const fleeWeight = Math.min(Math.sqrt(flee.x * flee.x + flee.y * flee.y) * 2, 1);
+                const flockWeight = 1 - fleeWeight * 0.7; // Reduce but don't eliminate flocking when fleeing
+                
+                // Apply weights
+                sep.x *= config.separationWeight * flockWeight;
+                sep.y *= config.separationWeight * flockWeight;
+                ali.x *= config.alignmentWeight * flockWeight;
+                ali.y *= config.alignmentWeight * flockWeight;
+                coh.x *= config.cohesionWeight * flockWeight;
+                coh.y *= config.cohesionWeight * flockWeight;
+                
+                // Add forces to acceleration (flee is already weighted)
+                this.acceleration.x = flee.x + sep.x + ali.x + coh.x;
+                this.acceleration.y = flee.y + sep.y + ali.y + coh.y;
+                
+                return neighbors.length;  // For statistics
+            }
+            
+            // Update position based on velocity and acceleration
+            update() {
+                // Update velocity
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                
+                // Limit speed
+                this.velocity = this.limitVector(this.velocity, config.maxSpeed);
+                
+                // Update position
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                
+                // Reset acceleration
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+                
+                // Handle edges (wrap around)
+                this.edges();
+            }
+            
+            // Wrap around edges
+            edges() {
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+            
+            // Draw boid as triangle
+            draw(ctx) {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(6, 0);
+                ctx.lineTo(-3, -3);
+                ctx.lineTo(-3, 3);
+                ctx.closePath();
+                
+                ctx.fillStyle = '#66d9ff';
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Predator class
+        class Predator {
+            constructor(x, y) {
+                this.position = { x, y };
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: Math.cos(angle) * config.predatorSpeed,
+                    y: Math.sin(angle) * config.predatorSpeed
+                };
+                this.acceleration = { x: 0, y: 0 };
+                this.target = null;
+            }
+            
+            // Find the best target (nearest isolated boid)
+            findTarget(boids) {
+                let bestTarget = null;
+                let bestScore = Infinity;
+                
+                for (let boid of boids) {
+                    const dist = this.distance(boid.position);
+                    if (dist > 300) continue; // Ignore very distant boids
+                    
+                    // Count how many other boids are near this one
+                    let crowding = 0;
+                    for (let other of boids) {
+                        if (other === boid) continue;
+                        if (this.distance2(boid.position, other.position) < 50) {
+                            crowding++;
+                        }
+                    }
+                    
+                    // Score: prefer closer and more isolated boids
+                    // Isolated boids have lower crowding, making them better targets
+                    const isolationBonus = Math.max(0, 5 - crowding) * 30;
+                    const score = dist - isolationBonus;
+                    
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestTarget = boid;
+                    }
+                }
+                
+                return bestTarget;
+            }
+            
+            // Hunt behavior
+            hunt(boids) {
+                this.target = this.findTarget(boids);
+                
+                if (!this.target) {
+                    // Wander if no target
+                    const angle = Math.random() * 0.3 - 0.15;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+                    const newX = this.velocity.x * cos - this.velocity.y * sin;
+                    const newY = this.velocity.x * sin + this.velocity.y * cos;
+                    this.acceleration.x = (newX - this.velocity.x) * 0.1;
+                    this.acceleration.y = (newY - this.velocity.y) * 0.1;
+                    return;
+                }
+                
+                // Pursuit with prediction
+                const toTarget = {
+                    x: this.target.position.x - this.position.x,
+                    y: this.target.position.y - this.position.y
+                };
+                
+                const dist = Math.sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
+                
+                // Predict where target will be
+                const lookAhead = Math.min(dist / config.predatorSpeed, 10);
+                const predicted = {
+                    x: this.target.position.x + this.target.velocity.x * lookAhead,
+                    y: this.target.position.y + this.target.velocity.y * lookAhead
+                };
+                
+                // Steer toward predicted position
+                const desired = {
+                    x: predicted.x - this.position.x,
+                    y: predicted.y - this.position.y
+                };
+                
+                // Normalize and scale to max speed
+                const mag = Math.sqrt(desired.x * desired.x + desired.y * desired.y);
+                if (mag > 0) {
+                    desired.x = (desired.x / mag) * config.predatorSpeed;
+                    desired.y = (desired.y / mag) * config.predatorSpeed;
+                    
+                    // Steering force
+                    this.acceleration.x = desired.x - this.velocity.x;
+                    this.acceleration.y = desired.y - this.velocity.y;
+                    
+                    // Limit force (less agile than boids)
+                    this.acceleration = this.limitVector(this.acceleration, config.predatorForce);
+                }
+                
+                // Check for catch
+                if (dist < config.catchRadius) {
+                    this.catch(this.target, boids);
+                }
+            }
+            
+            // Catch a boid
+            catch(boid, boids) {
+                totalCatches++;
+                
+                // Respawn the caught boid at a random edge
+                const edge = Math.floor(Math.random() * 4);
+                switch(edge) {
+                    case 0: // top
+                        boid.position.x = Math.random() * canvas.width;
+                        boid.position.y = 0;
+                        break;
+                    case 1: // right
+                        boid.position.x = canvas.width;
+                        boid.position.y = Math.random() * canvas.height;
+                        break;
+                    case 2: // bottom
+                        boid.position.x = Math.random() * canvas.width;
+                        boid.position.y = canvas.height;
+                        break;
+                    case 3: // left
+                        boid.position.x = 0;
+                        boid.position.y = Math.random() * canvas.height;
+                        break;
+                }
+                // Give it a random velocity away from edge
+                const angle = Math.random() * Math.PI * 2;
+                boid.velocity.x = Math.cos(angle) * config.maxSpeed;
+                boid.velocity.y = Math.sin(angle) * config.maxSpeed;
+            }
+            
+            // Helper functions
+            distance(point) {
+                const dx = this.position.x - point.x;
+                const dy = this.position.y - point.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            distance2(p1, p2) {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            limitVector(vector, max) {
+                const mag = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                if (mag > max) {
+                    vector.x = (vector.x / mag) * max;
+                    vector.y = (vector.y / mag) * max;
+                }
+                return vector;
+            }
+            
+            update() {
+                // Update velocity
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                
+                // Limit speed
+                this.velocity = this.limitVector(this.velocity, config.predatorSpeed);
+                
+                // Update position
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                
+                // Reset acceleration
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+                
+                // Wrap edges
+                this.edges();
+            }
+            
+            edges() {
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+            
+            draw(ctx) {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+                
+                // Draw larger triangle for predator
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(-5, -5);
+                ctx.lineTo(-5, 5);
+                ctx.closePath();
+                
+                ctx.fillStyle = '#ff4444';
+                ctx.fill();
+                
+                // Draw "eyes" to show it's hunting
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(4, -2, 2, 1);
+                ctx.fillRect(4, 1, 2, 1);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Initialize boids
+        let boids = [];
+        let predators = [];
+        let totalCatches = 0;
+        
+        function initBoids() {
+            boids = [];
+            for (let i = 0; i < config.numBoids; i++) {
+                boids.push(new Boid(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+        
+        function initPredators() {
+            predators = [];
+            for (let i = 0; i < config.numPredators; i++) {
+                predators.push(new Predator(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+        let totalNeighbors = 0;
+        
+        function animate(currentTime) {
+            // Calculate FPS
+            const deltaTime = currentTime - lastTime;
+            frameCount++;
+            if (frameCount % 30 === 0) {
+                fps = Math.round(1000 / deltaTime);
+                document.getElementById('fps').textContent = fps;
+            }
+            lastTime = currentTime;
+            
+            // Clear canvas
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';  // Slight trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw boids
+            totalNeighbors = 0;
+            for (let boid of boids) {
+                totalNeighbors += boid.flock(boids, predators);
+            }
+            
+            for (let boid of boids) {
+                boid.update();
+                boid.draw(ctx);
+            }
+            
+            // Update and draw predators
+            for (let predator of predators) {
+                predator.hunt(boids);
+                predator.update();
+                predator.draw(ctx);
+            }
+            
+            // Update statistics
+            if (frameCount % 30 === 0) {
+                const avgNeighbors = (totalNeighbors / boids.length).toFixed(1);
+                document.getElementById('avgNeighbors').textContent = avgNeighbors;
+                
+                // Show/hide catch stats based on predator presence
+                const catchStatsDiv = document.getElementById('catchStats');
+                if (config.numPredators > 0) {
+                    catchStatsDiv.style.display = 'block';
+                    document.getElementById('catches').textContent = totalCatches;
+                } else {
+                    catchStatsDiv.style.display = 'none';
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Setup controls
+        function setupControls() {
+            // Separation
+            const separationSlider = document.getElementById('separation');
+            separationSlider.addEventListener('input', (e) => {
+                config.separationWeight = parseFloat(e.target.value);
+                document.getElementById('separationValue').textContent = e.target.value;
+            });
+            
+            // Alignment
+            const alignmentSlider = document.getElementById('alignment');
+            alignmentSlider.addEventListener('input', (e) => {
+                config.alignmentWeight = parseFloat(e.target.value);
+                document.getElementById('alignmentValue').textContent = e.target.value;
+            });
+            
+            // Cohesion
+            const cohesionSlider = document.getElementById('cohesion');
+            cohesionSlider.addEventListener('input', (e) => {
+                config.cohesionWeight = parseFloat(e.target.value);
+                document.getElementById('cohesionValue').textContent = e.target.value;
+            });
+            
+            // Perception
+            const perceptionSlider = document.getElementById('perception');
+            perceptionSlider.addEventListener('input', (e) => {
+                config.perceptionRadius = parseFloat(e.target.value);
+                config.separationRadius = config.perceptionRadius * 0.5;  // Keep proportional
+                document.getElementById('perceptionValue').textContent = e.target.value + 'px';
+            });
+            
+            // Max Speed
+            const maxSpeedSlider = document.getElementById('maxSpeed');
+            maxSpeedSlider.addEventListener('input', (e) => {
+                config.maxSpeed = parseFloat(e.target.value);
+                document.getElementById('maxSpeedValue').textContent = e.target.value;
+            });
+            
+            // Number of Boids
+            const numBoidsSlider = document.getElementById('numBoids');
+            numBoidsSlider.addEventListener('input', (e) => {
+                config.numBoids = parseInt(e.target.value);
+                document.getElementById('numBoidsValue').textContent = e.target.value;
+                initBoids();
+            });
+            
+            // Number of Predators
+            const numPredatorsSlider = document.getElementById('numPredators');
+            numPredatorsSlider.addEventListener('input', (e) => {
+                config.numPredators = parseInt(e.target.value);
+                document.getElementById('numPredatorsValue').textContent = e.target.value;
+                initPredators();
+            });
+            
+            // Reset button
+            document.getElementById('reset').addEventListener('click', () => {
+                totalCatches = 0;
+                initBoids();
+                initPredators();
+            });
+        }
+        
+        // Initialize and start
+        initBoids();
+        initPredators();
+        setupControls();
+        requestAnimationFrame(animate);
+        
+        // Modal handling
+        const helpModal = document.getElementById('helpModal');
+        const infoModal = document.getElementById('infoModal');
+        const helpContent = document.getElementById('helpContent');
+        const helpTitle = document.getElementById('helpTitle');
+        
+        // Help content for each parameter
+        const helpTexts = {
+            separation: {
+                title: 'Separation Force',
+                content: `
+                    <h3>Collision Avoidance</h3>
+                    <p>Separation force prevents boids from crowding each other. It creates a repulsive force that increases as boids get closer.</p>
+                    
+                    <div class="equation">
+                        <strong>Force calculation:</strong><br>
+                        F = Σ[(position_self - position_neighbor) / distance²]
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <strong>How it works:</strong>
+                        <ul>
+                            <li>Active range: 25 pixels (half of perception radius)</li>
+                            <li>Force strength: Inverse square of distance (1/d²)</li>
+                            <li>Direction: Away from each neighbor</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Effect of values:</strong>
+                    <ul>
+                        <li><strong>0:</strong> No collision avoidance - boids overlap</li>
+                        <li><strong>0.5-1.0:</strong> Soft avoidance - some overlap allowed</li>
+                        <li><strong>1.5 (default):</strong> Natural spacing</li>
+                        <li><strong>2.0-3.0:</strong> Strong repulsion - widely spaced flock</li>
+                    </ul>
+                    
+                    <p><strong>Biological basis:</strong> Birds maintain personal space to avoid wing collisions and maintain maneuverability.</p>
+                `
+            },
+            alignment: {
+                title: 'Alignment Force',
+                content: `
+                    <h3>Velocity Matching</h3>
+                    <p>Alignment force causes boids to match the average heading and speed of their neighbors, creating coordinated movement.</p>
+                    
+                    <div class="equation">
+                        <strong>Force calculation:</strong><br>
+                        v_avg = Σ(velocity_neighbor) / n<br>
+                        F = (v_avg · max_speed / |v_avg|) - velocity_self
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <strong>How it works:</strong>
+                        <ul>
+                            <li>Calculates average velocity of all neighbors</li>
+                            <li>Steers toward that average direction</li>
+                            <li>Creates parallel movement patterns</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Effect of values:</strong>
+                    <ul>
+                        <li><strong>0:</strong> No alignment - chaotic individual movement</li>
+                        <li><strong>0.5:</strong> Weak alignment - loose coordination</li>
+                        <li><strong>1.0 (default):</strong> Natural flocking</li>
+                        <li><strong>2.0-3.0:</strong> Strong alignment - rigid parallel movement</li>
+                    </ul>
+                    
+                    <p><strong>Biological basis:</strong> Matching neighbors' velocity reduces turbulence and allows efficient group movement.</p>
+                `
+            },
+            cohesion: {
+                title: 'Cohesion Force',
+                content: `
+                    <h3>Flock Centering</h3>
+                    <p>Cohesion force attracts boids toward the average position of their neighbors, keeping the flock together.</p>
+                    
+                    <div class="equation">
+                        <strong>Force calculation:</strong><br>
+                        center = Σ(position_neighbor) / n<br>
+                        desired_v = center - position_self<br>
+                        F = (desired_v · max_speed / |desired_v|) - velocity_self
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <strong>How it works:</strong>
+                        <ul>
+                            <li>Calculates center of mass of visible neighbors</li>
+                            <li>Generates attractive force toward that point</li>
+                            <li>Prevents flock dispersion</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Effect of values:</strong>
+                    <ul>
+                        <li><strong>0:</strong> No cohesion - flock disperses</li>
+                        <li><strong>0.5:</strong> Loose groups</li>
+                        <li><strong>1.0 (default):</strong> Natural clustering</li>
+                        <li><strong>2.0-3.0:</strong> Tight ball formation</li>
+                    </ul>
+                    
+                    <p><strong>Biological basis:</strong> Staying together provides safety in numbers (predator dilution effect) and collective decision-making.</p>
+                `
+            },
+            perception: {
+                title: 'Perception Radius',
+                content: `
+                    <h3>Visual Range</h3>
+                    <p>Defines how far each boid can "see" to detect neighbors. Only boids within this radius influence behavior.</p>
+                    
+                    <div class="equation">
+                        <strong>Neighbor detection:</strong><br>
+                        is_neighbor = (distance &lt; perception_radius)
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <strong>Implementation details:</strong>
+                        <ul>
+                            <li>360° vision (unrealistic but common simplification)</li>
+                            <li>No occlusion (can see through other boids)</li>
+                            <li>Binary cutoff (no gradual falloff)</li>
+                            <li>Separation radius automatically set to 50% of perception</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Effect of values:</strong>
+                    <ul>
+                        <li><strong>20-40px:</strong> Local interactions only - many small groups</li>
+                        <li><strong>50px (default):</strong> Balanced local/global behavior</li>
+                        <li><strong>75-100px:</strong> Larger coordinated groups</li>
+                        <li><strong>100-150px:</strong> Single large flock, less realistic</li>
+                    </ul>
+                    
+                    <p><strong>Performance note:</strong> Larger radius = more neighbor checks = slower simulation (O(n²) complexity)</p>
+                `
+            },
+            maxSpeed: {
+                title: 'Maximum Speed',
+                content: `
+                    <h3>Velocity Limit</h3>
+                    <p>Caps the maximum speed any boid can achieve, regardless of forces applied.</p>
+                    
+                    <div class="equation">
+                        <strong>Speed limiting:</strong><br>
+                        if |velocity| > max_speed:<br>
+                        &nbsp;&nbsp;velocity = velocity · (max_speed / |velocity|)
+                    </div>
+                    
+                    <div class="parameter-group">
+                        <strong>Why it's necessary:</strong>
+                        <ul>
+                            <li>Prevents runaway acceleration</li>
+                            <li>Maintains stable simulation</li>
+                            <li>Represents physical limitations</li>
+                            <li>Units: pixels per frame</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Effect of values:</strong>
+                    <ul>
+                        <li><strong>1-2:</strong> Slow, graceful movement</li>
+                        <li><strong>3 (default):</strong> Natural bird-like speed</li>
+                        <li><strong>4-5:</strong> Fast, energetic flocking</li>
+                        <li><strong>6:</strong> Very fast - may cause instability</li>
+                    </ul>
+                    
+                    <p><strong>Interaction with forces:</strong> Max force (0.05) determines acceleration, max speed determines terminal velocity.</p>
+                `
+            },
+            numBoids: {
+                title: 'Number of Boids',
+                content: `
+                    <h3>Flock Size</h3>
+                    <p>Sets the total number of boid agents in the simulation.</p>
+                    
+                    <div class="parameter-group">
+                        <strong>Emergent effects by count:</strong>
+                        <ul>
+                            <li><strong>10-30:</strong> Individual behavior visible, minimal emergent patterns</li>
+                            <li><strong>40-80:</strong> Clear flocking emerges, sub-groups form</li>
+                            <li><strong>100 (default):</strong> Rich dynamics, multiple behavioral modes</li>
+                            <li><strong>150-200:</strong> Large-scale patterns, realistic murmuration</li>
+                            <li><strong>200+:</strong> May impact performance on slower devices</li>
+                        </ul>
+                    </div>
+                    
+                    <strong>Density effects:</strong>
+                    <p>More boids in same space increases:</p>
+                    <ul>
+                        <li>Average neighbors per boid</li>
+                        <li>Collision avoidance importance</li>
+                        <li>Information propagation speed</li>
+                        <li>Computational load (O(n²))</li>
+                    </ul>
+                    
+                    <p><strong>Real flocks:</strong> Starling murmurations: 500-10,000+, Fish schools: 10-10,000,000+, Locust swarms: billions</p>
+                `
+            },
+            predators: {
+                title: 'Predator Agents',
+                content: `
+                    <h3>Predator-Prey Dynamics</h3>
+                    <p>Adds predator agents that hunt boids, fundamentally changing flock behavior.</p>
+                    
+                    <div class="parameter-group">
+                        <strong>Predator capabilities:</strong>
+                        <ul>
+                            <li>Speed: 4.5 px/frame (50% faster than boids)</li>
+                            <li>Turning: 0.03 max force (40% less agile)</li>
+                            <li>Vision: 300px range for target selection</li>
+                            <li>Strategy: Targets isolated boids (selfish herd exploitation)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="equation">
+                        <strong>Target selection algorithm:</strong><br>
+                        isolation = 5 - count(neighbors within 50px)<br>
+                        score = distance - (isolation × 30)<br>
+                        target = min(score)
+                    </div>
+                    
+                    <strong>Effect on flock behavior:</strong>
+                    <ul>
+                        <li><strong>0 predators:</strong> Normal flocking patterns</li>
+                        <li><strong>1 predator:</strong> Compression waves, tighter groups</li>
+                        <li><strong>2 predators:</strong> Frequent splitting, defensive balls</li>
+                        <li><strong>3 predators:</strong> Constant panic, edge accumulation</li>
+                    </ul>
+                    
+                    <strong>Boid fear response:</strong>
+                    <ul>
+                        <li>Detection range: 150px (3× normal perception)</li>
+                        <li>Panic scaling: Force increases quadratically with proximity</li>
+                        <li>Override effect: Reduces normal flocking by 70% when fleeing</li>
+                    </ul>
+                    
+                    <p><strong>Biological accuracy:</strong> Captures key features of real predator-prey dynamics including the confusion effect, selfish herd behavior, and predator preference for stragglers.</p>
+                `
+            }
+        };
+        
+        // Add click handlers for help buttons
+        document.querySelectorAll('.help-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const helpType = e.target.getAttribute('data-help');
+                const help = helpTexts[helpType];
+                if (help) {
+                    helpTitle.textContent = help.title;
+                    helpContent.innerHTML = help.content;
+                    helpModal.style.display = 'block';
+                }
+            });
+        });
+        
+        // Info button handler
+        document.getElementById('showInfo').addEventListener('click', () => {
+            infoModal.style.display = 'block';
+        });
+        
+        // Close modal handlers
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                helpModal.style.display = 'none';
+                infoModal.style.display = 'none';
+            });
+        });
+        
+        // Click outside modal to close
+        window.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+            if (e.target === infoModal) {
+                infoModal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

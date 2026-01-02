@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scientific Schematics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #020617 0%, #0b1120 30%, #022c22 65%, #111827 100%);
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-soft: rgba(15, 23, 42, 0.88);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.28);
+      --accent-strong: #f97316;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      background: var(--bg-gradient);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1.2rem 2rem;
+      background: linear-gradient(to right, #0f766e, #2563eb, #7c3aed);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(15,23,42,0.7);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.6);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f9fafb;
+    }
+
+    main {
+      padding: 1.8rem 2rem 3rem;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    /* HERO */
+
+    #hero {
+      margin-bottom: 2.6rem;
+    }
+
+    .hero-wrapper {
+      background: radial-gradient(circle at top left, rgba(8,47,73,0.9), rgba(15,23,42,0.96));
+      border-radius: 22px;
+      padding: 1.1rem;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .image-wrapper {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: radial-gradient(circle at top, #020617, #020617 30%, #0b1120 100%);
+      padding-bottom: 0.8rem;
+    }
+
+    #main-image {
+      width: 100%;
+      height: 520px;          /* fixed height to avoid layout jumping */
+      object-fit: contain;
+      display: block;
+      border-radius: 16px;
+      opacity: 1;
+      transition: opacity 1.1s ease-in-out; /* longer, smoother fade */
+    }
+
+    .overlay {
+      position: absolute;
+      left: 0.7rem;
+      right: 0.7rem;
+      bottom: 0.7rem;
+      padding: 0.9rem 1.1rem 1rem;
+      border-radius: 14px;
+      background: linear-gradient(to top, rgba(15,23,42,0.96), rgba(15,23,42,0.7), transparent);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+    }
+
+    .overlay-title-small {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 0.1rem;
+    }
+
+    .overlay-tagline {
+      margin: 0.1rem 0 0 0;
+      font-size: 1.15rem;
+      letter-spacing: 0.03em;
+      color: #f9fafb;
+    }
+
+    @media (max-width: 800px) {
+      .overlay-tagline {
+        font-size: 1rem;
+      }
+    }
+
+    .hero-meta-row {
+      margin-top: 0.4rem;
+      padding: 0 0.3rem 0.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #counter {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+
+    .dot-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.8);
+      background: rgba(30,64,175,0.4);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.9);
+      cursor: pointer;
+      transition: background 0.25s ease, transform 0.2s ease,
+                  box-shadow 0.25s ease, border-color 0.2s ease,
+                  width 0.25s ease;
+    }
+
+    .dot:hover {
+      transform: translateY(-1px) scale(1.08);
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.7);
+      box-shadow: 0 0 0 2px rgba(56,189,248,0.4);
+    }
+
+    .dot.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.5);
+      width: 22px;
+    }
+
+    /* DOWNLOADS SECTION */
+
+    #downloads h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+
+    #downloads p {
+      color: var(--text-muted);
+      max-width: 700px;
+      font-size: 0.93rem;
+    }
+
+    #thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1.3rem;
+      margin-top: 1.1rem;
+    }
+
+    .thumb-card {
+      background: var(--card-soft);
+      border-radius: 14px;
+      padding: 0.7rem 0.7rem 0.8rem;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.7);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.25s ease,
+                  border-color 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+    }
+
+    .thumb-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+      border-color: rgba(56,189,248,0.6);
+      background: rgba(15,23,42,0.98);
+    }
+
+    .thumb-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: radial-gradient(circle at top, #020617, #020617 40%, #0b1120 100%);
+    }
+
+    .thumb-meta {
+      margin-top: 0.55rem;
+      font-size: 0.85rem;
+    }
+
+    .thumb-meta strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: #e5e7eb;
+    }
+
+    .thumb-meta > div {
+      color: var(--text-muted);
+    }
+
+    .thumb-links {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .pill-link-btn {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      background: rgba(15,23,42,0.9);
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: var(--accent);
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+                  box-shadow 0.2s ease, transform 0.2s ease;
+      text-decoration: none;
+    }
+
+    .pill-link-btn:hover {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #0b1120;
+      border-color: transparent;
+      box-shadow: 0 0 0 2px rgba(56,189,248,0.35);
+      transform: translateY(-1px);
+      text-decoration: none;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Scientific Schematics</h1>
+  </header>
+
+  <main>
+    <section id="hero">
+      <div class="hero-wrapper">
+        <div class="image-wrapper">
+          <img id="main-image" src="" alt="Scientific schematic" />
+          <div class="overlay">
+            <div class="overlay-title-small" id="main-title"></div>
+            <h2 class="overlay-tagline" id="main-tagline"></h2>
+          </div>
+        </div>
+        <div class="hero-meta-row">
+          <span id="counter"></span>
+          <div class="dot-nav" id="dot-nav"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="downloads">
+      <h2>Download vector images</h2>
+      <p>
+        Click a thumbnail to download the high-resolution vector image (PDF where available).
+        Where available, a link to the associated paper is shown below the thumbnail.
+      </p>
+      <div id="thumb-grid"></div>
+    </section>
+  </main>
+
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    let schematics = [];
+    let articles = [];
+    let currentIndex = 0;
+    let autoTimer = null;
+    const AUTO_INTERVAL_MS = 6000;
+
+    async function loadText(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error("Failed to load " + path + " (" + res.status + ")");
+      return res.text();
+    }
+
+    async function loadJSON(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error("Failed to load " + path + " (" + res.status + ")");
+      return res.json();
+    }
+
+    function parseArticlesCsv(csvText) {
+      const parsed = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true
+      });
+      return parsed.data.map(row => ({
+        title: row["dc:title"] || row["title"] || "",
+        doi: row["prism:doi"] || row["doi"] || "",
+        eid: row["eid"] || "",
+        raw: row
+      }));
+    }
+
+    function findMatchingArticle(articleTitle, articles) {
+      if (!articleTitle) return null;
+      const target = articleTitle.toLowerCase().trim();
+      if (!target) return null;
+
+      let match = articles.find(a => (a.title || "").toLowerCase().trim() === target);
+      if (match) return match;
+
+      match = articles.find(a => {
+        const t = (a.title || "").toLowerCase();
+        return t && (t.includes(target) || target.includes(t));
+      });
+
+      return match || null;
+    }
+
+    function enhanceSchematicsWithArticles() {
+      schematics.forEach(s => {
+        const article = findMatchingArticle(s.article_title, articles);
+        if (article) {
+          s.article = article;
+          if (article.doi) {
+            s.paperUrl = "https://doi.org/" + article.doi;
+          } else if (article.eid) {
+            s.paperUrl =
+              "https://www.scopus.com/record/display.uri?eid=" +
+              encodeURIComponent(article.eid) +
+              "&origin=resultslist";
+          } else {
+            s.paperUrl = null;
+          }
+        } else {
+          s.article = null;
+          s.paperUrl = null;
+        }
+      });
+    }
+
+    function renderDots() {
+      const dotNav = document.getElementById("dot-nav");
+      dotNav.innerHTML = "";
+      if (!schematics.length) return;
+
+      schematics.forEach((s, idx) => {
+        const dot = document.createElement("div");
+        dot.className = "dot" + (idx === currentIndex ? " active" : "");
+        dot.addEventListener("click", () => {
+          currentIndex = idx;
+          resetAutoAdvance();
+          renderMain();
+        });
+        dotNav.appendChild(dot);
+      });
+    }
+
+    function renderMain() {
+      if (!schematics.length) return;
+      const s = schematics[currentIndex];
+
+      const img = document.getElementById("main-image");
+      const titleEl = document.getElementById("main-title");
+      const taglineEl = document.getElementById("main-tagline");
+      const counterEl = document.getElementById("counter");
+
+      img.style.opacity = 0;
+      const newSrc = s.jpg;
+      const newAlt = s.article_title || s.description || "Scientific schematic";
+
+      const onLoad = () => {
+        img.removeEventListener("load", onLoad);
+        requestAnimationFrame(() => {
+          img.style.opacity = 1;
+        });
+      };
+      img.addEventListener("load", onLoad);
+      img.src = newSrc;
+      img.alt = newAlt;
+
+      titleEl.textContent = s.article_title || "";
+      taglineEl.textContent = s.description || "";
+
+      counterEl.textContent = "Image " + (currentIndex + 1) + " of " + schematics.length;
+
+      renderDots();
+    }
+
+    function renderThumbnails() {
+      const grid = document.getElementById("thumb-grid");
+      grid.innerHTML = "";
+
+      schematics.forEach((s, idx) => {
+        const card = document.createElement("div");
+        card.className = "thumb-card";
+
+        const downloadTarget = s.pdf || s.jpg;
+
+        const thumbLink = document.createElement("a");
+        thumbLink.href = downloadTarget;
+        thumbLink.download = "";
+        thumbLink.title = "Download vector image (PDF where available)";
+
+        const img = document.createElement("img");
+        img.src = s.jpg;
+        img.alt = s.article_title || s.description || "Schematic";
+        thumbLink.appendChild(img);
+
+        const meta = document.createElement("div");
+        meta.className = "thumb-meta";
+
+        const title = document.createElement("strong");
+        title.textContent = s.article_title || "";
+        meta.appendChild(title);
+
+        const desc = document.createElement("div");
+        desc.textContent = s.description || "";
+        meta.appendChild(desc);
+
+        const links = document.createElement("div");
+        links.className = "thumb-links";
+
+        // Only show link to paper (no "Show above")
+        if (s.paperUrl) {
+          const paperLink = document.createElement("a");
+          paperLink.href = s.paperUrl;
+          paperLink.target = "_blank";
+          paperLink.rel = "noopener";
+          paperLink.className = "pill-link-btn";
+          paperLink.textContent = "Paper";
+          links.appendChild(paperLink);
+        }
+
+        meta.appendChild(links);
+
+        card.appendChild(thumbLink);
+        card.appendChild(meta);
+        grid.appendChild(card);
+      });
+    }
+
+    function nextSchematic() {
+      if (!schematics.length) return;
+      currentIndex = (currentIndex + 1) % schematics.length;
+      renderMain();
+    }
+
+    function startAutoAdvance() {
+      stopAutoAdvance();
+      if (schematics.length <= 1) return;
+      autoTimer = setInterval(nextSchematic, AUTO_INTERVAL_MS);
+    }
+
+    function stopAutoAdvance() {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    function resetAutoAdvance() {
+      startAutoAdvance();
+    }
+
+    async function init() {
+      try {
+        const [schemData, csvText] = await Promise.all([
+          loadJSON("schematics.json"),
+          loadText("../scopus_alex_sen_gupta_articles_with_abstracts.csv")
+        ]);
+
+        schematics = schemData || [];
+        articles = parseArticlesCsv(csvText);
+
+        enhanceSchematicsWithArticles();
+
+        if (!schematics.length) {
+          throw new Error("No schematics found in schematics.json");
+        }
+
+        renderMain();
+        renderThumbnails();
+        startAutoAdvance();
+      } catch (err) {
+        console.error(err);
+        alert("Error initialising page: " + err.message);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #df7926;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7 {
+        fill: none;
+      }
+
+      .st1, .st3, .st4, .st7 {
+        stroke-width: 2px;
+      }
+
+      .st1, .st3, .st5, .st6, .st7 {
+        stroke: #486072;
+      }
+
+      .st2 {
+        stroke-dasharray: 3 2;
+      }
+
+      .st2, .st3, .st4, .st5, .st7 {
+        stroke-linecap: round;
+      }
+
+      .st2, .st4 {
+        stroke: #df7926;
+      }
+
+      .st2, .st5, .st6 {
+        stroke-width: 1.5px;
+      }
+
+      .st8 {
+        fill: #eaeaea;
+      }
+
+      .st3, .st4, .st5 {
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <rect class="st8" x="6" y="6" width="36" height="26" rx="2" ry="2"/>
+  <rect class="st3" x="6" y="6" width="36" height="26" rx="2" ry="2"/>
+  <line class="st1" x1="24" y1="32" x2="24" y2="38"/>
+  <line class="st7" x1="16" y1="38" x2="32" y2="38"/>
+  <polyline class="st4" points="12 26 18 20 24 24 30 14 36 18"/>
+  <circle class="st0" cx="24" cy="24" r="1.5"/>
+  <circle class="st0" cx="30" cy="14" r="1.5"/>
+  <circle class="st4" cx="62" cy="20" r="6"/>
+  <path class="st4" d="M62,26v18"/>
+  <path class="st4" d="M62,32l-8,6"/>
+  <path class="st4" d="M62,32l8-2"/>
+  <path class="st4" d="M62,44l-6,12"/>
+  <path class="st4" d="M62,44l6,12"/>
+  <line class="st2" x1="54" y1="38" x2="42" y2="22"/>
+  <g>
+    <circle class="st3" cx="14" cy="52" r="4"/>
+    <path class="st3" d="M9,64c0-4,1.67-6,5-6s5,2,5,6"/>
+  </g>
+  <g>
+    <circle class="st3" cx="28" cy="52" r="4"/>
+    <path class="st3" d="M23,64c0-4,1.67-6,5-6s5,2,5,6"/>
+  </g>
+  <g>
+    <circle class="st3" cx="42" cy="52" r="4"/>
+    <path class="st3" d="M37,64c0-4,1.67-6,5-6s5,2,5,6"/>
+  </g>
+  <g>
+    <circle class="st6" cx="10" cy="68" r="3"/>
+    <path class="st5" d="M6,76c0-2.67,1.33-4,4-4s4,1.33,4,4"/>
+  </g>
+  <g>
+    <circle class="st6" cx="21" cy="68" r="3"/>
+    <path class="st5" d="M17,76c0-2.67,1.33-4,4-4s4,1.33,4,4"/>
+  </g>
+  <g>
+    <circle class="st6" cx="32" cy="68" r="3"/>
+    <path class="st5" d="M28,76c0-2.67,1.33-4,4-4s4,1.33,4,4"/>
+  </g>
+  <g>
+    <circle class="st6" cx="43" cy="68" r="3"/>
+    <path class="st5" d="M39,76c0-2.67,1.33-4,4-4s4,1.33,4,4"/>
+  </g>
+</svg>

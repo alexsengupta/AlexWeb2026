@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App Playground - Alex Sen Gupta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5e8bff;
+            --secondary: #76a3ff;
+            --accent: #5474ff;
+            --bg-dark: #03060d;
+            --card-bg: rgba(15, 19, 34, 0.65);
+            --card-border: rgba(118, 163, 255, 0.2);
+            --text-main: #e4e9fa;
+            --text-muted: rgba(228, 233, 250, 0.7);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(140% 160% at 0% 0%, rgba(44, 60, 108, 0.28), transparent 55%),
+                radial-gradient(160% 170% at 100% 100%, rgba(34, 74, 120, 0.22), transparent 60%),
+                var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: 60px;
+        }
+
+        /* Animated background noise */
+        .bg-noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.03;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 0 60px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            text-decoration: none;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .back-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .page-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            text-align: right;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 100px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            color: #fff;
+            margin: 0;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--card-border), transparent);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        /* Cards */
+        .app-card {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 200px;
+            backdrop-filter: blur(12px);
+        }
+
+        /* Glow effect */
+        .app-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(600px circle at var(--x, 0) var(--y, 0), rgba(94, 139, 255, 0.15), transparent 40%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .app-card:hover::before {
+            opacity: 1;
+        }
+
+        .app-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: rgba(118, 163, 255, 0.5);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(118, 163, 255, 0.2);
+        }
+
+        .app-content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(118, 163, 255, 0.2), rgba(118, 163, 255, 0.05));
+            border: 1px solid rgba(118, 163, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: #fff;
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .app-card:hover .app-icon {
+            transform: scale(1.1) rotate(5deg);
+            border-color: #fff;
+            background: linear-gradient(135deg, rgba(118, 163, 255, 0.3), rgba(118, 163, 255, 0.1));
+        }
+
+        .app-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            margin: 0 0 8px 0;
+        }
+
+        .app-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .app-arrow {
+            align-self: flex-end;
+            color: var(--primary);
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .app-card:hover .app-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Category colors */
+        .teaching .app-icon {
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.3);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .research .app-icon {
+            color: #60a5fa;
+            border-color: rgba(96, 165, 250, 0.3);
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .fun .app-icon {
+            color: #f472b6;
+            border-color: rgba(244, 114, 182, 0.3);
+            background: rgba(244, 114, 182, 0.1);
+        }
+
+        .conceptual .app-icon {
+            color: #a78bfa;
+            border-color: rgba(167, 139, 250, 0.3);
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .teaching .app-card:hover {
+            border-color: rgba(74, 222, 128, 0.5);
+        }
+
+        .research .app-card:hover {
+            border-color: rgba(96, 165, 250, 0.5);
+        }
+
+        .fun .app-card:hover {
+            border-color: rgba(244, 114, 182, 0.5);
+        }
+
+        .conceptual .app-card:hover {
+            border-color: rgba(167, 139, 250, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column-reverse;
+                gap: 20px;
+                align-items: flex-start;
+            }
+
+            .page-title {
+                text-align: left;
+                font-size: 2.5rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-noise"></div>
+
+    <div class="container">
+        <header class="header">
+            <a href="index.html" class="back-link" aria-label="Back to home">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+            </a>
+            <h1 class="page-title">App Playground</h1>
+        </header>
+
+        <!-- Teaching Section -->
+        <section class="section teaching" id="teaching">
+            <div class="section-header">
+                <h2 class="section-title">Teaching Apps</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="grid">
+                <a href="simulations/estuary/index.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🌊</div>
+                        <h3 class="app-name">Estuarine Dynamics</h3>
+                        <p class="app-desc">Investigate processes driving circulation, temperature, and salinity in
+                            estuaries.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="http://203.101.229.0/aus" class="app-card" target="_blank" rel="noopener">
+                    <div class="app-content">
+                        <div class="app-icon">🇦🇺</div>
+                        <h3 class="app-name">Lagrangian Floats (Aus)</h3>
+                        <p class="app-desc">Track floating objects moving around the Australian coastline.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="http://203.101.229.0/gbr" class="app-card" target="_blank" rel="noopener">
+                    <div class="app-content">
+                        <div class="app-icon">🐠</div>
+                        <h3 class="app-name">Lagrangian Floats (GBR)</h3>
+                        <p class="app-desc">Track particle movement within the Great Barrier Reef system.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="http://203.101.229.0/aragonite/" class="app-card" target="_blank" rel="noopener">
+                    <div class="app-content">
+                        <div class="app-icon">🧪</div>
+                        <h3 class="app-name">Acidification Projections</h3>
+                        <p class="app-desc">Examine model projections of aragonite and pH levels globally.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="Carbonator.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🌍</div>
+                        <h3 class="app-name">Carbonator</h3>
+                        <p class="app-desc">Look into the future. An easy-to-use, interactive climate model.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/monte_carlo_simulation/mc_input.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🎲</div>
+                        <h3 class="app-name">Monte Carlo</h3>
+                        <p class="app-desc">A simpler, more intuitive way of performing statistical significance tests.
+                        </p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/waves/w7.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🚤</div>
+                        <h3 class="app-name">Deep Water Waves</h3>
+                        <p class="app-desc">Explore wave dispersion and group velocity.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Research Section -->
+        <section class="section research" id="research">
+            <div class="section-header">
+                <h2 class="section-title">Research Tools</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="grid">
+                <a href="simulations/syntheticSST/web_app/index.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">📈</div>
+                        <h3 class="app-name">SST Generator</h3>
+                        <p class="app-desc">Create synthetic Sea Surface Temperature time series to test hypotheses.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/estuary/index.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🌊</div>
+                        <h3 class="app-name">Estuarine Dynamics</h3>
+                        <p class="app-desc">Investigate processes driving circulation, temperature, and salinity.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/counterintuitive_correlations/correlation_madness.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">📊</div>
+                        <h3 class="app-name">Correlation Madness</h3>
+                        <p class="app-desc">Why summing correlations can lead to paradoxes (Simpson's Paradox).</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Conceptual Models Section -->
+        <section class="section conceptual" id="conceptual">
+            <div class="section-header">
+                <h2 class="section-title">Conceptual Model Examples</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="grid">
+                <a href="simulations/flocking/boids_demo.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🐦</div>
+                        <h3 class="app-name">Flocking</h3>
+                        <p class="app-desc">Emergent behavior from simple rules: alignment, cohesion, and separation.
+                        </p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/coral_lagoon/coral_bleaching_multiyear.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🪸</div>
+                        <h3 class="app-name">Coral Bleaching</h3>
+                        <p class="app-desc">Simulate how heat stress accumulates to cause bleaching events.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/predator_prey/pred_prey_model.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🦊</div>
+                        <h3 class="app-name">Predator Prey</h3>
+                        <p class="app-desc">Simulate species interactions and chaotic population dynamics.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/traffic_model/motorway_traffic.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🚦</div>
+                        <h3 class="app-name">Traffic Jam</h3>
+                        <p class="app-desc">Create phantom traffic jams and see how small changes ripple.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+                <a href="simulations/schelling_model/schelling-enhanced.html" class="app-card">
+                    <div class="app-content">
+                        <div class="app-icon">🏘️</div>
+                        <h3 class="app-name">Schilling Model</h3>
+                        <p class="app-desc">A simple model of division showing why and how segregation happens.</p>
+                        <div class="app-arrow">➔</div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <footer
+            style="margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--card-border); color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+            <p>
+                Many of the apps here were developed with the help of AI using vibe coding [using natural language to
+                develop code].
+                This opens up conceptual modelling and app development to those without a coding background.
+                Be warned - you still need some understanding of coding principles and the systems you are modelling to
+                be able to test that what you’ve developed is working as expected.
+                To learn more <a href="AIrabbithole/conceptual_models.html"
+                    style="color: var(--secondary); text-decoration: none; border-bottom: 1px dotted currentColor;">click
+                    here</a>.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Mouse movement effect for cards
+        document.querySelectorAll('.app-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--x', `${x}px`);
+                card.style.setProperty('--y', `${y}px`);
+            });
+        });
+
+        // Intersection Observer for scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fish Flocking Simulation - Educational Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        #container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        canvas {
+            border: 1px solid #444;
+            background: #0a0a0a;
+            display: block;
+        }
+
+        #sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 350px;
+        }
+
+        #controls,
+        #demo-controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            text-align: right;
+            font-size: 12px;
+            color: #66d9ff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .secondary-btn {
+            background: #2196F3;
+        }
+
+        .secondary-btn:hover {
+            background: #1976D2;
+        }
+
+        .demo-btn {
+            background: #9C27B0;
+        }
+
+        .demo-btn:hover {
+            background: #7B1FA2;
+        }
+
+        .info-btn {
+            background: #607D8B;
+        }
+
+        .info-btn:hover {
+            background: #455A64;
+        }
+
+        .nav-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #explanation-panel {
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            min-height: 150px;
+            border-left: 4px solid #9C27B0;
+        }
+
+        #explanation-title {
+            color: #9C27B0;
+            margin-top: 0;
+            font-size: 1.1em;
+        }
+
+        #explanation-text {
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .legend {
+            margin-top: 15px;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .circle-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid;
+            background: transparent;
+        }
+
+        .arrow-icon {
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 10px;
+        }
+
+        .stats {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Help Button Styles */
+        .help-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #555;
+            color: #fff;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 5px;
+            float: right;
+        }
+
+        .help-btn:hover {
+            background: #777;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: #2a2a2a;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #444;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            color: #fff;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2,
+        .modal-content h3 {
+            color: #66d9ff;
+            margin-top: 20px;
+        }
+
+        .modal-content h2:first-child {
+            margin-top: 0;
+        }
+
+        details {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        summary {
+            cursor: pointer;
+            color: #66d9ff;
+            font-weight: bold;
+            outline: none;
+        }
+
+        details p {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        header {
+            background-image: url('banner_image.png');
+            background-size: cover;
+            background-position: center;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 40px;
+            margin: 0 auto 20px auto;
+            max-width: 1400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+
+        .equation {
+            background: #1a1a1a;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .parameter-group {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            color: white;
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            margin: 0;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 10px;">
+            <a href="../../app_playground.html"
+                style="color: white; text-decoration: none; background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Playground
+            </a>
+            <a href="../../index.html"
+                style="color: white; text-decoration: none; background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Home
+            </a>
+        </div>
+        <h1>Agent based shoaling</h1>
+    </header>
+
+    <div id="container">
+        <canvas id="canvas"></canvas>
+
+        <div id="sidebar">
+            <div id="controls">
+                <h3>Simulation Controls</h3>
+
+                <div id="main-buttons">
+                    <button id="startBtn">Start Simulation</button>
+                    <button id="resetBtn" class="secondary-btn">Reset / Stop</button>
+                    <button id="demoBtn" class="demo-btn">Understanding the rules</button>
+                    <button id="showInfo" class="info-btn">Model Information</button>
+                </div>
+
+                <div id="demo-ui"
+                    style="display: none; margin-top: 20px; border-top: 1px solid #444; padding-top: 20px;">
+                    <h3 style="color: #9C27B0;">Rules Demo</h3>
+                    <p style="font-size: 13px; color: #ccc;">Step through the logic for 3 fish to understand how they
+                        think.</p>
+
+                    <div class="nav-btn-group">
+                        <button id="prevStepBtn" class="secondary-btn" style="background: #666;">&larr; Back</button>
+                        <button id="nextStepBtn" class="demo-btn">Next Step &rarr;</button>
+                    </div>
+                    <button id="fastForwardBtn" class="secondary-btn" style="background: #E91E63; margin-top: 5px;">Fast
+                        Forward (5 frames)</button>
+
+                    <div id="explanation-panel">
+                        <h4 id="explanation-title">Ready to Start</h4>
+                        <div id="explanation-text">Click "Next Step" to begin the analysis of a single frame.</div>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item"><span class="arrow-icon" style="color: #ff4444;">&rarr;</span>
+                            Separation Force</div>
+                        <div class="legend-item"><span class="arrow-icon" style="color: #44ff44;">&rarr;</span>
+                            Alignment Force</div>
+                        <div class="legend-item"><span class="arrow-icon" style="color: #4444ff;">&rarr;</span> Cohesion
+                            Force</div>
+                        <div class="legend-item"><span class="arrow-icon" style="color: #ffffff;">&rarr;</span>
+                            Resultant Force</div>
+                        <div class="legend-item"><span class="circle-icon"
+                                style="border-color: rgba(255,255,255,0.5);"></span> Perception Radius</div>
+                        <div class="legend-item"><span class="circle-icon"
+                                style="border-color: rgba(255,100,100,0.8);"></span> Avoidance Radius</div>
+                        <div class="legend-item"><span class="dot"
+                                style="background: cyan; width: 12px; height: 12px;"></span> Center of Mass</div>
+                    </div>
+                </div>
+
+                <div id="param-controls" style="margin-top: 20px;">
+                    <h3>Parameters</h3>
+
+                    <div class="control-group">
+                        <label>Simulation Speed <span class="help-btn" data-help="speed">?</span></label>
+                        <input type="range" id="simSpeed" min="0" max="5" step="1" value="1">
+                        <div class="value" id="simSpeedValue">1x</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Separation Weight <span class="help-btn" data-help="separation">?</span></label>
+                        <input type="range" id="separation" min="0" max="3" step="0.1" value="1.5">
+                        <div class="value" id="separationValue">1.5</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Alignment Weight <span class="help-btn" data-help="alignment">?</span></label>
+                        <input type="range" id="alignment" min="0" max="3" step="0.1" value="1.0">
+                        <div class="value" id="alignmentValue">1.0</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Cohesion Weight <span class="help-btn" data-help="cohesion">?</span></label>
+                        <input type="range" id="cohesion" min="0" max="3" step="0.1" value="1.0">
+                        <div class="value" id="cohesionValue">1.0</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Perception Radius <span class="help-btn" data-help="perception">?</span></label>
+                        <input type="range" id="perception" min="20" max="150" step="5" value="50">
+                        <div class="value" id="perceptionValue">50px</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Number of Fish (Sim Only) <span class="help-btn" data-help="numBoids">?</span></label>
+                        <input type="range" id="numFish" min="10" max="300" step="10" value="100">
+                        <div class="value" id="numFishValue">100</div>
+                    </div>
+
+                    <div class="control-group" style="border-top: 1px solid #444; padding-top: 15px;">
+                        <label style="color: #ff6666;">Number of Predators <span class="help-btn"
+                                data-help="predators">?</span></label>
+                        <input type="range" id="numPredators" min="0" max="3" step="1" value="0">
+                        <div class="value" id="numPredatorsValue" style="color: #ff6666;">0</div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div>FPS: <span id="fps">0</span></div>
+                    <div id="catchStats" style="color: #ff6666; display: none;">Catches: <span id="catches">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dialogs -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="helpTitle">Parameter Information</h2>
+            <div id="helpContent"></div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Fish Flocking Model - Complete Information</h2>
+
+            <h3>Overview</h3>
+            <p>This is an implementation of Craig Reynolds' boids model (1986), which demonstrates emergent flocking
+                behavior from simple local rules. The model simulates agent-based collective motion similar to bird
+                flocks, fish schools, or insect swarms.</p>
+
+            <h3>Simulation Algorithm</h3>
+            <p>The simulation runs in discrete time steps (frames). In each frame, the following process occurs:</p>
+            <ol>
+                <li><strong>Calculate Forces:</strong> For every fish, we look at its neighbors and calculate the
+                    steering forces (Separation, Alignment, Cohesion) based on their positions and velocities.</li>
+                <li><strong>Apply Forces:</strong> We sum these forces (plus any fear response) to get a total
+                    acceleration.</li>
+                <li><strong>Update Physics:</strong> We update the velocity (adding acceleration) and then the position
+                    (adding velocity) for every fish.</li>
+                <li><strong>Repeat:</strong> This process repeats 60 times per second to create smooth motion.</li>
+            </ol>
+
+            <h3>Core Flocking Rules</h3>
+            <p>Click on the rules below to see the mathematical details.</p>
+
+            <details>
+                <summary><strong>1. Separation (Collision Avoidance)</strong></summary>
+                <p>Prevents crowding by steering away from nearby neighbors. The force increases with proximity.</p>
+                <div class="equation">
+                    <strong>Force calculation:</strong><br>
+                    F = Σ[(position_self - position_neighbor) / distance²]<br>
+                    <br>
+                    <em>The force is inversely proportional to the square of the distance, meaning it gets much stronger
+                        very quickly as fish get closer.</em>
+                </div>
+            </details>
+
+            <details>
+                <summary><strong>2. Alignment (Velocity Matching)</strong></summary>
+                <p>Steers toward the average heading of local flockmates to create coordinated movement.</p>
+                <div class="equation">
+                    <strong>Force calculation:</strong><br>
+                    v_avg = Σ(velocity_neighbor) / n<br>
+                    F = (v_avg · max_speed / |v_avg|) - velocity_self
+                </div>
+            </details>
+
+            <details>
+                <summary><strong>3. Cohesion (Flock Centering)</strong></summary>
+                <p>Steers toward the average position of local flockmates to maintain group cohesion.</p>
+                <div class="equation">
+                    <strong>Force calculation:</strong><br>
+                    center = Σ(position_neighbor) / n<br>
+                    desired_v = center - position_self<br>
+                    F = (desired_v · max_speed / |desired_v|) - velocity_self
+                </div>
+            </details>
+
+            <details>
+                <summary><strong>Predator-Prey Dynamics</strong></summary>
+                <p>Predators preferentially hunt isolated fish. Fish respond with a fear behavior, fleeing from
+                    predators when they get too close.</p>
+                <div class="equation">
+                    <strong>Target Selection:</strong><br>
+                    Score = distance - (IsolationFactor * 30)<br>
+                    <em>Predators target the closest fish that has the fewest neighbors.</em>
+                    <br><br>
+                    <strong>Fear Response:</strong><br>
+                    Force increases quadratically as the predator gets closer, overriding normal flocking behavior.
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Configuration
+        let config = {
+            numFish: 100,
+            numPredators: 0,
+            separationWeight: 1.5,
+            alignmentWeight: 1.0,
+            cohesionWeight: 1.0,
+            perceptionRadius: 50,
+            maxSpeed: 3,
+            maxForce: 0.05,
+            separationRadius: 25,
+            simSpeed: 1,
+            // Predator params
+            predatorSpeed: 4.5,
+            predatorForce: 0.03,
+            fearRadius: 150,
+            catchRadius: 10
+        };
+
+        // State Management
+        const STATE = {
+            IDLE: 'IDLE',
+            RUNNING: 'RUNNING',
+            DEMO: 'DEMO'
+        };
+
+        let currentState = STATE.IDLE;
+        let fishSchool = [];
+        let predators = [];
+        let totalCatches = 0;
+
+        // Demo specific state
+        let demoState = {
+            step: 0,
+            fish: [],
+            activeFishIndex: 0,
+            phase: 'INIT',
+            resultants: [],
+            historyStack: []
+        };
+
+        class Fish {
+            constructor(x, y) {
+                this.position = { x, y };
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: Math.cos(angle) * config.maxSpeed,
+                    y: Math.sin(angle) * config.maxSpeed
+                };
+                this.acceleration = { x: 0, y: 0 };
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.history = []; // Trail
+            }
+
+            distance(point) {
+                const dx = this.position.x - point.x;
+                const dy = this.position.y - point.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            getNeighbors(allFish) {
+                return allFish.filter(other =>
+                    other !== this && this.distance(other.position) < config.perceptionRadius
+                );
+            }
+
+            // Calculate forces but don't apply them (for visualization)
+            calculateForces(neighbors) {
+                let sep = { x: 0, y: 0 };
+                let ali = { x: 0, y: 0 };
+                let coh = { x: 0, y: 0 };
+                let centerOfMass = null;
+                let desiredCohesion = null;
+
+                // Separation
+                let countSep = 0;
+                for (let other of neighbors) {
+                    const d = this.distance(other.position);
+                    if (d < config.separationRadius && d > 0) {
+                        const diff = {
+                            x: this.position.x - other.position.x,
+                            y: this.position.y - other.position.y
+                        };
+                        const mag = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+
+                        // Weight by distance (closer = stronger)
+                        const strength = (config.separationRadius / d) * 2;
+
+                        sep.x += (diff.x / mag) * strength;
+                        sep.y += (diff.y / mag) * strength;
+                        countSep++;
+                    }
+                }
+                if (countSep > 0) {
+                    sep.x /= countSep; sep.y /= countSep;
+
+                    // Steering = Desired - Velocity
+                    sep.x -= this.velocity.x;
+                    sep.y -= this.velocity.y;
+                    sep = this.limitVector(sep, config.maxForce * 2);
+                }
+
+                // Alignment
+                if (neighbors.length > 0) {
+                    for (let other of neighbors) {
+                        ali.x += other.velocity.x;
+                        ali.y += other.velocity.y;
+                    }
+                    ali.x /= neighbors.length; ali.y /= neighbors.length;
+                    const mag = Math.sqrt(ali.x * ali.x + ali.y * ali.y);
+                    if (mag > 0) {
+                        ali.x = (ali.x / mag) * config.maxSpeed - this.velocity.x;
+                        ali.y = (ali.y / mag) * config.maxSpeed - this.velocity.y;
+                        ali = this.limitVector(ali, config.maxForce);
+                    }
+
+                    // Cohesion
+                    let center = { x: 0, y: 0 };
+                    for (let other of neighbors) {
+                        center.x += other.position.x;
+                        center.y += other.position.y;
+                    }
+                    center.x /= neighbors.length; center.y /= neighbors.length;
+                    centerOfMass = { ...center };
+
+                    let dir = { x: center.x - this.position.x, y: center.y - this.position.y };
+                    const dist = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+                    if (dist > 0) {
+                        dir.x = (dir.x / dist) * config.maxSpeed;
+                        dir.y = (dir.y / dist) * config.maxSpeed;
+                        desiredCohesion = { ...dir };
+
+                        dir.x -= this.velocity.x;
+                        dir.y -= this.velocity.y;
+                        coh = this.limitVector(dir, config.maxForce);
+                    }
+                }
+
+                return { sep, ali, coh, centerOfMass, desiredCohesion };
+            }
+
+            flee(predators) {
+                let steering = { x: 0, y: 0 };
+                let urgency = 0;
+
+                for (let predator of predators) {
+                    const d = this.distance(predator.position);
+                    if (d < config.fearRadius) {
+                        const diff = {
+                            x: this.position.x - predator.position.x,
+                            y: this.position.y - predator.position.y
+                        };
+
+                        const weight = 1 - (d / config.fearRadius);
+                        const panicFactor = weight * weight * 10;
+
+                        if (d > 0) {
+                            steering.x += (diff.x / d) * panicFactor;
+                            steering.y += (diff.y / d) * panicFactor;
+                        }
+                        urgency = Math.max(urgency, weight);
+                    }
+                }
+
+                const maxPanicForce = config.maxForce * (1 + urgency * 4);
+                return this.limitVector(steering, maxPanicForce);
+            }
+
+            limitVector(v, max) {
+                const mag = Math.sqrt(v.x * v.x + v.y * v.y);
+                if (mag > max) {
+                    return { x: (v.x / mag) * max, y: (v.y / mag) * max };
+                }
+                return v;
+            }
+
+            applyForces(forces, fleeForce = { x: 0, y: 0 }) {
+                // If fleeing, reduce flocking forces
+                const fleeMag = Math.sqrt(fleeForce.x * fleeForce.x + fleeForce.y * fleeForce.y);
+                const flockWeight = Math.max(0, 1 - fleeMag * 0.5);
+
+                this.acceleration.x += fleeForce.x;
+                this.acceleration.y += fleeForce.y;
+
+                this.acceleration.x += forces.sep.x * config.separationWeight * flockWeight;
+                this.acceleration.y += forces.sep.y * config.separationWeight * flockWeight;
+                this.acceleration.x += forces.ali.x * config.alignmentWeight * flockWeight;
+                this.acceleration.y += forces.ali.y * config.alignmentWeight * flockWeight;
+                this.acceleration.x += forces.coh.x * config.cohesionWeight * flockWeight;
+                this.acceleration.y += forces.coh.y * config.cohesionWeight * flockWeight;
+            }
+
+            update() {
+                // Save history
+                if (this.history.length > 50) this.history.shift();
+                this.history.push({ x: this.position.x, y: this.position.y });
+
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                this.velocity = this.limitVector(this.velocity, config.maxSpeed);
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                this.acceleration = { x: 0, y: 0 };
+                this.edges();
+            }
+
+            edges() {
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+
+            draw(ctx, color = '#66d9ff', showVelocity = false, scale = 1, withGhostDots = false, fadingTrail = false) {
+                // Draw trail
+                if (this.history.length > 0) {
+                    ctx.save();
+
+                    if (fadingTrail) {
+                        for (let i = 1; i < this.history.length; i++) {
+                            const p1 = this.history[i - 1];
+                            const p2 = this.history[i];
+                            const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+
+                            if (dist < 100) {
+                                ctx.beginPath();
+                                ctx.moveTo(p1.x, p1.y);
+                                ctx.lineTo(p2.x, p2.y);
+                                const alpha = (i / this.history.length) * 0.4;
+                                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                                ctx.lineWidth = 1 / scale;
+                                ctx.stroke();
+                            }
+                        }
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(this.history[0].x, this.history[0].y);
+                        for (let i = 1; i < this.history.length; i++) {
+                            const p1 = this.history[i - 1];
+                            const p2 = this.history[i];
+                            const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+                            if (dist < 100) {
+                                ctx.lineTo(p2.x, p2.y);
+                            } else {
+                                ctx.moveTo(p2.x, p2.y);
+                            }
+                        }
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.lineWidth = 1 / scale;
+                        ctx.stroke();
+                    }
+
+                    if (withGhostDots) {
+                        for (let i = 0; i < this.history.length; i++) {
+                            ctx.beginPath();
+                            ctx.arc(this.history[i].x, this.history[i].y, 2 / scale, 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                            ctx.fill();
+                        }
+                    }
+
+                    ctx.restore();
+                }
+
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+
+                if (showVelocity) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(this.velocity.x * 10, this.velocity.y * 10);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 1 / scale;
+                    ctx.stroke();
+                }
+
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(6, 0);
+                ctx.lineTo(-3, -3);
+                ctx.lineTo(-3, 3);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Predator {
+            constructor(x, y) {
+                this.position = { x, y };
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: Math.cos(angle) * config.predatorSpeed,
+                    y: Math.sin(angle) * config.predatorSpeed
+                };
+                this.acceleration = { x: 0, y: 0 };
+                this.target = null;
+            }
+
+            distance(point) {
+                const dx = this.position.x - point.x;
+                const dy = this.position.y - point.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            distance2(p1, p2) {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            findTarget(fishList) {
+                let bestTarget = null;
+                let bestScore = Infinity;
+
+                for (let fish of fishList) {
+                    const dist = this.distance(fish.position);
+                    if (dist > 300) continue;
+
+                    let crowding = 0;
+                    for (let other of fishList) {
+                        if (other === fish) continue;
+                        if (this.distance2(fish.position, other.position) < 50) {
+                            crowding++;
+                        }
+                    }
+
+                    const isolationBonus = Math.max(0, 5 - crowding) * 30;
+                    const score = dist - isolationBonus;
+
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestTarget = fish;
+                    }
+                }
+                return bestTarget;
+            }
+
+            hunt(fishList) {
+                this.target = this.findTarget(fishList);
+
+                if (!this.target) {
+                    // Wander
+                    const angle = Math.random() * 0.3 - 0.15;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+                    const newX = this.velocity.x * cos - this.velocity.y * sin;
+                    const newY = this.velocity.x * sin + this.velocity.y * cos;
+                    this.acceleration.x = (newX - this.velocity.x) * 0.1;
+                    this.acceleration.y = (newY - this.velocity.y) * 0.1;
+                    return;
+                }
+
+                // Pursuit
+                const dist = this.distance(this.target.position);
+                const lookAhead = Math.min(dist / config.predatorSpeed, 10);
+                const predicted = {
+                    x: this.target.position.x + this.target.velocity.x * lookAhead,
+                    y: this.target.position.y + this.target.velocity.y * lookAhead
+                };
+
+                const desired = {
+                    x: predicted.x - this.position.x,
+                    y: predicted.y - this.position.y
+                };
+
+                const mag = Math.sqrt(desired.x * desired.x + desired.y * desired.y);
+                if (mag > 0) {
+                    desired.x = (desired.x / mag) * config.predatorSpeed;
+                    desired.y = (desired.y / mag) * config.predatorSpeed;
+
+                    this.acceleration.x = desired.x - this.velocity.x;
+                    this.acceleration.y = desired.y - this.velocity.y;
+                    this.acceleration = this.limitVector(this.acceleration, config.predatorForce);
+                }
+
+                if (dist < config.catchRadius) {
+                    this.catch(this.target);
+                }
+            }
+
+            catch(fish) {
+                totalCatches++;
+                // Respawn fish
+                const edge = Math.floor(Math.random() * 4);
+                switch (edge) {
+                    case 0: fish.position.x = Math.random() * canvas.width; fish.position.y = 0; break;
+                    case 1: fish.position.x = canvas.width; fish.position.y = Math.random() * canvas.height; break;
+                    case 2: fish.position.x = Math.random() * canvas.width; fish.position.y = canvas.height; break;
+                    case 3: fish.position.x = 0; fish.position.y = Math.random() * canvas.height; break;
+                }
+                const angle = Math.random() * Math.PI * 2;
+                fish.velocity.x = Math.cos(angle) * config.maxSpeed;
+                fish.velocity.y = Math.sin(angle) * config.maxSpeed;
+            }
+
+            limitVector(vector, max) {
+                const mag = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                if (mag > max) {
+                    vector.x = (vector.x / mag) * max;
+                    vector.y = (vector.y / mag) * max;
+                }
+                return vector;
+            }
+
+            update() {
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                this.velocity = this.limitVector(this.velocity, config.predatorSpeed);
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                this.acceleration = { x: 0, y: 0 };
+
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+
+            draw(ctx) {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(-5, -5);
+                ctx.lineTo(-5, 5);
+                ctx.closePath();
+
+                ctx.fillStyle = '#ff4444';
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(4, -2, 2, 1);
+                ctx.fillRect(4, 1, 2, 1);
+
+                ctx.restore();
+            }
+        }
+
+        function initFish(count) {
+            fishSchool = [];
+            for (let i = 0; i < count; i++) {
+                fishSchool.push(new Fish(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+
+        function initPredators(count) {
+            predators = [];
+            for (let i = 0; i < count; i++) {
+                predators.push(new Predator(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+
+        function drawArrow(ctx, from, vec, color, scale = 1000, width = 2, dashed = false) {
+            if (Math.abs(vec.x) < 0.001 && Math.abs(vec.y) < 0.001) return;
+
+            const to = { x: from.x + vec.x * scale, y: from.y + vec.y * scale };
+            const headlen = 10;
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+
+            ctx.save();
+            ctx.beginPath();
+            if (dashed) ctx.setLineDash([5, 5]);
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - headlen * Math.cos(angle - Math.PI / 6), to.y - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - headlen * Math.cos(angle + Math.PI / 6), to.y - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Main Animation Loop
+        function animate() {
+            if (currentState === STATE.RUNNING) {
+                // Trail effect
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Speed Control Loop
+                if (config.simSpeed > 0) {
+                    for (let step = 0; step < config.simSpeed; step++) {
+                        for (let fish of fishSchool) {
+                            const neighbors = fish.getNeighbors(fishSchool);
+                            const forces = fish.calculateForces(neighbors);
+                            const fleeForce = fish.flee(predators);
+                            fish.applyForces(forces, fleeForce);
+                        }
+                        for (let fish of fishSchool) {
+                            fish.update();
+                        }
+                        for (let predator of predators) {
+                            predator.hunt(fishSchool);
+                            predator.update();
+                        }
+                    }
+                }
+
+                // Draw
+                for (let fish of fishSchool) {
+                    fish.draw(ctx, '#66d9ff', false, 1, false, true);
+                }
+                for (let predator of predators) {
+                    predator.draw(ctx);
+                }
+
+                // Update stats
+                if (config.numPredators > 0) {
+                    document.getElementById('catchStats').style.display = 'block';
+                    document.getElementById('catches').textContent = totalCatches;
+                } else {
+                    document.getElementById('catchStats').style.display = 'none';
+                }
+
+                requestAnimationFrame(animate);
+            }
+            else if (currentState === STATE.IDLE) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let fish of fishSchool) {
+                    fish.draw(ctx, '#66d9ff', true);
+                }
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = '24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Simulation Paused - Click Start to Run', canvas.width / 2, canvas.height / 2);
+            }
+            else if (currentState === STATE.DEMO) {
+                drawDemoFrame();
+            }
+        }
+
+        // Demo Logic
+        function startDemo() {
+            currentState = STATE.DEMO;
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            demoState.fish = [
+                new Fish(cx - 20, cy),
+                new Fish(cx + 20, cy),
+                new Fish(cx, cy - 80)
+            ];
+
+            demoState.fish[0].velocity = { x: 2, y: 0.5 };
+            demoState.fish[1].velocity = { x: -2, y: -0.5 };
+            demoState.fish[2].velocity = { x: 0, y: 2 };
+
+            demoState.activeFishIndex = 0;
+            demoState.phase = 'INIT';
+            demoState.resultants = [null, null, null];
+            demoState.historyStack = [];
+
+            document.getElementById('demo-ui').style.display = 'block';
+            document.getElementById('param-controls').style.display = 'none';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('resetBtn').textContent = 'Exit Demo';
+            document.getElementById('prevStepBtn').disabled = true;
+
+            updateDemoUI();
+            drawDemoFrame();
+        }
+
+        function saveState() {
+            const stateCopy = {
+                step: demoState.step,
+                activeFishIndex: demoState.activeFishIndex,
+                phase: demoState.phase,
+                resultants: JSON.parse(JSON.stringify(demoState.resultants)),
+                fish: demoState.fish.map(b => {
+                    const newB = new Fish(b.position.x, b.position.y);
+                    newB.velocity = { ...b.velocity };
+                    newB.acceleration = { ...b.acceleration };
+                    newB.history = [...b.history];
+                    return newB;
+                })
+            };
+            demoState.historyStack.push(stateCopy);
+            document.getElementById('prevStepBtn').disabled = false;
+        }
+
+        function prevDemoStep() {
+            if (demoState.historyStack.length === 0) return;
+
+            const prevState = demoState.historyStack.pop();
+            demoState.step = prevState.step;
+            demoState.activeFishIndex = prevState.activeFishIndex;
+            demoState.phase = prevState.phase;
+            demoState.resultants = prevState.resultants;
+            demoState.fish = prevState.fish;
+
+            if (demoState.historyStack.length === 0) {
+                document.getElementById('prevStepBtn').disabled = true;
+            }
+
+            updateDemoUI();
+            drawDemoFrame();
+        }
+
+        function nextDemoStep() {
+            saveState();
+
+            const phases = ['SELECT', 'NEIGHBORS', 'SEPARATION', 'ALIGNMENT', 'COHESION', 'COMBINED'];
+
+            if (demoState.phase === 'INIT' || demoState.phase === 'MOVE') {
+                if (demoState.phase === 'MOVE') {
+                    demoState.resultants = [null, null, null];
+                }
+                demoState.phase = 'SELECT';
+                demoState.activeFishIndex = 0;
+            } else {
+                const currentPhaseIdx = phases.indexOf(demoState.phase);
+                if (currentPhaseIdx < phases.length - 1) {
+                    demoState.phase = phases[currentPhaseIdx + 1];
+                } else {
+                    const activeFish = demoState.fish[demoState.activeFishIndex];
+                    const neighbors = activeFish.getNeighbors(demoState.fish);
+                    const forces = activeFish.calculateForces(neighbors);
+                    const res = {
+                        x: forces.sep.x * config.separationWeight + forces.ali.x * config.alignmentWeight + forces.coh.x * config.cohesionWeight,
+                        y: forces.sep.y * config.separationWeight + forces.ali.y * config.alignmentWeight + forces.coh.y * config.cohesionWeight
+                    };
+                    demoState.resultants[demoState.activeFishIndex] = res;
+
+                    if (demoState.activeFishIndex < demoState.fish.length - 1) {
+                        demoState.activeFishIndex++;
+                        demoState.phase = 'SELECT';
+                    } else {
+                        demoState.phase = 'MOVE';
+                    }
+                }
+            }
+
+            if (demoState.phase === 'MOVE') {
+                const demoMultiplier = 2.0;
+                for (let i = 0; i < 3; i++) {
+                    for (let fish of demoState.fish) {
+                        const neighbors = fish.getNeighbors(demoState.fish);
+                        const forces = fish.calculateForces(neighbors);
+
+                        fish.acceleration.x += (forces.sep.x * config.separationWeight + forces.ali.x * config.alignmentWeight + forces.coh.x * config.cohesionWeight) * demoMultiplier;
+                        fish.acceleration.y += (forces.sep.y * config.separationWeight + forces.ali.y * config.alignmentWeight + forces.coh.y * config.cohesionWeight) * demoMultiplier;
+
+                        fish.update();
+                    }
+                }
+            }
+
+            updateDemoUI();
+            drawDemoFrame();
+        }
+
+        let ffInterval;
+        function fastForwardDemo() {
+            let framesCompleted = 0;
+            clearInterval(ffInterval);
+
+            // Disable button while running
+            const btn = document.getElementById('fastForwardBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Running...";
+
+            ffInterval = setInterval(() => {
+                nextDemoStep();
+
+                // Check if we completed a frame (reached MOVE phase)
+                if (demoState.phase === 'MOVE') {
+                    framesCompleted++;
+                }
+
+                if (framesCompleted >= 5) {
+                    clearInterval(ffInterval);
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            }, 30); // 30ms for rapid playback
+        }
+
+        function updateDemoUI() {
+            const title = document.getElementById('explanation-title');
+            const text = document.getElementById('explanation-text');
+            const fishNum = demoState.activeFishIndex + 1;
+
+            const activeFish = demoState.fish[demoState.activeFishIndex];
+            const neighbors = activeFish ? activeFish.getNeighbors(demoState.fish) : [];
+            const forces = activeFish ? activeFish.calculateForces(neighbors) : { sep: { x: 0, y: 0 }, ali: { x: 0, y: 0 }, coh: { x: 0, y: 0 } };
+
+            const hasNeighbors = neighbors.length > 0;
+            const hasSep = Math.abs(forces.sep.x) > 0.001 || Math.abs(forces.sep.y) > 0.001;
+
+            switch (demoState.phase) {
+                case 'INIT':
+                    title.textContent = "Demo Initialized";
+                    text.textContent = "We have placed 2 fish close together to show interaction, and 1 further away. Click Next to start.";
+                    break;
+                case 'SELECT':
+                    title.textContent = `Processing Fish #${fishNum}`;
+                    text.textContent = "The simulation loops through every fish one by one. We are now focusing on the highlighted (Neon Pink) fish.";
+                    break;
+                case 'NEIGHBORS':
+                    title.textContent = "Finding Neighbors";
+                    if (hasNeighbors) {
+                        text.textContent = `The fish found ${neighbors.length} neighbor(s) within its perception radius (${config.perceptionRadius}px). These will influence its movement.`;
+                    } else {
+                        text.textContent = `The fish looks around but finds NO neighbors within its perception radius (${config.perceptionRadius}px). It will continue moving in its current direction.`;
+                    }
+                    break;
+                case 'SEPARATION':
+                    title.textContent = "Rule 1: Separation";
+                    if (hasSep) {
+                        text.textContent = "When neighbors are too close (inside the inner red circle), a force is applied to push the fish directly away from the neighbor to avoid collision (Red Arrow). The closer the fish, the stronger the force.";
+                    } else if (hasNeighbors) {
+                        text.textContent = "Neighbors are visible but far enough away (outside the red circle). No separation force is needed.";
+                    } else {
+                        text.textContent = "No neighbors, so no separation force is applied.";
+                    }
+                    break;
+                case 'ALIGNMENT':
+                    title.textContent = "Rule 2: Alignment";
+                    if (hasNeighbors) {
+                        text.textContent = "The fish steers to match the average direction (velocity) of its perceived neighbors (Green Arrow).";
+                    } else {
+                        text.textContent = "No neighbors to align with.";
+                    }
+                    break;
+                case 'COHESION':
+                    title.textContent = "Rule 3: Cohesion";
+                    if (hasNeighbors) {
+                        text.textContent = "The fish wants to go towards the centre of mass (Cyan Dot) of the other fish within its perception radius. Note: Because the fish already has a velocity, the force applied (Solid Blue Arrow) doesn't directly point to the centre of mass.";
+                    } else {
+                        text.textContent = "No neighbors to cohere with.";
+                    }
+                    break;
+                case 'COMBINED':
+                    title.textContent = "Applying Forces";
+                    if (hasNeighbors) {
+                        text.textContent = "All forces are summed up to create the Resultant Force (White Arrow). This force will change the fish's velocity in the next step.";
+                    } else {
+                        text.textContent = "No forces were generated. The fish will maintain its current velocity.";
+                    }
+                    break;
+                case 'MOVE':
+                    title.textContent = "Update Positions";
+                    text.textContent = "All fish update their position based on their new velocity. Frame complete.";
+                    break;
+            }
+        }
+
+        function drawDemoFrame() {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const zoom = 2.5;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const vectorScale = 1000;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-cx, -cy);
+
+            const activeFish = demoState.fish[demoState.activeFishIndex];
+            const neighbors = activeFish ? activeFish.getNeighbors(demoState.fish) : [];
+            const forces = activeFish ? activeFish.calculateForces(neighbors) : null;
+            const lineWidth = 2 / zoom;
+
+            if (demoState.phase !== 'INIT' && demoState.phase !== 'MOVE') {
+                if (['NEIGHBORS', 'SEPARATION', 'ALIGNMENT', 'COHESION', 'COMBINED'].includes(demoState.phase)) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(activeFish.position.x, activeFish.position.y, config.perceptionRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = lineWidth;
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                if (demoState.phase === 'SEPARATION' || demoState.phase === 'COMBINED') {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(activeFish.position.x, activeFish.position.y, config.separationRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+                    ctx.lineWidth = lineWidth;
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(255, 100, 100, 0.05)';
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            demoState.fish.forEach((fish, index) => {
+                const isActive = index === demoState.activeFishIndex && demoState.phase !== 'INIT' && demoState.phase !== 'MOVE';
+                if (!isActive) {
+                    const isNeighbor = neighbors.includes(fish) && ['NEIGHBORS', 'SEPARATION', 'ALIGNMENT', 'COHESION', 'COMBINED'].includes(demoState.phase);
+                    const color = isNeighbor ? '#ffff00' : '#444';
+                    fish.draw(ctx, color, true, zoom, true, false);
+                }
+            });
+
+            if (demoState.phase !== 'INIT' && demoState.phase !== 'MOVE') {
+                activeFish.draw(ctx, '#FF00FF', true, zoom, true, false);
+            }
+
+            if (demoState.phase !== 'INIT' && demoState.phase !== 'MOVE') {
+                if (demoState.phase === 'SEPARATION' || demoState.phase === 'COMBINED') {
+                    drawArrow(ctx, activeFish.position, forces.sep, '#ff4444', vectorScale, 3 / zoom);
+                }
+
+                if (demoState.phase === 'ALIGNMENT' || demoState.phase === 'COMBINED') {
+                    drawArrow(ctx, activeFish.position, forces.ali, '#44ff44', vectorScale, 3 / zoom);
+                }
+
+                if (demoState.phase === 'COHESION' || demoState.phase === 'COMBINED') {
+                    if (forces.centerOfMass) {
+                        ctx.beginPath();
+                        ctx.arc(forces.centerOfMass.x, forces.centerOfMass.y, 6 / zoom, 0, Math.PI * 2);
+                        ctx.fillStyle = 'cyan';
+                        ctx.fill();
+
+                        if (forces.desiredCohesion) {
+                            drawArrow(ctx, activeFish.position, forces.desiredCohesion, '#4444ff', vectorScale, 2 / zoom, true);
+                        }
+                    }
+                    drawArrow(ctx, activeFish.position, forces.coh, '#4444ff', vectorScale, 3 / zoom);
+                }
+
+                if (demoState.phase === 'COMBINED') {
+                    let res = {
+                        x: forces.sep.x * config.separationWeight + forces.ali.x * config.alignmentWeight + forces.coh.x * config.cohesionWeight,
+                        y: forces.sep.y * config.separationWeight + forces.ali.y * config.alignmentWeight + forces.coh.y * config.cohesionWeight
+                    };
+                    drawArrow(ctx, activeFish.position, res, '#ffffff', vectorScale, 5 / zoom);
+                }
+            }
+
+            demoState.resultants.forEach((res, index) => {
+                if (res && (index < demoState.activeFishIndex || demoState.phase === 'MOVE')) {
+                    const fish = demoState.fish[index];
+                    drawArrow(ctx, fish.position, res, '#ffffff', vectorScale, 3 / zoom);
+                }
+            });
+
+            ctx.restore();
+        }
+
+        // UI Event Listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            currentState = STATE.RUNNING;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('demoBtn').disabled = true;
+            animate();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            currentState = STATE.IDLE;
+            initFish(config.numFish);
+            initPredators(config.numPredators);
+            totalCatches = 0;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('demoBtn').disabled = false;
+            document.getElementById('resetBtn').textContent = 'Reset / Stop';
+            document.getElementById('demo-ui').style.display = 'none';
+            document.getElementById('param-controls').style.display = 'block';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            animate();
+        });
+
+        document.getElementById('demoBtn').addEventListener('click', startDemo);
+        document.getElementById('nextStepBtn').addEventListener('click', nextDemoStep);
+        document.getElementById('prevStepBtn').addEventListener('click', prevDemoStep);
+        document.getElementById('fastForwardBtn').addEventListener('click', fastForwardDemo);
+
+        // Parameter sliders
+        document.getElementById('numFish').addEventListener('input', (e) => {
+            config.numFish = parseInt(e.target.value);
+            document.getElementById('numFishValue').textContent = config.numFish;
+            if (currentState === STATE.IDLE) initFish(config.numFish);
+        });
+
+        document.getElementById('numPredators').addEventListener('input', (e) => {
+            config.numPredators = parseInt(e.target.value);
+            document.getElementById('numPredatorsValue').textContent = config.numPredators;
+            if (currentState === STATE.IDLE) initPredators(config.numPredators);
+        });
+
+        document.getElementById('simSpeed').addEventListener('input', (e) => {
+            config.simSpeed = parseInt(e.target.value);
+            const label = config.simSpeed === 0 ? 'Stopped' : config.simSpeed + 'x';
+            document.getElementById('simSpeedValue').textContent = label;
+        });
+
+        ['separation', 'alignment', 'cohesion', 'perception'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                config[id + (id === 'perception' ? 'Radius' : 'Weight')] = val;
+                document.getElementById(id + 'Value').textContent = val + (id === 'perception' ? 'px' : '');
+                if (id === 'perception') config.separationRadius = val * 0.5;
+            });
+        });
+
+        // Modal Logic
+        const helpModal = document.getElementById('helpModal');
+        const infoModal = document.getElementById('infoModal');
+        const helpContent = document.getElementById('helpContent');
+        const helpTitle = document.getElementById('helpTitle');
+
+        const helpTexts = {
+            speed: { title: 'Simulation Speed', content: '<p>Controls how fast time passes in the simulation. Higher values run multiple physics updates per frame.</p>' },
+            separation: { title: 'Separation Force', content: '<p>Prevents crowding. Fish steer away from neighbors that are too close.</p>' },
+            alignment: { title: 'Alignment Force', content: '<p>Steers fish to match the direction and speed of their neighbors.</p>' },
+            cohesion: { title: 'Cohesion Force', content: '<p>Steers fish toward the center of mass of their neighbors, keeping the flock together.</p>' },
+            perception: { title: 'Perception Radius', content: '<p>How far a fish can "see". Only neighbors within this radius influence its behavior.</p>' },
+            numBoids: { title: 'Number of Fish', content: '<p>Total number of fish in the school.</p>' },
+            predators: { title: 'Predators', content: '<p>Red triangles that hunt fish. Fish will flee when they get close.</p>' }
+        };
+
+        document.querySelectorAll('.help-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const type = e.target.getAttribute('data-help');
+                const data = helpTexts[type];
+                if (data) {
+                    helpTitle.textContent = data.title;
+                    helpContent.innerHTML = data.content;
+                    helpModal.style.display = 'block';
+                }
+            });
+        });
+
+        document.getElementById('showInfo').addEventListener('click', () => {
+            infoModal.style.display = 'block';
+        });
+
+        document.querySelectorAll('.close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                helpModal.style.display = 'none';
+                infoModal.style.display = 'none';
+            });
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === helpModal) helpModal.style.display = 'none';
+            if (e.target === infoModal) infoModal.style.display = 'none';
+        });
+
+        // Init
+        initFish(config.numFish);
+        initPredators(config.numPredators);
+        animate();
+
+    </script>
+</body>
+
+</html>

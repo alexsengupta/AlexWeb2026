@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Indices Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f0f2f5; /* Match modal bg */
+            min-height: 100vh;
+            padding: 0; /* Removed padding */
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            border-radius: 0; /* Removed radius */
+            box-shadow: none; /* Removed shadow */
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 10px; /* Further reduced padding */
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.2em; /* Further reduced size */
+            margin-bottom: 0;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 15px; /* Reduced padding */
+        }
+
+        .section {
+            margin-bottom: 15px; /* Reduced margin */
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 10px 15px; /* Reduced padding */
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .section-header h2 {
+            font-size: 1.1em; /* Reduced size */
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .section-header .subtitle {
+            font-size: 0.85em; /* Reduced size */
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .section-content {
+            padding: 15px; /* Reduced padding */
+            display: none;
+            background: #fafaba;
+        }
+
+        .section-content.active {
+            display: block;
+        }
+
+        .section-header.active {
+            background: linear-gradient(135deg, #d4e0f0 0%, #b0c4de 100%);
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .section-header.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            min-height: 350px; /* Reduced height */
+        }
+
+        .chart-container > div {
+            min-height: 300px; /* Reduced height */
+        }
+
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 10px; /* Reduced padding */
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #2980b9;
+            margin-bottom: 5px;
+            font-size: 1em; /* Reduced size */
+        }
+
+        .summary-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px; /* Reduced padding */
+            margin: 0;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px; /* Reduced gap */
+            margin-top: 15px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 8px;
+            padding: 12px; /* Reduced padding */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #3498db;
+        }
+
+        .summary-card h3 {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            display: none; /* Hide footer completely */
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1em;
+            text-align: right;
+        }
+
+        .metric-value.positive {
+            color: #e74c3c;
+        }
+
+        .metric-value.negative {
+            color: #27ae60;
+        }
+
+        .metric-value.neutral {
+            color: #f39c12;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Summary Panel -->
+        <div class="summary-panel">
+            <h2 style="margin-top: 0; margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Climate Summary</h2>
+
+            <div class="summary-grid">
+                <!-- CO2 Section -->
+                <div class="summary-card">
+                    <h3>🌫️ Atmospheric CO₂</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Latest:</span>
+                        <span class="metric-value" id="co2-latest">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">12-Month Average:</span>
+                        <span class="metric-value" id="co2-12month">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">1980 Average:</span>
+                        <span class="metric-value" id="co2-1980">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- GISTEMP Section -->
+                <div class="summary-card">
+                    <h3>🌡️ Global Temperature (GISTEMP)</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Latest Anomaly:</span>
+                        <span class="metric-value" id="gistemp-latest">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Reference Period:</span>
+                        <span class="metric-value">1880-1920</span>
+                    </div>
+                </div>
+
+                <!-- SST Section -->
+                <div class="summary-card">
+                    <h3>🌊 Sea Surface Temperature</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Change Since 1982:</span>
+                        <span class="metric-value" id="sst-change">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Last Year Average:</span>
+                        <span class="metric-value" id="sst-recent">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">1982-1990 Average:</span>
+                        <span class="metric-value" id="sst-baseline">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Air Temperature Section -->
+                <div class="summary-card">
+                    <h3>🌡️ Air Temperature (2m)</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Change Since 1940:</span>
+                        <span class="metric-value" id="t2m-change">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Last Year Average:</span>
+                        <span class="metric-value" id="t2m-recent">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">1940-1960 Average:</span>
+                        <span class="metric-value" id="t2m-baseline">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Arctic Sea Ice Section -->
+                <div class="summary-card">
+                    <h3>❄️ Arctic Sea Ice</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Current Month:</span>
+                        <span class="metric-value" id="arctic-current">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">1980-1990 Average:</span>
+                        <span class="metric-value" id="arctic-baseline">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Change:</span>
+                        <span class="metric-value" id="arctic-change">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Antarctic Sea Ice Section -->
+                <div class="summary-card">
+                    <h3>🧊 Antarctic Sea Ice</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Current Month:</span>
+                        <span class="metric-value" id="antarctic-current">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">1980-1990 Average:</span>
+                        <span class="metric-value" id="antarctic-baseline">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Change:</span>
+                        <span class="metric-value" id="antarctic-change">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- ENSO Section -->
+                <div class="summary-card">
+                    <h3>🌀 ENSO (El Niño-Southern Oscillation)</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">ONI Current:</span>
+                        <span class="metric-value" id="enso-oni">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Status:</span>
+                        <span class="metric-value" id="enso-status">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Threshold:</span>
+                        <span class="metric-value">±0.5°C</span>
+                    </div>
+                </div>
+
+                <!-- PDO Section -->
+                <div class="summary-card">
+                    <h3>🌊 PDO (Pacific Decadal Oscillation)</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Current Value:</span>
+                        <span class="metric-value" id="pdo-current">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Std Deviations:</span>
+                        <span class="metric-value" id="pdo-sigma">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- ENSO Indices Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>ENSO Indices</h2>
+                        <div class="subtitle">Oceanic Niño Index & Nino 3.4 SST Anomaly</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">ONI Source:</span>
+                            <span class="value" id="oni-source">NOAA Climate Prediction Center</span>
+                            <span class="label">ONI Period:</span>
+                            <span class="value" id="oni-period">Loading...</span>
+                            <span class="label">Nino 3.4 Source:</span>
+                            <span class="value" id="nino34-source">NOAA Physical Sciences Laboratory</span>
+                            <span class="label">Nino 3.4 Period:</span>
+                            <span class="value" id="nino34-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="toggle-oni" checked onchange="toggleENSOTrace('ONI')">
+                            Show ONI (3-month avg)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="toggle-nino34" checked onchange="toggleENSOTrace('Nino34')">
+                            Show Nino 3.4 (monthly)
+                        </label>
+                    </div>
+                    <div class="chart-container">
+                        <div id="enso-chart" class="loading">Loading ENSO data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global SST Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>Global Sea Surface Temperature</h2>
+                        <div class="subtitle">Daily SST (OISSTv2.1)</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">ClimateReanalyzer.org (OISSTv2.1)</span>
+                            <span class="label">Period:</span>
+                            <span class="value" id="sst-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="sst-show-anomaly" onchange="updateSSTPlot()">
+                            Show Anomaly (remove seasonal cycle)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="sst-annual-view" onchange="updateSSTPlot()">
+                            Annual Line View (Day of Year)
+                        </label>
+                        <button onclick="downloadCSV(sstRawData, 'sst_anomaly_data.csv')" style="margin-left: auto; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="sst-chart" class="loading">Loading SST data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global 2m Air Temperature Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>Global 2m Air Temperature Anomaly</h2>
+                        <div class="subtitle">Daily near-surface air temperature (ERA5)</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">ClimateReanalyzer.org (ERA5)</span>
+                            <span class="label">Period:</span>
+                            <span class="value" id="t2m-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="t2m-show-anomaly" onchange="updateT2MPlot()">
+                            Show Anomaly (remove seasonal cycle)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="t2m-annual-view" onchange="updateT2MPlot()">
+                            Annual Line View (Day of Year)
+                        </label>
+                        <button onclick="downloadCSV(t2mRawData, 't2m_anomaly_data.csv')" style="margin-left: auto; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="t2m-chart" class="loading">Loading temperature data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sea Ice Extent Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>Sea Ice Extent</h2>
+                        <div class="subtitle">Arctic & Antarctic sea ice coverage</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">NOAA NCEI</span>
+                            <span class="label">Arctic Period:</span>
+                            <span class="value" id="arctic-period">Loading...</span>
+                            <span class="label">Antarctic Period:</span>
+                            <span class="value" id="antarctic-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <div style="margin-bottom: 10px;">
+                            <label style="margin-right: 15px;">
+                                <input type="radio" name="seaice-hemisphere" value="arctic" checked onchange="updateSeaIcePlot()">
+                                Arctic (NH)
+                            </label>
+                            <label>
+                                <input type="radio" name="seaice-hemisphere" value="antarctic" onchange="updateSeaIcePlot()">
+                                Antarctic (SH)
+                            </label>
+                        </div>
+                        <label>
+                            <input type="checkbox" id="seaice-show-anomaly" onchange="updateSeaIcePlot()">
+                            Show Anomaly (remove seasonal cycle)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="seaice-annual-view" onchange="updateSeaIcePlot()">
+                            Annual Line View (Month of Year)
+                        </label>
+                        <button onclick="downloadCSV(arcticRawData, 'arctic_seaice_data.csv')" style="margin-left: 10px; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download Arctic CSV</button>
+                        <button onclick="downloadCSV(antarcticRawData, 'antarctic_seaice_data.csv')" style="padding: 5px 15px; background: #9b59b6; color: white; border: none; border-radius: 5px; cursor: pointer;">Download Antarctic CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="seaice-chart" class="loading">Loading sea ice data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CO2 Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>Global CO₂ Concentration</h2>
+                        <div class="subtitle">Monthly atmospheric carbon dioxide levels</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">NOAA Global Monitoring Laboratory</span>
+                            <span class="label">Period:</span>
+                            <span class="value" id="co2-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="co2-show-anomaly" onchange="updateCO2Plot()">
+                            Show Anomaly (remove seasonal cycle)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="co2-annual-view" onchange="updateCO2Plot()">
+                            Annual Line View (Month of Year)
+                        </label>
+                        <button onclick="downloadCSV(co2RawData, 'co2_data.csv')" style="margin-left: auto; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="co2-chart" class="loading">Loading CO₂ data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GISTEMP Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>GISTEMP Global Temperature Anomaly</h2>
+                        <div class="subtitle">NASA surface temperature analysis</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">NASA GISS (GISTEMP v4)</span>
+                            <span class="label">Period:</span>
+                            <span class="value" id="gistemp-period">Loading...</span>
+                            <span class="label">Baseline:</span>
+                            <span class="value">1951-1980</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="gistemp-annual-view" onchange="updateGISTEMPPlot()">
+                            Annual Line View (Month of Year)
+                        </label>
+                        <button onclick="downloadCSV(gistempRawData, 'gistemp_data.csv')" style="margin-left: auto; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="gistemp-chart" class="loading">Loading GISTEMP data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDO Section -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div>
+                        <h2>Pacific Decadal Oscillation (PDO)</h2>
+                        <div class="subtitle">Long-term Pacific Ocean temperature pattern</div>
+                    </div>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="info-box">
+                        <h3>Data Information</h3>
+                        <div class="data-info">
+                            <span class="label">Source:</span>
+                            <span class="value">NOAA Physical Sciences Laboratory</span>
+                            <span class="label">Period:</span>
+                            <span class="value" id="pdo-period">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <label>
+                            <input type="checkbox" id="pdo-show-ma" onchange="updatePDOPlot()">
+                            Show 11-year Moving Average
+                        </label>
+                        <button onclick="downloadCSV(pdoRawData, 'pdo_data.csv')" style="margin-left: auto; padding: 5px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Download CSV</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="pdo-chart" class="loading">Loading PDO data...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+        </footer>
+    </div>
+
+    <script>
+        // Set update date
+        const updateDateEl = document.getElementById('update-date');
+        if (updateDateEl) {
+            updateDateEl.textContent = new Date().toLocaleDateString();
+        }
+
+        // Toggle section visibility
+        function toggleSection(header) {
+            const isCurrentlyActive = header.classList.contains('active');
+
+            // Close all sections first
+            const allHeaders = document.querySelectorAll('.section-header');
+            allHeaders.forEach(h => {
+                h.classList.remove('active');
+                h.nextElementSibling.classList.remove('active');
+            });
+
+            // If the clicked section wasn't active, open it
+            if (!isCurrentlyActive) {
+                header.classList.add('active');
+                header.nextElementSibling.classList.add('active');
+            }
+        }
+
+        // Common plot layout settings
+        const commonLayout = {
+            hovermode: 'x unified',
+            showlegend: true,
+            legend: {
+                orientation: 'h',
+                yanchor: 'top',
+                y: -0.15,
+                xanchor: 'center',
+                x: 0.5
+            },
+            margin: { t: 60, r: 40, b: 100, l: 60 },
+            xaxis: {
+                title: 'Date',
+                showgrid: true,
+                gridcolor: '#eee'
+            },
+            yaxis: {
+                showgrid: true,
+                gridcolor: '#eee'
+            }
+        };
+
+        // Helper function to format date range
+        function formatDateRange(data, dateField = 'Date') {
+            if (!data || data.length === 0) return 'N/A';
+            const dates = data.map(row => row[dateField]).filter(d => d);
+            if (dates.length === 0) return 'N/A';
+            const first = new Date(dates[0]).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            const last = new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            return `${first} to ${last}`;
+        }
+
+        // Toggle ENSO traces
+        function toggleENSOTrace(traceName) {
+            const chartDiv = document.getElementById('enso-chart');
+            const update = {
+                visible: traceName === 'ONI'
+                    ? [document.getElementById('toggle-oni').checked, true, true, true]
+                    : [true, document.getElementById('toggle-nino34').checked, true, true]
+            };
+
+            Plotly.restyle(chartDiv, 'visible', update.visible);
+        }
+
+        // Common plot config
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+            displaylogo: false
+        };
+
+        // Load and plot ENSO data (ONI + Nino 3.4)
+        async function loadENSO() {
+            try {
+                const [oniResponse, nino34Response] = await Promise.all([
+                    fetch('data/oni_data.csv'),
+                    fetch('data/nino34_data.csv')
+                ]);
+
+                const oniText = await oniResponse.text();
+                const nino34Text = await nino34Response.text();
+
+                const oniData = Papa.parse(oniText, { header: true, dynamicTyping: true }).data;
+                const nino34Data = Papa.parse(nino34Text, { header: true, dynamicTyping: true }).data;
+
+                // Store globally for summary panel
+                oniRawData = oniData;
+                nino34RawData = nino34Data;
+
+                const trace1 = {
+                    x: oniData.map(row => row.Date),
+                    y: oniData.map(row => row.ONI_Value),
+                    name: 'ONI (3-month avg)',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#e74c3c', width: 2 }
+                };
+
+                const trace2 = {
+                    x: nino34Data.map(row => row.Date),
+                    y: nino34Data.map(row => row.Nino34_Anom),
+                    name: 'Nino 3.4 (monthly)',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#3498db', width: 1.5 }
+                };
+
+                // Add threshold lines
+                const trace3 = {
+                    x: oniData.map(row => row.Date),
+                    y: Array(oniData.length).fill(0.5),
+                    name: 'El Niño threshold (+0.5°C)',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'red', width: 1, dash: 'dash' },
+                    showlegend: true
+                };
+
+                const trace4 = {
+                    x: oniData.map(row => row.Date),
+                    y: Array(oniData.length).fill(-0.5),
+                    name: 'La Niña threshold (-0.5°C)',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: 'blue', width: 1, dash: 'dash' },
+                    showlegend: true
+                };
+
+                const layout = {
+                    ...commonLayout,
+                    title: 'ENSO Indices Time Series',
+                    yaxis: { ...commonLayout.yaxis, title: 'Temperature Anomaly (°C)' }
+                };
+
+                // Clear loading message and create chart
+                document.getElementById('enso-chart').innerHTML = '';
+                Plotly.newPlot('enso-chart', [trace1, trace2, trace3, trace4], layout, config);
+
+                // Update date ranges
+                document.getElementById('oni-period').textContent = formatDateRange(oniData);
+                document.getElementById('nino34-period').textContent = formatDateRange(nino34Data);
+            } catch (error) {
+                document.getElementById('enso-chart').innerHTML = `<div class="error">Error loading ENSO data: ${error.message}</div>`;
+            }
+        }
+
+        // Global data storage
+        let sstRawData = null;
+        let t2mRawData = null;
+        let co2RawData = null;
+        let arcticRawData = null;
+        let antarcticRawData = null;
+        let gistempRawData = null;
+        let pdoRawData = null;
+        let oniRawData = null;
+        let nino34RawData = null;
+
+        // Helper function to get day of year (1-366)
+        function getDayOfYear(date) {
+            const d = new Date(date);
+            const start = new Date(d.getFullYear(), 0, 0);
+            const diff = d - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay);
+        }
+
+        // Helper function to check if year is leap year
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        }
+
+        // Apply circular 31-day smoother
+        function smooth31Day(values, daysInYear) {
+            const smoothed = new Array(daysInYear);
+            const halfWindow = 15;
+
+            for (let i = 0; i < daysInYear; i++) {
+                let sum = 0;
+                let count = 0;
+
+                for (let j = -halfWindow; j <= halfWindow; j++) {
+                    let idx = i + j;
+                    // Handle circular wrapping
+                    if (idx < 0) idx += daysInYear;
+                    if (idx >= daysInYear) idx -= daysInYear;
+
+                    if (values[idx] !== null && values[idx] !== undefined) {
+                        sum += values[idx];
+                        count++;
+                    }
+                }
+
+                smoothed[i] = count > 0 ? sum / count : null;
+            }
+
+            return smoothed;
+        }
+
+        // Calculate climatology
+        function calculateClimatology(data) {
+            // Separate data by DOY for 365 and 366 day years
+            const doy365 = Array(365).fill(null).map(() => []);
+            const doy366 = Array(366).fill(null).map(() => []);
+
+            data.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const doy = getDayOfYear(date);
+                // Use 'value' if present, otherwise fall back to SST_Anomaly for backwards compatibility
+                const value = parseFloat(row.value !== undefined ? row.value : row.SST_Anomaly);
+
+                // Skip invalid values
+                if (isNaN(value) || doy < 1 || doy > 366) return;
+
+                if (isLeapYear(year)) {
+                    if (doy <= 366) doy366[doy - 1].push(value);
+                } else {
+                    if (doy <= 365) doy365[doy - 1].push(value);
+                }
+            });
+
+            // Calculate mean for each DOY
+            const clim365 = doy365.map(vals => vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
+            const clim366 = doy366.map(vals => vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
+
+            // Apply 31-day smoother
+            const smoothed365 = smooth31Day(clim365, 365);
+            const smoothed366 = smooth31Day(clim366, 366);
+
+            console.log('Climatology calculated:', {
+                'clim365 valid points': clim365.filter(v => v !== null).length,
+                'clim366 valid points': clim366.filter(v => v !== null).length
+            });
+
+            return { clim365: smoothed365, clim366: smoothed366 };
+        }
+
+        // Calculate anomalies
+        function calculateAnomalies(data, climatology) {
+            const anomalies = data.map(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const doy = getDayOfYear(date);
+                // Use 'value' if present, otherwise fall back to SST_Anomaly for backwards compatibility
+                const value = parseFloat(row.value !== undefined ? row.value : row.SST_Anomaly);
+
+                if (isNaN(value) || doy < 1 || doy > 366) {
+                    return { ...row, Anomaly: null };
+                }
+
+                const clim = isLeapYear(year) ?
+                    (doy <= 366 ? climatology.clim366[doy - 1] : null) :
+                    (doy <= 365 ? climatology.clim365[doy - 1] : null);
+
+                return {
+                    ...row,
+                    Anomaly: (clim !== null && clim !== undefined) ? value - clim : null
+                };
+            });
+
+            const validAnomalies = anomalies.filter(a => a.Anomaly !== null).length;
+            console.log(`Calculated ${validAnomalies} valid anomalies out of ${data.length} data points`);
+
+            return anomalies;
+        }
+
+        // Calculate monthly climatology (for monthly data like sea ice)
+        function calculateMonthlyClimatology(data) {
+            const monthlyData = Array(12).fill(null).map(() => []);
+
+            data.forEach(row => {
+                const date = new Date(row.Date);
+                const month = date.getMonth(); // 0-11
+                const value = parseFloat(row.value);
+
+                if (!isNaN(value)) {
+                    monthlyData[month].push(value);
+                }
+            });
+
+            // Calculate mean for each month
+            const climatology = monthlyData.map(values => {
+                if (values.length === 0) return null;
+                return values.reduce((a, b) => a + b, 0) / values.length;
+            });
+
+            return climatology;
+        }
+
+        // Calculate monthly anomalies
+        function calculateMonthlyAnomalies(data, climatology) {
+            return data.map(row => {
+                const date = new Date(row.Date);
+                const month = date.getMonth();
+                const value = parseFloat(row.value);
+
+                if (isNaN(value) || climatology[month] === null) {
+                    return { ...row, Anomaly: null };
+                }
+
+                return {
+                    ...row,
+                    Anomaly: value - climatology[month]
+                };
+            });
+        }
+
+        // Calculate quadratic regression (y = ax² + bx + c)
+        function calculateQuadraticTrend(dates, values) {
+            // Filter out null/undefined values
+            const validData = [];
+            for (let i = 0; i < dates.length; i++) {
+                if (values[i] !== null && values[i] !== undefined && !isNaN(values[i])) {
+                    validData.push({ date: new Date(dates[i]), value: values[i] });
+                }
+            }
+
+            if (validData.length < 3) return null;
+
+            // Convert dates to numeric values (days since first date)
+            const firstDate = validData[0].date.getTime();
+            const x = validData.map(d => (d.date.getTime() - firstDate) / (1000 * 60 * 60 * 24)); // days
+            const y = validData.map(d => d.value);
+            const n = x.length;
+
+            // Calculate sums needed for quadratic regression
+            let sumX = 0, sumX2 = 0, sumX3 = 0, sumX4 = 0;
+            let sumY = 0, sumXY = 0, sumX2Y = 0;
+
+            for (let i = 0; i < n; i++) {
+                sumX += x[i];
+                sumX2 += x[i] * x[i];
+                sumX3 += x[i] * x[i] * x[i];
+                sumX4 += x[i] * x[i] * x[i] * x[i];
+                sumY += y[i];
+                sumXY += x[i] * y[i];
+                sumX2Y += x[i] * x[i] * y[i];
+            }
+
+            // Solve system of equations using matrix operations
+            // [sumX4  sumX3  sumX2] [a]   [sumX2Y]
+            // [sumX3  sumX2  sumX ] [b] = [sumXY ]
+            // [sumX2  sumX   n    ] [c]   [sumY  ]
+
+            const denom = sumX4 * (sumX2 * n - sumX * sumX) - sumX3 * (sumX3 * n - sumX * sumX2) + sumX2 * (sumX3 * sumX - sumX2 * sumX2);
+
+            if (Math.abs(denom) < 1e-10) return null; // Singular matrix
+
+            const a = (sumX2Y * (sumX2 * n - sumX * sumX) - sumXY * (sumX3 * n - sumX * sumX2) + sumY * (sumX3 * sumX - sumX2 * sumX2)) / denom;
+            const b = (sumX4 * (sumXY * n - sumY * sumX) - sumX3 * (sumX2Y * n - sumY * sumX2) + sumX2 * (sumX2Y * sumX - sumXY * sumX2)) / denom;
+            const c = (sumX4 * (sumX2 * sumY - sumX * sumXY) - sumX3 * (sumX3 * sumY - sumX * sumX2Y) + sumX2 * (sumX3 * sumXY - sumX2 * sumX2Y)) / denom;
+
+            // Generate trend line values
+            const trendDates = [];
+            const trendValues = [];
+
+            for (let i = 0; i < validData.length; i++) {
+                const xi = x[i];
+                const yi = a * xi * xi + b * xi + c;
+                trendDates.push(validData[i].date);
+                trendValues.push(yi);
+            }
+
+            return { dates: trendDates, values: trendValues };
+        }
+
+        // Download data as CSV
+        function downloadCSV(data, filename) {
+            if (!data || data.length === 0) {
+                alert('No data available to download');
+                return;
+            }
+
+            // Get column headers from first row
+            const headers = Object.keys(data[0]);
+
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+
+            data.forEach(row => {
+                const values = headers.map(header => {
+                    let value = row[header];
+                    // Handle dates
+                    if (header === 'Date' && value) {
+                        value = new Date(value).toISOString().split('T')[0];
+                    }
+                    // Handle null/undefined
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    // Wrap in quotes if contains comma
+                    if (String(value).includes(',')) {
+                        return `"${value}"`;
+                    }
+                    return value;
+                });
+                csvContent += values.join(',') + '\n';
+            });
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Load and plot SST data
+        async function loadSST() {
+            try {
+                const response = await fetch('data/sst_anomaly_data.csv');
+                const text = await response.text();
+                const parsed = Papa.parse(text, { header: true, dynamicTyping: true });
+
+                // Filter out rows with missing Date or SST_Anomaly
+                const data = parsed.data.filter(row =>
+                    row.Date &&
+                    row.Date.trim() !== '' &&
+                    row.SST_Anomaly !== null &&
+                    row.SST_Anomaly !== undefined &&
+                    !isNaN(row.SST_Anomaly)
+                );
+
+                if (data.length === 0) {
+                    throw new Error('No valid SST data found in CSV file');
+                }
+
+                console.log(`Loaded ${data.length} SST data points`);
+                console.log('Sample data:', data.slice(0, 3));
+
+                // Store raw data globally
+                sstRawData = data;
+
+                // Update date range
+                document.getElementById('sst-period').textContent = formatDateRange(data);
+
+                // Initial plot
+                updateSSTPlot();
+            } catch (error) {
+                console.error('SST loading error:', error);
+                document.getElementById('sst-chart').innerHTML = `<div class="error">Error loading SST data: ${error.message}</div>`;
+            }
+        }
+
+        // Update SST plot based on options
+        function updateSSTPlot() {
+            if (!sstRawData) return;
+
+            const showAnomaly = document.getElementById('sst-show-anomaly').checked;
+            const annualView = document.getElementById('sst-annual-view').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('sst-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            if (annualView) {
+                plotSSTAnnualLines(showAnomaly);
+            } else {
+                plotSSTTimeSeries(showAnomaly);
+            }
+        }
+
+        // Plot SST as time series
+        function plotSSTTimeSeries(showAnomaly) {
+            let yData, yLabel, title;
+
+            if (showAnomaly) {
+                console.log('Calculating anomalies...');
+                const climatology = calculateClimatology(sstRawData);
+                const anomalyData = calculateAnomalies(sstRawData, climatology);
+
+                yData = anomalyData.map(row => row.Anomaly);
+                yLabel = 'SST Anomaly (°C)';
+                title = 'Global Daily Sea Surface Temperature Anomaly';
+
+                const validValues = yData.filter(v => v !== null && !isNaN(v));
+                console.log(`Plotting ${validValues.length} valid anomaly values`);
+                if (validValues.length > 0) {
+                    console.log('Anomaly range:', Math.min(...validValues), 'to', Math.max(...validValues));
+                }
+            } else {
+                yData = sstRawData.map(row => parseFloat(row.SST_Anomaly));
+                yLabel = 'SST (°C)';
+                title = 'Global Daily Sea Surface Temperature';
+
+                const validValues = yData.filter(v => !isNaN(v));
+                console.log(`Plotting ${validValues.length} valid SST values`);
+                if (validValues.length > 0) {
+                    console.log('SST range:', Math.min(...validValues), 'to', Math.max(...validValues));
+                }
+            }
+
+            const traces = [];
+
+            const trace = {
+                x: sstRawData.map(row => row.Date),
+                y: yData,
+                name: showAnomaly ? 'SST Anomaly' : 'SST',
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#e67e22', width: 1 }
+            };
+            traces.push(trace);
+
+            // Add quadratic trend line if showing anomaly
+            if (showAnomaly) {
+                const dates = sstRawData.map(row => row.Date);
+                const trend = calculateQuadraticTrend(dates, yData);
+                if (trend) {
+                    traces.push({
+                        x: trend.dates,
+                        y: trend.values,
+                        name: 'Quadratic Trend',
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#e74c3c', width: 2.5, dash: 'dash' }
+                    });
+                }
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: title,
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: yLabel,
+                    autorange: true
+                }
+            };
+
+            const chartDiv = document.getElementById('sst-chart');
+
+            // Use newPlot if no plot exists, otherwise use react
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Plot SST as annual lines (day of year)
+        function plotSSTAnnualLines(showAnomaly) {
+            console.log('Creating annual line plot, showAnomaly:', showAnomaly);
+
+            // Group data by year
+            const yearData = {};
+
+            let dataToPlot = sstRawData;
+            if (showAnomaly) {
+                const climatology = calculateClimatology(sstRawData);
+                dataToPlot = calculateAnomalies(sstRawData, climatology);
+            }
+
+            dataToPlot.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const doy = getDayOfYear(date);
+                const value = showAnomaly ? row.Anomaly : parseFloat(row.SST_Anomaly);
+
+                // Skip invalid values
+                if (isNaN(value) || value === null || value === undefined) return;
+                if (doy < 1 || doy > 366) return;
+
+                if (!yearData[year]) yearData[year] = [];
+                yearData[year].push({ doy, value });
+            });
+
+            // Sort years
+            const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            console.log(`Years range: ${minYear} to ${maxYear} (${years.length} years total)`);
+            console.log('Sample year data for', maxYear, ':', yearData[maxYear]?.slice(0, 5));
+
+            // Create traces for each year with color gradient
+            const traces = years.map((year, idx) => {
+                // Color gradient from blue (early) to red (late)
+                const t = (year - minYear) / (maxYear - minYear);
+                const r = Math.round(t * 255);
+                const b = Math.round((1 - t) * 255);
+                const color = `rgb(${r}, 0, ${b})`;
+
+                // Sort by DOY
+                yearData[year].sort((a, b) => a.doy - b.doy);
+
+                // Determine line width
+                let width = 0.8;
+                if (year === maxYear) width = 3; // Last year: thick and will be black
+                else if (year === maxYear - 1) width = 2; // Second to last: thicker
+
+                const xVals = yearData[year].map(d => d.doy);
+                const yVals = yearData[year].map(d => d.value);
+
+                // Show only 4 years in legend: earliest, last-2, last-1, last
+                const showInLegend = (
+                    year === minYear ||
+                    year === maxYear ||
+                    year === maxYear - 1 ||
+                    year === maxYear - 2
+                );
+
+                return {
+                    x: xVals,
+                    y: yVals,
+                    name: year.toString(),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: year === maxYear ? 'black' : color,
+                        width: width
+                    },
+                    showlegend: showInLegend,
+                    hoverinfo: 'skip'
+                };
+            });
+
+            // Add a dummy scatter trace with colorbar for year gradient
+            traces.push({
+                x: [null],
+                y: [null],
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 0,
+                    colorscale: [[0, 'rgb(0, 0, 255)'], [1, 'rgb(255, 0, 0)']],
+                    cmin: minYear,
+                    cmax: maxYear,
+                    colorbar: {
+                        title: 'Year',
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.7,
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        tickmode: 'linear',
+                        tick0: minYear,
+                        dtick: Math.ceil((maxYear - minYear) / 10)
+                    }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+
+            const layout = {
+                ...commonLayout,
+                title: showAnomaly ? 'SST Anomaly by Day of Year' : 'SST by Day of Year',
+                xaxis: {
+                    title: 'Day of Year',
+                    showgrid: true,
+                    gridcolor: '#eee',
+                    type: 'linear',
+                    range: [0, 367],
+                    dtick: 30
+                },
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: showAnomaly ? 'SST Anomaly (°C)' : 'SST (°C)',
+                    autorange: true
+                }
+            };
+
+            console.log(`Creating plot with ${traces.length} traces`);
+
+            const chartDiv = document.getElementById('sst-chart');
+
+            // Use newPlot if no plot exists, otherwise use react
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Load and plot T2M data
+        async function loadT2M() {
+            try {
+                const response = await fetch('data/t2m_anomaly_data.csv');
+                const text = await response.text();
+                const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
+
+                // Store raw data globally
+                t2mRawData = data;
+
+                // Update date range
+                document.getElementById('t2m-period').textContent = formatDateRange(data);
+
+                // Initial plot
+                updateT2MPlot();
+            } catch (error) {
+                document.getElementById('t2m-chart').innerHTML = `<div class="error">Error loading T2M data: ${error.message}</div>`;
+            }
+        }
+
+        // Update T2M plot based on options
+        function updateT2MPlot() {
+            if (!t2mRawData) return;
+
+            const showAnomaly = document.getElementById('t2m-show-anomaly').checked;
+            const annualView = document.getElementById('t2m-annual-view').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('t2m-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            if (annualView) {
+                plotT2MAnnualLines(showAnomaly);
+            } else {
+                plotT2MTimeSeries(showAnomaly);
+            }
+        }
+
+        // Plot T2M as time series
+        function plotT2MTimeSeries(showAnomaly) {
+            let yData, yLabel, title;
+
+            if (showAnomaly) {
+                const climatology = calculateClimatology(t2mRawData.map(row => ({
+                    Date: row.Date,
+                    value: row.T2m_Anomaly
+                })));
+                const anomalyData = calculateAnomalies(t2mRawData.map(row => ({
+                    Date: row.Date,
+                    value: row.T2m_Anomaly
+                })), climatology);
+                yData = anomalyData.map(row => row.Anomaly);
+                yLabel = 'T2m Anomaly (°C, deseasonalized)';
+                title = 'Global Daily 2m Air Temperature Anomaly (Deseasonalized)';
+            } else {
+                yData = t2mRawData.map(row => row.T2m_Anomaly);
+                yLabel = 'Temperature Anomaly (°C)';
+                title = 'Global Daily 2m Air Temperature Anomaly';
+            }
+
+            const traces = [];
+
+            const trace = {
+                x: t2mRawData.map(row => row.Date),
+                y: yData,
+                name: '2m Air Temperature',
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#c0392b', width: 1 }
+            };
+            traces.push(trace);
+
+            // Add quadratic trend line if showing anomaly
+            if (showAnomaly) {
+                const dates = t2mRawData.map(row => row.Date);
+                const trend = calculateQuadraticTrend(dates, yData);
+                if (trend) {
+                    traces.push({
+                        x: trend.dates,
+                        y: trend.values,
+                        name: 'Quadratic Trend',
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#e74c3c', width: 2.5, dash: 'dash' }
+                    });
+                }
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: title,
+                yaxis: { ...commonLayout.yaxis, title: yLabel }
+            };
+
+            const chartDiv = document.getElementById('t2m-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Plot T2M as annual lines by day of year
+        function plotT2MAnnualLines(showAnomaly) {
+            // Group data by year
+            const yearData = {};
+
+            let dataToPlot = t2mRawData.map(row => ({
+                Date: row.Date,
+                value: row.T2m_Anomaly
+            }));
+
+            if (showAnomaly) {
+                const climatology = calculateClimatology(dataToPlot);
+                dataToPlot = calculateAnomalies(dataToPlot, climatology);
+            }
+
+            dataToPlot.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const doy = getDayOfYear(date);
+                const value = showAnomaly ? row.Anomaly : row.value;
+
+                // Skip invalid values
+                if (isNaN(value) || value === null || value === undefined) return;
+                if (doy < 1 || doy > 366) return;
+
+                if (!yearData[year]) yearData[year] = [];
+                yearData[year].push({ doy, value });
+            });
+
+            // Sort years
+            const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            // Create traces for each year with color gradient
+            const traces = years.map((year, idx) => {
+                // Color gradient from blue (early) to red (late)
+                const t = (year - minYear) / (maxYear - minYear);
+                const r = Math.round(t * 255);
+                const b = Math.round((1 - t) * 255);
+                const color = `rgb(${r}, 0, ${b})`;
+
+                // Sort by DOY
+                yearData[year].sort((a, b) => a.doy - b.doy);
+
+                // Determine line width
+                let width = 0.8;
+                if (year === maxYear) width = 3; // Last year: thick and will be black
+                else if (year === maxYear - 1) width = 2; // Second to last: thicker
+
+                const xVals = yearData[year].map(d => d.doy);
+                const yVals = yearData[year].map(d => d.value);
+
+                // Show only 4 years in legend: earliest, last-2, last-1, last
+                const showInLegend = (
+                    year === minYear ||
+                    year === maxYear ||
+                    year === maxYear - 1 ||
+                    year === maxYear - 2
+                );
+
+                return {
+                    x: xVals,
+                    y: yVals,
+                    name: year.toString(),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: year === maxYear ? 'black' : color,
+                        width: width
+                    },
+                    showlegend: showInLegend,
+                    hoverinfo: 'skip'
+                };
+            });
+
+            // Add a dummy scatter trace with colorbar for year gradient
+            traces.push({
+                x: [null],
+                y: [null],
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 0,
+                    colorscale: [[0, 'rgb(0, 0, 255)'], [1, 'rgb(255, 0, 0)']],
+                    cmin: minYear,
+                    cmax: maxYear,
+                    colorbar: {
+                        title: 'Year',
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.7,
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        tickmode: 'linear',
+                        tick0: minYear,
+                        dtick: Math.ceil((maxYear - minYear) / 10)
+                    }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+
+            const layout = {
+                ...commonLayout,
+                title: showAnomaly ? 'T2m Anomaly by Day of Year (Deseasonalized)' : 'T2m Anomaly by Day of Year',
+                xaxis: {
+                    title: 'Day of Year',
+                    showgrid: true,
+                    gridcolor: '#eee',
+                    type: 'linear',
+                    range: [0, 367],
+                    dtick: 30
+                },
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: showAnomaly ? 'T2m Anomaly (°C, deseasonalized)' : 'Temperature Anomaly (°C)',
+                    autorange: true
+                }
+            };
+
+            const chartDiv = document.getElementById('t2m-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Load and plot Sea Ice data
+        async function loadSeaIce() {
+            try {
+                const [arcticResponse, antarcticResponse] = await Promise.all([
+                    fetch('data/arctic_seaice_data.csv'),
+                    fetch('data/antarctic_seaice_data.csv')
+                ]);
+
+                const arcticText = await arcticResponse.text();
+                const antarcticText = await antarcticResponse.text();
+
+                const arcticDataRaw = Papa.parse(arcticText, { header: true, dynamicTyping: true }).data;
+                const antarcticDataRaw = Papa.parse(antarcticText, { header: true, dynamicTyping: true }).data;
+
+                // Filter out bad values (< 0) and store globally
+                arcticRawData = arcticDataRaw
+                    .filter(row => row.Extent >= 0 && !isNaN(row.Extent))
+                    .map(row => ({ Date: row.Date, Extent: row.Extent }));
+
+                antarcticRawData = antarcticDataRaw
+                    .filter(row => row.Extent >= 0 && !isNaN(row.Extent))
+                    .map(row => ({ Date: row.Date, Extent: row.Extent }));
+
+                // Update date ranges
+                document.getElementById('arctic-period').textContent = formatDateRange(arcticRawData);
+                document.getElementById('antarctic-period').textContent = formatDateRange(antarcticRawData);
+
+                // Initial plot
+                updateSeaIcePlot();
+            } catch (error) {
+                document.getElementById('seaice-chart').innerHTML = `<div class="error">Error loading sea ice data: ${error.message}</div>`;
+            }
+        }
+
+        // Update Sea Ice plot based on options
+        function updateSeaIcePlot() {
+            if (!arcticRawData || !antarcticRawData) return;
+
+            const hemisphere = document.querySelector('input[name="seaice-hemisphere"]:checked').value;
+            const showAnomaly = document.getElementById('seaice-show-anomaly').checked;
+            const annualView = document.getElementById('seaice-annual-view').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('seaice-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            if (annualView) {
+                plotSeaIceAnnualLines(hemisphere, showAnomaly);
+            } else {
+                plotSeaIceTimeSeries(hemisphere, showAnomaly);
+            }
+        }
+
+        // Plot Sea Ice as time series
+        function plotSeaIceTimeSeries(hemisphere, showAnomaly) {
+            const data = hemisphere === 'arctic' ? arcticRawData : antarcticRawData;
+            const name = hemisphere === 'arctic' ? 'Arctic' : 'Antarctic';
+            const color = hemisphere === 'arctic' ? '#3498db' : '#9b59b6';
+
+            let yData, yLabel, title;
+
+            if (showAnomaly) {
+                const climatology = calculateMonthlyClimatology(data.map(row => ({
+                    Date: row.Date,
+                    value: row.Extent
+                })));
+                const anomalyData = calculateMonthlyAnomalies(data.map(row => ({
+                    Date: row.Date,
+                    value: row.Extent
+                })), climatology);
+                yData = anomalyData.map(row => row.Anomaly);
+                yLabel = 'Extent Anomaly (million km²)';
+                title = `${name} Sea Ice Extent Anomaly`;
+            } else {
+                yData = data.map(row => row.Extent);
+                yLabel = 'Extent (million km²)';
+                title = `${name} Sea Ice Extent`;
+            }
+
+            const trace = {
+                x: data.map(row => row.Date),
+                y: yData,
+                name: name,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: color, width: 1.5 }
+            };
+
+            const traces = [];
+            traces.push(trace);
+
+            // Add quadratic trend line if showing anomaly
+            if (showAnomaly) {
+                const dates = data.map(row => row.Date);
+                const trend = calculateQuadraticTrend(dates, yData);
+                if (trend) {
+                    traces.push({
+                        x: trend.dates,
+                        y: trend.values,
+                        name: 'Quadratic Trend',
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#e74c3c', width: 2.5, dash: 'dash' }
+                    });
+                }
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: title,
+                yaxis: { ...commonLayout.yaxis, title: yLabel }
+            };
+
+            const chartDiv = document.getElementById('seaice-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Plot Sea Ice as annual lines by month of year
+        function plotSeaIceAnnualLines(hemisphere, showAnomaly) {
+            const data = hemisphere === 'arctic' ? arcticRawData : antarcticRawData;
+            const name = hemisphere === 'arctic' ? 'Arctic' : 'Antarctic';
+
+            // Group data by year
+            const yearData = {};
+
+            let dataToPlot = data.map(row => ({
+                Date: row.Date,
+                value: row.Extent
+            }));
+
+            if (showAnomaly) {
+                const climatology = calculateMonthlyClimatology(dataToPlot);
+                dataToPlot = calculateMonthlyAnomalies(dataToPlot, climatology);
+            }
+
+            dataToPlot.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // 1-12
+                const value = showAnomaly ? row.Anomaly : row.value;
+
+                // Skip invalid values
+                if (isNaN(value) || value === null || value === undefined) return;
+
+                if (!yearData[year]) yearData[year] = [];
+                yearData[year].push({ month, value });
+            });
+
+            // Sort years
+            const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            // Create traces for each year with color gradient
+            const traces = years.map((year, idx) => {
+                // Color gradient from blue (early) to red (late)
+                const t = (year - minYear) / (maxYear - minYear);
+                const r = Math.round(t * 255);
+                const b = Math.round((1 - t) * 255);
+                const color = `rgb(${r}, 0, ${b})`;
+
+                // Sort by month
+                yearData[year].sort((a, b) => a.month - b.month);
+
+                // Determine line width
+                let width = 0.8;
+                if (year === maxYear) width = 3; // Last year: thick and will be black
+                else if (year === maxYear - 1) width = 2; // Second to last: thicker
+
+                const xVals = yearData[year].map(d => d.month);
+                const yVals = yearData[year].map(d => d.value);
+
+                // Show only 4 years in legend: earliest, last-2, last-1, last
+                const showInLegend = (
+                    year === minYear ||
+                    year === maxYear ||
+                    year === maxYear - 1 ||
+                    year === maxYear - 2
+                );
+
+                return {
+                    x: xVals,
+                    y: yVals,
+                    name: year.toString(),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: year === maxYear ? 'black' : color,
+                        width: width
+                    },
+                    showlegend: showInLegend,
+                    hoverinfo: 'skip'
+                };
+            });
+
+            // Add a dummy scatter trace with colorbar for year gradient
+            traces.push({
+                x: [null],
+                y: [null],
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 0,
+                    colorscale: [[0, 'rgb(0, 0, 255)'], [1, 'rgb(255, 0, 0)']],
+                    cmin: minYear,
+                    cmax: maxYear,
+                    colorbar: {
+                        title: 'Year',
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.7,
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        tickmode: 'linear',
+                        tick0: minYear,
+                        dtick: Math.ceil((maxYear - minYear) / 10)
+                    }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+
+            const layout = {
+                ...commonLayout,
+                title: showAnomaly ? `${name} Sea Ice Anomaly by Month of Year` : `${name} Sea Ice Extent by Month of Year`,
+                xaxis: {
+                    title: 'Month of Year',
+                    showgrid: true,
+                    gridcolor: '#eee',
+                    type: 'linear',
+                    range: [0.5, 12.5],
+                    dtick: 1,
+                    ticktext: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    tickvals: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                },
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: showAnomaly ? 'Extent Anomaly (million km²)' : 'Extent (million km²)',
+                    autorange: true
+                }
+            };
+
+            const chartDiv = document.getElementById('seaice-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Load and plot CO2 data
+        async function loadCO2() {
+            try {
+                const response = await fetch('data/co2_data.csv');
+                const text = await response.text();
+                const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
+
+                // Store raw data globally
+                co2RawData = data;
+
+                // Update date range
+                document.getElementById('co2-period').textContent = formatDateRange(data);
+
+                // Initial plot
+                updateCO2Plot();
+            } catch (error) {
+                document.getElementById('co2-chart').innerHTML = `<div class="error">Error loading CO₂ data: ${error.message}</div>`;
+            }
+        }
+
+        // Update CO2 plot based on options
+        function updateCO2Plot() {
+            if (!co2RawData) return;
+
+            const showAnomaly = document.getElementById('co2-show-anomaly').checked;
+            const annualView = document.getElementById('co2-annual-view').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('co2-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            if (annualView) {
+                plotCO2AnnualLines(showAnomaly);
+            } else {
+                plotCO2TimeSeries(showAnomaly);
+            }
+        }
+
+        // Plot CO2 as time series
+        function plotCO2TimeSeries(showAnomaly) {
+            let yData, yLabel, title;
+
+            if (showAnomaly) {
+                // Calculate monthly climatology
+                const monthlyClimatology = Array(12).fill(null).map(() => []);
+
+                co2RawData.forEach(row => {
+                    const date = new Date(row.Date);
+                    const month = date.getMonth(); // 0-11
+                    const value = parseFloat(row.CO2_ppm);
+
+                    if (!isNaN(value)) {
+                        monthlyClimatology[month].push(value);
+                    }
+                });
+
+                // Calculate mean for each month
+                const climatologyMeans = monthlyClimatology.map(values => {
+                    if (values.length === 0) return NaN;
+                    return values.reduce((a, b) => a + b, 0) / values.length;
+                });
+
+                // Calculate anomalies
+                yData = co2RawData.map(row => {
+                    const date = new Date(row.Date);
+                    const month = date.getMonth();
+                    const value = parseFloat(row.CO2_ppm);
+                    return value - climatologyMeans[month];
+                });
+
+                yLabel = 'CO₂ Anomaly (ppm)';
+                title = 'Global Monthly CO₂ Anomaly';
+            } else {
+                yData = co2RawData.map(row => row.CO2_ppm);
+                yLabel = 'CO₂ (ppm)';
+                title = 'Global Monthly CO₂ Concentration';
+            }
+
+            const traces = [];
+
+            const trace = {
+                x: co2RawData.map(row => row.Date),
+                y: yData,
+                name: 'CO₂',
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#27ae60', width: 2 }
+            };
+            traces.push(trace);
+
+            // Add quadratic trend line if showing anomaly
+            if (showAnomaly) {
+                const dates = co2RawData.map(row => row.Date);
+                const trend = calculateQuadraticTrend(dates, yData);
+                if (trend) {
+                    traces.push({
+                        x: trend.dates,
+                        y: trend.values,
+                        name: 'Quadratic Trend',
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#e74c3c', width: 2.5, dash: 'dash' }
+                    });
+                }
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: title,
+                yaxis: { ...commonLayout.yaxis, title: yLabel }
+            };
+
+            const chartDiv = document.getElementById('co2-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Plot CO2 as annual lines by month of year
+        function plotCO2AnnualLines(showAnomaly) {
+            // Group data by year
+            const yearData = {};
+
+            // Calculate monthly climatology for anomalies if needed
+            let climatologyMeans = null;
+            if (showAnomaly) {
+                const monthlyClimatology = Array(12).fill(null).map(() => []);
+
+                co2RawData.forEach(row => {
+                    const date = new Date(row.Date);
+                    const month = date.getMonth(); // 0-11
+                    const value = parseFloat(row.CO2_ppm);
+
+                    if (!isNaN(value)) {
+                        monthlyClimatology[month].push(value);
+                    }
+                });
+
+                climatologyMeans = monthlyClimatology.map(values => {
+                    if (values.length === 0) return NaN;
+                    return values.reduce((a, b) => a + b, 0) / values.length;
+                });
+            }
+
+            co2RawData.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // 1-12
+                let value = parseFloat(row.CO2_ppm);
+
+                // Calculate anomaly if requested
+                if (showAnomaly) {
+                    value = value - climatologyMeans[date.getMonth()];
+                }
+
+                // Skip invalid values
+                if (isNaN(value) || value === null || value === undefined) return;
+
+                if (!yearData[year]) yearData[year] = [];
+                yearData[year].push({ month, value });
+            });
+
+            // Sort years
+            const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            // Create traces for each year with color gradient
+            const traces = years.map((year, idx) => {
+                // Color gradient from blue (early) to red (late)
+                const t = (year - minYear) / (maxYear - minYear);
+                const r = Math.round(t * 255);
+                const b = Math.round((1 - t) * 255);
+                const color = `rgb(${r}, 0, ${b})`;
+
+                // Sort by month
+                yearData[year].sort((a, b) => a.month - b.month);
+
+                // Determine line width
+                let width = 0.8;
+                if (year === maxYear) width = 3; // Last year: thick and will be black
+                else if (year === maxYear - 1) width = 2; // Second to last: thicker
+
+                const xVals = yearData[year].map(d => d.month);
+                const yVals = yearData[year].map(d => d.value);
+
+                // Show only 4 years in legend: earliest, last-2, last-1, last
+                const showInLegend = (
+                    year === minYear ||
+                    year === maxYear ||
+                    year === maxYear - 1 ||
+                    year === maxYear - 2
+                );
+
+                return {
+                    x: xVals,
+                    y: yVals,
+                    name: year.toString(),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: year === maxYear ? 'black' : color,
+                        width: width
+                    },
+                    showlegend: showInLegend,
+                    hoverinfo: 'skip'
+                };
+            });
+
+            // Add a dummy scatter trace with colorbar for year gradient
+            traces.push({
+                x: [null],
+                y: [null],
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 0,
+                    colorscale: [[0, 'rgb(0, 0, 255)'], [1, 'rgb(255, 0, 0)']],
+                    cmin: minYear,
+                    cmax: maxYear,
+                    colorbar: {
+                        title: 'Year',
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.7,
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        tickmode: 'linear',
+                        tick0: minYear,
+                        dtick: Math.ceil((maxYear - minYear) / 10)
+                    }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+
+            const layout = {
+                ...commonLayout,
+                title: showAnomaly ? 'CO₂ Anomaly by Month of Year' : 'CO₂ Concentration by Month of Year',
+                xaxis: {
+                    title: 'Month of Year',
+                    showgrid: true,
+                    gridcolor: '#eee',
+                    type: 'linear',
+                    range: [0.5, 12.5],
+                    dtick: 1,
+                    ticktext: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    tickvals: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                },
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: showAnomaly ? 'CO₂ Anomaly (ppm)' : 'CO₂ (ppm)',
+                    autorange: true
+                }
+            };
+
+            const chartDiv = document.getElementById('co2-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Load and plot GISTEMP data
+        async function loadGISTEMP() {
+            try {
+                const response = await fetch('data/gistemp_data.csv');
+                const text = await response.text();
+                const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
+
+                // Store raw data globally
+                gistempRawData = data;
+
+                // Update date range
+                document.getElementById('gistemp-period').textContent = formatDateRange(data);
+
+                // Initial plot
+                updateGISTEMPPlot();
+            } catch (error) {
+                document.getElementById('gistemp-chart').innerHTML = `<div class="error">Error loading GISTEMP data: ${error.message}</div>`;
+            }
+        }
+
+        // Update GISTEMP plot based on options
+        function updateGISTEMPPlot() {
+            if (!gistempRawData) return;
+
+            const annualView = document.getElementById('gistemp-annual-view').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('gistemp-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            if (annualView) {
+                plotGISTEMPAnnualLines();
+            } else {
+                plotGISTEMPTimeSeries();
+            }
+        }
+
+        // Plot GISTEMP as time series
+        function plotGISTEMPTimeSeries() {
+            const yData = gistempRawData.map(row => row.Temperature_Anomaly);
+
+            const trace = {
+                x: gistempRawData.map(row => row.Date),
+                y: yData,
+                name: 'Temperature Anomaly',
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#e74c3c', width: 1.5 }
+            };
+
+            const traces = [];
+            traces.push(trace);
+
+            // Add quadratic trend line (GISTEMP is always anomaly data)
+            const dates = gistempRawData.map(row => row.Date);
+            const trend = calculateQuadraticTrend(dates, yData);
+            if (trend) {
+                traces.push({
+                    x: trend.dates,
+                    y: trend.values,
+                    name: 'Quadratic Trend',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#34495e', width: 2.5, dash: 'dash' }
+                });
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: 'GISTEMP Global Temperature Anomaly',
+                yaxis: { ...commonLayout.yaxis, title: 'Temperature Anomaly (°C)' }
+            };
+
+            const chartDiv = document.getElementById('gistemp-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Plot GISTEMP as annual lines by month of year
+        function plotGISTEMPAnnualLines() {
+            // Group data by year
+            const yearData = {};
+
+            gistempRawData.forEach(row => {
+                const date = new Date(row.Date);
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1; // 1-12
+                const value = parseFloat(row.Temperature_Anomaly);
+
+                // Skip invalid values
+                if (isNaN(value) || value === null || value === undefined) return;
+
+                if (!yearData[year]) yearData[year] = [];
+                yearData[year].push({ month, value });
+            });
+
+            // Sort years
+            const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            // Create traces for each year with color gradient
+            const traces = years.map((year, idx) => {
+                // Color gradient from blue (early) to red (late)
+                const t = (year - minYear) / (maxYear - minYear);
+                const r = Math.round(t * 255);
+                const b = Math.round((1 - t) * 255);
+                const color = `rgb(${r}, 0, ${b})`;
+
+                // Sort by month
+                yearData[year].sort((a, b) => a.month - b.month);
+
+                // Determine line width
+                let width = 0.8;
+                if (year === maxYear) width = 3; // Last year: thick and will be black
+                else if (year === maxYear - 1) width = 2; // Second to last: thicker
+
+                const xVals = yearData[year].map(d => d.month);
+                const yVals = yearData[year].map(d => d.value);
+
+                // Show only 4 years in legend: earliest, last-2, last-1, last
+                const showInLegend = (
+                    year === minYear ||
+                    year === maxYear ||
+                    year === maxYear - 1 ||
+                    year === maxYear - 2
+                );
+
+                return {
+                    x: xVals,
+                    y: yVals,
+                    name: year.toString(),
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: year === maxYear ? 'black' : color,
+                        width: width
+                    },
+                    showlegend: showInLegend,
+                    hoverinfo: 'skip'
+                };
+            });
+
+            // Add a dummy scatter trace with colorbar for year gradient
+            traces.push({
+                x: [null],
+                y: [null],
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 0,
+                    colorscale: [[0, 'rgb(0, 0, 255)'], [1, 'rgb(255, 0, 0)']],
+                    cmin: minYear,
+                    cmax: maxYear,
+                    colorbar: {
+                        title: 'Year',
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.7,
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        tickmode: 'linear',
+                        tick0: minYear,
+                        dtick: Math.ceil((maxYear - minYear) / 10)
+                    }
+                },
+                showlegend: false,
+                hoverinfo: 'skip'
+            });
+
+            const layout = {
+                ...commonLayout,
+                title: 'GISTEMP Temperature Anomaly by Month of Year',
+                xaxis: {
+                    title: 'Month of Year',
+                    showgrid: true,
+                    gridcolor: '#eee',
+                    type: 'linear',
+                    range: [0.5, 12.5],
+                    dtick: 1,
+                    ticktext: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    tickvals: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                },
+                yaxis: {
+                    ...commonLayout.yaxis,
+                    title: 'Temperature Anomaly (°C)',
+                    autorange: true
+                }
+            };
+
+            const chartDiv = document.getElementById('gistemp-chart');
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Load and plot PDO data
+        async function loadPDO() {
+            try {
+                const response = await fetch('data/pdo_data.csv');
+                const text = await response.text();
+                const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
+
+                // Store raw data globally
+                pdoRawData = data;
+
+                // Update date range
+                document.getElementById('pdo-period').textContent = formatDateRange(data);
+
+                // Initial plot
+                updatePDOPlot();
+            } catch (error) {
+                document.getElementById('pdo-chart').innerHTML = `<div class="error">Error loading PDO data: ${error.message}</div>`;
+            }
+        }
+
+        // Update PDO plot based on options
+        function updatePDOPlot() {
+            if (!pdoRawData) return;
+
+            const showMA = document.getElementById('pdo-show-ma').checked;
+
+            // Clear any loading message
+            const chartDiv = document.getElementById('pdo-chart');
+            if (chartDiv.classList.contains('loading')) {
+                chartDiv.classList.remove('loading');
+                chartDiv.innerHTML = '';
+            }
+
+            const traces = [];
+
+            // Main PDO trace
+            const pdoTrace = {
+                x: pdoRawData.map(row => row.Date),
+                y: pdoRawData.map(row => row.PDO_Index),
+                name: 'PDO Index',
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#16a085', width: 1.5 }
+            };
+            traces.push(pdoTrace);
+
+            // Add 11-year moving average if requested
+            if (showMA) {
+                const maData = calculate11YearMA(pdoRawData);
+                if (maData.length > 0) {
+                    const maTrace = {
+                        x: maData.map(row => row.Date),
+                        y: maData.map(row => row.MA),
+                        name: '11-yr Moving Avg',
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: '#e74c3c', width: 2.5 }
+                    };
+                    traces.push(maTrace);
+                }
+            }
+
+            const layout = {
+                ...commonLayout,
+                title: 'Pacific Decadal Oscillation Index',
+                yaxis: { ...commonLayout.yaxis, title: 'PDO Index' }
+            };
+
+            if (chartDiv.data) {
+                Plotly.react(chartDiv, traces, layout, config);
+            } else {
+                Plotly.newPlot(chartDiv, traces, layout, config);
+            }
+        }
+
+        // Calculate 11-year moving average (centered, excluding first and last 5 years)
+        function calculate11YearMA(data) {
+            // PDO data is monthly, so 11 years = 11 * 12 = 132 months
+            const window = 132;
+            const halfWindow = Math.floor(window / 2); // 66 months = 5.5 years
+
+            const result = [];
+
+            for (let i = halfWindow; i < data.length - halfWindow; i++) {
+                let sum = 0;
+                let count = 0;
+
+                for (let j = i - halfWindow; j <= i + halfWindow; j++) {
+                    const value = parseFloat(data[j].PDO_Index);
+                    if (!isNaN(value)) {
+                        sum += value;
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    result.push({
+                        Date: data[i].Date,
+                        MA: sum / count
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        // Update Summary Panel with calculated metrics
+        function updateSummaryPanel() {
+            console.log('Updating summary panel...');
+            console.log('Data availability:', {
+                co2: !!co2RawData,
+                gistemp: !!gistempRawData,
+                sst: !!sstRawData,
+                t2m: !!t2mRawData,
+                arctic: !!arcticRawData,
+                antarctic: !!antarcticRawData,
+                oni: !!oniRawData,
+                pdo: !!pdoRawData
+            });
+
+            try {
+                // CO2 Metrics
+                if (co2RawData && co2RawData.length > 0) {
+                    // Filter out empty rows and get valid data
+                    const validData = co2RawData.filter(row => row.Date && row.CO2_ppm !== null && row.CO2_ppm !== undefined && !isNaN(row.CO2_ppm));
+
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                        document.getElementById('co2-latest').textContent = `${latest.CO2_ppm.toFixed(2)} ppm (${latestDate})`;
+
+                        // 12-month average
+                        const last12Months = validData.slice(-12);
+                        const avg12Month = last12Months.reduce((sum, row) => sum + row.CO2_ppm, 0) / last12Months.length;
+                        document.getElementById('co2-12month').textContent = `${avg12Month.toFixed(2)} ppm`;
+
+                        // 1980 average
+                        const data1980 = validData.filter(row => {
+                            const year = new Date(row.Date).getFullYear();
+                            return year === 1980;
+                        });
+                        if (data1980.length > 0) {
+                            const avg1980 = data1980.reduce((sum, row) => sum + row.CO2_ppm, 0) / data1980.length;
+                            document.getElementById('co2-1980').textContent = `${avg1980.toFixed(2)} ppm`;
+                        }
+                    }
+                }
+
+                // GISTEMP Metrics
+                if (gistempRawData && gistempRawData.length > 0) {
+                    const validData = gistempRawData.filter(row => row.Date && row.Temperature_Anomaly !== null && row.Temperature_Anomaly !== undefined && !isNaN(row.Temperature_Anomaly));
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                        const anomaly = latest.Temperature_Anomaly.toFixed(2);
+                        document.getElementById('gistemp-latest').textContent = `${anomaly > 0 ? '+' : ''}${anomaly}°C (${latestDate})`;
+                        document.getElementById('gistemp-latest').className = 'metric-value ' + (anomaly > 0 ? 'positive' : 'negative');
+                    }
+                }
+
+                // SST Metrics
+                if (sstRawData && sstRawData.length > 0) {
+                    const validData = sstRawData.filter(row => row.Date && row.SST_Anomaly !== null && row.SST_Anomaly !== undefined && !isNaN(row.SST_Anomaly));
+
+                    if (validData.length > 0) {
+                        // Change since 1982 using quadratic trend
+                        const data1982onwards = validData.filter(row => new Date(row.Date).getFullYear() >= 1982);
+                        const dates = data1982onwards.map(row => row.Date);
+                        const values = data1982onwards.map(row => row.SST_Anomaly);
+                        const trend = calculateQuadraticTrend(dates, values);
+
+                        if (trend && trend.values.length > 0) {
+                            const changeSince1982 = trend.values[trend.values.length - 1] - trend.values[0];
+                            document.getElementById('sst-change').textContent = `${changeSince1982 > 0 ? '+' : ''}${changeSince1982.toFixed(3)}°C`;
+                            document.getElementById('sst-change').className = 'metric-value ' + (changeSince1982 > 0 ? 'positive' : 'negative');
+                        }
+
+                        // Last year average
+                        const latestDate = new Date(validData[validData.length - 1].Date);
+                        const oneYearAgo = new Date(latestDate);
+                        oneYearAgo.setFullYear(latestDate.getFullYear() - 1);
+                        const lastYearData = validData.filter(row => {
+                            const date = new Date(row.Date);
+                            return date >= oneYearAgo;
+                        });
+                        if (lastYearData.length > 0) {
+                            const avgRecent = lastYearData.reduce((sum, row) => sum + row.SST_Anomaly, 0) / lastYearData.length;
+                            document.getElementById('sst-recent').textContent = `${avgRecent > 0 ? '+' : ''}${avgRecent.toFixed(3)}°C`;
+                        }
+
+                        // 1982-1990 average
+                        const baseline = validData.filter(row => {
+                            const year = new Date(row.Date).getFullYear();
+                            return year >= 1982 && year <= 1990;
+                        });
+                        if (baseline.length > 0) {
+                            const avgBaseline = baseline.reduce((sum, row) => sum + row.SST_Anomaly, 0) / baseline.length;
+                            document.getElementById('sst-baseline').textContent = `${avgBaseline > 0 ? '+' : ''}${avgBaseline.toFixed(3)}°C`;
+                        }
+                    }
+                }
+
+                // T2M Metrics
+                if (t2mRawData && t2mRawData.length > 0) {
+                    const validData = t2mRawData.filter(row => row.Date && row.T2m_Anomaly !== null && row.T2m_Anomaly !== undefined && !isNaN(row.T2m_Anomaly));
+
+                    if (validData.length > 0) {
+                        // Change since 1940 using quadratic trend
+                        const data1940onwards = validData.filter(row => new Date(row.Date).getFullYear() >= 1940);
+                        const dates = data1940onwards.map(row => row.Date);
+                        const values = data1940onwards.map(row => row.T2m_Anomaly);
+                        const trend = calculateQuadraticTrend(dates, values);
+
+                        if (trend && trend.values.length > 0) {
+                            const changeSince1940 = trend.values[trend.values.length - 1] - trend.values[0];
+                            document.getElementById('t2m-change').textContent = `${changeSince1940 > 0 ? '+' : ''}${changeSince1940.toFixed(3)}°C`;
+                            document.getElementById('t2m-change').className = 'metric-value ' + (changeSince1940 > 0 ? 'positive' : 'negative');
+                        }
+
+                        // Last year average
+                        const latestDate = new Date(validData[validData.length - 1].Date);
+                        const oneYearAgo = new Date(latestDate);
+                        oneYearAgo.setFullYear(latestDate.getFullYear() - 1);
+                        const lastYearData = validData.filter(row => {
+                            const date = new Date(row.Date);
+                            return date >= oneYearAgo;
+                        });
+                        if (lastYearData.length > 0) {
+                            const avgRecent = lastYearData.reduce((sum, row) => sum + row.T2m_Anomaly, 0) / lastYearData.length;
+                            document.getElementById('t2m-recent').textContent = `${avgRecent > 0 ? '+' : ''}${avgRecent.toFixed(3)}°C`;
+                        }
+
+                        // 1940-1960 average
+                        const baseline = validData.filter(row => {
+                            const year = new Date(row.Date).getFullYear();
+                            return year >= 1940 && year <= 1960;
+                        });
+                        if (baseline.length > 0) {
+                            const avgBaseline = baseline.reduce((sum, row) => sum + row.T2m_Anomaly, 0) / baseline.length;
+                            document.getElementById('t2m-baseline').textContent = `${avgBaseline > 0 ? '+' : ''}${avgBaseline.toFixed(3)}°C`;
+                        }
+                    }
+                }
+
+                // Arctic Sea Ice Metrics
+                if (arcticRawData && arcticRawData.length > 0) {
+                    const validData = arcticRawData.filter(row => row.Date && row.Extent !== null && row.Extent !== undefined && !isNaN(row.Extent));
+
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date);
+                        const latestMonth = latestDate.getMonth();
+                        const monthName = latestDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                        document.getElementById('arctic-current').textContent = `${latest.Extent.toFixed(2)} M km² (${monthName})`;
+
+                        // 1980-1990 average for same month
+                        const baseline = validData.filter(row => {
+                            const date = new Date(row.Date);
+                            const year = date.getFullYear();
+                            const month = date.getMonth();
+                            return year >= 1980 && year <= 1990 && month === latestMonth;
+                        });
+                        if (baseline.length > 0) {
+                            const avgBaseline = baseline.reduce((sum, row) => sum + row.Extent, 0) / baseline.length;
+                            document.getElementById('arctic-baseline').textContent = `${avgBaseline.toFixed(2)} M km²`;
+
+                            const percentChange = ((latest.Extent - avgBaseline) / avgBaseline) * 100;
+                            document.getElementById('arctic-change').textContent = `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%`;
+                            document.getElementById('arctic-change').className = 'metric-value ' + (percentChange > 0 ? 'positive' : 'negative');
+                        }
+                    }
+                }
+
+                // Antarctic Sea Ice Metrics
+                if (antarcticRawData && antarcticRawData.length > 0) {
+                    const validData = antarcticRawData.filter(row => row.Date && row.Extent !== null && row.Extent !== undefined && !isNaN(row.Extent));
+
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date);
+                        const latestMonth = latestDate.getMonth();
+                        const monthName = latestDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                        document.getElementById('antarctic-current').textContent = `${latest.Extent.toFixed(2)} M km² (${monthName})`;
+
+                        // 1980-1990 average for same month
+                        const baseline = validData.filter(row => {
+                            const date = new Date(row.Date);
+                            const year = date.getFullYear();
+                            const month = date.getMonth();
+                            return year >= 1980 && year <= 1990 && month === latestMonth;
+                        });
+                        if (baseline.length > 0) {
+                            const avgBaseline = baseline.reduce((sum, row) => sum + row.Extent, 0) / baseline.length;
+                            document.getElementById('antarctic-baseline').textContent = `${avgBaseline.toFixed(2)} M km²`;
+
+                            const percentChange = ((latest.Extent - avgBaseline) / avgBaseline) * 100;
+                            document.getElementById('antarctic-change').textContent = `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(1)}%`;
+                            document.getElementById('antarctic-change').className = 'metric-value ' + (percentChange > 0 ? 'positive' : 'negative');
+                        }
+                    }
+                }
+
+                // ENSO Metrics (ONI)
+                if (oniRawData && oniRawData.length > 0) {
+                    const validData = oniRawData.filter(row => row.Date && row.ONI_Value !== null && row.ONI_Value !== undefined && !isNaN(row.ONI_Value));
+
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                        const oniValue = latest.ONI_Value.toFixed(2);
+                        document.getElementById('enso-oni').textContent = `${oniValue > 0 ? '+' : ''}${oniValue}°C (${latestDate})`;
+
+                        // Determine ENSO status based on threshold
+                        let status = 'Neutral';
+                        if (latest.ONI_Value >= 0.5) {
+                            status = 'El Niño';
+                        } else if (latest.ONI_Value <= -0.5) {
+                            status = 'La Niña';
+                        }
+                        document.getElementById('enso-status').textContent = status;
+                        document.getElementById('enso-status').className = 'metric-value ' +
+                            (latest.ONI_Value >= 0.5 ? 'positive' : latest.ONI_Value <= -0.5 ? 'negative' : 'neutral');
+                    }
+                }
+
+                // PDO Metrics
+                if (pdoRawData && pdoRawData.length > 0) {
+                    const validData = pdoRawData.filter(row => row.Date && row.PDO_Index !== null && row.PDO_Index !== undefined && !isNaN(row.PDO_Index));
+
+                    if (validData.length > 0) {
+                        const latest = validData[validData.length - 1];
+                        const latestDate = new Date(latest.Date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                        document.getElementById('pdo-current').textContent = `${latest.PDO_Index > 0 ? '+' : ''}${latest.PDO_Index.toFixed(2)} (${latestDate})`;
+
+                        // Calculate standard deviation
+                        const values = validData.map(row => row.PDO_Index);
+                        const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+                        const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+                        const stdDev = Math.sqrt(variance);
+                        const sigmas = (latest.PDO_Index - mean) / stdDev;
+
+                        document.getElementById('pdo-sigma').textContent = `${sigmas > 0 ? '+' : ''}${sigmas.toFixed(2)}σ`;
+                        document.getElementById('pdo-sigma').className = 'metric-value ' +
+                            (Math.abs(sigmas) > 1 ? (sigmas > 0 ? 'positive' : 'negative') : 'neutral');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error updating summary panel:', error);
+            }
+        }
+
+        // Load all data on page load
+        window.addEventListener('load', async () => {
+            await Promise.all([
+                loadENSO(),
+                loadSST(),
+                loadT2M(),
+                loadSeaIce(),
+                loadCO2(),
+                loadGISTEMP(),
+                loadPDO()
+            ]);
+
+            // Update summary panel after all data is loaded
+            updateSummaryPanel();
+        });
+    </script>
+</body>
+</html>

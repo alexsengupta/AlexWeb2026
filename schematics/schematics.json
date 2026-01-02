@@ -1,0 +1,173 @@
+[
+  {
+    "id": "cmip6_transport_change_map",
+    "name": "CMIP6_transport_change_map",
+    "jpg": "images/CMIP6_transport_change_map_000.jpg",
+    "pdf": "images/CMIP6_transport_change_map.pdf",
+    "article_title": "Future changes to the upper ocean Western Boundary Currents across two generations of climate models",
+    "citation": "Sen Gupta, A. et al. Future changes to the upper ocean Western Boundary Currents across two generations of climate models. Sci Rep 11, 9538 (2021).",
+    "description": "Using climate models to understand how the world’s major current systems will change in the future."
+  },
+  {
+    "id": "figure3_nh_baseline_paper_figure_v5",
+    "name": "figure3 NH_Basline paper Figure_V5",
+    "jpg": "images/figure3 NH_Basline paper Figure_V5_000.jpg",
+    "pdf": "images/figure3 NH_Basline paper Figure_V5.pdf",
+    "article_title": "Baseline matters: Challenges and implications of different marine heatwave baselines",
+    "citation": "Smith, K. E. et al. Baseline matters: Challenges and implications of different marine heatwave baselines. Progress in Oceanography 231, 103404 (2025).",
+    "description": "Explains the very different characteristics of marine heatwave evolution when using different choices of baseline definitions."
+  },
+  {
+    "id": "fire_drivers",
+    "name": "fire_drivers",
+    "jpg": "images/fire_drivers_000.jpg",
+    "pdf": "images/fire_drivers.pdf",
+    "article_title": "Connections of climate change and variability to large and extreme forest fires in southeast Australia",
+    "citation": "Abram, N. J. et al. Connections of climate change and variability to large and extreme forest fires in southeast Australia. Commun Earth Environ 2, 8 (2021).",
+    "description": "Depicts the remote large-scale and local drivers of extreme fire in Australia."
+  },
+  {
+    "id": "hiatus",
+    "name": "hiatus",
+    "jpg": "images/hiatus_000.jpg",
+    "pdf": "images/hiatus.pdf",
+    "article_title": "Recent intensification of wind-driven circulation in the Pacific and the ongoing warming hiatus",
+    "citation": "England, M. H. et al. Recent intensification of wind-driven circulation in the Pacific and the ongoing warming hiatus. Nature Clim. Change 4, 222–227 (2014).",
+    "description": "The mechanism behind the decadal pause in global warming and its relationship to changes in circulation in the tropical Pacific."
+  },
+  {
+    "id": "life_at_depth2_copy",
+    "name": "life at depth2 copy",
+    "jpg": "images/life at depth2 copy_000.jpg",
+    "pdf": "images/life at depth2 copy.pdf",
+    "article_title": "Lifting the lid on Marine Heatwaves",
+    "citation": "Malan, N. et al. Lifting the lid on Marine Heatwaves. Progress in Oceanography 239, 103539 (2025).",
+    "description": "Life is ubiquitous throughout the ocean and so are heat extremes. Where the two meet, organisms and ecosystems can be severely affected."
+  },
+  {
+    "id": "mhw_mechanisms4_copy",
+    "name": "MHW mechanisms4 copy",
+    "jpg": "images/MHW mechanisms4 copy_000.jpg",
+    "pdf": "images/MHW mechanisms4 copy.pdf",
+    "article_title": "Lifting the lid on Marine Heatwaves",
+    "citation": "Malan, N. et al. Lifting the lid on Marine Heatwaves. Progress in Oceanography 239, 103539 (2025).",
+    "description": "Marine heatwaves in the subsurface ocean are driven by a variety of atmospheric and oceanic processes."
+  },
+  {
+    "id": "mhw_region_all_partitioned4",
+    "name": "MHW_region_all_partitioned4",
+    "jpg": "images/MHW_region_all_partitioned4_000.jpg",
+    "pdf": "images/MHW_region_all_partitioned4.pdf",
+    "article_title": "Socioeconomic impacts of marine heatwaves: Global issues and opportunities",
+    "citation": "Smith, K. E. et al. Socioeconomic impacts of marine heatwaves: Global issues and opportunities. Science 374, eabj3593 (2021).",
+    "description": "Some of the iconic marine heatwaves around the world, including the Blob and the Ningaloo Niño."
+  },
+  {
+    "id": "mhw_process_impact",
+    "name": "MHWpocess_imapct",
+    "jpg": "images/MHWpocess_imapct_000.jpg",
+    "pdf": "images/MHWpocess_imapct.pdf",
+    "article_title": "Keeping pace with marine heatwaves",
+    "citation": "Holbrook, N. J. et al. Keeping pace with marine heatwaves. Nat Rev Earth Environ 1, 482–493 (2020).",
+    "description": "The primary drivers of marine heatwaves, with some of their main impacts."
+  },
+  {
+    "id": "mhw_timescales",
+    "name": "MHWtimescales",
+    "jpg": "images/MHWtimescales_000.jpg",
+    "pdf": "images/MHWtimescales.pdf",
+    "article_title": "A global assessment of marine heatwaves and their drivers",
+    "citation": "Holbrook, N. J. et al. A global assessment of marine heatwaves and their drivers. Nature Communications 10, 2624 (2019).",
+    "description": "Marine heatwaves are driven by phenomena that act over vastly different spatial and temporal scales."
+  },
+  {
+    "id": "pacific_circulation",
+    "name": "Pacific_Circulation",
+    "jpg": "images/Pacific_Circulation_000.jpg",
+    "pdf": "images/Pacific_Circulation.pdf",
+    "article_title": "Pacific western boundary currents and their roles in climate",
+    "citation": "Hu, D. et al. Pacific western boundary currents and their roles in climate. Nature 522, 299–308 (2015).",
+    "description": "The Pacific Ocean circulation and its link to large-scale winds and their gradients."
+  },
+  {
+    "id": "sam_schematic_eddies",
+    "name": "SAM schematic_eddies",
+    "jpg": "images/SAM schematic_eddies_000.jpg",
+    "pdf": "images/SAM schematic_eddies.pdf",
+    "article_title": "Coupled ocean-atmosphere-ice response to variations in the Southern Annular Mode",
+    "citation": "Sen Gupta, A. & England, M. H. Coupled ocean-atmosphere-ice response to variations in the Southern Annular Mode. Journal of Climate 19, 4457–4486 (2006).",
+    "description": "The Southern Annular Mode drives changes in ocean currents, sea ice, and eddies."
+  },
+  {
+    "id": "schematic_mhw_on_shelf",
+    "name": "Schematic_MHWonShelf",
+    "jpg": "images/Schematic_MHWonShelf_000.jpg",
+    "pdf": "images/Schematic_MHWonShelf.pdf",
+    "article_title": "Seasonal stratification and complex local dynamics control the sub-surface structure of marine heatwaves in Eastern Australian coastal waters",
+    "citation": "Schaeffer, A., Sen Gupta, A. & Roughan, M. Seasonal stratification and complex local dynamics control the sub-surface structure of marine heatwaves in Eastern Australian coastal waters. Commun Earth Environ 4, (2023).",
+    "description": "Drivers of different types of marine heatwave on the continental shelf off Sydney."
+  },
+  {
+    "id": "schematic_sea_ice3",
+    "name": "schematicsea-ice3",
+    "jpg": "images/schematicsea-ice3_000.jpg",
+    "pdf": "images/schematicsea-ice3.pdf",
+    "article_title": "Combined Impacts of Southern Annular Mode and Zonal Wave Three on Antarctic Sea Ice Variability",
+    "citation": "Eabry, M. D., Goyal, R., Taschetto, A. S., Hobbs, W. & Gupta, A. S. Combined Impacts of Southern Annular Mode and Zonal Wave Three on Antarctic Sea Ice Variability. Journal of Climate (2024).",
+    "description": "Processes that give rise to extremes in the extent of Antarctic sea ice."
+  },
+  {
+    "id": "teleconnections",
+    "name": "teleconnections",
+    "jpg": "images/teleconnections_000.jpg",
+    "pdf": "images/teleconnections.pdf",
+    "article_title": "Common cause for severe droughts in South America and marine heatwaves in the South Atlantic",
+    "citation": "Rodrigues, R. R., Taschetto, A. S., Gupta, A. S. & Foltz, G. R. Common cause for severe droughts in South America and marine heatwaves in the South Atlantic. Nature Geoscience 12, 620 (2019).",
+    "description": "How strong convection in the tropical Indian Ocean can drive an intense compound heatwave in southern Brazil."
+  },
+  {
+    "id": "schematic_processes4",
+    "name": "schematic_processes4",
+    "jpg": "images/schematic_processes4_000.jpg",
+    "pdf": "images/schematic_processes4.pdf",
+    "article_title": "",
+    "citation": "(no publication)",
+    "description": "Processes to be investigated at the ARC Centre of Excellence for our Future Oceans."
+  },
+  {
+    "id": "jigsaw_schematic_trans_partnerships",
+    "name": "jigsaw_schematic_trans_partnerships",
+    "jpg": "images/jigsaw_schematic_trans_partnerships_000.jpg",
+    "pdf": "images/jigsaw_schematic_trans_partnerships.pdf",
+    "article_title": "",
+    "citation": "(no publication)",
+    "description": "The research programs associated with the ARC Centre of Excellence for our Future Oceans."
+  },
+  {
+    "id": "schematic6_central",
+    "name": "schematic6 central",
+    "jpg": "images/schematic6 central.jpg",
+    "pdf": "images/schematic6 central.jpg",
+    "article_title": "",
+    "citation": "(no publication)",
+    "description": "The ocean observing network around Australia."
+  },
+  {
+    "id": "schematic_bio_box",
+    "name": "schematic_bio_box",
+    "jpg": "images/schematic_bio_box_000.jpg",
+    "pdf": "images/schematic_bio_box.pdf",
+    "article_title": "",
+    "citation": "(no publication)",
+    "description": "Biological and biogeochemical research at the ARC Centre of Excellence for our Future Oceans."
+  },
+  {
+    "id": "schematic_industries",
+    "name": "schematic_industries",
+    "jpg": "images/schematic_industries_000.jpg",
+    "pdf": "images/schematic_industries.pdf",
+    "article_title": "",
+    "citation": "(no publication)",
+    "description": "Stakeholder industries for the ARC Centre of Excellence for our Future Oceans."
+  }
+]

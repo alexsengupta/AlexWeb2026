@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coral Bleaching Simulator - Multi-Year SST Forcing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .workflow-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            overflow: visible;
+        }
+
+        .workflow-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #1e3c72;
+        }
+
+        .step-number {
+            background: #1e3c72;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .workflow-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .sst-preview-container {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            height: 300px;
+        }
+
+        .param-control {
+            margin-bottom: 15px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .param-value {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #1e3c72;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #1e3c72;
+            cursor: pointer;
+            border: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #1e3c72;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .metric-unit {
+            font-size: 0.65em;
+            color: #888;
+        }
+
+        .info-panel {
+            background: #e7f3ff;
+            border-left: 4px solid #1e3c72;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 8px;
+        }
+
+        .info-text {
+            font-size: 0.85em;
+            line-height: 1.5;
+            color: #555;
+        }
+
+        .sst-stats {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 0.85em;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #1e3c72;
+            font-size: 1.1em;
+        }
+
+        .speed-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .speed-btn {
+            flex: 1;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .speed-btn.active {
+            background: #1e3c72;
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .speed-btn:hover {
+            border-color: #1e3c72;
+        }
+
+        .collapsible-section {
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .collapse-header {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .collapse-header:hover {
+            background: #dee2e6;
+        }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapse-content.open {
+            max-height: 2000px;
+            padding-top: 15px;
+            overflow: visible;
+        }
+
+        .progress-indicator {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Modal Dialog */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #1e3c72;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .help-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .help-btn:hover {
+            background: #138496;
+        }
+
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 350px 1fr !important;
+            }
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        /* Parameter tooltips */
+        .param-help {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            background: #17a2b8;
+            color: white;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 5px;
+            position: relative;
+        }
+
+        .param-help::after {
+            content: attr(data-tooltip);
+            position: fixed;
+            left: var(--tooltip-left, 450px);
+            top: var(--tooltip-top, 50%);
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: normal;
+            white-space: normal;
+            width: 280px;
+            z-index: 100000;
+            line-height: 1.5;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .param-help:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .param-help::before {
+            content: '';
+            position: fixed;
+            left: calc(var(--tooltip-left, 450px) - 6px);
+            top: var(--tooltip-top, 50%);
+            transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-right-color: rgba(0, 0, 0, 0.95);
+            z-index: 100001;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .param-help:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Make sure tooltips aren't hidden by parent overflow */
+        .param-control {
+            position: relative;
+        }
+
+        /* Modal scroll fix */
+        .modal-content {
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+        <a href="../../app_playground.html"
+            style="text-decoration: none; background: rgba(255,255,255,0.1); color: white; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(255,255,255,0.2);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Playground
+        </a>
+        <a href="../../index.html"
+            style="text-decoration: none; background: rgba(255,255,255,0.1); color: white; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(255,255,255,0.2);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Home
+        </a>
+    </div>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <h1 style="margin-bottom: 5px;">🪸 Coral Bleaching Simulator</h1>
+                <p class="subtitle" style="margin: 0;">Multi-Year SST Forcing with AR(1) Process & Biological Dynamics
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="help-btn" onclick="showModelOverview()" style="padding: 8px 16px; font-size: 0.95em;">📖
+                    How It Works</button>
+                <button class="help-btn" onclick="showTechnicalDetails()"
+                    style="padding: 8px 16px; font-size: 0.95em;">🔬 Technical Details</button>
+            </div>
+        </div>
+
+        <!-- Controls and Visualization Layout -->
+        <div class="main-layout">
+            <!-- Left Column: All Controls -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- STEP 1: SST Generation -->
+                <div class="workflow-section">
+                    <div class="workflow-header">
+                        <div style="display: flex; align-items: center; flex: 1;">
+                            <div class="step-number">1</div>
+                            <div class="workflow-title">Generate SST</div>
+                            <button class="help-btn" onclick="showHelp()">❓ Help</button>
+                        </div>
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Duration</span>
+                            <span class="param-value"><span id="yearsValue">5</span> years</span>
+                        </div>
+                        <input type="range" id="years" min="1" max="50" step="1" value="5">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Mean Temp (μ)</span>
+                            <span class="param-value"><span id="meanTempValue">27.5</span>°C</span>
+                        </div>
+                        <input type="range" id="meanTemp" min="25" max="30" step="0.5" value="27.5">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Seasonal Amp (A)</span>
+                            <span class="param-value"><span id="seasonalAmpValue">2.5</span>°C</span>
+                        </div>
+                        <input type="range" id="seasonalAmp" min="0" max="5" step="0.5" value="2.5">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Peak Day<span class="param-help"
+                                    data-tooltip="Day of year when temperature is highest (e.g., Day 90 = early April in Northern Hemisphere)">?</span></span>
+                            <span class="param-value">Day <span id="peakDayValue">90</span></span>
+                        </div>
+                        <input type="range" id="peakDay" min="0" max="365" step="15" value="90">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Trend<span class="param-help"
+                                    data-tooltip="Climate change warming/cooling rate. Positive = warming ocean, negative = cooling ocean">?</span></span>
+                            <span class="param-value"><span id="trendValue">0.05</span>°C/yr</span>
+                        </div>
+                        <input type="range" id="trend" min="-0.1" max="0.3" step="0.01" value="0.05">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Autocorr (ρ)<span class="param-help"
+                                    data-tooltip="Ocean memory - how much yesterday's temperature affects today. High (>0.8) = sustained heat waves; Low (<0.5) = rapidly changing conditions">?</span></span>
+                            <span class="param-value"><span id="rhoValue">0.85</span></span>
+                        </div>
+                        <input type="range" id="rho" min="0" max="0.95" step="0.05" value="0.85">
+                    </div>
+
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Variability (σ)<span class="param-help"
+                                    data-tooltip="Day-to-day temperature noise. Higher values = more erratic daily fluctuations">?</span></span>
+                            <span class="param-value"><span id="sigmaNoiseValue">0.5</span>°C</span>
+                        </div>
+                        <input type="range" id="sigmaNoise" min="0.1" max="2" step="0.1" value="0.5">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="randomizeSST()">🎲 Randomize</button>
+                    </div>
+
+                    <div class="sst-stats" id="sstStats">
+                        <div class="stat-item">
+                            <div class="stat-label">Mean</div>
+                            <div class="stat-value" id="statMean">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Max</div>
+                            <div class="stat-value" id="statMax">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Min</div>
+                            <div class="stat-value" id="statMin">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Days > Thresh</div>
+                            <div class="stat-value" id="statBleachDays">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Heat Waves</div>
+                            <div class="stat-value" id="statHeatwaves">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Days</div>
+                            <div class="stat-value" id="statDays">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Biology Parameters -->
+                <div class="workflow-section">
+                    <div class="workflow-header">
+                        <div class="step-number">2</div>
+                        <div class="workflow-title">Biology</div>
+                    </div>
+
+                    <!-- Environmental -->
+                    <div class="collapsible-section">
+                        <div class="collapse-header" onclick="toggleCollapse('envParams')">
+                            <span><strong>🌊 Environmental</strong></span>
+                            <span id="envParams-arrow">▼</span>
+                        </div>
+                        <div class="collapse-content open" id="envParams">
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Optimal Temperature<span class="param-help"
+                                            data-tooltip="Temperature where symbiont growth is maximized. Cooler or warmer reduces growth rate">?</span></span>
+                                    <span class="param-value"><span id="tOptValue">27.0</span>°C</span>
+                                </div>
+                                <input type="range" id="tOpt" min="24" max="30" step="0.5" value="27">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Bleaching Threshold<span class="param-help"
+                                            data-tooltip="Temperature above which ROS production increases exponentially, triggering symbiont expulsion">?</span></span>
+                                    <span class="param-value"><span id="tThreshValue">29.5</span>°C</span>
+                                </div>
+                                <input type="range" id="tThresh" min="27" max="32" step="0.5" value="29.5">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Thermal Tolerance (σ)<span class="param-help"
+                                            data-tooltip="Width of the temperature performance curve. Larger = coral tolerates wider temperature range">?</span></span>
+                                    <span class="param-value"><span id="sigmaValue">2.0</span>°C</span>
+                                </div>
+                                <input type="range" id="sigma" min="0.5" max="5" step="0.5" value="2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Symbiont -->
+                    <div class="collapsible-section">
+                        <div class="collapse-header" onclick="toggleCollapse('symbParams')">
+                            <span><strong>🦠 Symbiont Dynamics</strong></span>
+                            <span id="symbParams-arrow">▼</span>
+                        </div>
+                        <div class="collapse-content" id="symbParams">
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Max Growth Rate<span class="param-help"
+                                            data-tooltip="Maximum rate at which symbionts can divide per day at optimal temperature. Higher = faster population growth">?</span></span>
+                                    <span class="param-value"><span id="rMaxValue">0.100</span> day⁻¹</span>
+                                </div>
+                                <input type="range" id="rMax" min="0.01" max="0.3" step="0.01" value="0.1">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Carrying Capacity<span class="param-help"
+                                            data-tooltip="Maximum symbiont density the coral can support. Logistic growth slows as density approaches this limit">?</span></span>
+                                    <span class="param-value"><span id="kValue">5.0</span> × 10⁶</span>
+                                </div>
+                                <input type="range" id="k" min="1" max="10" step="0.5" value="5">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Baseline Death Rate<span class="param-help"
+                                            data-tooltip="Background symbiont mortality rate from normal cell turnover, independent of temperature stress">?</span></span>
+                                    <span class="param-value"><span id="dBaseValue">0.020</span> day⁻¹</span>
+                                </div>
+                                <input type="range" id="dBase" min="0.005" max="0.1" step="0.005" value="0.02">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Density Protection (at K)<span class="param-help"
+                                            data-tooltip="How much baseline cell turnover is reduced when symbionts are at carrying capacity. Higher = more stable at high density">?</span></span>
+                                    <span class="param-value"><span id="densProtValue">90</span>%</span>
+                                </div>
+                                <input type="range" id="densProt" min="0" max="95" step="5" value="90">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROS -->
+                    <div class="collapsible-section">
+                        <div class="collapse-header" onclick="toggleCollapse('rosParams')">
+                            <span><strong>⚡ ROS Mechanism</strong></span>
+                            <span id="rosParams-arrow">▼</span>
+                        </div>
+                        <div class="collapse-content" id="rosParams">
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Baseline ROS Production<span class="param-help"
+                                            data-tooltip="Rate of ROS production per symbiont under normal conditions (no heat stress)">?</span></span>
+                                    <span class="param-value"><span id="pBaseValue">1.00e-5</span></span>
+                                </div>
+                                <input type="range" id="pBase" min="0.000001" max="0.0001" step="0.000001"
+                                    value="0.00001">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Stress ROS Multiplier<span class="param-help"
+                                            data-tooltip="Scaling factor for heat-induced ROS production. Higher = more ROS when temperature exceeds threshold">?</span></span>
+                                    <span class="param-value"><span id="pStressValue">1.00e-4</span></span>
+                                </div>
+                                <input type="range" id="pStress" min="0.00001" max="0.001" step="0.00001"
+                                    value="0.0001">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Temperature Sensitivity (β)<span class="param-help"
+                                            data-tooltip="Controls how rapidly ROS production increases with temperature above threshold. Higher = steeper exponential response">?</span></span>
+                                    <span class="param-value"><span id="betaValue">0.40</span></span>
+                                </div>
+                                <input type="range" id="beta" min="0.1" max="1" step="0.05" value="0.4">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>ROS Degradation Rate<span class="param-help"
+                                            data-tooltip="Rate at which coral's antioxidant defenses remove ROS. Higher = faster ROS clearance">?</span></span>
+                                    <span class="param-value"><span id="kDegValue">0.50</span> day⁻¹</span>
+                                </div>
+                                <input type="range" id="kDeg" min="0.1" max="2" step="0.1" value="0.5">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Expulsion Rate<span class="param-help"
+                                            data-tooltip="Maximum rate of ROS-driven symbiont expulsion. Follows Michaelis-Menten kinetics with ROS">?</span></span>
+                                    <span class="param-value"><span id="kExpelValue">2.00e-5</span></span>
+                                </div>
+                                <input type="range" id="kExpel" min="0.000001" max="0.0001" step="0.000001"
+                                    value="0.00002">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>ROS Half-Saturation<span class="param-help"
+                                            data-tooltip="ROS level at which expulsion rate reaches half its maximum (Michaelis-Menten constant)">?</span></span>
+                                    <span class="param-value"><span id="kRValue">100</span></span>
+                                </div>
+                                <input type="range" id="kR" min="20" max="300" step="10" value="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mortality -->
+                    <div class="collapsible-section">
+                        <div class="collapse-header" onclick="toggleCollapse('mortParams')">
+                            <span><strong>💀 Mortality</strong></span>
+                            <span id="mortParams-arrow">▼</span>
+                        </div>
+                        <div class="collapse-content" id="mortParams">
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Critical Density<span class="param-help"
+                                            data-tooltip="Symbiont density threshold (as % of carrying capacity) below which coral begins to die. Lower = more tolerant of bleaching">?</span></span>
+                                    <span class="param-value"><span id="critDensValue">20</span>%</span>
+                                </div>
+                                <input type="range" id="critDens" min="5" max="50" step="5" value="20">
+                            </div>
+
+                            <div class="param-control">
+                                <div class="param-label">
+                                    <span>Days Below for Death<span class="param-help"
+                                            data-tooltip="Number of consecutive days density must stay below critical threshold before coral dies. Longer = more time to recover">?</span></span>
+                                    <span class="param-value"><span id="mortDaysValue">30</span> days</span>
+                                </div>
+                                <input type="range" id="mortDays" min="7" max="90" step="7" value="30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-panel" style="margin-top: 15px;">
+                    <div class="info-title">Adjust Parameters</div>
+                    <div class="info-text">
+                        Modify biological parameters to explore coral resilience under different SST scenarios. Changes
+                        don't require regenerating SST.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Diagnostic Graphs -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- SST Preview -->
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                    <h3 style="color: #1e3c72; margin-bottom: 15px;">SST Preview</h3>
+                    <div style="background: white; border-radius: 8px; padding: 15px; height: 250px;">
+                        <canvas id="sstPreview"></canvas>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Run Simulation -->
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                    <h3 style="color: #1e3c72; margin-bottom: 15px;">Run Simulation</h3>
+
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-primary" id="playPauseBtn" onclick="toggleSimulation()"
+                            style="flex: 0 0 120px;">▶️ Start</button>
+                        <button class="btn-secondary" onclick="resetSimulation()" style="flex: 0 0 120px;">🔄
+                            Reset</button>
+
+                        <div style="display: flex; gap: 5px; margin-left: 20px;">
+                            <button class="speed-btn active" onclick="setSpeed(1)" style="min-width: 50px;">1×</button>
+                            <button class="speed-btn" onclick="setSpeed(10)" style="min-width: 50px;">10×</button>
+                            <button class="speed-btn" onclick="setSpeed(50)" style="min-width: 50px;">50×</button>
+                            <button class="speed-btn" onclick="setSpeed(100)" style="min-width: 60px;">100×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Symbiont Density Graph -->
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                    <h3 style="color: #1e3c72; margin-bottom: 5px;">Symbiont Density</h3>
+                    <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Scroll to zoom, drag to pan,
+                        double-click to reset</p>
+                    <div style="background: white; border-radius: 8px; padding: 15px; height: 300px;">
+                        <canvas id="densityGraph"></canvas>
+                    </div>
+                </div>
+
+                <!-- ROS Levels Graph -->
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                    <h3 style="color: #1e3c72; margin-bottom: 5px;">ROS Levels</h3>
+                    <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Scroll to zoom, drag to pan,
+                        double-click to reset</p>
+                    <div style="background: white; border-radius: 8px; padding: 15px; height: 300px;">
+                        <canvas id="rosGraph"></canvas>
+                    </div>
+                </div>
+
+                <!-- Metrics - Compact Row -->
+                <div style="background: #f8f9fa; border-radius: 10px; padding: 15px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">Symbiont Density</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="densityDisplay">3.0 × 10⁶</span>
+                            </div>
+                            <div style="margin-top: 3px; font-size: 0.75em;">
+                                <span id="statusText" style="font-weight: bold; color: #1e3c72;">Healthy</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">Current Temp</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="currentTemp">27.0</span><span class="metric-unit">°C</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">ROS Level</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="rosLevel">50</span><span class="metric-unit">AU</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">Day of Year</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="dayOfYear">1</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">Bleaching</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="bleachPercent">0</span><span class="metric-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="padding: 10px;">
+                            <div class="metric-label" style="font-size: 0.75em;">Total Days</div>
+                            <div class="metric-value" style="font-size: 1em;">
+                                <span id="daysElapsed">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal Dialog -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📚 SST Model Information</div>
+                <span class="close" onclick="closeHelp()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h4 style="color: #1e3c72; margin-bottom: 10px;">AR(1) Process with Seasonal Forcing</h4>
+                <p style="font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                    T(t) = μ + trend·t + A·sin(2πt/365 + φ) + ε(t)<br>
+                    where ε(t) = ρ·ε(t-1) + σ√(1-ρ²)·η(t)
+                </p>
+
+                <h4 style="color: #1e3c72; margin-top: 20px; margin-bottom: 10px;">Parameters</h4>
+                <ul style="line-height: 1.8;">
+                    <li><strong>μ (mean)</strong>: Baseline temperature</li>
+                    <li><strong>A (amplitude)</strong>: Strength of seasonal cycle (0 = no seasons)</li>
+                    <li><strong>φ (phase)</strong>: When the hot season occurs (peak day)</li>
+                    <li><strong>trend</strong>: Climate change warming rate (°C/year)</li>
+                    <li><strong>ρ (autocorrelation)</strong>: Persistence of temperature anomalies
+                        <ul style="margin-top: 5px;">
+                            <li>High ρ (0.9+) = sustained heat waves</li>
+                            <li>Low ρ (0.3) = rapidly fluctuating temps</li>
+                        </ul>
+                    </li>
+                    <li><strong>σ (variability)</strong>: Daily temperature noise</li>
+                </ul>
+
+                <h4 style="color: #1e3c72; margin-top: 20px; margin-bottom: 10px;">How It Works</h4>
+                <p>
+                    The model combines three components:
+                </p>
+                <ol style="line-height: 1.8;">
+                    <li><strong>Seasonal cycle</strong>: Regular annual variation (sine wave)</li>
+                    <li><strong>Long-term trend</strong>: Linear warming or cooling</li>
+                    <li><strong>AR(1) noise</strong>: Day-to-day variations with memory
+                        <ul style="margin-top: 5px;">
+                            <li>Yesterday's anomaly influences today</li>
+                            <li>Creates realistic "heat wave" events</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div
+                    style="background: #e7f3ff; border-left: 4px solid #1e3c72; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                    <strong>💡 Tip:</strong> Adjust sliders in real-time to see instant preview updates. Use "Randomize"
+                    to explore different scenarios quickly.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Overview Modal -->
+    <div id="overviewModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div class="modal-title">📖 How the Model Works</div>
+                <span class="close" onclick="closeOverview()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h4 style="color: #1e3c72;">What is Coral Bleaching?</h4>
+                <p>
+                    Corals are animals that host millions of tiny algae (zooxanthellae) in their tissues. These algae
+                    photosynthesize
+                    and provide up to 90% of the coral's energy. When water gets too warm, the algae's photosynthesis
+                    malfunctions,
+                    producing harmful reactive oxygen species (ROS) instead of food. The coral expels the algae to
+                    protect itself,
+                    turning white ("bleaching"). Without their algae, corals can starve and die.
+                </p>
+
+                <h4 style="color: #1e3c72; margin-top: 20px;">How This Simulator Works</h4>
+
+                <p><strong>Step 1: Generate Ocean Temperature</strong></p>
+                <p>
+                    The simulator creates realistic multi-year sea surface temperature (SST) patterns that include:
+                <ul style="margin-top: 5px; line-height: 1.6;">
+                    <li>Seasonal cycles (summer/winter)</li>
+                    <li>Long-term warming trends (climate change)</li>
+                    <li>Heat waves and cold spells with realistic persistence</li>
+                </ul>
+                </p>
+
+                <p style="margin-top: 15px;"><strong>Step 2: Biological Response</strong></p>
+                <p>
+                    The model tracks three key processes:
+                </p>
+                <ol style="line-height: 1.6;">
+                    <li><strong>Symbiont Growth</strong>: Algae multiply fastest at their optimal temperature</li>
+                    <li><strong>ROS Production</strong>: When temperature exceeds the bleaching threshold, damaged
+                        photosynthesis creates harmful ROS</li>
+                    <li><strong>Expulsion</strong>: High ROS levels trigger the coral to expel algae</li>
+                </ol>
+
+                <h4 style="color: #1e3c72; margin-top: 20px;">What You Can Explore</h4>
+                <ul style="line-height: 1.6;">
+                    <li><strong>Heat wave structure</strong>: Compare sustained vs. fluctuating warming</li>
+                    <li><strong>Recovery dynamics</strong>: Can corals recover between bleaching events?</li>
+                    <li><strong>Climate scenarios</strong>: How do different warming rates affect survival?</li>
+                    <li><strong>Coral resilience</strong>: What makes some corals more tolerant than others?</li>
+                </ul>
+
+                <div
+                    style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                    <strong>🎯 Try This:</strong> Run a 10-year simulation with moderate warming (0.05°C/year).
+                    Watch how seasonal heat waves interact with the long-term trend. Adjust the bleaching threshold to
+                    see
+                    how coral adaptation might help.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Details Modal -->
+    <div id="technicalModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div class="modal-title">🔬 Technical Details</div>
+                <span class="close" onclick="closeTechnical()">&times;</span>
+            </div>
+            <div class="modal-body" style="font-size: 0.95em;">
+                <h4 style="color: #1e3c72;">Model Equations</h4>
+
+                <p><strong>State Variables:</strong></p>
+                <ul style="line-height: 1.6;">
+                    <li><strong>S(t)</strong>: Symbiont density (cells/cm²)</li>
+                    <li><strong>R(t)</strong>: ROS concentration (arbitrary units)</li>
+                    <li><strong>T(t)</strong>: Sea surface temperature (°C)</li>
+                </ul>
+
+                <p style="margin-top: 15px;"><strong>Differential Equations:</strong></p>
+                <div
+                    style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.9em; line-height: 1.8;">
+                    dS/dt = growth(T,S) - loss(R,S)<br>
+                    dR/dt = production(T,S) - degradation(R)
+                </div>
+
+                <p style="margin-top: 15px;"><strong>Symbiont Growth (Logistic with Temperature Dependence):</strong>
+                </p>
+                <div
+                    style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.85em; line-height: 1.8;">
+                    growth = r_max × f(T) × S × (1 - S/K)<br><br>
+                    f(T) = exp(-(T - T_opt)² / (2σ²))
+                </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    Temperature effect f(T) is Gaussian-shaped, maximized at T_opt with width σ
+                </p>
+
+                <p style="margin-top: 15px;"><strong>Symbiont Loss:</strong></p>
+                <div
+                    style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.85em; line-height: 1.8;">
+                    baseline_loss = d_base × S × [1 - p × (S/K)]<br>
+                    expulsion = k_expel × S × R/(R + K_R)<br>
+                    total_loss = baseline_loss + expulsion
+                </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    Baseline loss has density-dependent protection (p = densityProtection parameter).
+                    ROS-driven expulsion follows Michaelis-Menten kinetics.
+                </p>
+
+                <p style="margin-top: 15px;"><strong>ROS Dynamics:</strong></p>
+                <div
+                    style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.85em; line-height: 1.8;">
+                    production = p_base × S + stress_term<br><br>
+                    stress_term = {<br>
+                    &nbsp;&nbsp;p_stress × S × (exp(β×ΔT) - 1)&nbsp;&nbsp;if T > T_threshold<br>
+                    &nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;otherwise<br>
+                    }<br><br>
+                    where ΔT = T - T_threshold<br>
+                    degradation = k_deg × R
+                </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    Baseline ROS production is proportional to symbiont density. Heat stress (T > threshold)
+                    causes exponential increase in ROS production.
+                </p>
+
+                <h4 style="color: #1e3c72; margin-top: 25px;">Numerical Methods</h4>
+                <p>
+                    The coupled ODEs are integrated using the <strong>4th-order Runge-Kutta method (RK4)</strong>
+                    with a time step of Δt = 0.1 days. This explicit method provides good accuracy while remaining
+                    computationally efficient for multi-year simulations.
+                </p>
+                <p style="margin-top: 10px;">
+                    <strong>Mortality:</strong> Death occurs when symbiont density remains below the critical threshold
+                    (default 20% of K) for a specified number of consecutive days (default 30 days).
+                </p>
+
+                <h4 style="color: #1e3c72; margin-top: 25px;">SST Model</h4>
+                <p>Sea surface temperature is generated using an AR(1) process with seasonal forcing:</p>
+                <div
+                    style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.9em; line-height: 1.6;">
+                    T(t) = μ + trend·t + A·sin(2πt/365 + φ) + ε(t)<br>
+                    ε(t) = ρ·ε(t-1) + σ√(1-ρ²)·η(t)
+                </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    where η(t) ~ N(0,1) is white noise. The scaling factor √(1-ρ²) ensures constant
+                    variance regardless of autocorrelation.
+                </p>
+
+                <div
+                    style="background: #e7f3ff; border-left: 4px solid #1e3c72; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                    <strong>📊 Parameter Units:</strong>
+                    <ul style="margin-top: 8px; margin-bottom: 0;">
+                        <li>Growth/death rates: day⁻¹</li>
+                        <li>Symbiont density: cells/cm²</li>
+                        <li>ROS: arbitrary units (AU)</li>
+                        <li>Temperature: °C</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // CORAL BLEACHING SIMULATOR
+        // ========================================
+        // 
+        // MODEL OVERVIEW:
+        // Mechanistic model of coral bleaching driven by temperature-induced
+        // reactive oxygen species (ROS) production and symbiont expulsion
+        //
+        // STATE VARIABLES:
+        // - S(t): Symbiont density (cells/cm²)
+        // - R(t): ROS concentration (arbitrary units)
+        // - T(t): Sea surface temperature (°C) - external forcing
+        //
+        // DIFFERENTIAL EQUATIONS:
+        // dS/dt = growth(T,S) - loss(R,S)
+        // dR/dt = production(T,S) - degradation(R)
+        //
+        // KEY MECHANISMS:
+        // 1. Temperature-dependent symbiont growth (Gaussian, peak at T_opt)
+        // 2. Logistic growth limitation (carrying capacity K)
+        // 3. Density-dependent mortality protection
+        // 4. Baseline ROS production proportional to symbiont density
+        // 5. Heat stress ROS (exponential increase when T > threshold)
+        // 6. ROS-driven expulsion (Michaelis-Menten kinetics)
+        // 7. Mortality after prolonged bleaching
+        //
+        // NUMERICAL METHOD: RK4 with dt = 0.1 days
+        // SST FORCING: AR(1) process with seasonal cycle and trend
+        // ========================================
+
+        // Dynamic tooltip positioning
+        document.addEventListener('DOMContentLoaded', function () {
+            const helpButtons = document.querySelectorAll('.param-help');
+
+            helpButtons.forEach(button => {
+                button.addEventListener('mouseenter', function (e) {
+                    const rect = this.getBoundingClientRect();
+                    const tooltip = window.getComputedStyle(this, '::after');
+
+                    // Position tooltip to the right of the button
+                    this.style.setProperty('--tooltip-top', `${rect.top + rect.height / 2}px`);
+                    this.style.setProperty('--tooltip-left', `${rect.right + 25}px`);
+                });
+            });
+        });
+
+        // Modal functions
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        function showModelOverview() {
+            document.getElementById('overviewModal').style.display = 'block';
+        }
+
+        function closeOverview() {
+            document.getElementById('overviewModal').style.display = 'none';
+        }
+
+        function showTechnicalDetails() {
+            document.getElementById('technicalModal').style.display = 'block';
+        }
+
+        function closeTechnical() {
+            document.getElementById('technicalModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modals = ['helpModal', 'overviewModal', 'technicalModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // ========================================
+        // SST GENERATION
+        // ========================================
+
+        let sstData = null;
+        let sstParamsCache = null;
+
+        const sstParams = {
+            years: 5,
+            mean: 27.5,
+            seasonalAmp: 2.5,
+            peakDay: 90,
+            trend: 0.05,
+            rho: 0.85,
+            sigma: 0.5
+        };
+
+        function gaussianRandom() {
+            // Box-Muller transform
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function generateSST(params) {
+            const nDays = params.years * 365;
+            const temps = new Array(nDays);
+            const times = new Array(nDays);
+
+            let epsilon = 0;
+            const phaseOffset = (params.peakDay / 365) * 2 * Math.PI - Math.PI / 2;
+
+            for (let day = 0; day < nDays; day++) {
+                const t = day / 365; // time in years
+                const seasonal = params.seasonalAmp * Math.sin(2 * Math.PI * t + phaseOffset);
+                const trendComponent = params.trend * t;
+
+                // AR(1) innovation
+                const innovation = gaussianRandom();
+                epsilon = params.rho * epsilon +
+                    params.sigma * Math.sqrt(1 - params.rho * params.rho) * innovation;
+
+                temps[day] = params.mean + trendComponent + seasonal + epsilon;
+                times[day] = day;
+            }
+
+            // Compute statistics
+            const mean = temps.reduce((a, b) => a + b, 0) / temps.length;
+            const max = Math.max(...temps);
+            const min = Math.min(...temps);
+
+            // Count days above threshold
+            const threshold = bioParams.T_threshold;
+            const bleachingDays = temps.filter(t => t > threshold).length;
+
+            // Count heat waves (consecutive days > threshold)
+            let heatwaves = 0;
+            let inHeatwave = false;
+            for (let i = 0; i < temps.length; i++) {
+                if (temps[i] > threshold) {
+                    if (!inHeatwave) {
+                        heatwaves++;
+                        inHeatwave = true;
+                    }
+                } else {
+                    inHeatwave = false;
+                }
+            }
+
+            return {
+                temps: temps,
+                times: times,
+                params: { ...params },
+                metadata: {
+                    years: params.years,
+                    nDays: nDays,
+                    mean: mean,
+                    max: max,
+                    min: min,
+                    bleachingDays: bleachingDays,
+                    heatwaves: heatwaves
+                }
+            };
+        }
+
+        function generateNewSST() {
+            sstData = generateSST(sstParams);
+            sstParamsCache = JSON.stringify(sstParams);
+            updateSSTPreview();
+            updateSSTStats();
+        }
+
+        function randomizeSST() {
+            sstParams.mean = 25 + Math.random() * 5;
+            sstParams.seasonalAmp = Math.random() * 5;
+            sstParams.peakDay = Math.floor(Math.random() * 365);
+            sstParams.trend = -0.1 + Math.random() * 0.4;
+            sstParams.rho = 0.5 + Math.random() * 0.45;
+            sstParams.sigma = 0.1 + Math.random() * 1.9;
+
+            updateSSTSliders();
+            generateNewSST();
+        }
+
+        function updateSSTSliders() {
+            document.getElementById('meanTemp').value = sstParams.mean;
+            document.getElementById('meanTempValue').textContent = sstParams.mean.toFixed(1);
+
+            document.getElementById('seasonalAmp').value = sstParams.seasonalAmp;
+            document.getElementById('seasonalAmpValue').textContent = sstParams.seasonalAmp.toFixed(1);
+
+            document.getElementById('peakDay').value = sstParams.peakDay;
+            document.getElementById('peakDayValue').textContent = sstParams.peakDay;
+
+            document.getElementById('trend').value = sstParams.trend;
+            document.getElementById('trendValue').textContent = sstParams.trend.toFixed(2);
+
+            document.getElementById('rho').value = sstParams.rho;
+            document.getElementById('rhoValue').textContent = sstParams.rho.toFixed(2);
+
+            document.getElementById('sigmaNoise').value = sstParams.sigma;
+            document.getElementById('sigmaNoiseValue').textContent = sstParams.sigma.toFixed(1);
+        }
+
+        function updateSSTStats() {
+            if (!sstData) return;
+
+            const meta = sstData.metadata;
+            document.getElementById('statMean').textContent = meta.mean.toFixed(1) + '°C';
+            document.getElementById('statMax').textContent = meta.max.toFixed(1) + '°C';
+            document.getElementById('statMin').textContent = meta.min.toFixed(1) + '°C';
+            document.getElementById('statBleachDays').textContent = meta.bleachingDays;
+            document.getElementById('statHeatwaves').textContent = meta.heatwaves;
+            document.getElementById('statDays').textContent = meta.nDays;
+        }
+
+        // ========================================
+        // SST PREVIEW VISUALIZATION
+        // ========================================
+
+        const sstPreviewCanvas = document.getElementById('sstPreview');
+        const sstPreviewCtx = sstPreviewCanvas.getContext('2d');
+
+        function updateSSTPreview() {
+            if (!sstData) return;
+
+            const canvas = sstPreviewCanvas;
+            const ctx = sstPreviewCtx;
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const padding = 50;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+
+            // Clear
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            // Axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time (years)', width / 2, height - 10);
+
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Temperature (°C)', 0, 0);
+            ctx.restore();
+
+            // Find temp range
+            const temps = sstData.temps;
+            const minTemp = Math.min(...temps);
+            const maxTemp = Math.max(...temps);
+            const tempRange = maxTemp - minTemp;
+
+            // Draw threshold line
+            const threshold = bioParams.T_threshold;
+            const thresholdY = height - padding - ((threshold - minTemp) / tempRange) * graphHeight;
+
+            ctx.strokeStyle = 'rgba(220, 53, 69, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(padding, thresholdY);
+            ctx.lineTo(width - padding, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(220, 53, 69, 0.8)';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Threshold (${threshold}°C)`, width - padding - 5, thresholdY - 5);
+
+            // Draw SST line
+            ctx.strokeStyle = '#1e3c72';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+
+            for (let i = 0; i < temps.length; i++) {
+                const x = padding + (i / (temps.length - 1)) * graphWidth;
+                const yNorm = (temps[i] - minTemp) / tempRange;
+                const y = height - padding - yNorm * graphHeight;
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw current time indicator (vertical line)
+            if (running || state.t > 0) {
+                const currentDay = state.t;
+                const totalDays = sstData.temps.length;
+                if (currentDay < totalDays) {
+                    const xPos = padding + (currentDay / (totalDays - 1)) * graphWidth;
+
+                    ctx.strokeStyle = 'rgba(255, 140, 0, 0.8)'; // Orange
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.moveTo(xPos, padding);
+                    ctx.lineTo(xPos, height - padding);
+                    ctx.stroke();
+
+                    // Label at top
+                    ctx.fillStyle = 'rgba(255, 140, 0, 0.9)';
+                    ctx.font = 'bold 11px Arial';
+                    ctx.textAlign = 'center';
+                    const years = (currentDay / 365).toFixed(2);
+                    ctx.fillText(`Year ${years}`, xPos, padding - 10);
+                }
+            }
+
+            // Year markers
+            ctx.fillStyle = '#666';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            for (let year = 0; year <= sstParams.years; year++) {
+                const x = padding + (year / sstParams.years) * graphWidth;
+                ctx.fillText(year.toString(), x, height - padding + 20);
+            }
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const temp = minTemp + (tempRange * i / 5);
+                const y = height - padding - (i / 5) * graphHeight;
+                ctx.fillText(temp.toFixed(1), padding - 10, y + 4);
+            }
+        }
+
+        // ========================================
+        // BIOLOGICAL MODEL
+        // ========================================
+
+        function checkModelStability() {
+            // Test at optimal temperature, high density, baseline ROS
+            const T_test = bioParams.T_opt;
+            const S_test = bioParams.K * 0.95; // Near carrying capacity
+            const R_baseline = 30;
+
+            const growth = symbionGrowth(T_test, S_test);
+            const loss = symbionLoss(R_baseline, S_test);
+            const netRate = growth - loss;
+
+            console.log('=== Model Equilibrium Check ===');
+            console.log(`At T=${T_test.toFixed(1)}°C (optimal), S=${(S_test / 1e6).toFixed(2)}M (95% of K), R=${R_baseline}:`);
+            console.log(`  Growth: ${(growth / 1e3).toFixed(1)}k cells/day`);
+            console.log(`  Loss: ${(loss / 1e3).toFixed(1)}k cells/day`);
+            console.log(`  Net: ${(netRate / 1e3).toFixed(1)}k cells/day`);
+
+            if (Math.abs(netRate) < 1000) {
+                console.log('✓ Stable equilibrium found (net ≈ 0)');
+            } else if (netRate > 0) {
+                console.log('→ Population will grow (net > 0)');
+            } else {
+                console.log('⚠ Population will decline (net < 0) - check parameters!');
+            }
+
+            // Also test equilibrium density
+            console.log('\n=== Finding Equilibrium Density ===');
+            for (let frac = 0.5; frac <= 1.0; frac += 0.1) {
+                const S = bioParams.K * frac;
+                const g = symbionGrowth(T_test, S);
+                const l = symbionLoss(R_baseline, S);
+                const net = g - l;
+                console.log(`  ${(frac * 100).toFixed(0)}% of K: net = ${(net / 1e3).toFixed(1)}k cells/day`);
+            }
+        }
+
+        let state = {
+            S: 3e6,        // Start at healthy density
+            R: 30,         // Lower initial ROS (equilibrium at baseline temp)
+            t: 0,
+            dead: false,
+            daysBelowCritical: 0
+        };
+
+        let bioParams = {
+            T_opt: 27,
+            T_threshold: 29.5,
+            sigma: 2,
+            r_max: 0.1,
+            K: 5e6,
+            d_base: 0.02,
+            densityProtection: 0.9,  // Fraction of baseline loss reduced at K (0-1)
+            p_base: 0.00001,     // Baseline ROS per symbiont (scaled down!)
+            p_stress: 0.0001,    // Stress ROS multiplier (scaled down!)
+            beta: 0.4,
+            k_deg: 0.5,
+            k_expel: 0.00002,    // Expulsion rate (scaled down!)
+            K_R: 100,
+            criticalDensity: 0.2,
+            mortalityDays: 30
+        };
+
+        let running = false;
+        let animationId = null;
+        let currentSpeed = 1;
+        const dt = 0.1;
+
+        let history = {
+            time: [],
+            S: [],
+            R: [],
+            T: [],
+            maxPoints: 2000,
+            // Zoom/pan state
+            viewStart: 0,    // Start index for viewing window
+            viewEnd: null,   // End index (null = show all)
+            isDragging: false,
+            lastX: 0
+        };
+
+        // Model equations
+        function getCurrentTemp() {
+            if (!sstData || sstData.temps.length === 0) return sstParams.mean;
+            const day = Math.floor(state.t);
+            if (day >= sstData.temps.length) return sstData.temps[sstData.temps.length - 1];
+            if (day < 0) return sstData.temps[0];
+            return sstData.temps[day];
+        }
+
+        function temperatureEffect(T) {
+            const diff = T - bioParams.T_opt;
+            return Math.exp(-(diff * diff) / (2 * bioParams.sigma * bioParams.sigma));
+        }
+
+        function rosProduction(T, S) {
+            const baseline = bioParams.p_base * S;
+            const tempAboveThreshold = Math.max(0, T - bioParams.T_threshold);
+            // Only add stress ROS when above threshold (exp(0) = 1, so subtract 1)
+            const stress = tempAboveThreshold > 0 ?
+                bioParams.p_stress * S * (Math.exp(bioParams.beta * tempAboveThreshold) - 1) :
+                0;
+            return baseline + stress;
+        }
+
+        function rosDegradation(R) {
+            return bioParams.k_deg * R;
+        }
+
+        function symbionExpulsion(R, S) {
+            return bioParams.k_expel * S * (R / (R + bioParams.K_R));
+        }
+
+        function symbionGrowth(T, S) {
+            const tempEffect = temperatureEffect(T);
+            const logistic = 1 - S / bioParams.K;
+            return bioParams.r_max * tempEffect * S * logistic;
+        }
+
+        function symbionLoss(R, S) {
+            // Density-dependent baseline loss: higher density = lower per-capita loss
+            // Rationale: symbionts in dense tissue are more protected from turnover
+            const densityFactor = 1 - bioParams.densityProtection * (S / bioParams.K);
+            const baseline = bioParams.d_base * S * densityFactor;
+            const expulsion = symbionExpulsion(R, S);
+            return baseline + expulsion;
+        }
+
+        function rk4Step() {
+            if (state.dead) return;
+            if (!sstData) return;
+
+            const S = state.S;
+            const R = state.R;
+            const T = getCurrentTemp();
+
+            // k1
+            const dS_k1 = symbionGrowth(T, S) - symbionLoss(R, S);
+            const dR_k1 = rosProduction(T, S) - rosDegradation(R);
+
+            // k2
+            const S2 = S + 0.5 * dt * dS_k1;
+            const R2 = R + 0.5 * dt * dR_k1;
+            const dS_k2 = symbionGrowth(T, S2) - symbionLoss(R2, S2);
+            const dR_k2 = rosProduction(T, S2) - rosDegradation(R2);
+
+            // k3
+            const S3 = S + 0.5 * dt * dS_k2;
+            const R3 = R + 0.5 * dt * dR_k2;
+            const dS_k3 = symbionGrowth(T, S3) - symbionLoss(R3, S3);
+            const dR_k3 = rosProduction(T, S3) - rosDegradation(R3);
+
+            // k4
+            const S4 = S + dt * dS_k3;
+            const R4 = R + dt * dR_k3;
+            const dS_k4 = symbionGrowth(T, S4) - symbionLoss(R4, S4);
+            const dR_k4 = rosProduction(T, S4) - rosDegradation(R4);
+
+            // Update
+            state.S = S + (dt / 6) * (dS_k1 + 2 * dS_k2 + 2 * dS_k3 + dS_k4);
+            state.R = R + (dt / 6) * (dR_k1 + 2 * dR_k2 + 2 * dR_k3 + dR_k4);
+
+            // Constrain
+            state.S = Math.max(0, Math.min(state.S, bioParams.K));
+            state.R = Math.max(0, state.R);
+
+            state.t += dt;
+
+            checkMortality();
+        }
+
+        function checkMortality() {
+            const criticalThreshold = bioParams.K * bioParams.criticalDensity;
+
+            if (state.S < criticalThreshold) {
+                state.daysBelowCritical += dt;
+                if (state.daysBelowCritical >= bioParams.mortalityDays) {
+                    state.dead = true;
+                }
+            } else {
+                state.daysBelowCritical = 0;
+            }
+        }
+
+        function updateHistory() {
+            history.time.push(state.t);
+            history.S.push(state.S);
+            history.R.push(state.R);
+            history.T.push(getCurrentTemp());
+
+            if (history.time.length > history.maxPoints) {
+                history.time.shift();
+                history.S.shift();
+                history.R.shift();
+                history.T.shift();
+            }
+        }
+
+        // ========================================
+        // DISPLAY AND VISUALIZATION
+        // ========================================
+
+        const densityCanvas = document.getElementById('densityGraph');
+        const rosCanvas = document.getElementById('rosGraph');
+        const densityCtx = densityCanvas.getContext('2d');
+        const rosCtx = rosCanvas.getContext('2d');
+
+        // Add zoom/pan event listeners
+        function setupGraphInteraction(canvas) {
+            // Mouse wheel zoom
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+
+                if (history.time.length < 2) return;
+
+                const currentViewSize = (history.viewEnd || history.time.length) - history.viewStart;
+                const newViewSize = Math.max(100, Math.min(history.time.length, Math.floor(currentViewSize * zoomFactor)));
+
+                // Keep zoom centered
+                const center = history.viewStart + currentViewSize / 2;
+                history.viewStart = Math.max(0, Math.floor(center - newViewSize / 2));
+                history.viewEnd = Math.min(history.time.length, history.viewStart + newViewSize);
+
+                updateGraphs();
+            });
+
+            // Pan with mouse drag
+            canvas.addEventListener('mousedown', (e) => {
+                history.isDragging = true;
+                history.lastX = e.clientX;
+                canvas.style.cursor = 'grabbing';
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!history.isDragging) return;
+
+                const dx = e.clientX - history.lastX;
+                const viewSize = (history.viewEnd || history.time.length) - history.viewStart;
+                const dataWidth = canvas.width - 130; // Account for padding
+                const pointsPerPixel = viewSize / dataWidth;
+                const shift = Math.floor(-dx * pointsPerPixel);
+
+                if (shift !== 0) {
+                    history.viewStart = Math.max(0, Math.min(history.time.length - viewSize, history.viewStart + shift));
+                    history.viewEnd = history.viewStart + viewSize;
+                    history.lastX = e.clientX;
+                    updateGraphs();
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                history.isDragging = false;
+                canvas.style.cursor = 'default';
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                history.isDragging = false;
+                canvas.style.cursor = 'default';
+            });
+
+            // Double-click to reset view
+            canvas.addEventListener('dblclick', () => {
+                history.viewStart = 0;
+                history.viewEnd = null;
+                updateGraphs();
+            });
+        }
+
+        setupGraphInteraction(densityCanvas);
+        setupGraphInteraction(rosCanvas);
+
+        function resizeCanvases() {
+            densityCanvas.width = densityCanvas.offsetWidth;
+            densityCanvas.height = densityCanvas.offsetHeight;
+            rosCanvas.width = rosCanvas.offsetWidth;
+            rosCanvas.height = rosCanvas.offsetHeight;
+            sstPreviewCanvas.width = sstPreviewCanvas.offsetWidth;
+            sstPreviewCanvas.height = sstPreviewCanvas.offsetHeight;
+        }
+
+        function updateDisplay() {
+            const T = getCurrentTemp();
+
+            // Regular display updates
+            document.getElementById('densityDisplay').textContent =
+                (state.S / 1e6).toFixed(2) + ' × 10⁶';
+
+            document.getElementById('currentTemp').textContent = T.toFixed(1);
+            document.getElementById('rosLevel').textContent = state.R.toFixed(0);
+
+            const year = state.t / 365;
+            const dayOfYear = Math.floor(state.t % 365) + 1;
+            document.getElementById('dayOfYear').textContent = dayOfYear;
+            document.getElementById('daysElapsed').textContent = Math.floor(state.t);
+
+            const bleachPercent = Math.max(0, 100 * (1 - state.S / bioParams.K));
+            document.getElementById('bleachPercent').textContent = bleachPercent.toFixed(0);
+
+            let statusText = 'Healthy';
+            if (state.dead) {
+                statusText = '💀 DEAD';
+            } else if (bleachPercent > 80) {
+                statusText = '⚠️ Severely Bleached';
+            } else if (bleachPercent > 50) {
+                statusText = '⚠️ Moderately Bleached';
+            } else if (bleachPercent > 20) {
+                statusText = '⚠️ Mildly Bleached';
+            }
+            document.getElementById('statusText').textContent = statusText;
+
+            // Update SST preview to show current position
+            updateSSTPreview();
+        }
+
+        function drawGraph(ctx, data, label, color, yMax) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const padding = 60;
+            const rightPadding = 70; // Extra space for right y-axis
+            const graphWidth = width - padding - rightPadding;
+            const graphHeight = height - 2 * padding;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            if (history.time.length < 2) return;
+
+            // Determine view window
+            const viewStart = history.viewStart;
+            const viewEnd = history.viewEnd || history.time.length;
+            const viewData = data.slice(viewStart, viewEnd);
+            const viewT = history.T.slice(viewStart, viewEnd);
+            const viewTime = history.time.slice(viewStart, viewEnd);
+
+            if (viewData.length < 2) return;
+
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - rightPadding, height - padding);
+            ctx.stroke();
+
+            // Right y-axis for temperature
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(width - rightPadding, padding);
+            ctx.lineTo(width - rightPadding, height - padding);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 13px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time (years)', (padding + width - rightPadding) / 2, height - 10);
+
+            // Left Y-axis label
+            ctx.save();
+            ctx.translate(20, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+
+            // Right Y-axis label (Temperature)
+            ctx.fillStyle = '#d9534f';
+            ctx.save();
+            ctx.translate(width - 20, height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText('Temperature (°C)', 0, 0);
+            ctx.restore();
+
+            // Temperature scale
+            const tempMin = Math.min(...viewT, bioParams.T_threshold - 2);
+            const tempMax = Math.max(...viewT, bioParams.T_threshold + 2);
+            const tempRange = tempMax - tempMin;
+
+            // Draw bleaching threshold line
+            const thresholdY = height - padding - ((bioParams.T_threshold - tempMin) / tempRange) * graphHeight;
+            ctx.strokeStyle = 'rgba(255, 69, 0, 0.5)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([8, 4]);
+            ctx.beginPath();
+            ctx.moveTo(padding, thresholdY);
+            ctx.lineTo(width - rightPadding, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(255, 69, 0, 0.9)';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Bleaching Threshold (${bioParams.T_threshold}°C)`, padding + 10, thresholdY - 5);
+
+            // Draw temperature trace
+            if (viewT.length > 0) {
+                ctx.strokeStyle = 'rgba(217, 83, 79, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                for (let i = 0; i < viewData.length; i++) {
+                    const x = padding + (i / (viewData.length - 1)) * graphWidth;
+                    const yNorm = (viewT[i] - tempMin) / tempRange;
+                    const y = height - padding - yNorm * graphHeight;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw main data (density or ROS)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            for (let i = 0; i < viewData.length; i++) {
+                const x = padding + (i / (viewData.length - 1)) * graphWidth;
+                const yNorm = viewData[i] / yMax;
+                const y = height - padding - yNorm * graphHeight;
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw critical density line for density graph
+            if (label.includes('Density')) {
+                const criticalY = height - padding - bioParams.criticalDensity * graphHeight;
+                ctx.strokeStyle = 'rgba(30, 60, 114, 0.7)'; // Blue to match symbiont
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(padding, criticalY);
+                ctx.lineTo(width - rightPadding, criticalY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = 'rgba(30, 60, 114, 0.95)';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Mortality Threshold (${bioParams.mortalityDays} days below = death)`,
+                    padding + 10, criticalY - 5);
+            }
+
+            // Left Y-axis tick labels (density or ROS)
+            ctx.fillStyle = '#333';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const yNorm = i / 5;
+                const y = height - padding - yNorm * graphHeight;
+                const value = (yMax * yNorm);
+
+                let valueText;
+                if (value >= 1e6) {
+                    valueText = (value / 1e6).toFixed(1) + 'M';
+                } else if (value >= 1000) {
+                    valueText = (value / 1000).toFixed(0) + 'k';
+                } else {
+                    valueText = value.toFixed(0);
+                }
+
+                ctx.fillText(valueText, padding - 10, y + 4);
+            }
+
+            // Right Y-axis tick labels (temperature)
+            ctx.fillStyle = '#d9534f';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+            for (let i = 0; i <= 5; i++) {
+                const temp = tempMin + (tempRange * i / 5);
+                const y = height - padding - (i / 5) * graphHeight;
+                ctx.fillText(temp.toFixed(1) + '°', width - rightPadding + 10, y + 4);
+            }
+
+            // X-axis labels (years)
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            const minTime = viewTime[0];
+            const maxTime = viewTime[viewTime.length - 1];
+            const minYears = minTime / 365;
+            const maxYears = maxTime / 365;
+            const yearRange = maxYears - minYears;
+            const yearStep = Math.max(0.5, Math.ceil(yearRange / 5));
+
+            for (let year = Math.ceil(minYears); year <= Math.floor(maxYears); year += yearStep) {
+                const x = padding + ((year - minYears) / yearRange) * graphWidth;
+                if (x >= padding && x <= width - rightPadding) {
+                    ctx.fillText(year.toString(), x, height - padding + 20);
+                }
+            }
+        }
+
+        function updateGraphs() {
+            drawGraph(densityCtx, history.S, 'Symbiont Density (cells/cm²)', '#1e3c72', bioParams.K);
+            drawGraph(rosCtx, history.R, 'ROS Level (AU)', '#dc3545', 500);
+        }
+
+        // ========================================
+        // SIMULATION CONTROL
+        // ========================================
+
+        function simulationStep() {
+            if (!running || state.dead) return;
+
+            // Check if simulation complete
+            if (sstData && state.t >= sstData.metadata.nDays) {
+                toggleSimulation();
+                return;
+            }
+
+            const stepsPerFrame = currentSpeed;
+            const updateInterval = Math.max(1, Math.floor(currentSpeed / 10));
+
+            for (let i = 0; i < stepsPerFrame; i++) {
+                rk4Step();
+            }
+
+            updateHistory();
+
+            if (Math.floor(state.t) % updateInterval === 0) {
+                updateDisplay();
+                updateGraphs();
+            }
+
+            animationId = requestAnimationFrame(simulationStep);
+        }
+
+        function toggleSimulation() {
+            if (!sstData) {
+                alert('Please generate SST timeseries first!');
+                return;
+            }
+
+            running = !running;
+            const btn = document.getElementById('playPauseBtn');
+
+            if (running) {
+                btn.textContent = '⏸️ Pause';
+                simulationStep();
+            } else {
+                btn.textContent = '▶️ Resume';
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+        }
+
+        function resetSimulation() {
+            running = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+
+            state = {
+                S: 3e6,
+                R: 30,
+                t: 0,
+                dead: false,
+                daysBelowCritical: 0
+            };
+
+            history = {
+                time: [],
+                S: [],
+                R: [],
+                T: [],
+                maxPoints: 2000,
+                viewStart: 0,
+                viewEnd: null,
+                isDragging: false,
+                lastX: 0
+            };
+
+            document.getElementById('playPauseBtn').textContent = '▶️ Start';
+
+            updateDisplay();
+            updateGraphs();
+        }
+
+        function setSpeed(speed) {
+            currentSpeed = speed;
+
+            // Update button styling
+            const buttons = document.querySelectorAll('.speed-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // ========================================
+        // UI CONTROLS
+        // ========================================
+
+        function toggleCollapse(id) {
+            const content = document.getElementById(id);
+            const arrow = document.getElementById(id + '-arrow');
+
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                arrow.textContent = '▶';
+            } else {
+                content.classList.add('open');
+                arrow.textContent = '▼';
+            }
+        }
+
+        function setupSlider(id, paramTarget, paramName, displayId, formatter = (x) => x.toFixed(2)) {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(displayId);
+
+            slider.addEventListener('input', (e) => {
+                let value = parseFloat(e.target.value);
+
+                // Special handling for different parameter types
+                if (paramName === 'K') {
+                    value = value * 1e6;
+                } else if (paramName === 'criticalDensity' || paramName === 'densityProtection') {
+                    value = value / 100;
+                }
+
+                paramTarget[paramName] = value;
+
+                // Update display
+                if (paramName === 'K') {
+                    display.textContent = (value / 1e6).toFixed(1);
+                } else if (paramName === 'criticalDensity' || paramName === 'densityProtection') {
+                    display.textContent = (value * 100).toFixed(0);
+                } else if (value < 0.001 && value > 0) {
+                    display.textContent = value.toExponential(2);
+                } else {
+                    display.textContent = formatter(value);
+                }
+
+                // If SST parameter changed, regenerate
+                if (paramTarget === sstParams) {
+                    generateNewSST();
+                }
+
+                // If threshold changed, update SST preview
+                if (paramName === 'T_threshold') {
+                    updateSSTPreview();
+                }
+            });
+        }
+
+        // Setup SST sliders - now with real-time updates
+        setupSlider('years', sstParams, 'years', 'yearsValue', x => x.toFixed(0));
+        setupSlider('meanTemp', sstParams, 'mean', 'meanTempValue', x => x.toFixed(1));
+        setupSlider('seasonalAmp', sstParams, 'seasonalAmp', 'seasonalAmpValue', x => x.toFixed(1));
+        setupSlider('peakDay', sstParams, 'peakDay', 'peakDayValue', x => x.toFixed(0));
+        setupSlider('trend', sstParams, 'trend', 'trendValue', x => x.toFixed(2));
+        setupSlider('rho', sstParams, 'rho', 'rhoValue', x => x.toFixed(2));
+        setupSlider('sigmaNoise', sstParams, 'sigma', 'sigmaNoiseValue', x => x.toFixed(1));
+
+        // Setup biology sliders
+        setupSlider('tOpt', bioParams, 'T_opt', 'tOptValue', x => x.toFixed(1));
+        setupSlider('tThresh', bioParams, 'T_threshold', 'tThreshValue', x => x.toFixed(1));
+        setupSlider('sigma', bioParams, 'sigma', 'sigmaValue', x => x.toFixed(1));
+        setupSlider('rMax', bioParams, 'r_max', 'rMaxValue', x => x.toFixed(3));
+        setupSlider('k', bioParams, 'K', 'kValue', x => x.toFixed(1));
+        setupSlider('dBase', bioParams, 'd_base', 'dBaseValue', x => x.toFixed(3));
+        setupSlider('densProt', bioParams, 'densityProtection', 'densProtValue', x => x.toFixed(0));
+        setupSlider('pBase', bioParams, 'p_base', 'pBaseValue', x => x.toFixed(2));
+        setupSlider('pStress', bioParams, 'p_stress', 'pStressValue', x => x.toFixed(1));
+        setupSlider('beta', bioParams, 'beta', 'betaValue', x => x.toFixed(2));
+        setupSlider('kDeg', bioParams, 'k_deg', 'kDegValue', x => x.toFixed(2));
+        setupSlider('kExpel', bioParams, 'k_expel', 'kExpelValue', x => x.toFixed(2));
+        setupSlider('kR', bioParams, 'K_R', 'kRValue', x => x.toFixed(0));
+        setupSlider('critDens', bioParams, 'criticalDensity', 'critDensValue', x => x.toFixed(0));
+        setupSlider('mortDays', bioParams, 'mortalityDays', 'mortDaysValue', x => x.toFixed(0));
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+
+        window.addEventListener('resize', () => {
+            resizeCanvases();
+            updateSSTPreview();
+            updateGraphs();
+        });
+
+        // Initialize
+        resizeCanvases();
+        generateNewSST();
+        checkModelStability();
+
+        // Log initial conditions
+        console.log('\n=== INITIAL STATE ===');
+        console.log(`S = ${state.S.toExponential(2)} cells/cm²`);
+        console.log(`R = ${state.R} AU`);
+        console.log(`T = ${getCurrentTemp().toFixed(2)}°C`);
+        console.log('\nInitial rates:');
+        const T0 = getCurrentTemp();
+        const growth0 = symbionGrowth(T0, state.S);
+        const loss0 = symbionLoss(state.R, state.S);
+        const rosProd0 = rosProduction(T0, state.S);
+        const rosDeg0 = rosDegradation(state.R);
+        console.log(`  dS/dt = ${(growth0 - loss0).toExponential(2)} cells/day`);
+        console.log(`    Growth: ${growth0.toExponential(2)}`);
+        console.log(`    Loss: ${loss0.toExponential(2)}`);
+        console.log(`  dR/dt = ${(rosProd0 - rosDeg0).toExponential(2)} AU/day`);
+        console.log(`    Production: ${rosProd0.toExponential(2)}`);
+        console.log(`    Degradation: ${rosDeg0.toExponential(2)}`);
+
+        updateDisplay();
+        updateGraphs();
+    </script>
+</body>
+
+</html>

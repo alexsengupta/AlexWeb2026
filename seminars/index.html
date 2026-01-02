@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seminars | Alex Sen Gupta</title>
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+    :root {
+      color-scheme: dark;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(180% 120% at 20% 0%, rgba(56, 80, 140, 0.35), transparent 50%),
+        radial-gradient(140% 140% at 80% 20%, rgba(20, 40, 72, 0.45), transparent 50%),
+        #04070f;
+      color: #e5ecff;
+      line-height: 1.5;
+      padding: clamp(24px, 3vw, 48px);
+    }
+
+    a {
+      color: #8dd4ff;
+    }
+
+    .hero {
+      margin-bottom: clamp(28px, 5vw, 56px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1e5245 0%, #163d33 100%);
+      box-shadow: 0 4px 12px rgba(30, 82, 69, 0.35);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .home-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      transition: width 0.5s, height 0.5s, top 0.5s, left 0.5s;
+    }
+
+    .home-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 12px 24px rgba(30, 82, 69, 0.45);
+    }
+
+    .home-btn:hover::before {
+      width: 110px;
+      height: 110px;
+      top: -30px;
+      left: -30px;
+    }
+
+    .home-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: #f6f8ff;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-author {
+      font-size: 0.85rem;
+      letter-spacing: 0.65em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: clamp(30px, 3.5vw, 44px);
+      letter-spacing: 0.01em;
+      font-weight: 600;
+      background: linear-gradient(90deg, #1e5245, #c4704f, #8b5a3c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(141, 212, 255, 0.8), rgba(49, 117, 226, 0.2));
+      border: none;
+    }
+
+    .layout {
+      display: grid;
+      gap: clamp(24px, 3vw, 40px);
+      grid-template-columns: minmax(260px, 320px) minmax(420px, 1fr);
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .selector-panel {
+      background: rgba(9, 14, 28, 0.75);
+      border: 1px solid rgba(138, 175, 255, 0.25);
+      border-radius: 24px;
+      padding: clamp(20px, 3vw, 32px);
+      box-shadow: 0 20px 40px rgba(1, 6, 26, 0.45);
+      backdrop-filter: blur(14px);
+    }
+
+    .selector-panel h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 3vw, 38px);
+      letter-spacing: 0.04em;
+    }
+
+    .selector-subhead {
+      margin: 0 0 20px;
+      opacity: 0.8;
+      font-size: 0.98rem;
+    }
+
+    .talk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .talk-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      border: 1px solid rgba(133, 169, 254, 0.32);
+      border-radius: 18px;
+      padding: 14px 18px;
+      background: rgba(6, 10, 22, 0.6);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border 150ms ease, transform 150ms ease, background 150ms ease;
+    }
+
+    .talk-card[aria-selected="true"] {
+      border-color: rgba(141, 212, 255, 0.75);
+      background: linear-gradient(125deg, rgba(30, 58, 138, 0.45), rgba(7, 11, 28, 0.95));
+      box-shadow: 0 12px 24px rgba(5, 10, 30, 0.6);
+    }
+
+    .talk-card:focus-visible {
+      outline: 2px solid #8dd4ff;
+      outline-offset: 2px;
+    }
+
+    .talk-number {
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      opacity: 0.65;
+    }
+
+    .talk-title {
+      font-size: 1rem;
+    }
+
+    .tv-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tv-frame {
+      position: relative;
+      padding: 24px;
+      border-radius: 32px;
+      background: radial-gradient(circle at 30% 30%, rgba(146, 197, 255, 0.15), rgba(9, 11, 26, 0.95));
+      border: 1px solid rgba(133, 169, 254, 0.32);
+      box-shadow: 0 35px 65px rgba(2, 4, 16, 0.7);
+    }
+
+    .tv-screen {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #020407;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(141, 212, 255, 0.25);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .tv-placeholder {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: linear-gradient(135deg, rgba(3, 5, 12, 0.9), rgba(9, 14, 32, 0.85));
+      text-align: center;
+    }
+
+    .tv-placeholder h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .tv-placeholder p {
+      margin: 0;
+      opacity: 0.75;
+      font-size: 0.95rem;
+    }
+
+    .tv-base {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: -24px;
+      width: 40%;
+      height: 8px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(40, 70, 130, 0.45), rgba(5, 9, 22, 0.85));
+      box-shadow: 0 10px 18px rgba(2, 4, 12, 0.6);
+    }
+
+    .talk-meta h2 {
+      margin: 0 0 6px;
+      font-size: clamp(22px, 2vw, 28px);
+    }
+
+    .talk-meta p {
+      margin: 0 0 12px;
+      opacity: 0.85;
+    }
+
+    .youtube-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="hero" aria-labelledby="seminar-banner-title">
+    <div class="hero-top">
+      <a class="home-btn" href="../index.html" aria-label="Back to the main dial">
+
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+        </svg>
+      </a>
+      <div class="hero-text">
+        <span class="hero-author">Alex Sen Gupta</span>
+        <h1 id="seminar-banner-title" class="hero-title">Seminar Browser</h1>
+      </div>
+    </div>
+    <hr class="hero-line" />
+  </header>
+
+  <main class="layout">
+    <section class="selector-panel" aria-label="Seminar selector">
+      <h1>Seminars</h1>
+      <p class="selector-subhead">Choose a presentation and it will start playing on the right.</p>
+      <div class="talk-list" role="listbox" aria-label="Available seminars"></div>
+    </section>
+
+    <section class="tv-panel" aria-live="polite">
+      <div class="tv-frame">
+        <div class="tv-screen">
+          <iframe id="seminar-player" title="Seminar video player" src=""
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+          <div id="tv-placeholder" class="tv-placeholder" hidden>
+            <h3 id="placeholder-title">Video preview disabled in file mode</h3>
+            <p id="placeholder-message">Open this page through a local server or click “Watch on YouTube” to play the
+              talk directly on YouTube.</p>
+          </div>
+        </div>
+        <div class="tv-base"></div>
+      </div>
+      <div class="talk-meta">
+        <h2 id="talk-title"></h2>
+        <p id="talk-description"></p>
+        <a id="open-youtube" class="youtube-link" href="#" target="_blank" rel="noopener">Watch on YouTube ↗</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const talks = [
+      {
+        title: 'An introduction to climate modelling: how we know the world\'s climate is changing: how we know what\'s causing it? and how we create models to predict the future?',
+        description: 'A primer on the evidence for climate change and how numerical models help us understand past and future conditions.',
+        videoId: 'fkAGwHypMzo',
+        youtubeUrl: 'https://www.youtube.com/watch?v=fkAGwHypMzo'
+      },
+      {
+        title: 'Climate change: Is it happening? Are we causing it? And what can we do about it?',
+        description: 'A broader look at attribution, impacts, and mitigation pathways in the climate system.',
+        videoId: 'G-YdVrhAoNU',
+        youtubeUrl: 'https://www.youtube.com/watch?v=G-YdVrhAoNU'
+      }
+    ];
+
+    const talkListEl = document.querySelector('.talk-list');
+    const playerEl = document.getElementById('seminar-player');
+    const talkTitleEl = document.getElementById('talk-title');
+    const talkDescriptionEl = document.getElementById('talk-description');
+    const openYoutubeEl = document.getElementById('open-youtube');
+    const placeholderEl = document.getElementById('tv-placeholder');
+    const placeholderTitleEl = document.getElementById('placeholder-title');
+    const placeholderMessageEl = document.getElementById('placeholder-message');
+    const protocol = (window.location.protocol || '').toLowerCase();
+    const isFileProtocol = protocol === 'file:';
+    const canEmbed = !isFileProtocol;
+    console.info('Seminars embed check', {
+      protocol,
+      origin: window.location.origin,
+      canEmbed
+    });
+
+    const hidePlaceholder = () => {
+      placeholderEl.hidden = true;
+      placeholderEl.style.display = 'none';
+    };
+
+    const showPlaceholder = (title, message) => {
+      placeholderTitleEl.textContent = title;
+      placeholderMessageEl.textContent = message;
+      placeholderEl.hidden = false;
+      placeholderEl.style.display = 'flex';
+    };
+
+    const loadTalk = (index) => {
+      const talk = talks[index];
+      if (!talk) return;
+
+      const embedUrl = `https://www.youtube.com/embed/${talk.videoId}?rel=0&modestbranding=1&color=white`;
+      console.info('loadTalk()', { index, canEmbed, isFileProtocol });
+
+      if (canEmbed) {
+        console.info('Embedding video', { embedUrl, originParam: window.location.origin });
+        const originParam = window.location.origin && window.location.origin !== 'null'
+          ? `&origin=${encodeURIComponent(window.location.origin)}`
+          : '';
+        playerEl.src = `${embedUrl}${originParam}`;
+        playerEl.hidden = false;
+        hidePlaceholder();
+      } else {
+        console.info('Showing placeholder (no embed)');
+        playerEl.removeAttribute('src');
+        playerEl.hidden = true;
+        showPlaceholder(
+          `Watch “${talk.title}”`,
+          'YouTube blocks embedded playback when this page is opened directly from your computer. Serve the page via http:// or use the link below to open the talk on YouTube.'
+        );
+      }
+      talkTitleEl.textContent = talk.title;
+      talkDescriptionEl.textContent = talk.description;
+      openYoutubeEl.href = talk.youtubeUrl;
+
+      talkListEl.querySelectorAll('.talk-card').forEach((card, cardIndex) => {
+        card.setAttribute('aria-selected', cardIndex === index);
+        card.classList.toggle('is-active', cardIndex === index);
+      });
+    };
+
+    if (!canEmbed) {
+      console.info('Initial state: placeholder visible because canEmbed=false');
+      playerEl.hidden = true;
+      showPlaceholder(
+        'Video preview disabled in file mode',
+        'YouTube blocks embedded playback when this page is opened directly from your computer. Serve the page via http:// or use the link below to open the talk on YouTube.'
+      );
+    } else {
+      hidePlaceholder();
+    }
+
+    talks.forEach((talk, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'talk-card';
+      button.setAttribute('role', 'option');
+      button.innerHTML = `
+        <span class="talk-number">${String(index + 1).padStart(2, '0')}</span>
+        <span class="talk-title">${talk.title}</span>`;
+
+      button.addEventListener('click', () => loadTalk(index));
+      talkListEl.appendChild(button);
+    });
+
+    loadTalk(0);
+  </script>
+</body>
+
+</html>

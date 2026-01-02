@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Predator-Prey Model</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+    crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\[', right: '\]', display: true }
+        ]
+      });
+    });
+  </script>
+  <style>
+    :root {
+      --bg-color: #f8f9fa;
+      --text-color: #212529;
+      --primary-color: #007bff;
+      --border-color: #dee2e6;
+      --panel-bg: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 24px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 400;
+      margin: 0 0 8px;
+    }
+
+    p.subtitle {
+      font-size: 1.1rem;
+      color: #6c757d;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 500;
+      margin-top: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      align-items: start;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .plots-container {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .plot-box {
+      width: 100%;
+      height: 400px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--panel-bg);
+      box-shadow: var(--shadow);
+    }
+
+    #plot-phase {
+      height: 420px;
+    }
+
+    .panel {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      background: var(--panel-bg);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 24px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .slider {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slider label {
+      font-size: 14px;
+    }
+
+    .slider output {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      background: #f1f3f5;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: #e9ecef;
+      border-radius: 5px;
+      outline: none;
+      transition: background 0.2s;
+    }
+
+    input[type="range"]:hover {
+      background: #ced4da;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      flex-grow: 1;
+    }
+
+    button:hover {
+      background: #f1f3f5;
+      border-color: #adb5bd;
+    }
+
+    button:active {
+      transform: translateY(1px);
+      background: #e9ecef;
+    }
+
+    #start {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    #start:hover {
+      background-color: #0056b3;
+      border-color: #0056b3;
+    }
+
+    .small-tip {
+      font-size: 13px;
+      color: #6c757d;
+      margin-top: 20px;
+      background: #f1f3f5;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .equations {
+      margin: 48px auto 0;
+      padding: 24px;
+      background: var(--panel-bg);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      max-width: 900px;
+    }
+
+    .katex-display {
+      margin: 0.8em 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 10px;">
+      <a href="../../app_playground.html"
+        style="color: #6c757d; text-decoration: none; background: #fff; padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Playground
+      </a>
+      <a href="../../index.html"
+        style="color: #6c757d; text-decoration: none; background: #fff; padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        Home
+      </a>
+    </div>
+    <h1>Interactive Predator-Prey Model</h1>
+    <p class="subtitle">A Lotka-Volterra type model with an Ivlev functional response and gestation delay.</p>
+  </header>
+
+  <div class="main-content">
+    <div class="plots-container">
+      <div id="plot-time" class="plot-box"></div>
+      <div id="plot-phase" class="plot-box"></div>
+    </div>
+    <div class="panel">
+      <h2>Controls</h2>
+      <div class="controls" id="controls"></div>
+      <div class="btns">
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+      </div>
+      <h3>Presets</h3>
+      <div class="btns">
+        <button id="presetStable">Stable</button>
+        <button id="presetOsc">Oscillatory</button>
+        <button id="presetChaos">Chaotic</button>
+      </div>
+      <div class="small-tip">
+        Tip: If the simulation looks noisy, reduce Δt or increase t_max. The delay differential equation is approximated
+        here using RK4 with linear interpolation for the delay term.
+      </div>
+    </div>
+  </div>
+
+  <div class="equations">
+    <h2>Governing Equations</h2>
+    <p>$$ \frac{dx}{dt} = r \cdot x \cdot \left(1 - \frac{x}{K}\right) - \alpha \cdot y \cdot \left(1 - e^{-\beta
+      x}\right) $$</p>
+    <p>$$ \frac{dy}{dt} = -s \cdot y + Y \cdot \alpha \cdot y(t-\tau) \cdot e^{-s\tau} \cdot \left(1 - e^{-\beta
+      x(t-\tau)}\right) $$</p>
+  </div>
+
+  <script>
+    /* ---------- Parameters, UI ---------- */
+    const P = {
+      r: 1.0, K: 1.0, alpha: 1.0, beta: 1.0, s: 0.2, Y: 0.6, tau: 1.0,
+      x0: 0.2, y0: 0.1, dt: 0.01, t_max: 200
+    };
+
+    const sliders = [
+      { key: 'r', min: 0.1, max: 5, step: 0.01, label: 'r (prey growth)' },
+      { key: 'K', min: 0.1, max: 5, step: 0.01, label: 'K (carrying capacity)' },
+      { key: 'alpha', min: 0.1, max: 6, step: 0.01, label: 'α (predation rate)' },
+      { key: 'beta', min: 0.05, max: 3, step: 0.01, label: 'β (Ivlev saturation)' },
+      { key: 's', min: 0.001, max: 1, step: 0.001, label: 's (predator mortality)' },
+      { key: 'Y', min: 0.05, max: 1.5, step: 0.01, label: 'Y (conversion)' },
+      { key: 'tau', min: 0, max: 120, step: 0.1, label: 'τ (delay)' },
+      { key: 'x0', min: 0.01, max: 3, step: 0.01, label: 'x(0) (prey initial)' },
+      { key: 'y0', min: 0.01, max: 3, step: 0.01, label: 'y(0) (pred initial)' },
+      { key: 'dt', min: 0.001, max: 0.1, step: 0.001, label: 'Δt (time step)' },
+      { key: 't_max', min: 20, max: 2000, step: 1, label: 't_max (duration)' }
+    ];
+
+    const controlsDiv = document.getElementById('controls');
+    function addSlider(conf) {
+      const wrap = document.createElement('div'); wrap.className = 'slider';
+      const lab = document.createElement('label'); lab.textContent = conf.label;
+      const out = document.createElement('output'); out.id = `out_${conf.key}`;
+      const input = document.createElement('input');
+      input.type = 'range'; input.min = conf.min; input.max = conf.max; input.step = conf.step;
+      input.value = P[conf.key]; input.id = `sl_${conf.key}`;
+      wrap.appendChild(lab); wrap.appendChild(out);
+      controlsDiv.appendChild(wrap);
+      controlsDiv.appendChild(input);
+      const update = () => { P[conf.key] = Number(input.value); out.value = Number(input.value).toFixed((conf.step < 0.01) ? 3 : 2); };
+      input.addEventListener('input', () => { update(); if (!running) { drawCurrent(); } });
+      update();
+    }
+    sliders.forEach(addSlider);
+
+    /* ---------- Model functions ---------- */
+    function ivlev(x, beta) { return 1 - Math.exp(-beta * Math.max(0, x)); }
+
+    function derivs(t, x, y, tDelay, hist) {
+      const { r, K, alpha, beta, s, Y, tau } = P;
+      const [xd, yd] = getDelayedState(tDelay, hist);
+      const dx = r * x * (1 - x / K) - alpha * y * ivlev(x, beta);
+      const births = Y * alpha * yd * Math.exp(-s * tau) * ivlev(xd, beta);
+      const dy = -s * y + births;
+      return [dx, dy];
+    }
+
+    function getDelayedState(tDelay, hist) {
+      if (tDelay <= 0) return [hist.x[0], hist.y[0]];
+      if (tDelay >= hist.t[hist.t.length - 1]) {
+        return [hist.x[hist.x.length - 1], hist.y[hist.y.length - 1]];
+      }
+      let lo = 0, hi = hist.t.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (hist.t[mid] < tDelay) lo = mid; else hi = mid;
+      }
+      const t0 = hist.t[lo], t1 = hist.t[hi];
+      const w = (tDelay - t0) / (t1 - t0);
+      const xd = hist.x[lo] * (1 - w) + hist.x[hi] * w;
+      const yd = hist.y[lo] * (1 - w) + hist.y[hi] * w;
+      return [xd, yd];
+    }
+
+    /* ---------- Integrator (RK4 with delay) ---------- */
+    function simulate() {
+      const { dt, t_max, tau, x0, y0 } = P;
+      const n = Math.floor(t_max / dt);
+      const tArr = new Array(n + 1), xArr = new Array(n + 1), yArr = new Array(n + 1);
+      const hist = { t: [0], x: [x0], y: [y0] };
+      let t = 0, x = x0, y = y0;
+      tArr[0] = 0; xArr[0] = x; yArr[0] = y;
+
+      for (let i = 1; i <= n; i++) {
+        const tDelay = Math.max(0, t - tau);
+        const [k1x, k1y] = derivs(t, x, y, tDelay, hist);
+        const [k2x, k2y] = derivs(t + dt / 2, x + dt * k1x / 2, y + dt * k1y / 2, Math.max(0, (t + dt / 2) - tau), hist);
+        const [k3x, k3y] = derivs(t + dt / 2, x + dt * k2x / 2, y + dt * k2y / 2, Math.max(0, (t + dt / 2) - tau), hist);
+        const [k4x, k4y] = derivs(t + dt, x + dt * k3x, y + dt * k3y, Math.max(0, (t + dt) - tau), hist);
+        x += dt * (k1x + 2 * k2x + 2 * k3x + k4x) / 6;
+        y += dt * (k1y + 2 * k2y + 2 * k3y + k4y) / 6;
+        if (x < 0) x = 0; if (y < 0) y = 0;
+        t += dt;
+        tArr[i] = t; xArr[i] = x; yArr[i] = y;
+        hist.t.push(t); hist.x.push(x); hist.y.push(y);
+      }
+      return { t: tArr, x: xArr, y: yArr };
+    }
+
+    /* ---------- Plotting ---------- */
+    const timePlotDiv = document.getElementById('plot-time');
+    const phasePlotDiv = document.getElementById('plot-phase');
+
+    function draw(data) {
+      const timeLayout = {
+        title: 'Population over Time',
+        margin: { l: 60, r: 20, t: 50, b: 50 },
+        xaxis: { title: 'Time' },
+        yaxis: { title: 'Population' },
+        legend: { orientation: 'h', x: 0.1, y: 1.15, xanchor: 'left' }
+      };
+      Plotly.newPlot(timePlotDiv, [
+        { x: data.t, y: data.x, name: 'Prey (x)', mode: 'lines', line: { color: 'royalblue' } },
+        { x: data.t, y: data.y, name: 'Predator (y)', mode: 'lines', line: { color: 'crimson' } }
+      ], timeLayout, { responsive: true });
+
+      const phaseLayout = {
+        title: 'Phase Space Plot',
+        margin: { l: 60, r: 20, t: 50, b: 50 },
+        xaxis: { title: 'Prey Population (x)' },
+        yaxis: { title: 'Predator Population (y)' },
+        legend: { showlegend: false }
+      };
+      Plotly.newPlot(phasePlotDiv, [
+        { x: data.x, y: data.y, name: 'Phase', mode: 'lines', line: { color: '#212529', width: 1.5 } }
+      ], phaseLayout, { responsive: true });
+    }
+
+    function drawCurrent() { draw(simulate()); }
+    drawCurrent();
+
+    /* ---------- Run loop ---------- */
+    let running = false, rafId = null;
+    function stepAndDraw() {
+      if (!running) return;
+      drawCurrent();
+      rafId = requestAnimationFrame(stepAndDraw);
+    }
+    document.getElementById('start').onclick = () => {
+      if (!running) { running = true; stepAndDraw(); }
+    };
+    document.getElementById('pause').onclick = () => {
+      running = false; if (rafId) cancelAnimationFrame(rafId);
+    };
+    document.getElementById('reset').onclick = () => {
+      running = false; if (rafId) cancelAnimationFrame(rafId);
+      drawCurrent();
+    };
+
+    /* ---------- Presets ---------- */
+    document.getElementById('presetStable').onclick = () => {
+      setVals({ r: 1.0, K: 1.2, alpha: 1.0, beta: 1.0, s: 0.3, Y: 0.5, tau: 0.5, x0: 0.2, y0: 0.15, dt: 0.01, t_max: 200 });
+    };
+    document.getElementById('presetOsc').onclick = () => {
+      setVals({ r: 1.0, K: 1.0, alpha: 5.0, beta: 0.1, s: 0.02, Y: 0.6, tau: 50, x0: 0.1, y0: 0.1, dt: 0.01, t_max: 400 });
+    };
+    document.getElementById('presetChaos').onclick = () => {
+      setVals({ r: 3.1, K: 0.5, alpha: 1.5, beta: 1.2, s: 0.02, Y: 0.4, tau: 70, x0: 0.1, y0: 0.1, dt: 0.01, t_max: 600 });
+    };
+
+    function setVals(obj) {
+      Object.keys(obj).forEach(k => {
+        P[k] = obj[k];
+        const sl = document.getElementById('sl_' + k);
+        if (sl) { sl.value = obj[k]; sl.dispatchEvent(new Event('input')); }
+      });
+      if (!running) drawCurrent();
+    }
+  </script>
+</body>
+
+</html>

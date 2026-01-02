@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predator–Prey with Delay (Forward Euler)</title>
+  <style>
+    :root {
+      --fg: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --bg: #f8fafc;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      margin: 0;
+      color: var(--fg);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .row label {
+      width: 125px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .val {
+      min-width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    canvas {
+      width: 100%;
+      height: 360px;
+      border-radius: 12px;
+      background: white;
+      border: 1px solid #e5e7eb;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .plots {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 8px 0 0;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .dot.prey {
+      background: #16a34a;
+    }
+
+    /* green */
+    .dot.pred {
+      background: #ef4444;
+    }
+
+    /* red */
+    .dot.phase {
+      background: #0ea5e9;
+    }
+
+    /* cyan */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+
+  <header>
+    <h1>Predator–Prey with Discrete Delay — Forward Euler (unscaled model)</h1>
+  </header>
+
+  <main>
+    <!-- Controls -->
+    <section class="panel" id="controls">
+      <h3 style="margin:0 0 8px 0;">Parameters</h3>
+
+      <div class="row"><label for="r">Prey growth r</label>
+        <input id="r" type="range" min="0" max="3" step="0.01" value="1.0" />
+        <div class="val" id="r_val">1.00</div>
+      </div>
+
+      <div class="row"><label for="K">Carrying capacity K</label>
+        <input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0" />
+        <div class="val" id="K_val">1.0</div>
+      </div>
+
+      <div class="row"><label for="m">Attack rate m</label>
+        <input id="m" type="range" min="0" max="5" step="0.01" value="1.0" />
+        <div class="val" id="m_val">1.00</div>
+      </div>
+
+      <div class="row"><label for="s">Predator death s</label>
+        <input id="s" type="range" min="0" max="1" step="0.001" value="0.02" />
+        <div class="val" id="s_val">0.020</div>
+      </div>
+
+      <div class="row"><label for="Y">Conversion Y</label>
+        <input id="Y" type="range" min="0" max="2" step="0.01" value="0.6" />
+        <div class="val" id="Y_val">0.60</div>
+      </div>
+
+      <div class="row"><label for="tau">Delay τ (time)</label>
+        <input id="tau" type="range" min="0" max="200" step="0.1" value="0" />
+        <div class="val" id="tau_val">0.0</div>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Initial conditions & numerics</h3>
+      <div class="row"><label for="x0">Prey x(≤0)</label>
+        <input id="x0" type="range" min="0" max="2" step="0.01" value="0.1" />
+        <div class="val" id="x0_val">0.10</div>
+      </div>
+      <div class="row"><label for="y0">Predator y(≤0)</label>
+        <input id="y0" type="range" min="0" max="2" step="0.01" value="0.1" />
+        <div class="val" id="y0_val">0.10</div>
+      </div>
+
+      <div class="row"><label for="dt">Time step Δt</label>
+        <input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.01" />
+        <div class="val" id="dt_val">0.0100</div>
+      </div>
+
+      <div class="row"><label for="T">Duration T</label>
+        <input id="T" type="range" min="50" max="5000" step="10" value="1200" />
+        <div class="val" id="T_val">1200</div>
+      </div>
+
+      <div class="btns">
+        <button id="start" class="primary">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+        <button id="export">Export CSV</button>
+        <button id="clear">Clear Plots</button>
+      </div>
+
+      <p class="small" style="margin-top:10px;">
+        <strong>Numerics:</strong> Forward Euler updates:
+        <span class="code">x<sub>n+1</sub> = x<sub>n</sub> + Δt · [r x<sub>n</sub>(1 − x<sub>n</sub>/K) − m
+          x<sub>n</sub> y<sub>n</sub>]</span>,
+        <span class="code">y<sub>n+1</sub> = y<sub>n</sub> + Δt · [−s y<sub>n</sub> + Y e<sup>−sτ</sup> m
+          x<sub>n−d</sub> y<sub>n−d</sub>]</span>,
+        with delay index <span class="code">d = round(τ/Δt)</span>. History for <span class="code">t ≤ 0</span> set to
+        <span class="code">x = x₀</span>, <span class="code">y = y₀</span>. Values are floored at 0.
+      </p>
+      <p class="small">
+        Tip: If things blow up or oscillate too wildly numerically, reduce Δt.
+      </p>
+    </section>
+
+    <!-- Plots -->
+    <section class="plots">
+      <div class="panel">
+        <h3 style="margin:0 0 8px 0;">Time series</h3>
+        <canvas id="ts"></canvas>
+        <div class="legend">
+          <span class="dot prey"></span> Prey x(t)
+          <span class="dot pred"></span> Predator y(t)
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 8px 0;">Phase plane (x vs y)</h3>
+        <canvas id="phase"></canvas>
+        <div class="legend">
+          <span class="dot phase"></span> Trajectory
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      // ---- DOM helpers ----
+      const el = id => document.getElementById(id);
+      const inputs = ["r", "K", "m", "s", "Y", "tau", "x0", "y0", "dt", "T"];
+      const state = {};
+      function syncVal(id) {
+        const v = parseFloat(el(id).value);
+        state[id] = v;
+        el(id + "_val").textContent = (id === "K" || id === "T") ? v.toFixed(0)
+          : (id === "s" ? v.toFixed(3)
+            : (id === "dt" ? v.toFixed(4)
+              : v.toFixed(2)));
+        if (id === "tau") { // show one decimal for tau
+          el(id + "_val").textContent = v.toFixed(1);
+        }
+      }
+      inputs.forEach(id => {
+        syncVal(id);
+        el(id).addEventListener("input", () => {
+          syncVal(id);
+          if (id === "dt" || id === "tau") recomputeDelaySteps();
+        });
+      });
+
+      // ---- Simulation buffers ----
+      let t = 0, running = false, rafId = null;
+      let xs = [], ys = [], ts = [];
+      let delaySteps = 0;
+      let lastDrawIdx = 0;
+
+      // canvases and contexts
+      const tsCanvas = el("ts"), phCanvas = el("phase");
+      const tsCtx = tsCanvas.getContext("2d");
+      const phCtx = phCanvas.getContext("2d");
+      function resizeCanvases() {
+        const setSize = (cv) => { const rect = cv.getBoundingClientRect(); cv.width = Math.max(600, rect.width * devicePixelRatio | 0); cv.height = Math.max(250, rect.height * devicePixelRatio | 0); };
+        setSize(tsCanvas); setSize(phCanvas);
+        drawAll(true);
+      }
+      window.addEventListener("resize", resizeCanvases, { passive: true });
+      resizeCanvases();
+
+      function recomputeDelaySteps() {
+        delaySteps = Math.max(0, Math.round(state.tau / state.dt));
+      }
+      recomputeDelaySteps();
+
+      // ---- Initialization ----
+      function initialize() {
+        t = 0;
+        xs = []; ys = []; ts = [];
+        // prefill history for t <= 0 with (x0,y0)
+        for (let i = 0; i < delaySteps; i++) {
+          xs.push(state.x0);
+          ys.push(state.y0);
+          ts.push(-(delaySteps - i) * state.dt);
+        }
+        // seed current
+        xs.push(state.x0); ys.push(state.y0); ts.push(0);
+        lastDrawIdx = 0;
+        drawAll(true);
+      }
+      initialize();
+
+      // ---- Model step (Forward Euler) ----
+      function stepOnce() {
+        const n = xs.length - 1;
+        const x = xs[n], y = ys[n];
+        const dt = state.dt;
+
+        const r = state.r, K = state.K, m = state.m, s = state.s, Y = state.Y, tau = state.tau;
+
+        // delay term indices
+        const d = delaySteps;
+        const idxDelay = Math.max(0, n - d);
+        const xd = xs[idxDelay], yd = ys[idxDelay];
+
+        // derivatives (unscaled model)
+        const dx = r * x * (1 - x / K) - m * x * y;
+        const dy = -s * y + Y * Math.exp(-s * tau) * m * xd * yd;
+
+        const xn = Math.max(0, x + dt * dx);
+        const yn = Math.max(0, y + dt * dy);
+
+        xs.push(xn);
+        ys.push(yn);
+        t += dt;
+        ts.push(t);
+      }
+
+      // ---- Animation loop ----
+      function loop() {
+        if (!running) return;
+
+        // simulate a small block per frame for speed (keeps ~real-time)
+        const blockSteps = 200; // compute up to 200 Euler steps per frame
+        let k = 0;
+        const T = state.T;
+        while (k < blockSteps && t < T) {
+          stepOnce();
+          k++;
+        }
+
+        drawAll(false);
+
+        if (t >= T) {
+          running = false;
+          rafId = null;
+          return;
+        }
+        rafId = requestAnimationFrame(loop);
+      }
+
+      // ---- Plotting helpers ----
+      function drawAll(full) {
+        drawTimeSeries(full);
+        drawPhase(full);
+      }
+
+      function autoscale(arr, pad = 0.08) {
+        let min = Infinity, max = -Infinity;
+        for (let i = 0; i < arr.length; i++) { const v = arr[i]; if (!Number.isFinite(v)) continue; if (v < min) min = v; if (v > max) max = v; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) { min = 0; max = 1; }
+        if (Math.abs(max - min) < 1e-6) { max = min + 1; }
+        const span = max - min;
+        return { min: Math.max(0, min - pad * span), max: max + pad * span };
+      }
+
+      function drawTimeSeries(full) {
+        const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+        // axes
+        ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(40, 10); ctx.lineTo(40, H - 30); ctx.lineTo(W - 10, H - 30); ctx.stroke();
+
+        // scale
+        const tmin = 0, tmax = Math.max(state.T, ts[ts.length - 1] || state.T);
+        const xScale = v => 40 + (W - 50) * (v - tmin) / (tmax - tmin + 1e-12);
+
+        const yRange = autoscale([...xs, ...ys]);
+        const yScale = v => (H - 30) - (H - 40) * (v - yRange.min) / (yRange.max - yRange.min + 1e-12);
+
+        // grid lines (few)
+        ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText("t", W - 24, H - 10);
+        ctx.save(); ctx.translate(12, 16); ctx.rotate(-Math.PI / 2); ctx.fillText("population", 0, 0); ctx.restore();
+
+        // prey
+        ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < ts.length; i++) {
+          const px = xScale(Math.max(0, ts[i]));
+          const py = yScale(xs[i]);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // predator
+        ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < ts.length; i++) {
+          const px = xScale(Math.max(0, ts[i]));
+          const py = yScale(ys[i]);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // labels
+        ctx.fillStyle = "#16a34a"; ctx.fillText("x(t)", 48, 18);
+        ctx.fillStyle = "#ef4444"; ctx.fillText("y(t)", 84, 18);
+      }
+
+      function drawPhase(full) {
+        const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+        ctx.clearRect(0, 0, W, H);
+        // axes
+        ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(40, 10); ctx.lineTo(40, H - 30); ctx.lineTo(W - 10, H - 30); ctx.stroke();
+
+        const xRange = autoscale(xs);
+        const yRange = autoscale(ys);
+        const xScale = v => 40 + (W - 50) * (v - xRange.min) / (xRange.max - xRange.min + 1e-12);
+        const yScale = v => (H - 30) - (H - 40) * (v - yRange.min) / (yRange.max - yRange.min + 1e-12);
+
+        // path
+        ctx.strokeStyle = "#0ea5e9"; ctx.lineWidth = 1.4; ctx.beginPath();
+        for (let i = 0; i < xs.length; i++) {
+          const px = xScale(xs[i]);
+          const py = yScale(ys[i]);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // labels
+        ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText("prey x", 50, 18);
+        ctx.save(); ctx.translate(12, 60); ctx.rotate(-Math.PI / 2); ctx.fillText("predator y", 0, 0); ctx.restore();
+      }
+
+      // ---- Buttons ----
+      el("start").addEventListener("click", () => {
+        if (!running) {
+          running = true;
+          if (!rafId) rafId = requestAnimationFrame(loop);
+        }
+      });
+      el("pause").addEventListener("click", () => {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      });
+      el("reset").addEventListener("click", () => {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        recomputeDelaySteps();
+        initialize();
+      });
+      el("clear").addEventListener("click", () => {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        xs = []; ys = []; ts = []; t = 0; drawAll(true);
+      });
+
+      el("export").addEventListener("click", () => {
+        let csv = "t,x,y\n";
+        for (let i = 0; i < ts.length; i++) {
+          csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+        }
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "pred_prey_delay.csv";
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+      });
+
+      // If any parameter slider changes while running, keep going with new values.
+      inputs.forEach(id => el(id).addEventListener("change", () => {
+        // when tau or dt changes, delaySteps may change; preserve arrays sensibly by padding/trimming history
+        if (id === "dt" || id === "tau") {
+          const oldD = delaySteps;
+          recomputeDelaySteps();
+          const newD = delaySteps;
+          const deficit = newD - oldD;
+          if (deficit > 0) {
+            // need more history: pad using current earliest known value
+            const xpad = xs.length ? xs[0] : state.x0;
+            const ypad = ys.length ? ys[0] : state.y0;
+            const t0 = ts.length ? ts[0] : 0;
+            for (let i = 0; i < deficit; i++) {
+              xs.unshift(xpad);
+              ys.unshift(ypad);
+              ts.unshift(t0 - (deficit - i) * state.dt);
+            }
+          } else if (deficit < 0) {
+            // can drop extra history (but keep at least one point)
+            xs = xs.slice(-deficit);
+            ys = ys.slice(-deficit);
+            ts = ts.slice(-deficit);
+          }
+        }
+      }));
+
+    })();
+  </script>
+</body>
+
+</html>

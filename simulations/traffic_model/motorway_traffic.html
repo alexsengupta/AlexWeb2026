@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Motorway Traffic Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #222;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: #fff;
+            max-width: 300px;
+        }
+
+        #controls h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+
+        .control-group span {
+            float: right;
+            font-weight: bold;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #rules-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            background: rgba(0, 0, 0, 0.4);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            pointer-events: none;
+            text-align: left;
+        }
+
+        #rules-display h3 {
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        #rules-display ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        #rules-display li {
+            margin-bottom: 8px;
+        }
+
+        #rules-display button {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        /* Tooltip Styles */
+        .tooltip-container {
+            position: relative;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 110%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85em;
+            pointer-events: none;
+            /* So it doesn't block hover on the slider itself */
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Modal Styles */
+        #modal-overlay {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #modal-content {
+            background: #2c2c2c;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #eee;
+            border: 1px solid #555;
+        }
+
+        #modal-content h2,
+        #modal-content h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+        }
+
+        #modal-content ul {
+            padding-left: 20px;
+        }
+
+        #modal-content li {
+            margin-bottom: 10px;
+        }
+
+        #close-modal {
+            display: block;
+            margin: 20px auto 0 auto;
+            width: 100px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 50;">
+        <a href="../../app_playground.html"
+            style="color: #fff; text-decoration: none; background: rgba(0, 0, 0, 0.7); padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #555;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Playground
+        </a>
+        <a href="../../index.html"
+            style="color: #fff; text-decoration: none; background: rgba(0, 0, 0, 0.7); padding: 5px 12px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #555;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Home
+        </a>
+    </div>
+    <canvas id="trafficCanvas"></canvas>
+
+    <div id="rules-display">
+        <h3>Simulation Rules</h3>
+        <ul>
+            <li><b>Car-Following:</b> Cars maintain a safe bumper-to-bumper distance based on their speed and the
+                'Cautiousness' setting.</li>
+            <li><b>Lane Changes:</b> Cars only change lanes if they are being slowed down and there is a safe,
+                advantageous gap.</li>
+            <li><b>Aggression:</b> The 'Lane Change Aggression' slider determines how small of a gap a car is willing to
+                accept when merging.</li>
+        </ul>
+        <button id="show-details-button"
+            style="width: auto; padding: 5px 10px; font-size: 0.8em; margin-top: 10px;">Show Details</button>
+    </div>
+
+    <div id="controls">
+        <h2>Simulation Controls</h2>
+        <div class="control-group">
+            <label for="numCarsSlider">Number of Cars: <span id="numCarsValue">50</span></label>
+            <input type="range" id="numCarsSlider" min="1" max="200" value="50">
+        </div>
+        <div class="control-group">
+            <label for="speedSlider">Avg. Max Speed: <span id="speedValue">3.0</span></label>
+            <input type="range" id="speedSlider" min="1" max="5" value="3" step="0.1">
+        </div>
+        <div class="control-group tooltip-container">
+            <label for="cautiousSlider">Cautiousness: <span id="cautiousValue">2.0</span></label>
+            <input type="range" id="cautiousSlider" min="0.5" max="5" value="2" step="0.1">
+            <span class="tooltip-text">Controls the desired following time. Higher values mean larger, safer gaps
+                between cars.</span>
+        </div>
+        <div class="control-group tooltip-container">
+            <label for="aggressionSlider">Lane Change Aggression: <span id="aggressionValue">0.5</span></label>
+            <input type="range" id="aggressionSlider" min="0.1" max="1" value="0.5" step="0.05">
+            <span class="tooltip-text">Determines how small of a gap a car will accept to change lanes. Lower values are
+                more aggressive.</span>
+        </div>
+        <div class="control-group tooltip-container">
+            <label for="decelSlider">Deceleration: <span id="decelValue">4.0</span>x</label>
+            <input type="range" id="decelSlider" min="0.5" max="8" value="4" step="0.1">
+            <span class="tooltip-text">Controls the maximum braking strength of the cars. Higher values mean more
+                aggressive braking.</span>
+        </div>
+        <div id="button-group" style="margin-top: 15px;">
+            <button id="startButton">Start</button>
+            <button id="pauseButton" style="display:none;">Pause</button>
+            <button id="resetButton" style="display:none;">Reset</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="modal-content">
+            <h2>Detailed Simulation Rules</h2>
+            <h3>General Rules</h3>
+            <ul>
+                <li>Cars operate on a circular, three-lane motorway.</li>
+                <li>Each car has a unique "personality" in the form of a preferred maximum speed, which is slightly
+                    different from the global average set by the slider.</li>
+            </ul>
+            <h3>Speed and Following (Car-Following Model)</h3>
+            <ul>
+                <li><b>Acceleration:</b> Cars attempt to accelerate to their personal maximum speed. Their acceleration
+                    rate decreases as they approach their top speed.</li>
+                <li><b>Following Distance:</b> Cars maintain a safe <b>bumper-to-bumper</b> distance from the vehicle
+                    directly in front of them. This calculation correctly accounts for the physical length of the cars.
+                </li>
+                <li><b>Desired Gap:</b> The safe following distance is composed of two parts: a small, fixed minimum
+                    distance (to prevent overlapping at a standstill) and a variable distance that increases with the
+                    car's current speed and the global "Cautiousness" parameter.</li>
+                <li><b>Deceleration:</b> A car will brake if its actual following distance is less than its calculated
+                    desired gap. The braking force becomes exponentially stronger as the gap shrinks. The overall
+                    strength of this braking is controlled by the "Deceleration" slider.</li>
+            </ul>
+            <h3>Lane Changing</h3>
+            <ul>
+                <li><b>Motivation:</b> A car is motivated to change lanes only when it is being slowed down by a slower
+                    vehicle ahead.</li>
+                <li><b>Safety & Aggression:</b> Before merging, a car checks for a safe gap in the target lane. The
+                    required size of the gap <i>behind</i> it is determined by the "Lane Change Aggression" slider; a
+                    more aggressive setting allows the car to accept a smaller, tighter gap.</li>
+                <li><b>Improvement:</b> A lane change is only performed if the new lane offers a significant advantage
+                    (i.e., the traffic is much clearer).</li>
+                <li><b>Constant Awareness:</b> Cars continue to apply all acceleration and deceleration rules even while
+                    in the middle of a lane change, preventing them from colliding with other cars during the maneuver.
+                </li>
+            </ul>
+            <button id="close-modal">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('trafficCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- UI Elements ---
+            const numCarsSlider = document.getElementById('numCarsSlider');
+            const speedSlider = document.getElementById('speedSlider');
+            const cautiousSlider = document.getElementById('cautiousSlider');
+            const aggressionSlider = document.getElementById('aggressionSlider');
+            const decelSlider = document.getElementById('decelSlider');
+
+            const startButton = document.getElementById('startButton');
+            const pauseButton = document.getElementById('pauseButton');
+            const resetButton = document.getElementById('resetButton');
+
+            const numCarsValue = document.getElementById('numCarsValue');
+            const speedValue = document.getElementById('speedValue');
+            const cautiousValue = document.getElementById('cautiousValue');
+            const aggressionValue = document.getElementById('aggressionValue');
+            const decelValue = document.getElementById('decelValue');
+
+            // --- Simulation Parameters ---
+            let params = {
+                numCars: 50,
+                avgMaxSpeed: 3,
+                cautiousness: 2,
+                aggression: 0.5,
+                decelMultiplier: 4,
+            };
+
+            // --- Simulation State ---
+            let isRunning = false;
+            let cars = [];
+            let road = {};
+
+            // --- Constants ---
+            const LANE_WIDTH = 30;
+            const CAR_LENGTH = 20;
+            const CAR_WIDTH = 10;
+            const NUM_LANES = 3;
+            const TWO_PI = 2 * Math.PI;
+            const BASE_DECEL = 0.03;
+
+            // --- Utility Functions ---
+            const getRandom = (min, max) => Math.random() * (max - min) + min;
+            const angularDistance = (a1, a2) => {
+                let diff = a2 - a1;
+                while (diff < -Math.PI) diff += TWO_PI;
+                while (diff > Math.PI) diff -= TWO_PI;
+                return diff;
+            };
+
+            // --- Car Class ---
+            class Car {
+                constructor(id) {
+                    this.id = id;
+                    this.lane = Math.floor(getRandom(0, NUM_LANES));
+                    this.angle = getRandom(0, TWO_PI);
+
+                    this.speed = 0;
+                    this.maxSpeedMultiplier = getRandom(0.8, 1.2); // Store unique speed preference
+                    this.maxSpeed = params.avgMaxSpeed * this.maxSpeedMultiplier;
+                    this.accel = 0.01;
+
+                    this.color = `hsl(${getRandom(0, 360)}, 80%, 60%)`;
+
+                    this.isChangingLanes = false;
+                    this.targetLane = this.lane;
+                    this.laneChangeProgress = 0;
+                }
+
+                update(allCars, dt = 1) {
+                    // Live update of max speed based on global params
+                    this.maxSpeed = params.avgMaxSpeed * this.maxSpeedMultiplier;
+
+                    if (this.isChangingLanes) {
+                        this.laneChangeProgress += 0.05 * dt;
+                        if (this.laneChangeProgress >= 1) {
+                            this.isChangingLanes = false;
+                            this.lane = this.targetLane;
+                            this.laneChangeProgress = 0;
+                        }
+                    }
+
+                    const { carAhead, distAhead } = this.findCarAhead(allCars);
+
+                    // --- Acceleration and Following Logic (Unified Model) ---
+                    let acceleration = this.accel * (1 - Math.pow(this.speed / this.maxSpeed, 4));
+
+                    if (carAhead) {
+                        const bumperToBumperGap = Math.max(0.1, distAhead - CAR_LENGTH);
+                        const desiredBumperToBumperGap = 5 + this.speed * params.cautiousness;
+                        const interactionTerm = Math.pow(desiredBumperToBumperGap / bumperToBumperGap, 2);
+                        acceleration -= (BASE_DECEL * params.decelMultiplier) * interactionTerm;
+                    }
+
+                    this.speed += acceleration * dt;
+                    this.speed = Math.max(0, this.speed);
+
+                    // --- Lane Change Logic ---
+                    if (!this.isChangingLanes) {
+                        const motivation = this.speed < this.maxSpeed * 0.9 && carAhead && distAhead < (CAR_LENGTH + this.speed * params.cautiousness) * 2.5;
+                        if (this.speed > 0.2 && motivation) {
+                            this.evaluateLaneChange(allCars);
+                        }
+                    }
+
+                    this.move(dt);
+                }
+
+                move(dt = 1) {
+                    const radius = road.radii[this.lane];
+                    const circumference = TWO_PI * radius;
+                    const angularSpeed = this.speed / circumference * TWO_PI;
+                    this.angle = (this.angle + angularSpeed * dt) % TWO_PI;
+                }
+
+                findCarAhead(allCars) {
+                    let carAhead = null;
+                    let distAhead = Infinity;
+                    for (const other of allCars) {
+                        if (this.id === other.id || other.lane !== this.lane) continue;
+                        const dist = angularDistance(this.angle, other.angle);
+                        if (dist > 0 && dist < distAhead) {
+                            distAhead = dist;
+                            carAhead = other;
+                        }
+                    }
+                    const radius = road.radii[this.lane];
+                    return { carAhead, distAhead: distAhead * radius };
+                }
+
+                evaluateLaneChange(allCars) {
+                    const potentialLanes = [this.lane - 1, this.lane + 1].filter(l => l >= 0 && l < NUM_LANES);
+                    for (const target of potentialLanes) {
+                        const { carAhead, distAhead } = this.checkLane(allCars, target);
+                        const { carBehind, distBehind } = this.checkLane(allCars, target, false);
+                        const safeGapAhead = (this.speed * params.cautiousness) + CAR_LENGTH;
+                        const safeGapBehind = (carBehind ? carBehind.speed * params.cautiousness : 0) + CAR_LENGTH;
+                        const requiredGap = safeGapBehind * params.aggression;
+                        if (distBehind > requiredGap && distAhead > safeGapAhead) {
+                            if (!carAhead || distAhead > this.findCarAhead(allCars).distAhead * 1.2) {
+                                this.isChangingLanes = true;
+                                this.targetLane = target;
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                checkLane(allCars, lane, ahead = true) {
+                    let nearestCar = null;
+                    let minDistance = Infinity;
+                    for (const other of allCars) {
+                        if (other.id === this.id || other.lane !== lane) continue;
+                        const dist = angularDistance(this.angle, other.angle);
+                        if (ahead && dist > 0 && dist < minDistance) {
+                            minDistance = dist;
+                            nearestCar = other;
+                        } else if (!ahead && dist < 0 && -dist < minDistance) {
+                            minDistance = -dist;
+                            nearestCar = other;
+                        }
+                    }
+                    const radius = road.radii[lane];
+                    return ahead ? { carAhead: nearestCar, distAhead: minDistance * radius }
+                        : { carBehind: nearestCar, distBehind: minDistance * radius };
+                }
+
+                draw() {
+                    let currentRadius = road.radii[this.lane];
+                    if (this.isChangingLanes) {
+                        const startRadius = road.radii[this.lane];
+                        const endRadius = road.radii[this.targetLane];
+                        currentRadius = startRadius + (endRadius - startRadius) * this.laneChangeProgress;
+                    }
+                    const x = road.centerX + currentRadius * Math.cos(this.angle);
+                    const y = road.centerY + currentRadius * Math.sin(this.angle);
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(this.angle + Math.PI / 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(-CAR_LENGTH / 2, -CAR_WIDTH / 2, CAR_LENGTH, CAR_WIDTH);
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(CAR_LENGTH / 2 - 4, -CAR_WIDTH / 2 + 1, 4, 2);
+                    ctx.fillRect(CAR_LENGTH / 2 - 4, CAR_WIDTH / 2 - 3, 4, 2);
+                    ctx.restore();
+                }
+            }
+
+            // --- Simulation Setup ---
+            function setup() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                road.centerX = canvas.width / 2;
+                road.centerY = canvas.height / 2;
+                const baseRadius = Math.min(canvas.width, canvas.height) / 2 - (NUM_LANES * LANE_WIDTH);
+                road.radii = Array.from({ length: NUM_LANES }, (_, i) => baseRadius + i * LANE_WIDTH);
+                cars = [];
+                for (let i = 0; i < params.numCars; i++) {
+                    cars.push(new Car(i));
+                }
+            }
+
+            // --- Drawing ---
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = LANE_WIDTH;
+                for (const radius of road.radii) {
+                    ctx.beginPath();
+                    ctx.arc(road.centerX, road.centerY, radius, 0, TWO_PI);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([10, 15]);
+                for (let i = 0; i < NUM_LANES - 1; i++) {
+                    const radius = road.radii[i] + LANE_WIDTH / 2;
+                    ctx.beginPath();
+                    ctx.arc(road.centerX, road.centerY, radius, 0, TWO_PI);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                cars.forEach(car => car.draw());
+            }
+
+            // --- Main Loop ---
+            let lastTime = performance.now();
+            let timeAccumulator = 0;
+            function animate() {
+                const now = performance.now();
+                const deltaTime = Math.min(now - lastTime, 100);
+                lastTime = now;
+
+                if (isRunning) {
+                    timeAccumulator += deltaTime;
+                    const physicsStepMs = 1000 / 120;
+                    const dt = physicsStepMs / 16.67;
+                    while (timeAccumulator >= physicsStepMs) {
+                        cars.forEach(car => car.update(cars, dt));
+                        timeAccumulator -= physicsStepMs;
+                    }
+                }
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            // --- Event Listeners & UI ---
+            function updateParams() {
+                params.numCars = parseInt(numCarsSlider.value);
+                params.avgMaxSpeed = parseFloat(speedSlider.value);
+                params.cautiousness = parseFloat(cautiousSlider.value);
+                params.aggression = parseFloat(aggressionSlider.value);
+                params.decelMultiplier = parseFloat(decelSlider.value);
+
+                numCarsValue.textContent = params.numCars;
+                speedValue.textContent = params.avgMaxSpeed.toFixed(1);
+                cautiousValue.textContent = params.cautiousness.toFixed(1);
+                aggressionValue.textContent = params.aggression.toFixed(2);
+                decelValue.textContent = params.decelMultiplier.toFixed(1) + 'x';
+            }
+
+            function addEventListeners() {
+                numCarsSlider.addEventListener('input', () => updateParams());
+                speedSlider.addEventListener('input', () => updateParams());
+                cautiousSlider.addEventListener('input', () => updateParams());
+                aggressionSlider.addEventListener('input', () => updateParams());
+                decelSlider.addEventListener('input', () => updateParams());
+
+                startButton.addEventListener('click', () => {
+                    updateParams();
+                    setup();
+                    isRunning = true;
+                    numCarsSlider.disabled = true;
+                    startButton.style.display = 'none';
+                    pauseButton.style.display = 'inline-block';
+                    resetButton.style.display = 'inline-block';
+                    lastTime = performance.now(); // Reset time to avoid jump
+                });
+
+                pauseButton.addEventListener('click', () => {
+                    isRunning = !isRunning;
+                    pauseButton.textContent = isRunning ? 'Pause' : 'Resume';
+                    if (isRunning) {
+                        lastTime = performance.now(); // Reset time to avoid jump
+                    }
+                });
+
+                resetButton.addEventListener('click', () => {
+                    isRunning = false;
+                    numCarsSlider.disabled = false;
+                    // No need to call setup() here, start button will do it
+                    cars = [];
+                    draw(); // Draw empty canvas
+                    startButton.style.display = 'inline-block';
+                    pauseButton.style.display = 'none';
+                    resetButton.style.display = 'none';
+                    pauseButton.textContent = 'Pause';
+                });
+
+                window.addEventListener('resize', () => {
+                    // Re-draw road, but don't reset cars if running
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    road.centerX = canvas.width / 2;
+                    road.centerY = canvas.height / 2;
+                    const baseRadius = Math.min(canvas.width, canvas.height) / 2 - (NUM_LANES * LANE_WIDTH);
+                    road.radii = Array.from({ length: NUM_LANES }, (_, i) => baseRadius + i * LANE_WIDTH);
+                    draw();
+                });
+
+                // Modal listeners
+                const modalOverlay = document.getElementById('modal-overlay');
+                const showDetailsButton = document.getElementById('show-details-button');
+                const closeModalButton = document.getElementById('close-modal');
+
+                showDetailsButton.addEventListener('click', () => {
+                    modalOverlay.style.display = 'flex';
+                });
+
+                closeModalButton.addEventListener('click', () => {
+                    modalOverlay.style.display = 'none';
+                });
+
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) {
+                        modalOverlay.style.display = 'none';
+                    }
+                });
+            }
+
+            // --- Initial Start ---
+            updateParams();
+            addEventListeners();
+            setup(); // Create initial set of cars
+            draw(); // Draw the initial state
+            animate();
+        });
+    </script>
+</body>
+
+</html>

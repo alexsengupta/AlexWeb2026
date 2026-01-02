@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conceptual Models | Alex Sen Gupta</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-start: #020513;
+      --bg-end: #0f1c2f;
+      --accent: #7ff8ff;
+      --accent-2: #ff72d0;
+      --panel: rgba(6, 12, 28, 0.85);
+      font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(255, 114, 208, 0.15), transparent 45%),
+        radial-gradient(circle at 80% 0%, rgba(69, 168, 255, 0.2), transparent 35%),
+        linear-gradient(140deg, var(--bg-start), var(--bg-end));
+      color: #f5fcff;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+      background-size: 120px 120px;
+      opacity: 0.15;
+      animation: drift 30s linear infinite;
+      pointer-events: none;
+    }
+
+    body::after {
+      animation-duration: 45s;
+      background-size: 180px 180px;
+      opacity: 0.1;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-200px);
+      }
+    }
+
+    .particle-field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle-field span {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.8);
+      animation: twinkle var(--duration) linear infinite;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+      opacity: 0.7;
+    }
+
+    @keyframes twinkle {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.3;
+      }
+
+      50% {
+        transform: translateY(-15px) scale(1.4);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.3;
+      }
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: clamp(20px, 5vw, 60px);
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .hero {
+      border-radius: 28px;
+      padding: clamp(24px, 4vw, 48px);
+      border: 1px solid rgba(127, 248, 255, 0.25);
+      box-shadow: 0 25px 60px rgba(2, 6, 20, 0.65);
+      position: relative;
+      overflow: hidden;
+      min-height: 260px;
+      background: linear-gradient(135deg, rgba(4, 10, 26, 0.95), rgba(4, 6, 18, 0.85));
+    }
+
+    #wormholeCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      opacity: 0.9;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .home-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(100, 255, 251, 0.25), rgba(36, 68, 146, 0.95));
+      border: 1px solid rgba(127, 248, 255, 0.4);
+      box-shadow: 0 8px 20px rgba(8, 12, 32, 0.7);
+      text-decoration: none;
+    }
+
+    .home-chip svg {
+      width: 26px;
+      height: 26px;
+      fill: #e8f9ff;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      margin: 1rem 0 0;
+      font-size: 1.2rem;
+      max-width: 60ch;
+      opacity: 0.9;
+    }
+
+    h2.section-title {
+      margin: 0 0 18px;
+      font-size: 1.8rem;
+      letter-spacing: 0.04em;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: 22px;
+      border: 1px solid rgba(127, 248, 255, 0.2);
+      padding: clamp(20px, 3vw, 36px);
+      box-shadow: 0 18px 40px rgba(3, 6, 18, 0.65);
+    }
+
+    .content-panel {
+      line-height: 1.7;
+      font-size: 1.1rem;
+    }
+
+    .content-panel h3 {
+      color: var(--accent-2);
+      font-size: 1.5rem;
+      margin-top: 2em;
+    }
+
+    .content-panel ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .content-panel li {
+      padding-left: 1.5em;
+      position: relative;
+      margin-bottom: 1em;
+    }
+
+    .content-panel li::before {
+      content: '»';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    .action-button {
+      display: inline-block;
+      margin: 1em 0;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--accent-2), var(--accent));
+      color: #020513;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 999px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 700px) {
+      .hero-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="particle-field" aria-hidden="true">
+    <span style="top:10%;left:15%;--duration:8s"></span>
+    <span style="top:35%;left:70%;--duration:12s"></span>
+    <span style="top:60%;left:30%;--duration:10s"></span>
+    <span style="top:80%;left:55%;--duration:14s"></span>
+    <span style="top:25%;left:85%;--duration:9s"></span>
+  </div>
+  <div class="wrapper">
+    <header class="hero" aria-labelledby="hero-title">
+      <canvas id="wormholeCanvas" aria-hidden="true"></canvas>
+      <div class="hero-top">
+        <div style="margin-bottom: 20px;">
+          <a class="home-chip" href="../index.html" aria-label="Back to home">
+            <svg viewBox="0 0 24 24">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+        </div>
+        <div>
+          <h1 id="hero-title">Conceptual Models</h1>
+          <p>Ever wondered how scientists predict climate change or how epidemiologists model disease spread? They use
+            conceptual models - basically simplified versions of reality that capture the important bits.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="panel content-panel" aria-labelledby="models-title">
+      <h2 id="models-title" class="section-title">Conceptual Apps - a new approach for science and education</h2>
+      <p>To understand how a system works - the climate system, the interaction between sharks and fish, the growth of
+        bacteria, the dispersion of plastics through the ocean - we build conceptual models in our heads. How does one
+        part of a system interact with another? What factors control those interactions? For those who understand
+        higher-level maths, particularly differential equations (which describe how things change over time or
+        distance), conceptual models can be translated into equations. These equations can then be used to build
+        computer-based simulations. The simulations allow us to test whether our conceptual understanding matches the
+        real world. What elements are our models missing? Do the system interactions lead to unexpected behaviour? What
+        happens when we tweak our conceptual model?</p>
+      <p>With recent advances in AI, the ability to turn conceptual models into working computer-based simulations - or
+        conceptual apps - has become far easier. AI can handle the underlying maths and help us build interactive tools.
+        This opens up new and better ways to do research, allowing us to apply tools traditionally reserved for physics
+        and engineering to any discipline.</p>
+      <p>Conceptual apps can also boost teaching. New concepts can be visualised and manipulated, making understanding
+        easier, and workflows can be gamified. Students can even build conceptual apps themselves, essentially learning
+        by developing tools for others.</p>
+
+      <h3>Types of conceptual model architectures</h3>
+      <p>I use three types of models (there are more):</p>
+      <ul>
+        <li><strong>Box models:</strong> These track the evolution of important system components and how they interact
+          (often expressed using differential equations, but AI can help us build these without needing the maths).
+          Examples include predator-prey models or simple climate models.</li>
+        <li><strong>Agent-based models:</strong> Here we simulate the behaviour of individual agents based on personal
+          rules, then observe what happens when multiple agents interact. Examples include disease spread through
+          populations or traffic behaviour on roads.</li>
+        <li><strong>Statistical models:</strong> These include regression models, machine learning models, or Monte
+          Carlo simulations. They look for patterns in data without necessarily requiring a mechanistic understanding of
+          how the system works.</li>
+      </ul>
+
+      <h3>Let's work through some examples</h3>
+      <p>First, let's build a simple teaching app to help students understand wave interaction - superposition. For
+        simple apps like this, we can build everything in a single HTML webpage using JavaScript (JS, a language
+        commonly used in web pages). We don't need to know HTML or JS - we just need to clearly articulate what we want
+        and carefully validate the product. Important tip: Don't try to build your app in one shot. It's an iterative
+        process of refining and validating. Here's my dialogue with ChatGPT to create the app…</p>
+      <a href="../waves/wave_chat.html" class="action-button">View Wave App Dialogue</a>
+      <p>Next, let's try a conceptual model from an ecological research paper that examines predator-prey interactions
+        and population dynamics over time. The paper is maths-heavy, so we'll first use AI to help understand the paper,
+        extract and explain the relevant equations, then recreate the conceptual model as a web app that makes it far
+        more intuitive to understand...</p>
+      <a href="../predator_prey2/predator_prey_chat.html" class="action-button">View Predator-Prey Dialogue</a>
+      <p>Now let’s try an agent based model. Here we’ll start with a random distribution of agents (simulating fish or
+        birds). They each follow a set of rules like: look around at nearby neighbours, try to align motion with
+        neighbours, move towards the centre of groups and avoid over crowding. We’ll then add some additional complexity
+        - a predator! Again we gradually build up the complexity of the simulation leading to some amazing emergent
+        behaviour …</p>
+      <a href="../flocking/flocking_chat.html" class="action-button">View Flocking App Dialogue</a>
+
+    </section>
+  </div>
+  <script>
+    (() => {
+      const canvas = document.getElementById('wormholeCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0, centerX = 0, centerY = 0;
+      let stars = [];
+      let time = 0;
+      const speed = 2;
+      const STAR_COUNT = 700;
+
+      const resize = () => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        width = rect.width;
+        height = rect.height;
+        centerX = width / 2;
+        centerY = height / 2;
+        initStars();
+      };
+
+      const initStars = () => {
+        stars = [];
+        for (let i = 0; i < STAR_COUNT; i++) {
+          stars.push({
+            x: Math.random() * width - centerX,
+            y: Math.random() * height - centerY,
+            z: Math.random() * width,
+            color: Math.random() > 0.7
+              ? `hsl(${180 + Math.random() * 60}, 70%, ${50 + Math.random() * 30}%)`
+              : `rgba(255, 255, 255, ${0.5 + Math.random() * 0.5})`
+          });
+        }
+      };
+
+      const draw = () => {
+        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.max(width, height));
+        gradient.addColorStop(0, '#040615');
+        gradient.addColorStop(0.6, '#01030a');
+        gradient.addColorStop(1, '#000000');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        const bendX = Math.sin(time * 0.003) * Math.min(width, height) * 0.12;
+        const bendY = Math.cos(time * 0.002) * Math.min(width, height) * 0.08;
+
+        stars.forEach((star) => {
+          star.z -= speed;
+          if (star.z <= 0) {
+            star.x = Math.random() * width - centerX;
+            star.y = Math.random() * height - centerY;
+            star.z = width;
+          }
+
+          const k = 128 / star.z;
+          const px = star.x * k + centerX;
+          const py = star.y * k + centerY;
+
+          const size = (1 - star.z / width) * 2;
+
+          ctx.beginPath();
+          ctx.fillStyle = star.color;
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        time++;
+        requestAnimationFrame(draw);
+      };
+
+      resize();
+      window.addEventListener('resize', resize);
+      draw();
+    })();
+  </script>
+</body>
+
+</html>

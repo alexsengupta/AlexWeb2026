@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predator-Prey App — Conversation Transcript</title>
+    
+    <!-- MathJax for rendered equations -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- highlight.js for code formatting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Highlight code blocks
+            try {
+                hljs.highlightAll();
+            } catch (e) {
+                console.error("Highlight.js error:", e);
+            }
+
+            // Setup code block toggles
+            document.querySelectorAll('.toggle-code').forEach(button => {
+                button.addEventListener('click', () => {
+                    const codeBlock = button.previousElementSibling;
+                    const isExpanded = codeBlock.classList.toggle('expanded');
+                    button.textContent = isExpanded ? 'Show less' : 'Show more';
+                });
+            });
+
+            // Setup staged message reveal
+            const messages = document.querySelectorAll('.chat-message');
+            let currentMessage = 0;
+            messages.forEach(msg => msg.style.display = 'none'); // Hide all messages initially
+
+            const nextButton = document.getElementById('next-message-btn');
+            nextButton.addEventListener('click', () => {
+                if (currentMessage < messages.length) {
+                    const messageToShow = messages[currentMessage];
+                    messageToShow.style.display = 'flex';
+                    messageToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    currentMessage++;
+                }
+                if (currentMessage >= messages.length) {
+                    nextButton.style.display = 'none'; // Hide button when all messages are shown
+                }
+            });
+        });
+    </script>
+    <style>
+        :root {
+            --sidebar-bg: #202123;
+            --main-bg: #ffffff;
+            --text-color: #000000;
+            --sidebar-text: #ececf1;
+            --sidebar-text-muted: #8e8e9f;
+            --border-color: #e5e5e5;
+            --user-bubble-bg: #eaf4ff;
+            --gpt-bubble-bg: #f7f7f8;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 6px;
+        }
+        .traffic-lights { display: flex; gap: 8px; }
+        .light { width: 12px; height: 12px; border-radius: 50%; }
+        .light.red { background-color: #ff5f56; }
+        .light.yellow { background-color: #ffbd2e; }
+        .light.green { background-color: #27c93f; }
+        .search-bar {
+            background-color: #343541;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 10px 0;
+            color: var(--sidebar-text-muted);
+        }
+        .menu-item {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .menu-item.active { background-color: #343541; }
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 10px;
+            border-top: 1px solid #343541;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--main-bg);
+            overflow-y: auto;
+        }
+        .header {
+            width: 100%;
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border-color);
+            box-sizing: border-box;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { font-size: 13px; color: #6b7280; }
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex-grow: 1;
+        }
+        .chat-message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .chat-message.user-message {
+            justify-content: flex-start;
+        }
+        .chat-message.chatgpt-message {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            padding: 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            border: 1px solid var(--border-color);
+            max-width: 85%;
+            overflow-x: auto;
+        }
+        .user-message .message-bubble {
+            background-color: var(--user-bubble-bg);
+            font-style: italic;
+        }
+        .chatgpt-message .message-bubble {
+            background-color: var(--gpt-bubble-bg);
+        }
+        .message-bubble p { margin: 1em 0; }
+        .message-bubble p:first-child { margin-top: 0; }
+        .message-bubble p:last-child { margin-bottom: 0; }
+        .message-bubble ul { padding-left: 20px; margin-top: 10px; margin-bottom: 10px; }
+        .message-bubble li { margin-bottom: 8px; }
+        .message-bubble code:not(pre > code) {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: #eef2ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .message-bubble pre, .message-bubble .sourceCode {
+            margin: 1em 0;
+            background-color: #FAFAFA !important;
+            border: 1px solid #D2D2D2;
+            padding: 1em;
+            border-radius: 8px;
+            display: block;
+            white-space: pre;
+            color: #111827;
+        }
+        .message-bubble .sourceCode code {
+             background-color: transparent !important;
+             border: none !important;
+             padding: 0 !important;
+        }
+        .hljs-keyword, .sourceCode .kw { color: #1E64C8 !important; }
+        .hljs-string, .sourceCode .st { color: #A05000 !important; }
+        .hljs-comment, .sourceCode .co { color: #006E6E !important; }
+        .hljs-tag .hljs-name, .sourceCode .dt, .sourceCode .fu { color: #1E64C8 !important; }
+        .hljs-attr, .sourceCode .ot { color: #A05000 !important; }
+        .katex-display, mjx-container[display="true"] {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .code-container {
+            position: relative;
+        }
+        .collapsible-code {
+            max-height: 240px; /* Approx 10 lines */
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+            position: relative;
+        }
+        .collapsible-code:not(.expanded)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(to bottom, rgba(250,250,250,0), #FAFAFA 90%);
+        }
+        .collapsible-code.expanded {
+            max-height: 2000px; /* Large enough for any code block */
+        }
+        .toggle-code {
+            margin-top: 8px; padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc; background-color: #f0f0f0; cursor: pointer;
+        }
+        .code-link { display: block; margin-top: 12px; font-weight: 600; }
+        #next-message-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            animation: flash 1.5s infinite;
+            z-index: 100;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="traffic-lights">
+                <div class="light red"></div>
+                <div class="light yellow"></div>
+                <div class="light green"></div>
+            </div>
+        </div>
+        <div class="search-bar">Search</div>
+        <div class="menu-item">Wave Superposition App</div>
+        <div class="menu-item active">Predator-Prey App</div>
+        <div class="sidebar-footer">
+            <span>Alex Sen Gupta</span>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <h1>Predator-Prey App — ChatGPT - Conversation Transcript</h1>
+            <div class="subtitle">conceptual models/apps</div>
+        </div>
+        <div class="chat-container">
+            
+            <div class="chat-message user-message"><div class="message-bubble">
+<p>Uploaded a file: <a href="MODEL_pred_prey.pdf" target="_blank"><strong><code>MODEL_pred_prey.pdf</code></strong></a></p>
+<p>Could you explain this paper briefly for an ecology PhD with limited maths ability</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Here’s a concise, ecology-focused overview of the paper <strong>“Chaotic dynamics in a simple predator–prey model with discrete delay”</strong> by Guihong Fan and Gail Wolkowicz (2021) — written for a biological scientist with limited maths background:</p>
+<hr>
+<h3><strong>Core idea</strong></h3>
+<p>The authors study how adding a <strong>time delay</strong>—representing the period between prey capture and its conversion into predator biomass—can transform a simple, normally stable predator–prey system into one showing <strong>oscillations, bistability, and even chaos</strong>.</p>
+<hr>
+<h3><strong>1. The base model (without delay)</strong></h3>
+<p>They start from a <strong>Gause-type predator–prey model</strong> where:</p>
+<ul>
+<li>Prey grow logistically (limited by carrying capacity $K$).</li>
+<li>Predators consume prey according to a simple <strong>linear “mass-action” rate</strong> (Holling type I functional response).</li>
+</ul>
+<p>Without delay, the system always settles to a <strong>stable equilibrium</strong>:</p>
+<ul>
+<li>Either predators die out and prey reach carrying capacity.</li>
+<li>Or both coexist at constant densities.</li>
+<li>No oscillations occur — it’s globally stable.</li>
+</ul>
+<hr>
+<h3><strong>2. Introducing a time delay</strong></h3>
+<p>To model processing or digestion time, they add a <strong>discrete delay</strong> $\tau$ :</p>
+<p>$$
+\begin{aligned} \dot{x}(t) &amp;= r x(t)\!\left(1 - \frac{x(t)}{K}\right) - m x(t) y(t) \\ \dot{y}(t) &amp;= -s y(t) + Y e^{-s\tau} m x(t - \tau) y(t - \tau) \end{aligned}
+$$</p>
+<p>where $e^{-s\tau}$ accounts for predators that die before finishing processing prey.</p>
+<p>This delay doesn’t change the basic structure but introduces <strong>memory</strong>: predator growth depends on past prey availability.</p>
+<hr>
+<h3><strong>3. What happens as the delay increases</strong></h3>
+<p>When $\tau = 0$: system stable.<br>
+As $\tau$ grows:</p>
+<ul>
+<li>The <strong>equilibrium becomes unstable</strong> through a <strong>Hopf bifurcation</strong>, giving rise to <strong>sustained cycles</strong>.</li>
+<li>With further increases, the cycles undergo:
+<ul>
+<li><strong>Saddle-node bifurcations</strong> (two cycles coexist — bistability).</li>
+<li><strong>Period-doubling cascades</strong> (oscillations repeating every 2, 4, 8 … cycles).</li>
+<li>Finally, <strong>chaotic fluctuations</strong> similar to those seen in the <strong>Mackey–Glass equation</strong> (a well-known model of physiological chaos).</li>
+</ul>
+</li>
+</ul>
+<p>When the delay becomes very long, predators <strong>go extinct</strong> because they can’t reproduce fast enough to offset mortality.</p>
+<hr>
+<h3><strong>4. Example behaviour (Fig. 2–10)</strong></h3>
+<p>Using parameter values typical of scaled ecological systems ($r = 1,\ s = 0.02,\ Y = 0.6$):</p>
+<ul>
+<li>Two Hopf bifurcations occur at delays $\tau≈1.9$ and $\tau≈108$.</li>
+<li>Between these, the model shows:
+<ul>
+<li><strong>Stable oscillations</strong> → <strong>bistability</strong> (two distinct cycles).</li>
+<li><strong>Period-doubling → chaos → back to periodicity</strong>.</li>
+<li><strong>Strange attractor</strong> with sensitive dependence on initial conditions (the hallmark of chaos).</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3><strong>5. Ecological interpretation</strong></h3>
+<ul>
+<li><strong>Delay = processing or maturation time.</strong><br>
+Longer delays (e.g., due to lower temperatures) can destabilize predator–prey dynamics.</li>
+<li><strong>Moderate delay</strong> → large oscillations; populations risk <strong>stochastic extinction</strong> if they dip too low.</li>
+<li><strong>Long delay</strong> → predators go extinct deterministically.</li>
+<li><strong>Short delay</strong> → stable coexistence.</li>
+<li><strong>Temperature effects:</strong> since digestion/maturation speeds up with warmth, climate change can shift populations between stable, cyclic, or chaotic regimes.</li>
+</ul>
+<hr>
+<h3><strong>6. Broader implications</strong></h3>
+<ul>
+<li>Even the <strong>simplest</strong> predator–prey model can show <strong>complex and unpredictable dynamics</strong> when biologically realistic time lags are included.</li>
+<li>Ignoring delays can therefore <strong>mislead population predictions</strong> or conservation decisions.</li>
+<li>The pattern of transitions—steady → cyclic → chaotic → steady—may also occur in more realistic food-web or stage-structured models.</li>
+</ul>
+<hr>
+<h3><strong>In short</strong></h3>
+<blockquote>
+<p>A time delay in predator response—representing processing or maturation time—can turn a stable ecological system into one showing oscillations, bistability, and chaos.<br>
+The longer the delay, the more complex the dynamics, until predators eventually go extinct.</p>
+</blockquote>
+<hr>
+<p>Would you like me to also extract the <strong>main equations and parameter meanings</strong> (in plain language) as a follow-up table? That would make it easier to connect the math to the biology.</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>Yes please. Can you stick to the unscaled equations as these are more intuitive. And use the d/d format rather dot format as Im not so familiar with that. Can you tabulate the parameters and provide a term by term explanation of the equations, but please keep it simple</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Here’s a clear, biology-oriented breakdown of the <strong>unscaled predator–prey model</strong> used in the paper, with the equations written in the more familiar $\frac{d}{dt}$ form, followed by a simple term-by-term explanation and a table of parameters.</p>
+<hr>
+<p><strong>Unscaled model equations</strong></p>
+<hr>
+<p>$$
+\begin{aligned} \frac{dx(t)}{dt} &amp;= r\,x(t)\!\left(1 - \frac{x(t)}{K}\right) - m\,x(t)\,y(t) \\ \frac{dy(t)}{dt} &amp;= -s\,y(t) + Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau) \end{aligned}
+$$</p>
+<p>where</p>
+<ul>
+<li>$x(t)$ = prey population at time $t$</li>
+<li>$y(t)$ = predator population at time $t$</li>
+<li>$\tau$ = time delay (e.g., digestion or maturation time)</li>
+</ul>
+<hr>
+<p><strong>Explanation of each term</strong></p>
+<hr>
+<table>
+<thead>
+<tr>
+<th>Equation part</th>
+<th>Meaning (biological interpretation)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\frac{dx}{dt} = r\,x(1 - \frac{x}{K})$</td>
+<td><strong>Logistic prey growth:</strong> prey increase at rate $r$, but level off near carrying capacity $K$.</td>
+</tr>
+<tr>
+<td>$-m\,x\,y$</td>
+<td><strong>Predation term:</strong> prey are eaten in proportion to both prey and predator abundance (simple “mass action” assumption).</td>
+</tr>
+<tr>
+<td>$\frac{dy}{dt} = -s\,y$</td>
+<td><strong>Predator death term:</strong> predators die naturally at rate $s$ in the absence of food.</td>
+</tr>
+<tr>
+<td>$+ Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau)$</td>
+<td><strong>Delayed predator growth:</strong> new predators are produced from prey eaten $\tau$ time units ago; only a fraction $e^{-s\tau}$ survive the delay period.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>Parameter table</strong></p>
+<hr>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Description</th>
+<th>Units</th>
+<th>Typical ecological meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$r$</td>
+<td>Intrinsic growth rate of prey</td>
+<td>1/time</td>
+<td>How fast the prey would grow without predators</td>
+</tr>
+<tr>
+<td>$K$</td>
+<td>Carrying capacity of prey</td>
+<td>population</td>
+<td>Max sustainable prey population</td>
+</tr>
+<tr>
+<td>$m$</td>
+<td>Attack or encounter rate</td>
+<td>1/(predator·time)</td>
+<td>How effectively predators catch prey</td>
+</tr>
+<tr>
+<td>$s$</td>
+<td>Predator death rate</td>
+<td>1/time</td>
+<td>Natural loss rate of predators (starvation, mortality)</td>
+</tr>
+<tr>
+<td>$Y$</td>
+<td>Conversion efficiency</td>
+<td>dimensionless</td>
+<td>How efficiently consumed prey biomass is converted into predator biomass</td>
+</tr>
+<tr>
+<td>$\tau$</td>
+<td>Time delay</td>
+<td>time</td>
+<td>Time between capturing prey and producing new predators (e.g., digestion or maturation)</td>
+</tr>
+<tr>
+<td>$e^{-s\tau}$</td>
+<td>Survival factor</td>
+<td>dimensionless</td>
+<td>Fraction of predators surviving the delay interval</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>Plain-language summary</strong></p>
+<hr>
+<ul>
+<li>The <strong>prey equation</strong> says prey grow logistically but are reduced by encounters with predators.</li>
+<li>The <strong>predator equation</strong> says predators die continually, but gain biomass based on prey captured <strong>a time $\tau$ ago</strong>, adjusted by how many predators survive that time.</li>
+<li>When $\tau = 0$, both populations approach a steady equilibrium.</li>
+<li>When $\tau$ increases, the delayed feedback can destabilize the system, causing oscillations and potentially chaotic swings in population size.</li>
+</ul>
+<hr>
+<p>Would you like me to rewrite the <strong>whole predator equation</strong> in plain words — like a short sentence version that reads more like a biological rule than a formula?</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>the final term for the prey is quite complex, can you explain it more simply, including the sub terms</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Absolutely — let’s unpack that <strong>delayed predator growth term</strong> in plain, step-by-step ecological language.</p>
+<hr>
+<h3><strong>The term</strong></h3>
+<p>$$
++\, Y\, e^{-s\tau}\, m\, x(t-\tau)\, y(t-\tau)
+$$</p>
+<p>This is the <strong>gain term</strong> in the predator equation:</p>
+<p>$$
+\frac{dy}{dt} = -s\,y(t) + \textcolor{blue}{Y\, e^{-s\tau}\, m\, x(t-\tau)\, y(t-\tau)}.
+$$</p>
+<p>It represents how new predator biomass (or individuals) is produced from prey eaten in the past.</p>
+<hr>
+<h3><strong>Breaking it into sub-parts</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Sub-term</th>
+<th>Meaning</th>
+<th>Biological interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x(t-\tau)$</td>
+<td>Prey abundance <strong>τ time units ago</strong></td>
+<td>How many prey were available when predators were feeding in the past.</td>
+</tr>
+<tr>
+<td>$y(t-\tau)$</td>
+<td>Predator abundance <strong>τ time units ago</strong></td>
+<td>How many predators were hunting back then.</td>
+</tr>
+<tr>
+<td>$m\,x(t-\tau)\,y(t-\tau)$</td>
+<td><strong>Predation rate τ time units ago</strong></td>
+<td>The rate at which prey were being captured and consumed then (simple mass-action assumption).</td>
+</tr>
+<tr>
+<td>$e^{-s\tau}$</td>
+<td><strong>Survival fraction of predators</strong></td>
+<td>The proportion of those predators that survived the time delay (τ). Some die before digesting prey or producing offspring. If $s$ is high or τ is long, fewer survive.</td>
+</tr>
+<tr>
+<td>$Y$</td>
+<td><strong>Yield or conversion efficiency</strong></td>
+<td>How efficiently consumed prey biomass is turned into predator biomass (energy gain → reproduction).</td>
+</tr>
+<tr>
+<td><strong>Altogether</strong></td>
+<td>$Y\, e^{-s\tau}\, m\, x(t-\tau)\, y(t-\tau)$</td>
+<td>The <strong>rate of new predator production now</strong>, based on how many prey were eaten τ time units ago and how many of those predators survived to benefit from that meal.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3><strong>Putting it simply</strong></h3>
+<ul>
+<li>At time $t - \tau$, predators ate prey at rate $m\,x(t-\tau)\,y(t-\tau)$.</li>
+<li>It takes <strong>τ units of time</strong> for that food to be converted into predator growth.</li>
+<li>Some predators die before then → only a fraction $e^{-s\tau}$ survive.</li>
+<li>Each surviving predator gains biomass with efficiency $Y$.</li>
+<li>So, at time $t$, the <strong>net predator growth rate</strong> from those earlier meals is
+$$
+Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau).
+$$</li>
+</ul>
+<hr>
+<p>Would you like me to rewrite the <strong>whole predator equation</strong> in plain words — like a short sentence version that reads more like a biological rule than a formula?</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>yep can you write out word equations for both predator and prey</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Sure — here are <strong>simple word equations</strong> that capture the meaning of both the prey and predator dynamics in the model, using everyday ecological language rather than symbols.</p>
+<hr>
+<h3><strong>Prey equation</strong></h3>
+<p>$$
+\frac{dx}{dt} = r\,x(t)\!\left(1 - \frac{x(t)}{K}\right) - m\,x(t)\,y(t)
+$$</p>
+<p><strong>Word equation:</strong></p>
+<blockquote>
+<p><strong>Change in prey = natural growth of prey (limited by carrying capacity) − losses to predation.</strong></p>
+</blockquote>
+<p><strong>In words:</strong></p>
+<ul>
+<li>The prey population increases through natural reproduction, but this growth slows as the population approaches the environment’s carrying capacity.</li>
+<li>At the same time, prey are removed when they are eaten by predators, at a rate that depends on how many prey and predators are present.</li>
+</ul>
+<hr>
+<h3><strong>Predator equation</strong></h3>
+<p>$$
+\frac{dy}{dt} = -s\,y(t) + Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau)
+$$</p>
+<p><strong>Word equation:</strong></p>
+<blockquote>
+<p><strong>Change in predators = natural predator deaths + growth from prey consumed earlier (after a delay).</strong></p>
+</blockquote>
+<p><strong>In words:</strong></p>
+<ul>
+<li>The predator population declines naturally as individuals die at a constant rate.</li>
+<li>It increases when earlier feeding events (from τ time units ago) result in the production of new predator biomass or offspring.</li>
+<li>Only a fraction of predators survive the delay period, and the energy gained from the prey is converted into new predator growth with some efficiency.</li>
+</ul>
+<hr>
+<p>Together:</p>
+<blockquote>
+<p><strong>Prey grow logistically but are eaten by predators.<br>
+Predators die naturally but increase by converting previously captured prey into new predator biomass after a delay.</strong></p>
+</blockquote>
+<hr>
+<p>Would you like me to include a <strong>simple feedback diagram</strong> (arrows showing how prey growth, predation, delay, and mortality interact)? It can make the system’s structure even clearer.</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>Id like to turn this into a web app in a self contained html/JS page. Something that would display predator and prey distributions for different parameter values in real time. We could have sliders for the various parameters (including length of simulation and time step). Id like to use a simple numerical method like forward difference if possible so it's easy to explain the methodology. Does this make sense? Do you need any additional information from me?</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>That makes perfect sense. Here’s a single, self-contained HTML file that runs the unscaled delayed predator–prey model with simple forward-Euler (forward difference), interactive sliders (including duration and time step), real-time plotting, pause/reset, and CSV export.</p>
+<p>Copy everything below into a file like <code>pred_prey_delay.html</code> and open it in your browser.</p>
+<div class="code-container">
+<pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+&lt;title&gt;Predator–Prey with Delay (Forward Euler)&lt;/title&gt;
+&lt;style&gt;
+  :root { --fg:#0f172a; --muted:#475569; --accent:#2563eb; --bg:#f8fafc; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+         margin:0; color:var(--fg); background:var(--bg); }
+  header { padding:16px 20px; border-bottom:1px solid #e5e7eb; background:white; position:sticky; top:0; z-index:5;}
+  header h1 { margin:0; font-size:18px; }
+  main { display:grid; grid-template-columns: 360px 1fr; gap:16px; padding:16px; }
+  @media (max-width: 980px) { main { grid-template-columns:1fr; } }
+  .panel { background:white; border:1px solid #e5e7eb; border-radius:12px; padding:14px; }
+  .row { display:flex; align-items:center; gap:10px; margin:10px 0; }
+  .row label { width:125px; font-size:13px; color:var(--muted); }
+  input[type="range"] { width:100%; }
+  .val { min-width:72px; text-align:right; font-variant-numeric: tabular-nums; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  button { border:1px solid #d1d5db; background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+  button.primary { background:var(--accent); color:white; border-color:var(--accent); }
+  canvas { width:100%; height:360px; border-radius:12px; background:white; border:1px solid #e5e7eb; }
+  .small { font-size:12px; color:var(--muted); line-height:1.35; }
+  .plots { display:grid; grid-template-columns:1fr; gap:12px; }
+  .legend { display:flex; gap:12px; align-items:center; margin:8px 0 0; }
+  .dot { width:10px; height:10px; border-radius:10px; display:inline-block; }
+  .dot.prey { background:#16a34a; } /* green */
+  .dot.pred { background:#ef4444; } /* red */
+  .dot.phase { background:#0ea5e9; } /* cyan */
+  .split { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header&gt;
+  &lt;h1&gt;Predator–Prey with Discrete Delay — Forward Euler (unscaled model)&lt;/h1&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;!-- Controls --&gt;
+  &lt;section class="panel" id="controls"&gt;
+    &lt;h3 style="margin:0 0 8px 0;"&gt;Parameters&lt;/h3&gt;
+
+    &lt;div class="row"&gt;&lt;label for="r"&gt;Prey growth r&lt;/label&gt;
+      &lt;input id="r" type="range" min="0" max="3" step="0.01" value="1.0"/&gt;
+      &lt;div class="val" id="r_val"&gt;1.00&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="K"&gt;Carrying capacity K&lt;/label&gt;
+      &lt;input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0"/&gt;
+      &lt;div class="val" id="K_val"&gt;1.0&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="m"&gt;Attack rate m&lt;/label&gt;
+      &lt;input id="m" type="range" min="0" max="5" step="0.01" value="1.0"/&gt;
+      &lt;div class="val" id="m_val"&gt;1.00&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="s"&gt;Predator death s&lt;/label&gt;
+      &lt;input id="s" type="range" min="0" max="1" step="0.001" value="0.02"/&gt;
+      &lt;div class="val" id="s_val"&gt;0.020&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="Y"&gt;Conversion Y&lt;/label&gt;
+      &lt;input id="Y" type="range" min="0" max="2" step="0.01" value="0.6"/&gt;
+      &lt;div class="val" id="Y_val"&gt;0.60&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="tau"&gt;Delay τ (time)&lt;/label&gt;
+      &lt;input id="tau" type="range" min="0" max="200" step="0.1" value="0"/&gt;
+      &lt;div class="val" id="tau_val"&gt;0.0&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;h3 style="margin:14px 0 8px 0;"&gt;Initial conditions &amp; numerics&lt;/h3&gt;
+    &lt;div class="row"&gt;&lt;label for="x0"&gt;Prey x(≤0)&lt;/label&gt;
+      &lt;input id="x0" type="range" min="0" max="2" step="0.01" value="0.1"/&gt;
+      &lt;div class="val" id="x0_val"&gt;0.10&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="row"&gt;&lt;label for="y0"&gt;Predator y(≤0)&lt;/label&gt;
+      &lt;input id="y0" type="range" min="0" max="2" step="0.01" value="0.1"/&gt;
+      &lt;div class="val" id="y0_val"&gt;0.10&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="dt"&gt;Time step Δt&lt;/label&gt;
+      &lt;input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.01"/&gt;
+      &lt;div class="val" id="dt_val"&gt;0.0100&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="T"&gt;Duration T&lt;/label&gt;
+      &lt;input id="T" type="range" min="50" max="5000" step="10" value="1200"/&gt;
+      &lt;div class="val" id="T_val"&gt;1200&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="btns"&gt;
+      &lt;button id="start" class="primary"&gt;Start&lt;/button&gt;
+      &lt;button id="pause"&gt;Pause&lt;/button&gt;
+      &lt;button id="reset"&gt;Reset&lt;/button&gt;
+      &lt;button id="export"&gt;Export CSV&lt;/button&gt;
+      &lt;button id="clear"&gt;Clear Plots&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;p class="small" style="margin-top:10px;"&gt;
+      &lt;strong&gt;Numerics:&lt;/strong&gt; Forward Euler updates:
+      &lt;span class="code"&gt;x&lt;sub&gt;n+1&lt;/sub&gt; = x&lt;sub&gt;n&lt;/sub&gt; + Δt · [r x&lt;sub&gt;n&lt;/sub&gt;(1 − x&lt;sub&gt;n&lt;/sub&gt;/K) − m x&lt;sub&gt;n&lt;/sub&gt; y&lt;sub&gt;n&lt;/sub&gt;]&lt;/span&gt;,
+      &lt;span class="code"&gt;y&lt;sub&gt;n+1&lt;/sub&gt; = y&lt;sub&gt;n&lt;/sub&gt; + Δt · [−s y&lt;sub&gt;n&lt;/sub&gt; + Y e&lt;sup&gt;−sτ&lt;/sup&gt; m x&lt;sub&gt;n−d&lt;/sub&gt; y&lt;sub&gt;n−d&lt;/sub&gt;]&lt;/span&gt;,
+      with delay index &lt;span class="code"&gt;d = round(τ/Δt)&lt;/span&gt;. History for &lt;span class="code"&gt;t ≤ 0&lt;/span&gt; set to
+      &lt;span class="code"&gt;x = x₀&lt;/span&gt;, &lt;span class="code"&gt;y = y₀&lt;/span&gt;. Values are floored at 0.
+    &lt;/p&gt;
+    &lt;p class="small"&gt;
+      Tip: If things blow up or oscillate too wildly numerically, reduce Δt.
+    &lt;/p&gt;
+  &lt;/section&gt;
+
+  &lt;!-- Plots --&gt;
+  &lt;section class="plots"&gt;
+    &lt;div class="panel"&gt;
+      &lt;h3 style="margin:0 0 8px 0;"&gt;Time series&lt;/h3&gt;
+      &lt;canvas id="ts"&gt;&lt;/canvas&gt;
+      &lt;div class="legend"&gt;
+        &lt;span class="dot prey"&gt;&lt;/span&gt; Prey x(t)
+        &lt;span class="dot pred"&gt;&lt;/span&gt; Predator y(t)
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="panel"&gt;
+      &lt;h3 style="margin:0 0 8px 0;"&gt;Phase plane (x vs y)&lt;/h3&gt;
+      &lt;canvas id="phase"&gt;&lt;/canvas&gt;
+      &lt;div class="legend"&gt;
+        &lt;span class="dot phase"&gt;&lt;/span&gt; Trajectory
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/main&gt;
+
+&lt;script&gt;
+(() =&gt; {
+  // ---- DOM helpers ----
+  const el = id =&gt; document.getElementById(id);
+  const inputs = ["r","K","m","s","Y","tau","x0","y0","dt","T"];
+  const state = {};
+  function syncVal(id) {
+    const v = parseFloat(el(id).value);
+    state[id] = v;
+    el(id + "_val").textContent = (id==="K"||id==="T") ? v.toFixed(0)
+      : (id==="s" ? v.toFixed(3)
+        : (id==="dt" ? v.toFixed(4)
+          : v.toFixed(2)));
+    if (id==="tau") { // show one decimal for tau
+      el(id + "_val").textContent = v.toFixed(1);
+    }
+  }
+  inputs.forEach(id =&gt; {
+    syncVal(id);
+    el(id).addEventListener("input", () =&gt; {
+      syncVal(id);
+      if (id==="dt" || id==="tau") recomputeDelaySteps();
+    });
+  });
+
+  // ---- Simulation buffers ----
+  let t = 0, running = false, rafId = null;
+  let xs = [], ys = [], ts = [];
+  let delaySteps = 0;
+  let lastDrawIdx = 0;
+
+  // canvases and contexts
+  const tsCanvas = el("ts"), phCanvas = el("phase");
+  const tsCtx = tsCanvas.getContext("2d");
+  const phCtx = phCanvas.getContext("2d");
+  function resizeCanvases() {
+    const setSize = (cv) =&gt; { const rect = cv.getBoundingClientRect(); cv.width = Math.max(600, rect.width*devicePixelRatio|0); cv.height = Math.max(250, rect.height*devicePixelRatio|0); };
+    setSize(tsCanvas); setSize(phCanvas);
+    drawAll(true);
+  }
+  window.addEventListener("resize", resizeCanvases, {passive:true});
+  resizeCanvases();
+
+  function recomputeDelaySteps() {
+    delaySteps = Math.max(0, Math.round(state.tau / state.dt));
+  }
+  recomputeDelaySteps();
+
+  // ---- Initialization ----
+  function initialize() {
+    t = 0;
+    xs = []; ys = []; ts = [];
+    // prefill history for t &lt;= 0 with (x0,y0)
+    for (let i = 0; i &lt; delaySteps; i++) {
+      xs.push(state.x0);
+      ys.push(state.y0);
+      ts.push(-(delaySteps - i) * state.dt);
+    }
+    // seed current
+    xs.push(state.x0); ys.push(state.y0); ts.push(0);
+    lastDrawIdx = 0;
+    drawAll(true);
+  }
+  initialize();
+
+  // ---- Model step (Forward Euler) ----
+  function stepOnce() {
+    const n = xs.length - 1;
+    const x = xs[n], y = ys[n];
+    const dt = state.dt;
+
+    const r = state.r, K = state.K, m = state.m, s = state.s, Y = state.Y, tau = state.tau;
+
+    // delay term indices
+    const d = delaySteps;
+    const idxDelay = Math.max(0, n - d);
+    const xd = xs[idxDelay], yd = ys[idxDelay];
+
+    // derivatives (unscaled model)
+    const dx = r * x * (1 - x / K) - m * x * y;
+    const dy = -s * y + Y * Math.exp(-s * tau) * m * xd * yd;
+
+    const xn = Math.max(0, x + dt * dx);
+    const yn = Math.max(0, y + dt * dy);
+
+    xs.push(xn);
+    ys.push(yn);
+    t += dt;
+    ts.push(t);
+  }
+
+  // ---- Animation loop ----
+  function loop() {
+    if (!running) return;
+
+    // simulate a small block per frame for speed (keeps ~real-time)
+    const blockSteps = 200; // compute up to 200 Euler steps per frame
+    let k = 0;
+    const T = state.T;
+    while (k &lt; blockSteps &amp;&amp; t &lt; T) {
+      stepOnce();
+      k++;
+    }
+
+    drawAll(false);
+
+    if (t &gt;= T) {
+      running = false;
+      rafId = null;
+      return;
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // ---- Plotting helpers ----
+  function drawAll(full) {
+    drawTimeSeries(full);
+    drawPhase(full);
+  }
+
+  function autoscale(arr, pad=0.08) {
+    let min = Infinity, max = -Infinity;
+    for (let i=0;i&lt;arr.length;i++) { const v=arr[i]; if (!Number.isFinite(v)) continue; if (v&lt;min) min=v; if (v&gt;max) max=v; }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) { min=0; max=1; }
+    if (Math.abs(max-min) &lt; 1e-6) { max = min + 1; }
+    const span = max-min;
+    return { min: Math.max(0, min - pad*span), max: max + pad*span };
+  }
+
+  function drawTimeSeries(full) {
+    const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+
+    // scale
+    const tmin = 0, tmax = Math.max(state.T, ts[ts.length-1]||state.T);
+    const xScale = v =&gt; 40 + (W-50) * (v - tmin) / (tmax - tmin + 1e-12);
+
+    const yRange = autoscale([...xs, ...ys]);
+    const yScale = v =&gt; (H-30) - (H-40) * (v - yRange.min) / (yRange.max - yRange.min + 1e-12);
+
+    // grid lines (few)
+    ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+    ctx.fillText("t", W-24, H-10);
+    ctx.save(); ctx.translate(12, 16); ctx.rotate(-Math.PI/2); ctx.fillText("population", 0, 0); ctx.restore();
+
+    // prey
+    ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i=0;i&lt;ts.length;i++){
+      const px = xScale(Math.max(0, ts[i]));
+      const py = yScale(xs[i]);
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    // predator
+    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i=0;i&lt;ts.length;i++){
+      const px = xScale(Math.max(0, ts[i]));
+      const py = yScale(ys[i]);
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    // labels
+    ctx.fillStyle = "#16a34a"; ctx.fillText("x(t)", 48, 18);
+    ctx.fillStyle = "#ef4444"; ctx.fillText("y(t)", 84, 18);
+  }
+
+  function drawPhase(full) {
+    const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+
+    const xRange = autoscale(xs);
+    const yRange = autoscale(ys);
+    const xScale = v =&gt; 40 + (W-50) * (v - xRange.min) / (xRange.max - xRange.min + 1e-12);
+    const yScale = v =&gt; (H-30) - (H-40) * (v - yRange.min) / (yRange.max - yRange.min + 1e-12);
+
+    // path
+    ctx.strokeStyle = "#0ea5e9"; ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let i=0;i&lt;xs.length;i++){
+      const px = xScale(xs[i]);
+      const py = yScale(ys[i]);
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    // labels
+    ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+    ctx.fillText("prey x", 50, 18);
+    ctx.save(); ctx.translate(12, 60); ctx.rotate(-Math.PI/2); ctx.fillText("predator y", 0, 0); ctx.restore();
+  }
+
+  // ---- Buttons ----
+  el("start").addEventListener("click", () =&gt; {
+    if (!running) {
+      running = true;
+      if (!rafId) rafId = requestAnimationFrame(loop);
+    }
+  });
+  el("pause").addEventListener("click", () =&gt; {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  });
+  el("reset").addEventListener("click", () =&gt; {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    recomputeDelaySteps();
+    initialize();
+  });
+  el("clear").addEventListener("click", () =&gt; {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    xs = []; ys = []; ts = []; t = 0; drawAll(true);
+  });
+
+  el("export").addEventListener("click", () =&gt; {
+    let csv = "t,x,y\n";
+    for (let i=0;i&lt;ts.length;i++) {
+      csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+    }
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "pred_prey_delay.csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(() =&gt; { URL.revokeObjectURL(url); a.remove(); }, 0);
+  });
+
+  // If any parameter slider changes while running, keep going with new values.
+  inputs.forEach(id =&gt; el(id).addEventListener("change", () =&gt; {
+    // when tau or dt changes, delaySteps may change; preserve arrays sensibly by padding/trimming history
+    if (id==="dt" || id==="tau") {
+      const oldD = delaySteps;
+      recomputeDelaySteps();
+      const newD = delaySteps;
+      const deficit = newD - oldD;
+      if (deficit &gt; 0) {
+        // need more history: pad using current earliest known value
+        const xpad = xs.length ? xs[0] : state.x0;
+        const ypad = ys.length ? ys[0] : state.y0;
+        const t0 = ts.length ? ts[0] : 0;
+        for (let i=0;i&lt;deficit;i++) {
+          xs.unshift(xpad);
+          ys.unshift(ypad);
+          ts.unshift(t0 - (deficit - i) * state.dt);
+        }
+      } else if (deficit &lt; 0) {
+        // can drop extra history (but keep at least one point)
+        xs = xs.slice(-deficit);
+        ys = ys.slice(-deficit);
+        ts = ts.slice(-deficit);
+      }
+    }
+  }));
+
+})();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<button class="toggle-code">Show more</button>
+</div>
+<a href="pp_1.html" class="code-link" target="_blank">Open page in browser</a>
+<h3>Notes on what’s happening</h3>
+<ul>
+<li><strong>Equations (unscaled):</strong>
+<ul>
+<li><code>dx/dt = r·x·(1 − x/K) − m·x·y</code></li>
+<li><code>dy/dt = −s·y + Y·e^(−s·τ)·m·x(t−τ)·y(t−τ)</code></li>
+</ul>
+</li>
+<li><strong>Numerics:</strong> Forward Euler (forward difference). Delay handled by keeping a <strong>history buffer</strong> and reading the state from <code>round(τ/Δt)</code> steps back.</li>
+<li><strong>Initial history:</strong> For all times ≤ 0, the app uses constant values <code>x0</code>, <code>y0</code>. You can change those with sliders.</li>
+<li><strong>Stability tip:</strong> If the plot “explodes” due to numerical error, reduce Δt (time step). Forward Euler is simple but not very stable at large Δt.</li>
+</ul>
+<p>If you want extras (e.g., show the coexistence equilibrium or add a second plot for the delayed product $x(t-τ)y(t-τ)$), I can wire those in.</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>rather than showing the timeseries evolve can we just show the full timeseies and recalculate that each time a parameter is changes. So we wouldnt need a start, clear and reset button</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Absolutely—here’s a single, self-contained HTML page that <strong>recomputes and plots the full time series instantly</strong> whenever you change a parameter. There are <strong>no start/reset buttons</strong>; moving any slider triggers a fresh simulation and redraw. It uses the <strong>unscaled</strong> delayed predator–prey model and a simple <strong>forward Euler</strong> scheme.</p>
+<p>Copy this into a file like <code>pred_prey_delay_static.html</code> and open it in your browser.</p>
+<div class="code-container">
+<pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;
+&lt;title&gt;Predator–Prey with Delay — Full Recompute (Forward Euler)&lt;/title&gt;
+&lt;style&gt;
+  :root { --fg:#0f172a; --muted:#475569; --accent:#2563eb; --bg:#f8fafc; }
+  * { box-sizing: border-box; }
+  body { margin:0; color:var(--fg); background:var(--bg);
+         font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; }
+  header { padding:16px 20px; border-bottom:1px solid #e5e7eb; background:#fff; position:sticky; top:0; z-index:2; }
+  header h1 { margin:0; font-size:18px; }
+  main { display:grid; grid-template-columns:360px 1fr; gap:16px; padding:16px; }
+  @media (max-width: 980px) { main { grid-template-columns:1fr; } }
+  .panel { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px; }
+  .row { display:flex; align-items:center; gap:10px; margin:10px 0; }
+  .row label { width:150px; font-size:13px; color:var(--muted); }
+  input[type="range"] { width:100%; }
+  .val { min-width:72px; text-align:right; font-variant-numeric: tabular-nums; }
+  canvas { width:100%; height:360px; border-radius:12px; background:#fff; border:1px solid #e5e7eb; }
+  .legend { display:flex; gap:12px; align-items:center; margin:8px 0 0; font-size:13px; color:var(--muted); }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .dot.prey { background:#16a34a; }
+  .dot.pred { background:#ef4444; }
+  .dot.phase { background:#0ea5e9; }
+  .small { font-size:12px; color:var(--muted); line-height:1.35; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  button { border:1px solid #d1d5db; background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header&gt;
+  &lt;h1&gt;Predator–Prey with Discrete Delay — Full Time Series (Forward Euler)&lt;/h1&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;!-- Controls --&gt;
+  &lt;section class="panel"&gt;
+    &lt;h3 style="margin:0 0 8px 0;"&gt;Parameters&lt;/h3&gt;
+
+    &lt;div class="row"&gt;&lt;label for="r"&gt;Prey growth r&lt;/label&gt;
+      &lt;input id="r" type="range" min="0" max="3" step="0.01" value="1.0"/&gt;
+      &lt;div class="val" id="r_val"&gt;1.00&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="K"&gt;Carrying capacity K&lt;/label&gt;
+      &lt;input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0"/&gt;
+      &lt;div class="val" id="K_val"&gt;1.0&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="m"&gt;Attack rate m&lt;/label&gt;
+      &lt;input id="m" type="range" min="0" max="5" step="0.01" value="1.0"/&gt;
+      &lt;div class="val" id="m_val"&gt;1.00&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="s"&gt;Predator death s&lt;/label&gt;
+      &lt;input id="s" type="range" min="0" max="1" step="0.001" value="0.02"/&gt;
+      &lt;div class="val" id="s_val"&gt;0.020&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="Y"&gt;Conversion Y&lt;/label&gt;
+      &lt;input id="Y" type="range" min="0" max="2" step="0.01" value="0.6"/&gt;
+      &lt;div class="val" id="Y_val"&gt;0.60&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="tau"&gt;Delay τ (time)&lt;/label&gt;
+      &lt;input id="tau" type="range" min="0" max="200" step="0.1" value="0"/&gt;
+      &lt;div class="val" id="tau_val"&gt;0.0&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;h3 style="margin:14px 0 8px 0;"&gt;Initial conditions &amp; numerics&lt;/h3&gt;
+    &lt;div class="row"&gt;&lt;label for="x0"&gt;Prey x(≤0)&lt;/label&gt;
+      &lt;input id="x0" type="range" min="0" max="2" step="0.01" value="0.1"/&gt;
+      &lt;div class="val" id="x0_val"&gt;0.10&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="y0"&gt;Predator y(≤0)&lt;/label&gt;
+      &lt;input id="y0" type="range" min="0" max="2" step="0.01" value="0.1"/&gt;
+      &lt;div class="val" id="y0_val"&gt;0.10&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="dt"&gt;Time step Δt&lt;/label&gt;
+      &lt;input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.01"/&gt;
+      &lt;div class="val" id="dt_val"&gt;0.0100&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="row"&gt;&lt;label for="T"&gt;Duration T&lt;/label&gt;
+      &lt;input id="T" type="range" min="50" max="5000" step="10" value="1200"/&gt;
+      &lt;div class="val" id="T_val"&gt;1200&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="btns"&gt;
+      &lt;button id="export"&gt;Export CSV&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;p class="small" style="margin-top:10px;"&gt;
+      &lt;strong&gt;Model (unscaled):&lt;/strong&gt;
+      &lt;span&gt;dx/dt = r·x·(1 − x/K) − m·x·y&lt;/span&gt;,
+      &lt;span&gt;dy/dt = −s·y + Y·e&lt;sup&gt;−sτ&lt;/sup&gt;·m·x(t−τ)·y(t−τ)&lt;/span&gt;.
+      Forward Euler; delay index &lt;em&gt;d = round(τ/Δt)&lt;/em&gt;. History for &lt;em&gt;t ≤ 0&lt;/em&gt;: x = x₀, y = y₀.
+    &lt;/p&gt;
+    &lt;p class="small"&gt;If curves look numerically unstable, reduce Δt.&lt;/p&gt;
+  &lt;/section&gt;
+
+  &lt;!-- Plots --&gt;
+  &lt;section class="panel"&gt;
+    &lt;h3 style="margin:0 0 8px 0;"&gt;Time series&lt;/h3&gt;
+    &lt;canvas id="ts"&gt;&lt;/canvas&gt;
+    &lt;div class="legend"&gt;
+      &lt;span class="dot prey"&gt;&lt;/span&gt; Prey x(t)
+      &lt;span class="dot pred"&gt;&lt;/span&gt; Predator y(t)
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;section class="panel"&gt;
+    &lt;h3 style="margin:0 0 8px 0;"&gt;Phase plane (x vs y)&lt;/h3&gt;
+    &lt;canvas id="phase"&gt;&lt;/canvas&gt;
+    &lt;div class="legend"&gt;&lt;span class="dot phase"&gt;&lt;/span&gt; Trajectory&lt;/div&gt;
+  &lt;/section&gt;
+&lt;/main&gt;
+
+&lt;script&gt;
+(() =&gt; {
+  // --- Elements &amp; state ---
+  const el = id =&gt; document.getElementById(id);
+  const sliders = ["r","K","m","s","Y","tau","x0","y0","dt","T"];
+  const state = {};
+  let ts = [], xs = [], ys = [];
+
+  // canvases
+  const tsCanvas = el("ts"), tsCtx = tsCanvas.getContext("2d");
+  const phCanvas = el("phase"), phCtx = phCanvas.getContext("2d");
+
+  function resizeCanvases() {
+    const setSize = (cv) =&gt; {
+      const rect = cv.getBoundingClientRect();
+      cv.width  = Math.max(600, Math.round(rect.width  * devicePixelRatio));
+      cv.height = Math.max(250, Math.round(rect.height * devicePixelRatio));
+    };
+    setSize(tsCanvas); setSize(phCanvas);
+    drawAll();
+  }
+  window.addEventListener("resize", resizeCanvases, {passive:true});
+
+  function syncVal(id) {
+    const v = parseFloat(el(id).value);
+    state[id] = v;
+    const target = el(id + "_val");
+    if (!target) return;
+    let text;
+    if (id==="K" || id==="T") text = v.toFixed(0);
+    else if (id==="s") text = v.toFixed(3);
+    else if (id==="dt") text = v.toFixed(4);
+    else if (id==="tau") text = v.toFixed(1);
+    else text = v.toFixed(2);
+    target.textContent = text;
+  }
+
+  sliders.forEach(id =&gt; {
+    syncVal(id);
+    el(id).addEventListener("input", () =&gt; { syncVal(id); recompute(); });
+  });
+
+  // --- Simulation (full recompute) ---
+  function recompute() {
+    const r=state.r, K=state.K, m=state.m, s=state.s, Y=state.Y, tau=state.tau;
+    const x0=state.x0, y0=state.y0, dt=state.dt, T=state.T;
+
+    // guardrails
+    const N = Math.max(2, Math.floor(T / dt) + 1);
+    const d = Math.max(0, Math.round(tau / dt));
+
+    xs = new Array(N + d);
+    ys = new Array(N + d);
+    ts = new Array(N + d);
+
+    // fill history for t ≤ 0
+    for (let i=0; i&lt;d; i++) {
+      xs[i] = x0; ys[i] = y0; ts[i] = (i - d) * dt; // negative times
+    }
+
+    // set initial current point at t=0
+    xs[d] = x0; ys[d] = y0; ts[d] = 0;
+
+    // integrate forward
+    for (let n = d; n &lt; d + N - 1; n++) {
+      const x = xs[n], y = ys[n];
+      const xd = xs[n - d], yd = ys[n - d]; // delayed
+      const dx = r * x * (1 - x / K) - m * x * y;
+      const dy = -s * y + Y * Math.exp(-s * tau) * m * xd * yd;
+      const xn = Math.max(0, x + dt * dx);
+      const yn = Math.max(0, y + dt * dy);
+      xs[n+1] = xn; ys[n+1] = yn; ts[n+1] = ts[n] + dt;
+    }
+
+    // trim off the negative-time history for plotting/export
+    if (d &gt; 0) {
+      xs = xs.slice(d); ys = ys.slice(d); ts = ts.slice(d);
+    }
+    drawAll();
+  }
+
+  // --- Plotting ---
+  function autoscale(arr, pad=0.08) {
+    let min = Infinity, max = -Infinity;
+    for (let v of arr) { if (Number.isFinite(v)) { if (v&lt;min) min=v; if (v&gt;max) max=v; } }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) { min=0; max=1; }
+    if (Math.abs(max-min) &lt; 1e-12) { max = min + 1; }
+    const span = max - min;
+    return { min: Math.max(0, min - pad*span), max: max + pad*span };
+  }
+
+  function drawAll() { drawTimeSeries(); drawPhase(); }
+
+  function drawTimeSeries() {
+    const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // axes
+    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+
+    const tmin = 0, tmax = ts.length ? ts[ts.length-1] : state.T;
+    const xRange = autoscale([...xs, ...ys]);
+
+    const sx = v =&gt; 40 + (W-50) * (v - tmin) / (tmax - tmin + 1e-12);
+    const sy = v =&gt; (H-30) - (H-40) * (v - xRange.min) / (xRange.max - xRange.min + 1e-12);
+
+    // labels
+    ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+    ctx.fillText("t", W-24, H-10);
+    ctx.save(); ctx.translate(12, 18); ctx.rotate(-Math.PI/2); ctx.fillText("population", 0, 0); ctx.restore();
+
+    // prey
+    ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i=0;i&lt;xs.length;i++){ const px=sx(ts[i]); const py=sy(xs[i]); if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+    ctx.stroke();
+
+    // predator
+    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i=0;i&lt;ys.length;i++){ const px=sx(ts[i]); const py=sy(ys[i]); if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+    ctx.stroke();
+
+    // series tags
+    ctx.fillStyle = "#16a34a"; ctx.fillText("x(t)", 50, 18);
+    ctx.fillStyle = "#ef4444"; ctx.fillText("y(t)", 86, 18);
+  }
+
+  function drawPhase() {
+    const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // axes
+    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+
+    const xr = autoscale(xs), yr = autoscale(ys);
+    const sx = v =&gt; 40 + (W-50) * (v - xr.min) / (xr.max - xr.min + 1e-12);
+    const sy = v =&gt; (H-30) - (H-40) * (v - yr.min) / (yr.max - yr.min + 1e-12);
+
+    ctx.strokeStyle = "#0ea5e9"; ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let i=0;i&lt;xs.length;i++){ const px=sx(xs[i]); const py=sy(ys[i]); if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+    ctx.stroke();
+
+    ctx.fillStyle = "#94a3b8"; ctx.font = "12px system-ui, sans-serif";
+    ctx.fillText("prey x", 50, 18);
+    ctx.save(); ctx.translate(12, 60); ctx.rotate(-Math.PI/2); ctx.fillText("predator y", 0, 0); ctx.restore();
+  }
+
+  // --- Export ---
+  el("export").addEventListener("click", () =&gt; {
+    let csv = "t,x,y\n";
+    for (let i=0;i&lt;ts.length;i++) csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "pred_prey_delay.csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(()=&gt;{ URL.revokeObjectURL(url); a.remove(); },0);
+  });
+
+  // initial layout + compute
+  resizeCanvases();
+  recompute();
+})();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<button class="toggle-code">Show more</button>
+</div>
+<a href="pp_2.html" class="code-link" target="_blank">Open page in browser</a>
+<h3>What changed vs. the previous version</h3>
+<ul>
+<li>No animation loop; <strong>the full series is computed immediately</strong> on every slider move.</li>
+<li>Removed start/pause/reset/clear; kept <strong>CSV export</strong> for convenience.</li>
+<li>Delay handled by an integer <strong>index <code>d = round(τ/Δt)</code></strong> into the history buffer.</li>
+<li>Initial history for all $t \le 0$: $x=x_0$, $y=y_0$.</li>
+<li>Plots: <strong>time series</strong> and <strong>phase plane</strong> update instantly.</li>
+</ul>
+<p>If you’d like, I can add optional overlays (e.g., the coexistence equilibrium when it exists) or a toggle to show $x(t-\tau)\,y(t-\tau)$ as a third curve.</p>
+</div></div>
+<div class="chat-message user-message"><div class="message-bubble">
+<p>Great. 1. Can we have ? icons next to each paramter that opens up help on what that parameter does 2. can we include a drop down text box that includes the rendered model equations with the associated word equations and explanations of each term 3. can we include a second drop down text box that very simply explains how the equations are solved ising the forward discretisation. The explanation should be for someone with little or no knowledhe of how to solve these equatons (so model (unscaled) text avn then be removed).4. finally tave a think about the overall layout of the app to improve it e.g. readable axis labels, layout of phase plot, adding bit of colour, better app title - anything to improve the app look</p>
+</div></div>
+<div class="chat-message chatgpt-message"><div class="message-bubble">
+<p>Love it. I’ve rebuilt the app to add per-parameter help, two collapsible “explainers”, and a tidier UI (clearer axes, nicer colors, better title, balanced phase plot). It still recomputes the <strong>full time series instantly</strong> on any change and keeps everything in one HTML file.</p>
+<p>Save as <code>pred_prey_delay_explorer.html</code> and open in your browser.</p>
+<div class="code-container">
+<pre class="collapsible-code"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8" /&gt;
+&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;
+&lt;title&gt;Predator–Prey with Processing Delay — Interactive Explorer&lt;/title&gt;
+
+&lt;!-- MathJax (for rendered equations in the explainers) --&gt;
+&lt;script&gt;
+window.MathJax = { tex: {inlineMath: [['\\(','\\)'], ['$', '$']]} };
+&lt;/script&gt;
+&lt;script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"&gt;&lt;/script&gt;
+
+&lt;style&gt;
+  :root{
+    --fg:#0f172a; --muted:#475569; --accent:#2563eb; --bg:#f8fafc;
+    --grid:#e5e7eb; --panel:#ffffff; --prey:#16a34a; --pred:#ef4444; --phase:#0ea5e9;
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; color:var(--fg); background:var(--bg);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; }
+  header{ padding:18px 20px; border-bottom:1px solid var(--grid); background:var(--panel); position:sticky; top:0; z-index:2; }
+  header h1{ margin:0; font-size:20px; line-height:1.2; }
+  header p{ margin:4px 0 0; color:var(--muted); font-size:13px; }
+  main{ display:grid; grid-template-columns:380px 1fr; gap:16px; padding:16px; }
+  @media (max-width: 1040px){ main{ grid-template-columns:1fr; } }
+
+  .panel{ background:var(--panel); border:1px solid var(--grid); border-radius:12px; padding:14px; }
+  .panel h3{ margin:0 0 8px 0; font-size:16px; }
+  .row{ display:grid; grid-template-columns: 150px 1fr 70px 24px; gap:10px; align-items:center; margin:10px 0; }
+  .row label{ font-size:13px; color:var(--muted); }
+  input[type="range"]{ width:100%; }
+  .val{ text-align:right; font-variant-numeric: tabular-nums; color:#0b1324; }
+
+  .help-btn{
+    width:22px; height:22px; border-radius:50%;
+    border:1px solid #cbd5e1; background:#fff; cursor:pointer; padding:0; font-weight:700;
+    color:#334155; line-height:20px;
+  }
+  .help-btn:focus{ outline:2px solid var(--accent); outline-offset:2px; }
+  .help-pop{
+    position:relative;
+  }
+  .help-pop .bubble{
+    display:none; position:absolute; right:0; top:28px; width:min(320px, 80vw);
+    background:#fff; border:1px solid var(--grid); border-radius:10px; padding:10px 12px; box-shadow:0 8px 24px rgba(2,6,23,.06);
+    font-size:12.5px; color:#0b1324; z-index:10;
+  }
+  .help-pop .bubble p{ margin:6px 0; }
+  .help-pop.open .bubble{ display:block; }
+
+  .legend{ display:flex; gap:12px; align-items:center; margin-top:8px; color:var(--muted); font-size:13px; }
+  .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .dot.prey{ background:var(--prey); }
+  .dot.pred{ background:var(--pred); }
+  .dot.phase{ background:var(--phase); }
+
+  .small{ font-size:12px; color:var(--muted); line-height:1.4; }
+  .explainers details{ border:1px solid var(--grid); border-radius:10px; padding:10px 12px; background:#fff; }
+  .explainers details summary{ cursor:pointer; list-style:none; }
+  .explainers details summary::-webkit-details-marker{ display:none; }
+  .explainers details + details{ margin-top:8px; }
+  .explainers .content{ margin-top:8px; font-size:14px; color:#0b1324; }
+  .explainers .content p{ margin:8px 0; }
+  .explainers code{ background:#f1f5f9; padding:0 6px; border-radius:6px; }
+
+  canvas{ width:100%; height:380px; border-radius:12px; background:#fff; border:1px solid var(--grid); }
+  .plot-title{ margin:0 0 4px 0; font-size:15px; color:#0b1324; }
+  .grid-label{ fill:#64748b; font: 12px system-ui, sans-serif; }
+  .plots{ display:grid; grid-template-columns:1fr; gap:16px; }
+  .export-row{ display:flex; gap:8px; justify-content:flex-start; margin-top:8px; }
+  button.export{ border:1px solid #cbd5e1; background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header&gt;
+  &lt;h1&gt;Predator–Prey with Processing Delay — Interactive Explorer&lt;/h1&gt;
+  &lt;p&gt;Explore how digestion/maturation delay shapes dynamics. Move any slider to recompute the full trajectory instantly.&lt;/p&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;!-- Controls --&gt;
+  &lt;section class="panel"&gt;
+    &lt;h3&gt;Parameters&lt;/h3&gt;
+
+    &lt;!-- r --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="r"&gt;Prey growth r&lt;/label&gt;
+      &lt;input id="r" type="range" min="0" max="3" step="0.01" value="1.00"/&gt;
+      &lt;div class="val" id="r_val"&gt;1.00&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for r"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;r — intrinsic prey growth rate&lt;/strong&gt;
+          &lt;p&gt;How fast prey would grow without predators, per unit time.&lt;/p&gt;
+          &lt;p&gt;Higher &lt;em&gt;r&lt;/em&gt; → faster rebound of the prey population.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- K --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="K"&gt;Carrying capacity K&lt;/label&gt;
+      &lt;input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0"/&gt;
+      &lt;div class="val" id="K_val"&gt;1&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for K"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;K — prey carrying capacity&lt;/strong&gt;
+          &lt;p&gt;Upper bound set by resources; prey logistic growth slows as it nears &lt;em&gt;K&lt;/em&gt;.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- m --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="m"&gt;Attack rate m&lt;/label&gt;
+      &lt;input id="m" type="range" min="0" max="5" step="0.01" value="1.0"/&gt;
+      &lt;div class="val" id="m_val"&gt;1.00&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for m"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;m — encounter/attack rate&lt;/strong&gt;
+          &lt;p&gt;Rate at which predators meet &amp; capture prey (Holling type I).&lt;/p&gt;
+          &lt;p&gt;Higher &lt;em&gt;m&lt;/em&gt; → stronger predation pressure.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- s --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="s"&gt;Predator death s&lt;/label&gt;
+      &lt;input id="s" type="range" min="0" max="1" step="0.001" value="0.02"/&gt;
+      &lt;div class="val" id="s_val"&gt;0.020&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for s"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;s — predator mortality rate&lt;/strong&gt;
+          &lt;p&gt;Background per-time death rate. Larger &lt;em&gt;s&lt;/em&gt; reduces predator persistence unless compensated by food.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Y --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="Y"&gt;Conversion Y&lt;/label&gt;
+      &lt;input id="Y" type="range" min="0" max="2" step="0.01" value="0.60"/&gt;
+      &lt;div class="val" id="Y_val"&gt;0.60&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for Y"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;Y — conversion efficiency&lt;/strong&gt;
+          &lt;p&gt;How efficiently eaten prey biomass becomes predator biomass.&lt;/p&gt;
+          &lt;p&gt;Higher &lt;em&gt;Y&lt;/em&gt; boosts predator growth from each capture.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- tau --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="tau"&gt;Delay τ&lt;/label&gt;
+      &lt;input id="tau" type="range" min="0" max="200" step="0.1" value="0.0"/&gt;
+      &lt;div class="val" id="tau_val"&gt;0.0&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for tau"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;τ — processing/maturation delay&lt;/strong&gt;
+          &lt;p&gt;Time between prey capture and its contribution to predator growth.&lt;/p&gt;
+          &lt;p&gt;Only a fraction &lt;em&gt;e&lt;sup&gt;−sτ&lt;/sup&gt;&lt;/em&gt; of predators survive through the delay.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;h3 style="margin-top:12px;"&gt;Initial conditions &amp; numerics&lt;/h3&gt;
+
+    &lt;!-- x0 --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="x0"&gt;Initial prey x (t≤0)&lt;/label&gt;
+      &lt;input id="x0" type="range" min="0" max="2" step="0.01" value="0.10"/&gt;
+      &lt;div class="val" id="x0_val"&gt;0.10&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for x0"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;Initial prey level&lt;/strong&gt;
+          &lt;p&gt;Used for the whole pre-history (t ≤ 0) and the start at t = 0.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- y0 --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="y0"&gt;Initial pred. y (t≤0)&lt;/label&gt;
+      &lt;input id="y0" type="range" min="0" max="2" step="0.01" value="0.10"/&gt;
+      &lt;div class="val" id="y0_val"&gt;0.10&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for y0"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;Initial predator level&lt;/strong&gt;
+          &lt;p&gt;Used for the whole pre-history (t ≤ 0) and the start at t = 0.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- dt --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="dt"&gt;Time step Δt&lt;/label&gt;
+      &lt;input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.0100"/&gt;
+      &lt;div class="val" id="dt_val"&gt;0.0100&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for dt"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;Numerical time step&lt;/strong&gt;
+          &lt;p&gt;Smaller Δt = more stable &amp; accurate (but slower). If plots “blow up,” reduce Δt.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- T --&gt;
+    &lt;div class="row"&gt;
+      &lt;label for="T"&gt;Duration T&lt;/label&gt;
+      &lt;input id="T" type="range" min="50" max="5000" step="10" value="1200"/&gt;
+      &lt;div class="val" id="T_val"&gt;1200&lt;/div&gt;
+      &lt;div class="help-pop"&gt;
+        &lt;button class="help-btn" aria-label="Help for T"&gt;?&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;strong&gt;Total simulated time&lt;/strong&gt;
+          &lt;p&gt;How long to compute the trajectory. Longer T shows more long-term behavior.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class="export-row"&gt;
+      &lt;button class="export" id="export"&gt;Export CSV&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class="explainers" style="margin-top:14px;"&gt;
+      &lt;details&gt;
+        &lt;summary&gt;&lt;strong&gt;Model equations &amp; plain-language meaning&lt;/strong&gt;&lt;/summary&gt;
+        &lt;div class="content"&gt;
+          &lt;p&gt;&lt;em&gt;Unscaled predator–prey with discrete delay&lt;/em&gt;:&lt;/p&gt;
+          &lt;p&gt;
+            \[
+              \frac{dx(t)}{dt} = r\,x(t)\!\left(1 - \frac{x(t)}{K}\right) - m\,x(t)\,y(t)
+            \]
+            &lt;small&gt;&lt;br&gt;&lt;strong&gt;Prey rule (words):&lt;/strong&gt; natural logistic growth limited by \(K\) minus losses to predation.&lt;/small&gt;
+          &lt;/p&gt;
+          &lt;p&gt;
+            \[
+              \frac{dy(t)}{dt} = -s\,y(t) + Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau)
+            \]
+            &lt;small&gt;&lt;br&gt;&lt;strong&gt;Predator rule (words):&lt;/strong&gt; natural deaths plus growth from prey eaten \(\tau\) time units ago; only a fraction \(e^{-s\tau}\) of predators survive that delay, and \(Y\) converts prey to predator biomass.&lt;/small&gt;
+          &lt;/p&gt;
+          &lt;p&gt;&lt;strong&gt;Predator gain term:&lt;/strong&gt; \(Y\) (efficiency) × \(e^{-s\tau}\) (survival through delay) × \(m\,x(t-\tau)\,y(t-\tau)\) (past predation rate).&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/details&gt;
+
+      &lt;details&gt;
+        &lt;summary&gt;&lt;strong&gt;How this is solved (forward differences)&lt;/strong&gt;&lt;/summary&gt;
+        &lt;div class="content"&gt;
+          &lt;p&gt;&lt;em&gt;Idea:&lt;/em&gt; slice time into small steps of size \(\Delta t\). Change per step ≈ derivative × \(\Delta t\).&lt;/p&gt;
+          &lt;ol&gt;
+            &lt;li&gt;For all \(t\le 0\), set \(x=x_0\), \(y=y_0\) (gives a “history” to look back to).&lt;/li&gt;
+            &lt;li&gt;Turn the delay into a look-back index \(d=\mathrm{round}(\tau/\Delta t)\).&lt;/li&gt;
+            &lt;li&gt;Euler updates:
+              \[
+                x_{n+1} = x_n + \Delta t\,[\,r\,x_n(1 - x_n/K) - m\,x_n\,y_n\,],\quad
+                y_{n+1} = y_n + \Delta t\,[\,-s\,y_n + Y e^{-s\tau} m x_{n-d} y_{n-d}\,].
+              \]
+            &lt;/li&gt;
+            &lt;li&gt;If anything goes numerically wild, try a smaller \(\Delta t\).&lt;/li&gt;
+          &lt;/ol&gt;
+        &lt;/div&gt;
+      &lt;/details&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;!-- Plots --&gt;
+  &lt;section class="panel"&gt;
+    &lt;div class="plot-title"&gt;
+      &lt;span&gt;Time series&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;canvas id="ts"&gt;&lt;/canvas&gt;
+    &lt;div class="legend"&gt;
+      &lt;span class="dot prey"&gt;&lt;/span&gt; Prey \(x(t)\)
+      &lt;span class="dot pred"&gt;&lt;/span&gt; Predator \(y(t)\)
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;section class="panel"&gt;
+    &lt;div class="plot-title"&gt;
+      &lt;span&gt;Phase plane: predator vs prey&lt;/span&gt;
+      &lt;div class="inline-help" id="phase-help"&gt;
+        &lt;button type="button"&gt;? about this plot&lt;/button&gt;
+        &lt;div class="bubble"&gt;
+          &lt;p&gt;&lt;strong&gt;How to read:&lt;/strong&gt; Each point is \((x(t), y(t))\). The curve shows how the system moves through prey–predator space over time.&lt;/p&gt;
+          &lt;ul&gt;
+            &lt;li&gt;&lt;em&gt;Stable equilibrium:&lt;/em&gt; the path spirals in and settles at a point.&lt;/li&gt;
+            &lt;li&gt;&lt;em&gt;Oscillations (limit cycle):&lt;/em&gt; the path closes on a loop and keeps circling.&lt;/li&gt;
+            &lt;li&gt;&lt;em&gt;Chaotic regime:&lt;/em&gt; the path never repeats; it fills out a fuzzy band or tangled set.&lt;/li&gt;
+          &lt;/ul&gt;
+          &lt;p&gt;As the delay \(\tau\) increases from 0 (with other values fixed as in the presets), the system typically goes from a stable point → periodic loops → complex/chaotic bands, then can return to stability for very large \(\tau\).&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;canvas id="phase" aria-label="Phase plot, predator vs prey"&gt;&lt;/canvas&gt;
+    &lt;div class="legend"&gt;&lt;span class="dot phase"&gt;&lt;/span&gt; Trajectory&lt;/div&gt;
+  &lt;/section&gt;
+&lt;/main&gt;
+
+&lt;script&gt;
+(() =&gt; {
+  const el = id =&gt; document.getElementById(id);
+  const sliders = ["r","K","m","s","Y","tau","x0","y0","dt","T"];
+  const state = {};
+  let ts = [], xs = [], ys = [];
+
+  // Help bubbles
+  document.addEventListener("click", (e) =&gt; {
+    const btn = e.target.closest(".help-btn");
+    document.querySelectorAll(".help-pop").forEach(p =&gt; {
+      if (btn &amp;&amp; p.contains(btn)) p.classList.toggle("open");
+      else p.classList.remove("open");
+    });
+  });
+  const phaseHelp = document.getElementById("phase-help");
+  phaseHelp.querySelector("button").addEventListener("click", (e)=&gt;{ phaseHelp.classList.toggle("open"); });
+  document.addEventListener("click", (e)=&gt;{ if (!phaseHelp.contains(e.target)) phaseHelp.classList.remove("open"); });
+
+  // Canvas sizing
+  const tsCanvas = el("ts"), tsCtx = tsCanvas.getContext("2d");
+  const phCanvas = el("phase"), phCtx = phCanvas.getContext("2d");
+  function resizeCanvases() {
+    const setSize = (cv, minW=720, minH=340) =&gt; {
+      const rect = cv.getBoundingClientRect();
+      cv.width  = Math.max(minW, Math.round(rect.width  * devicePixelRatio));
+      cv.height = Math.max(minH, Math.round(rect.height * devicePixelRatio));
+    };
+    setSize(tsCanvas, 760, 360); setSize(phCanvas, 760, 360);
+    drawAll();
+  }
+  window.addEventListener("resize", resizeCanvases, {passive:true});
+
+  // Sliders
+  function syncVal(id){
+    const v = parseFloat(el(id).value); state[id] = v;
+    const out = el(id+"_val");
+    if (out){
+      let txt = v;
+      if (id==="K" || id==="T") txt = v.toFixed(0);
+      else if (id==="s") txt = v.toFixed(3);
+      else if (id==="dt") txt = v.toFixed(4);
+      else if (id==="tau") txt = v.toFixed(1);
+      else txt = v.toFixed(2);
+      out.textContent = txt;
+    }
+  }
+  sliders.forEach(id =&gt; {
+    syncVal(id);
+    el(id).addEventListener("input", () =&gt; { syncVal(id); recompute(); });
+  });
+
+  // Presets
+  el("preset-stable").addEventListener("click",()=&gt;{ setParams({r:1, K:1, m:1, s:0.02, Y:0.6, tau:0.5, x0:0.1, y0:0.1, dt:0.01, T:1200}); });
+  el("preset-osc").addEventListener("click",()=&gt;{ setParams({r:1, K:1, m:1, s:0.02, Y:0.6, tau:85, x0:0.1, y0:0.1, dt:0.01, T:1200}); });
+  el("preset-chaos").addEventListener("click",()=&gt;{ setParams({r:1, K:1, m:1, s:0.02, Y:0.6, tau:90, x0:0.1, y0:0.1, dt:0.01, T:1200}); });
+
+  function setParams(map){
+    for (const k in map){
+      if (el(k)) el(k).value = map[k];
+      state[k] = map[k];
+      const out = el(k+"_val"); if (out) {
+        let v = map[k];
+        if (k==="K" || k==="T") v = (+v).toFixed(0);
+        else if (k==="s") v = (+v).toFixed(3);
+        else if (k==="dt") v = (+v).toFixed(4);
+        else if (k==="tau") v = (+v).toFixed(1);
+        else v = (+v).toFixed(2);
+        out.textContent = v;
+      }
+    }
+    recompute();
+  }
+
+  // Simulation
+  function recompute(){
+    const r=state.r, K=state.K, m=state.m, s=state.s, Y=state.Y, tau=state.tau;
+    const x0=state.x0, y0=state.y0, dt=state.dt, T=state.T;
+    const N = Math.max(2, Math.floor(T/dt) + 1);
+    const d = Math.max(0, Math.round(tau/dt));
+    xs = new Array(N + d); ys = new Array(N + d); ts = new Array(N + d);
+    for (let i=0; i&lt;d; i++){ xs[i] = x0; ys[i] = y0; ts[i] = (i - d) * dt; }
+    xs[d] = x0; ys[d] = y0; ts[d] = 0;
+    const gainFactor = Y * Math.exp(-s * tau) * m;
+    for (let n=d; n&lt;d+N-1; n++){
+      const x = xs[n], y = ys[n];
+      const xd = xs[n - d], yd = ys[n - d];
+      const dx = r * x * (1 - x / K) - m * x * y;
+      const dy = -s * y + gainFactor * xd * yd;
+      xs[n+1] = Math.max(0, x + dt * dx);
+      ys[n+1] = Math.max(0, y + dt * dy);
+      ts[n+1] = ts[n] + dt;
+    }
+    if (d&gt;0){ xs = xs.slice(d); ys = ys.slice(d); ts = ts.slice(d); }
+    drawAll();
+  }
+
+  // Plotting
+  function autoscale(arr, pad=0.12){
+    let min = Infinity, max = -Infinity;
+    for (let v of arr){ if (Number.isFinite(v)){ if (v&lt;min) min=v; if (v&gt;max) max=v; } }
+    if (!Number.isFinite(min) || !Number.isFinite(max)){ min=0; max=1; }
+    if (Math.abs(max-min) &lt; 1e-9){ max = min + 1; }
+    const span = max-min;
+    return { min: Math.max(0, min - pad*span), max: max + pad*span };
+  }
+  function ticks(min, max, approx=6){
+    const span = max - min;
+    const raw = span / Math.max(1, approx);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    let step = 1*mag;
+    if (norm &gt; 5) step = 10*mag;
+    else if (norm &gt; 2) step = 5*mag;
+    else if (norm &gt; 1) step = 2*mag;
+    const start = Math.ceil(min / step) * step;
+    const arr = [];
+    for (let v = start; v &lt;= max + 1e-9; v += step) arr.push(v);
+    return arr;
+  }
+  function formatTick(v){
+    const a = Math.abs(v);
+    if (a &gt;= 1000 || (a &lt; 1e-3 &amp;&amp; a > 0)) return v.toExponential(0);
+    if (a &lt; 1) return v.toFixed(2);
+    if (a &lt; 10) return v.toFixed(1);
+    return v.toFixed(0);
+  }
+  function drawAxes(ctx, W, H, x0, y0, x1, y1, xTicks, yTicks, xLabel, yLabel){
+    const left = 60, right = 22, top = 20, bottom = 48;
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--grid").trim();
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, H-bottom); ctx.lineTo(W-right, H-bottom); ctx.stroke();
+    const sx = v =&gt; left + (W - left - right) * (v - x0) / (x1 - x0 + 1e-12);
+    const sy = v =&gt; (H - bottom) - (H - top - bottom) * (v - y0) / (y1 - y0 + 1e-12);
+    ctx.fillStyle = "#5b6771"; ctx.font = "13px system-ui, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    xTicks.forEach(t =&gt; {
+      const x = sx(t);
+      ctx.beginPath(); ctx.moveTo(x, H-bottom); ctx.lineTo(x, H-bottom+5); ctx.stroke();
+      ctx.fillText(formatTick(t), x, H-bottom+10);
+    });
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    yTicks.forEach(t =&gt; {
+      const y = sy(t);
+      ctx.beginPath(); ctx.moveTo(left-5, y); ctx.lineTo(left, y); ctx.stroke();
+      ctx.fillText(formatTick(t), left-8, y);
+    });
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(xLabel, left + (W-left-right)/2, H - 8);
+    ctx.save(); ctx.translate(18, H/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+    return { sx, sy };
+  }
+
+  function drawTimeSeries(){
+    const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+    const tmin = 0, tmax = ts.length ? ts[ts.length-1] : state.T;
+    const yr = autoscale([...xs, ...ys]);
+    const xTicks = ticks(tmin, tmax, 7);
+    const yTicks = ticks(yr.min, yr.max, 6);
+    const { sx, sy } = drawAxes(ctx, W, H, tmin, yr.min, tmax, yr.max, xTicks, yTicks, "time", "population");
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--prey").trim();
+    ctx.lineWidth = 1.8; ctx.beginPath();
+    for (let i=0;i&lt;xs.length;i++){ const x=sx(ts[i]), y=sy(xs[i]); if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--pred").trim();
+    ctx.lineWidth = 1.8; ctx.beginPath();
+    for (let i=0;i&lt;ys.length;i++){ const x=sx(ts[i]), y=sy(ys[i]); if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+  }
+
+  function drawPhase(){
+    const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+    const xr = autoscale(xs), yr = autoscale(ys);
+    const span = Math.max(xr.max - xr.min, yr.max - yr.min);
+    const xmid = (xr.max + xr.min)/2, ymid = (yr.max + yr.min)/2;
+    const x0 = Math.max(0, xmid - span/2), x1 = xmid + span/2;
+    const y0 = Math.max(0, ymid - span/2), y1 = ymid + span/2;
+    const xTicks = ticks(x0, x1, 6);
+    const yTicks = ticks(y0, y1, 6);
+    const { sx, sy } = drawAxes(ctx, W, H, x0, y0, x1, y1, xTicks, yTicks, "prey x", "predator y");
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--phase").trim();
+    ctx.lineWidth = 1.7; ctx.beginPath();
+    for (let i=0;i&lt;xs.length;i++){ const x=sx(xs[i]); const y=sy(ys[i]); if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+  }
+
+  function drawAll(){ drawTimeSeries(); drawPhase(); }
+
+  // Export
+  el("export").addEventListener("click", () =&gt; {
+    let csv = "t,x,y\n";
+    for (let i=0;i&lt;ts.length;i++) csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "pred_prey_delay.csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(()=&gt;{ URL.revokeObjectURL(url); a.remove(); },0);
+  });
+
+  // Initial boot
+  resizeCanvases();
+  recompute();
+})();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<button class="toggle-code">Show more</button>
+</div>
+<a href="pp_3.html" class="code-link" target="_blank">Open page in browser</a>
+<h3>Preset choices (from the paper)</h3>
+<ul>
+<li><strong>Stable:</strong> with $r=1,K=1,m=1,Y=0.6,s=0.02$, the coexistence equilibrium is asymptotically stable at $\tau = 0$ (and again for large $\tau$ after the second Hopf).</li>
+<li><strong>Oscillatory:</strong> same parameters with $\tau$ between the two Hopf points (e.g. $\tau\approx 85$) gives sustained periodic orbits; the paper’s time-series examples include $\tau=82,85,86.3,86.8$.</li>
+<li><strong>Chaotic:</strong> $\tau=90$ shows a strange attractor and chaotic return map.</li>
+</ul>
+<p>If you want any other palettes (e.g., a dark mode toggle) or overlays (like marking the coexistence equilibrium when it exists), I can wire those in too.</p>
+</div></div>
+        </div>
+        <button id="next-message-btn">↓</button>
+    </div>
+</body>
+</html>

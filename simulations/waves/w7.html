@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wave Superposition App</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --ink: #111;
+      --muted: #667085;
+      --accent: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    h1 {
+      text-align: center;
+      margin: 18px 0 6px;
+      font-weight: 700;
+    }
+
+    .sub {
+      text-align: center;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+
+    .flag {
+      font-size: 12px;
+      color: #0a6;
+      font-weight: 600;
+      display: none;
+    }
+
+    .flag.on {
+      display: inline;
+    }
+
+    canvas {
+      display: block;
+      margin: 10px auto;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      max-width: 900px;
+      width: 95%;
+      height: 360px
+    }
+
+    .bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 6px auto 8px;
+      max-width: 980px;
+    }
+
+    .btn {
+      border: 1px solid #cfd6e4;
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn:hover {
+      border-color: #9fb3d9;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn.active {
+      outline: 2px solid var(--accent);
+    }
+
+    .controls-wrap {
+      width: 95%;
+      max-width: 980px;
+      margin: 10px auto 60px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .panel h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    #edu {
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    /* wave panels */
+    #controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .wave-box {
+      position: relative;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+    }
+
+    .wave-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: #fff;
+    }
+
+    .remove {
+      border: none;
+      background: #ef4444;
+      color: #fff;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #334155;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .sl {
+      width: 100%;
+    }
+
+    .val {
+      font-variant-numeric: tabular-nums;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 12px
+    }
+
+    @media (max-width:720px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+  <h1>Wave Superposition Visualizer</h1>
+  <div class="sub">
+    <span id="dispersionFlag" class="flag">• Dispersion mode (speed ∝ √λ)</span>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="bar" id="presetBar">
+    <button class="btn primary" data-preset="default">Default</button>
+    <button class="btn" data-preset="destructive">Destructive</button>
+    <button class="btn" data-preset="constructive">Constructive</button>
+    <button class="btn" data-preset="standing">Standing</button>
+    <button class="btn" data-preset="springneap">Spring–neap</button>
+    <button class="btn" data-preset="wavesets">Wave Sets</button>
+    <button class="btn" data-preset="dispersion">Dispersion</button>
+    <button class="btn" id="addWaveBtn">+ Add wave</button>
+  </div>
+
+  <div class="controls-wrap">
+    <div class="panel">
+      <h3>View controls</h3>
+      <label>Vertical zoom (applies to all waves): <span id="zoomVal" class="val">1.00×</span></label>
+      <input id="zoom" class="sl" type="range" min="0.25" max="3" step="0.05" value="1">
+    </div>
+
+    <div class="panel">
+      <h3>Educational notes</h3>
+      <div id="edu"></div>
+    </div>
+
+    <div id="controls"></div>
+  </div>
+
+  <script>
+    /* ---------- Canvas ---------- */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    function fitCanvas() { const w = Math.min(900, Math.floor(window.innerWidth * 0.95)); canvas.width = w; canvas.height = 360; }
+    fitCanvas(); addEventListener('resize', fitCanvas);
+
+    /* ---------- State ---------- */
+    const colors = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
+    let waves = []; // {wavelength, amplitude, speed, phase, color}
+    let t = 0;
+    let dispersionMode = false;
+    let yZoom = 1;
+    const SPEED_K = 0.018; // speed = ±K*sqrt(lambda) in dispersion mode
+    const MAX_WAVES = 5;
+
+    const controlsDiv = document.getElementById('controls');
+    const addWaveBtn = document.getElementById('addWaveBtn');
+    const dispersionFlag = document.getElementById('dispersionFlag');
+    const zoom = document.getElementById('zoom');
+    const zoomVal = document.getElementById('zoomVal');
+    const edu = document.getElementById('edu');
+
+    /* ---------- UI helpers ---------- */
+    function makeTagStyle(i) { return `background:${colors[i % colors.length]}`; }
+    function rad(v) { return Number(v).toFixed(2); }
+    function hexToRgba(hex, a) {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    function setActivePreset(btn) {
+      document.querySelectorAll('#presetBar .btn[data-preset]').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    /* ---------- Wave panels ---------- */
+    function addWave({ wavelength = 160, amplitude = 60, speed = 0.06, phase = 0 } = {}) {
+      if (waves.length >= MAX_WAVES) return;
+      const idx = waves.length;
+      const wave = { wavelength, amplitude, speed, phase, color: colors[idx % colors.length] };
+      waves.push(wave);
+
+      const box = document.createElement('div');
+      box.className = 'wave-box';
+      box.innerHTML = `
+    <div class="wave-head">
+      <span class="tag" style="${makeTagStyle(idx)}">Wave ${idx + 1}</span>
+      <button class="remove" title="Remove wave">×</button>
+    </div>
+    <div class="row">
+      <div>
+        <label>Wavelength λ: <span class="val wlVal">${wavelength}</span></label>
+        <input class="sl wavelength" type="range" min="20" max="300" value="${wavelength}">
+      </div>
+      <div>
+        <label>Amplitude A: <span class="val ampVal">${amplitude}</span></label>
+        <input class="sl amplitude" type="range" min="5" max="120" value="${amplitude}">
+      </div>
+      <div>
+        <label>Speed s: <span class="val spdVal">${speed.toFixed(3)}</span> <span class="muted spdNote"></span></label>
+        <input class="sl speed" type="range" min="-0.25" max="0.25" step="0.005" value="${speed}">
+      </div>
+      <div>
+        <label>Phase φ (rad): <span class="val phVal">${rad(phase)}</span></label>
+        <input class="sl phase" type="range" min="0" max="6.283" step="0.05" value="${phase}">
+      </div>
+    </div>
+  `;
+      controlsDiv.appendChild(box);
+
+      const q = {
+        wl: box.querySelector('.wavelength'),
+        amp: box.querySelector('.amplitude'),
+        spd: box.querySelector('.speed'),
+        ph: box.querySelector('.phase'),
+        wlVal: box.querySelector('.wlVal'),
+        ampVal: box.querySelector('.ampVal'),
+        spdVal: box.querySelector('.spdVal'),
+        phVal: box.querySelector('.phVal'),
+        spdNote: box.querySelector('.spdNote')
+      };
+
+      function syncFromUI() {
+        wave.wavelength = parseFloat(q.wl.value);
+        wave.amplitude = parseFloat(q.amp.value);
+        if (!dispersionMode) {
+          wave.speed = parseFloat(q.spd.value);
+          q.spdNote.textContent = '';
+        } else {
+          const sign = Math.sign(wave.speed || 1); // keep previous direction
+          wave.speed = sign * SPEED_K * Math.sqrt(wave.wavelength);
+          q.spd.value = wave.speed;
+          q.spdNote.textContent = '(locked to √λ)';
+        }
+        wave.phase = parseFloat(q.ph.value);
+
+        q.wlVal.textContent = wave.wavelength;
+        q.ampVal.textContent = wave.amplitude;
+        q.spdVal.textContent = Number(wave.speed).toFixed(3);
+        q.phVal.textContent = rad(wave.phase);
+      }
+
+      [q.wl, q.amp, q.spd, q.ph].forEach(inp => inp.addEventListener('input', syncFromUI));
+      box.querySelector('.remove').addEventListener('click', () => {
+        waves = waves.filter(w => w !== wave);
+        box.remove();
+        relabel();
+      });
+
+      function applyDispersionLock() {
+        if (dispersionMode) { q.spd.disabled = true; q.spdNote.textContent = '(locked to √λ)'; }
+        else { q.spd.disabled = false; q.spdNote.textContent = ''; }
+      }
+
+      applyDispersionLock();
+      syncFromUI();
+      return wave;
+    }
+
+    function relabel() {
+      [...document.querySelectorAll('.wave-box .tag')].forEach((el, i) => {
+        el.textContent = `Wave ${i + 1}`;
+        el.style = makeTagStyle(i);
+      });
+    }
+
+    function clearWaves() { waves = []; controlsDiv.innerHTML = ''; }
+
+    function setDispersion(on) {
+      dispersionMode = on;
+      dispersionFlag.classList.toggle('on', on);
+      document.querySelectorAll('.wave-box').forEach(box => {
+        const spd = box.querySelector('.speed');
+        const note = box.querySelector('.spdNote');
+        spd.disabled = on; note.textContent = on ? '(locked to √λ)' : '';
+      });
+      if (on) {
+        waves.forEach(w => { const sign = Math.sign(w.speed || 1); w.speed = sign * SPEED_K * Math.sqrt(w.wavelength); });
+        document.querySelectorAll('.wave-box').forEach((box, i) => {
+          box.querySelector('.speed').value = waves[i].speed;
+          box.querySelector('.spdVal').textContent = waves[i].speed.toFixed(3);
+        });
+      }
+    }
+
+    /* ---------- Presets & notes ---------- */
+    const NOTES = {
+      default: `You can add multiple waves, change their characteristics and see how they combine (superposition).
+  You can also try out some preset scenarios that demonstrate some special cases.`,
+      destructive: `Two waves with equal amplitude and speed but 180° out of phase cancel: crest + trough → near-zero displacement.`,
+      constructive: `Two nearly identical waves in phase add to produce larger peaks and troughs (height ≈ sum of heights).`,
+      standing: `Equal waves traveling in opposite directions form nodes (no motion) and antinodes (max motion): a standing pattern.`,
+      springneap: `Two close wavelengths produce a slow amplitude envelope (beats): alternating “spring” (large) and “neap” (small) amplitudes.`,
+      wavesets: `A narrow band creates a moving envelope (group). Crests (phase) move through the envelope; the envelope travels at a distinct group speed.`,
+      dispersion: `Deep water dispersion: phase speed increases with wavelength. Here speed is constrained: speed ∝ √λ (adjusting λ updates speed).`
+    };
+
+    function setNotes(key) { edu.textContent = NOTES[key]; }
+
+    const presets = {
+      default(btn) {
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 160, amplitude: 60, speed: 0.06, phase: 0 });
+        setNotes('default');
+      },
+      destructive(btn) {
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 160, amplitude: 60, speed: 0.06, phase: 0 });
+        addWave({ wavelength: 160, amplitude: 60, speed: 0.06, phase: Math.PI });
+        setNotes('destructive');
+      },
+      constructive(btn) {
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 140, amplitude: 50, speed: 0.05, phase: 0 });
+        addWave({ wavelength: 140, amplitude: 35, speed: 0.05, phase: 0 });
+        setNotes('constructive');
+      },
+      standing(btn) {
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 150, amplitude: 45, speed: 0.07, phase: 0 });
+        addWave({ wavelength: 150, amplitude: 45, speed: -0.07, phase: 0 });
+        setNotes('standing');
+      },
+      springneap(btn) {
+        // As requested: zero speeds and shorter wavelengths for a static beats pattern snapshot
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 40, amplitude: 45, speed: 0.00, phase: 0 });
+        addWave({ wavelength: 44, amplitude: 45, speed: 0.00, phase: 0 });
+        setNotes('springneap');
+      },
+      wavesets(btn) {
+        // Two-wave packet illustrating phase vs group speed (using your numbers; negatives interpreted as signs)
+        setActivePreset(btn); setDispersion(false);
+        clearWaves();
+        addWave({ wavelength: 49, amplitude: 50, speed: -0.05, phase: 0 });
+        addWave({ wavelength: 53, amplitude: 50, speed: 0.06, phase: 0 });
+        setNotes('wavesets');
+      },
+      dispersion(btn) {
+        setActivePreset(btn);
+        clearWaves(); setDispersion(true);
+        addWave({ wavelength: 80, amplitude: 35, speed: SPEED_K * Math.sqrt(80), phase: 0 });
+        addWave({ wavelength: 140, amplitude: 28, speed: SPEED_K * Math.sqrt(140), phase: 1.2 });
+        addWave({ wavelength: 220, amplitude: 22, speed: SPEED_K * Math.sqrt(220), phase: 2.0 });
+        setNotes('dispersion');
+      }
+    };
+
+    /* ---------- Preset wiring ---------- */
+    document.querySelectorAll('[data-preset]').forEach(b => {
+      b.addEventListener('click', () => presets[b.dataset.preset](b));
+    });
+    addWaveBtn.addEventListener('click', () => addWave());
+
+    /* ---------- View controls ---------- */
+    zoom.addEventListener('input', e => { yZoom = parseFloat(e.target.value); zoomVal.textContent = `${yZoom.toFixed(2)}×`; });
+
+    /* ---------- Animation ---------- */
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const H = canvas.height, W = canvas.width, yc = H / 2;
+
+      // individual waves
+      for (const w of waves) {
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+          const y = yc + yZoom * (w.amplitude * Math.sin((2 * Math.PI / w.wavelength) * x - w.phase - w.speed * t));
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = hexToRgba(w.color, 0.55);
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+
+      // sum wave
+      ctx.beginPath();
+      for (let x = 0; x < W; x++) {
+        let s = 0;
+        for (const w of waves) {
+          s += w.amplitude * Math.sin((2 * Math.PI / w.wavelength) * x - w.phase - w.speed * t);
+        }
+        const y = yc + yZoom * s;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.8;
+      ctx.stroke();
+
+      t += 1;
+      requestAnimationFrame(draw);
+    }
+
+    /* ---------- Boot ---------- */
+    presets.default(document.querySelector('[data-preset="default"]'));
+    setNotes('default');
+    draw();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boids Flocking Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        #container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            border: 1px solid #444;
+            background: #0a0a0a;
+            display: block;
+        }
+        
+        #controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .value {
+            text-align: right;
+            font-size: 12px;
+            color: #66d9ff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        h3 {
+            margin-top: 0;
+            color: #66d9ff;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="controls">
+            <h3>Flocking Parameters</h3>
+            
+            <div class="control-group">
+                <label for="separation">Separation Force</label>
+                <input type="range" id="separation" min="0" max="3" step="0.1" value="1.5">
+                <div class="value" id="separationValue">1.5</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="alignment">Alignment Force</label>
+                <input type="range" id="alignment" min="0" max="3" step="0.1" value="1.0">
+                <div class="value" id="alignmentValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="cohesion">Cohesion Force</label>
+                <input type="range" id="cohesion" min="0" max="3" step="0.1" value="1.0">
+                <div class="value" id="cohesionValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="perception">Perception Radius</label>
+                <input type="range" id="perception" min="20" max="150" step="5" value="50">
+                <div class="value" id="perceptionValue">50px</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="maxSpeed">Max Speed</label>
+                <input type="range" id="maxSpeed" min="1" max="6" step="0.5" value="3">
+                <div class="value" id="maxSpeedValue">3.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="numBoids">Number of Boids</label>
+                <input type="range" id="numBoids" min="10" max="300" step="10" value="100">
+                <div class="value" id="numBoidsValue">100</div>
+            </div>
+            
+            <button id="reset">Reset Simulation</button>
+            
+            <div class="stats">
+                <div>FPS: <span id="fps">0</span></div>
+                <div>Avg Neighbors: <span id="avgNeighbors">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 600;
+        
+        // Configuration
+        let config = {
+            numBoids: 100,
+            separationWeight: 1.5,
+            alignmentWeight: 1.0,
+            cohesionWeight: 1.0,
+            perceptionRadius: 50,
+            maxSpeed: 3,
+            maxForce: 0.05,
+            separationRadius: 25
+        };
+        
+        // Boid class
+        class Boid {
+            constructor(x, y) {
+                this.position = { x, y };
+                // Random initial velocity
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: Math.cos(angle) * config.maxSpeed,
+                    y: Math.sin(angle) * config.maxSpeed
+                };
+                this.acceleration = { x: 0, y: 0 };
+            }
+            
+            // Find neighboring boids within perception radius
+            getNeighbors(boids) {
+                const neighbors = [];
+                for (let other of boids) {
+                    if (other === this) continue;
+                    const d = this.distance(other.position);
+                    if (d < config.perceptionRadius) {
+                        neighbors.push(other);
+                    }
+                }
+                return neighbors;
+            }
+            
+            // Calculate distance between two points
+            distance(point) {
+                const dx = this.position.x - point.x;
+                const dy = this.position.y - point.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Separation: steer to avoid crowding local flockmates
+            separation(neighbors) {
+                const steering = { x: 0, y: 0 };
+                let count = 0;
+                
+                for (let other of neighbors) {
+                    const d = this.distance(other.position);
+                    if (d > 0 && d < config.separationRadius) {
+                        // Calculate vector pointing away from neighbor
+                        const diff = {
+                            x: this.position.x - other.position.x,
+                            y: this.position.y - other.position.y
+                        };
+                        // Weight by inverse of distance (closer = stronger repulsion)
+                        const norm = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+                        if (norm > 0) {
+                            diff.x = (diff.x / norm) / d;  // Normalize and weight
+                            diff.y = (diff.y / norm) / d;
+                        }
+                        steering.x += diff.x;
+                        steering.y += diff.y;
+                        count++;
+                    }
+                }
+                
+                if (count > 0) {
+                    steering.x /= count;
+                    steering.y /= count;
+                    
+                    // Normalize to max speed
+                    const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                    if (mag > 0) {
+                        steering.x = (steering.x / mag) * config.maxSpeed;
+                        steering.y = (steering.y / mag) * config.maxSpeed;
+                        
+                        // Calculate steering force (desired - current velocity)
+                        steering.x -= this.velocity.x;
+                        steering.y -= this.velocity.y;
+                        
+                        // Limit to max force
+                        return this.limitVector(steering, config.maxForce);
+                    }
+                }
+                
+                return steering;
+            }
+            
+            // Alignment: steer towards the average heading of local flockmates
+            alignment(neighbors) {
+                const steering = { x: 0, y: 0 };
+                
+                if (neighbors.length === 0) return steering;
+                
+                for (let other of neighbors) {
+                    steering.x += other.velocity.x;
+                    steering.y += other.velocity.y;
+                }
+                
+                steering.x /= neighbors.length;
+                steering.y /= neighbors.length;
+                
+                // Normalize to max speed
+                const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                if (mag > 0) {
+                    steering.x = (steering.x / mag) * config.maxSpeed;
+                    steering.y = (steering.y / mag) * config.maxSpeed;
+                    
+                    // Steering force
+                    steering.x -= this.velocity.x;
+                    steering.y -= this.velocity.y;
+                    
+                    return this.limitVector(steering, config.maxForce);
+                }
+                
+                return steering;
+            }
+            
+            // Cohesion: steer to move toward the average position of local flockmates
+            cohesion(neighbors) {
+                const steering = { x: 0, y: 0 };
+                
+                if (neighbors.length === 0) return steering;
+                
+                const center = { x: 0, y: 0 };
+                for (let other of neighbors) {
+                    center.x += other.position.x;
+                    center.y += other.position.y;
+                }
+                
+                center.x /= neighbors.length;
+                center.y /= neighbors.length;
+                
+                // Seek that point
+                steering.x = center.x - this.position.x;
+                steering.y = center.y - this.position.y;
+                
+                // Normalize to max speed
+                const mag = Math.sqrt(steering.x * steering.x + steering.y * steering.y);
+                if (mag > 0) {
+                    steering.x = (steering.x / mag) * config.maxSpeed;
+                    steering.y = (steering.y / mag) * config.maxSpeed;
+                    
+                    // Steering force
+                    steering.x -= this.velocity.x;
+                    steering.y -= this.velocity.y;
+                    
+                    return this.limitVector(steering, config.maxForce);
+                }
+                
+                return steering;
+            }
+            
+            // Limit vector magnitude
+            limitVector(vector, max) {
+                const mag = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                if (mag > max) {
+                    vector.x = (vector.x / mag) * max;
+                    vector.y = (vector.y / mag) * max;
+                }
+                return vector;
+            }
+            
+            // Apply flocking rules
+            flock(boids) {
+                const neighbors = this.getNeighbors(boids);
+                
+                // Calculate forces
+                const sep = this.separation(neighbors);
+                const ali = this.alignment(neighbors);
+                const coh = this.cohesion(neighbors);
+                
+                // Apply weights
+                sep.x *= config.separationWeight;
+                sep.y *= config.separationWeight;
+                ali.x *= config.alignmentWeight;
+                ali.y *= config.alignmentWeight;
+                coh.x *= config.cohesionWeight;
+                coh.y *= config.cohesionWeight;
+                
+                // Add forces to acceleration
+                this.acceleration.x = sep.x + ali.x + coh.x;
+                this.acceleration.y = sep.y + ali.y + coh.y;
+                
+                return neighbors.length;  // For statistics
+            }
+            
+            // Update position based on velocity and acceleration
+            update() {
+                // Update velocity
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                
+                // Limit speed
+                this.velocity = this.limitVector(this.velocity, config.maxSpeed);
+                
+                // Update position
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                
+                // Reset acceleration
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+                
+                // Handle edges (wrap around)
+                this.edges();
+            }
+            
+            // Wrap around edges
+            edges() {
+                if (this.position.x < 0) this.position.x = canvas.width;
+                if (this.position.x > canvas.width) this.position.x = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.y > canvas.height) this.position.y = 0;
+            }
+            
+            // Draw boid as triangle
+            draw(ctx) {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(6, 0);
+                ctx.lineTo(-3, -3);
+                ctx.lineTo(-3, 3);
+                ctx.closePath();
+                
+                ctx.fillStyle = '#66d9ff';
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Initialize boids
+        let boids = [];
+        
+        function initBoids() {
+            boids = [];
+            for (let i = 0; i < config.numBoids; i++) {
+                boids.push(new Boid(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+        let totalNeighbors = 0;
+        
+        function animate(currentTime) {
+            // Calculate FPS
+            const deltaTime = currentTime - lastTime;
+            frameCount++;
+            if (frameCount % 30 === 0) {
+                fps = Math.round(1000 / deltaTime);
+                document.getElementById('fps').textContent = fps;
+            }
+            lastTime = currentTime;
+            
+            // Clear canvas
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';  // Slight trail effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw boids
+            totalNeighbors = 0;
+            for (let boid of boids) {
+                totalNeighbors += boid.flock(boids);
+            }
+            
+            for (let boid of boids) {
+                boid.update();
+                boid.draw(ctx);
+            }
+            
+            // Update statistics
+            if (frameCount % 30 === 0) {
+                const avgNeighbors = (totalNeighbors / boids.length).toFixed(1);
+                document.getElementById('avgNeighbors').textContent = avgNeighbors;
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Setup controls
+        function setupControls() {
+            // Separation
+            const separationSlider = document.getElementById('separation');
+            separationSlider.addEventListener('input', (e) => {
+                config.separationWeight = parseFloat(e.target.value);
+                document.getElementById('separationValue').textContent = e.target.value;
+            });
+            
+            // Alignment
+            const alignmentSlider = document.getElementById('alignment');
+            alignmentSlider.addEventListener('input', (e) => {
+                config.alignmentWeight = parseFloat(e.target.value);
+                document.getElementById('alignmentValue').textContent = e.target.value;
+            });
+            
+            // Cohesion
+            const cohesionSlider = document.getElementById('cohesion');
+            cohesionSlider.addEventListener('input', (e) => {
+                config.cohesionWeight = parseFloat(e.target.value);
+                document.getElementById('cohesionValue').textContent = e.target.value;
+            });
+            
+            // Perception
+            const perceptionSlider = document.getElementById('perception');
+            perceptionSlider.addEventListener('input', (e) => {
+                config.perceptionRadius = parseFloat(e.target.value);
+                config.separationRadius = config.perceptionRadius * 0.5;  // Keep proportional
+                document.getElementById('perceptionValue').textContent = e.target.value + 'px';
+            });
+            
+            // Max Speed
+            const maxSpeedSlider = document.getElementById('maxSpeed');
+            maxSpeedSlider.addEventListener('input', (e) => {
+                config.maxSpeed = parseFloat(e.target.value);
+                document.getElementById('maxSpeedValue').textContent = e.target.value;
+            });
+            
+            // Number of Boids
+            const numBoidsSlider = document.getElementById('numBoids');
+            numBoidsSlider.addEventListener('input', (e) => {
+                config.numBoids = parseInt(e.target.value);
+                document.getElementById('numBoidsValue').textContent = e.target.value;
+                initBoids();
+            });
+            
+            // Reset button
+            document.getElementById('reset').addEventListener('click', () => {
+                initBoids();
+            });
+        }
+        
+        // Initialize and start
+        initBoids();
+        setupControls();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>

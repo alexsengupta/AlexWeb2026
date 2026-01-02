@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 80 80">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #df7926;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7 {
+        fill: none;
+      }
+
+      .st1, .st2, .st5 {
+        stroke: #df7926;
+      }
+
+      .st1, .st3 {
+        stroke-width: 2px;
+      }
+
+      .st1, .st3, .st4, .st8, .st5 {
+        stroke-linecap: round;
+      }
+
+      .st1, .st3, .st8, .st5 {
+        stroke-linejoin: round;
+      }
+
+      .st9 {
+        fill: #f0f4f7;
+      }
+
+      .st9, .st10, .st4, .st8, .st6, .st7 {
+        stroke: #486072;
+      }
+
+      .st2 {
+        stroke-width: 1.5px;
+      }
+
+      .st11, .st10, .st8 {
+        fill: #fff;
+      }
+
+      .st3 {
+        stroke: #5a8fa8;
+      }
+
+      .st10, .st8 {
+        stroke-width: 2.5px;
+      }
+
+      .st4 {
+        stroke-width: 3.5px;
+      }
+
+      .st12 {
+        fill: #d26727;
+      }
+
+      .st5 {
+        stroke-width: 1.8px;
+      }
+
+      .st6 {
+        opacity: .5;
+      }
+
+      .st6, .st7 {
+        isolation: isolate;
+      }
+
+      .st7 {
+        opacity: .3;
+        stroke-width: .5px;
+      }
+    </style>
+  </defs>
+  <rect class="st8" x="2.57" y="7.37" width="57.16" height="46.17" rx="2" ry="2"/>
+  <rect class="st9" x="6.97" y="11.76" width="48.36" height="37.37" rx="1" ry="1"/>
+  <polyline class="st3" points="11.36 42.54 17.96 38.14 24.55 40.34 31.15 29.35 37.74 33.75 44.34 24.95 50.93 27.15"/>
+  <circle class="st0" cx="17.96" cy="38.14" r="2.2"/>
+  <circle class="st0" cx="31.15" cy="29.35" r="2.2"/>
+  <circle class="st12" cx="44.34" cy="24.95" r="2.75"/>
+  <line class="st7" x1="11.36" y1="20.56" x2="50.93" y2="20.56"/>
+  <line class="st7" x1="11.36" y1="31.55" x2="50.93" y2="31.55"/>
+  <line class="st7" x1="11.36" y1="42.54" x2="50.93" y2="42.54"/>
+  <line class="st6" x1="11.36" y1="16.16" x2="11.36" y2="44.74"/>
+  <circle class="st10" cx="57.53" cy="51.33" r="13.19"/>
+  <line class="st4" x1="66.32" y1="60.13" x2="77.31" y2="71.12"/>
+  <polyline class="st5" points="47.91 51.33 51.07 46.94 54.23 49.14 57.39 44.74 60.55 46.94"/>
+  <g>
+    <ellipse class="st2" cx="24.55" cy="18.36" rx="6.6" ry="3.85"/>
+    <circle class="st0" cx="24.55" cy="18.36" r="2.2"/>
+    <circle class="st11" cx="25.1" cy="17.81" r=".88"/>
+  </g>
+  <path class="st1" d="M2.57,13.96v-6.6h6.6"/>
+  <path class="st1" d="M49.58,56.48h14.48v-10.65"/>
+</svg>

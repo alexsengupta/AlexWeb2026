@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Predator–Prey with Processing Delay — Interactive Explorer</title>
+
+  <!-- MathJax (for rendered equations in the explainers) -->
+  <script>
+    window.MathJax = { tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --fg: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --bg: #f8fafc;
+      --grid: #e5e7eb;
+      --panel: #ffffff;
+      --prey: #16a34a;
+      --pred: #ef4444;
+      --phase: #0ea5e9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--fg);
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--grid);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    @media (max-width: 1040px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .panel h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 150px 1fr 70px 24px;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .row label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .val {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #0b1324;
+    }
+
+    .help-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      cursor: pointer;
+      padding: 0;
+      font-weight: 700;
+      color: #334155;
+      line-height: 20px;
+    }
+
+    .help-btn:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .help-pop {
+      position: relative;
+    }
+
+    .help-pop .bubble {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 28px;
+      width: min(320px, 80vw);
+      background: #fff;
+      border: 1px solid var(--grid);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 24px rgba(2, 6, 23, .06);
+      font-size: 12.5px;
+      color: #0b1324;
+      z-index: 10;
+    }
+
+    .help-pop .bubble p {
+      margin: 6px 0;
+    }
+
+    .help-pop.open .bubble {
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.prey {
+      background: var(--prey);
+    }
+
+    .dot.pred {
+      background: var(--pred);
+    }
+
+    .dot.phase {
+      background: var(--phase);
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .explainers details {
+      border: 1px solid var(--grid);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    .explainers details summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .explainers details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .explainers details+details {
+      margin-top: 8px;
+    }
+
+    .explainers .content {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #0b1324;
+    }
+
+    .explainers .content p {
+      margin: 8px 0;
+    }
+
+    .explainers code {
+      background: #f1f5f9;
+      padding: 0 6px;
+      border-radius: 6px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 380px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--grid);
+    }
+
+    .plot-title {
+      margin: 0 0 4px 0;
+      font-size: 15px;
+      color: #0b1324;
+    }
+
+    .grid-label {
+      fill: #64748b;
+      font: 12px system-ui, sans-serif;
+    }
+
+    .plots {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .export-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+      margin-top: 8px;
+    }
+
+    button.export {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 1000;">
+    <a href="../../app_playground.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Playground
+    </a>
+    <a href="../../index.html"
+      style="text-decoration: none; background: rgba(0,0,0,0.05); color: #333; padding: 8px 15px; border-radius: 99px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s; border: 1px solid rgba(0,0,0,0.1);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      Home
+    </a>
+  </div>
+
+  <header>
+    <h1>Predator–Prey with Processing Delay</h1>
+    <p>Explore how digestion/maturation delay shapes dynamics. Move any slider to recompute the full trajectory
+      instantly.</p>
+  </header>
+
+  <main>
+    <!-- Controls -->
+    <section class="panel">
+      <h3>Parameters</h3>
+
+      <!-- r -->
+      <div class="row">
+        <label for="r">Prey growth r</label>
+        <input id="r" type="range" min="0" max="3" step="0.01" value="1.00" />
+        <div class="val" id="r_val">1.00</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for r">?</button>
+          <div class="bubble">
+            <strong>r — intrinsic prey growth rate</strong>
+            <p>How fast prey would grow without predators, per unit time.</p>
+            <p>Higher <em>r</em> → faster rebound of the prey population.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- K -->
+      <div class="row">
+        <label for="K">Carrying capacity K</label>
+        <input id="K" type="range" min="0.1" max="10" step="0.1" value="1.0" />
+        <div class="val" id="K_val">1</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for K">?</button>
+          <div class="bubble">
+            <strong>K — prey carrying capacity</strong>
+            <p>Upper bound set by resources; prey logistic growth slows as it nears <em>K</em>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- m -->
+      <div class="row">
+        <label for="m">Attack rate m</label>
+        <input id="m" type="range" min="0" max="5" step="0.01" value="1.0" />
+        <div class="val" id="m_val">1.00</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for m">?</button>
+          <div class="bubble">
+            <strong>m — encounter/attack rate</strong>
+            <p>Rate at which predators meet & capture prey (Holling type I).</p>
+            <p>Higher <em>m</em> → stronger predation pressure.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- s -->
+      <div class="row">
+        <label for="s">Predator death s</label>
+        <input id="s" type="range" min="0" max="1" step="0.001" value="0.02" />
+        <div class="val" id="s_val">0.020</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for s">?</button>
+          <div class="bubble">
+            <strong>s — predator mortality rate</strong>
+            <p>Background per-time death rate. Larger <em>s</em> reduces predator persistence unless compensated by
+              food.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Y -->
+      <div class="row">
+        <label for="Y">Conversion Y</label>
+        <input id="Y" type="range" min="0" max="2" step="0.01" value="0.60" />
+        <div class="val" id="Y_val">0.60</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for Y">?</button>
+          <div class="bubble">
+            <strong>Y — conversion efficiency</strong>
+            <p>How efficiently eaten prey biomass becomes predator biomass.</p>
+            <p>Higher <em>Y</em> boosts predator growth from each capture.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- tau -->
+      <div class="row">
+        <label for="tau">Delay τ</label>
+        <input id="tau" type="range" min="0" max="200" step="0.1" value="0.0" />
+        <div class="val" id="tau_val">0.0</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for tau">?</button>
+          <div class="bubble">
+            <strong>τ — processing/maturation delay</strong>
+            <p>Time between prey capture and its contribution to predator growth.</p>
+            <p>Only a fraction <em>e<sup>−sτ</sup></em> of predators survive through the delay.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:12px;">Initial conditions & numerics</h3>
+
+      <!-- x0 -->
+      <div class="row">
+        <label for="x0">Initial prey x (t≤0)</label>
+        <input id="x0" type="range" min="0" max="2" step="0.01" value="0.10" />
+        <div class="val" id="x0_val">0.10</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for x0">?</button>
+          <div class="bubble">
+            <strong>Initial prey level</strong>
+            <p>Used for the whole pre-history (t ≤ 0) and the start at t = 0.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- y0 -->
+      <div class="row">
+        <label for="y0">Initial pred. y (t≤0)</label>
+        <input id="y0" type="range" min="0" max="2" step="0.01" value="0.10" />
+        <div class="val" id="y0_val">0.10</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for y0">?</button>
+          <div class="bubble">
+            <strong>Initial predator level</strong>
+            <p>Used for the whole pre-history (t ≤ 0) and the start at t = 0.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- dt -->
+      <div class="row">
+        <label for="dt">Time step Δt</label>
+        <input id="dt" type="range" min="0.0005" max="0.5" step="0.0005" value="0.0100" />
+        <div class="val" id="dt_val">0.0100</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for dt">?</button>
+          <div class="bubble">
+            <strong>Numerical time step</strong>
+            <p>Smaller Δt = more stable & accurate (but slower). If plots “blow up,” reduce Δt.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- T -->
+      <div class="row">
+        <label for="T">Duration T</label>
+        <input id="T" type="range" min="50" max="5000" step="10" value="1200" />
+        <div class="val" id="T_val">1200</div>
+        <div class="help-pop">
+          <button class="help-btn" aria-label="Help for T">?</button>
+          <div class="bubble">
+            <strong>Total simulated time</strong>
+            <p>How long to compute the trajectory. Longer T shows more long-term behavior.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-row">
+        <button class="export" id="export">Export CSV</button>
+      </div>
+
+      <div class="explainers" style="margin-top:14px;">
+        <details>
+          <summary><strong>Model equations & plain-language meaning</strong></summary>
+          <div class="content">
+            <p><em>Unscaled predator–prey with discrete delay</em>:</p>
+            <p>
+              \[
+              \frac{dx(t)}{dt} = r\,x(t)\!\left(1 - \frac{x(t)}{K}\right) - m\,x(t)\,y(t)
+              \]
+              <small><br><strong>Prey rule (words):</strong> natural logistic growth limited by \(K\) minus losses to
+                predation.</small>
+            </p>
+            <p>
+              \[
+              \frac{dy(t)}{dt} = -s\,y(t) + Y\,e^{-s\tau}\,m\,x(t-\tau)\,y(t-\tau)
+              \]
+              <small><br><strong>Predator rule (words):</strong> natural deaths plus growth from prey eaten \(\tau\)
+                time units ago; only a fraction \(e^{-s\tau}\) of predators survive that delay, and a fraction \(Y\) of
+                prey biomass is converted to predator biomass.</small>
+            </p>
+            <p><strong>Term-by-term (predator gain):</strong> \(Y\) (efficiency) × \(e^{-s\tau}\) (survival through
+              delay) × \(m\,x(t-\tau)\,y(t-\tau)\) (past predation rate).</p>
+          </div>
+        </details>
+
+        <details>
+          <summary><strong>How the computer solves these (forward differences)</strong></summary>
+          <div class="content">
+            <p><em>Idea:</em> slice time into small steps of size \(\Delta t\). Approximate change per step = derivative
+              × step size.</p>
+            <p><strong>1) Pre-history for the delay.</strong> For all times \(t \le 0\), we set \(x=x_0\), \(y=y_0\).
+              This gives values to look back to when we need \(x(t-\tau)\), \(y(t-\tau)\).</p>
+            <p><strong>2) Convert the delay into a “look-back” index.</strong> We take \(d = \mathrm{round}(\tau/\Delta
+              t)\). The past values \(x(t-\tau), y(t-\tau)\) are read from \(d\) steps earlier in memory.</p>
+            <p><strong>3) Forward Euler updates each step.</strong></p>
+            <p>
+              \[
+              x_{n+1} = x_n + \Delta t\,\Big[ r\,x_n\!\left(1-\frac{x_n}{K}\right) - m\,x_n\,y_n \Big]
+              \]
+              \[
+              y_{n+1} = y_n + \Delta t\,\Big[ -s\,y_n + Y\,e^{-s\tau}\,m\,x_{n-d}\,y_{n-d} \Big]
+              \]
+            </p>
+            <p><strong>4) Practical tips.</strong> Use smaller \(\Delta t\) for stability/accuracy; keep populations ≥ 0
+              by flooring negatives at 0; choose \(T\) big enough to see long-term behavior.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Plots -->
+    <section class="plots">
+      <div class="panel">
+        <h3 class="plot-title">Time series</h3>
+        <canvas id="ts"></canvas>
+        <div class="legend">
+          <span class="dot prey"></span> Prey \(x(t)\)
+          <span class="dot pred"></span> Predator \(y(t)\)
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="plot-title">Phase plane: predator vs prey</h3>
+        <canvas id="phase" aria-label="Phase plot, predator vs prey"></canvas>
+        <div class="legend"><span class="dot phase"></span> Trajectory</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      // ---- Elements & state ----
+      const el = id => document.getElementById(id);
+      const sliders = ["r", "K", "m", "s", "Y", "tau", "x0", "y0", "dt", "T"];
+      const state = {};
+      let ts = [], xs = [], ys = [];
+
+      // Help bubbles (toggle on ? click, close if clicking elsewhere)
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".help-btn");
+        document.querySelectorAll(".help-pop").forEach(p => {
+          if (btn && p.contains(btn)) {
+            p.classList.toggle("open");
+          } else {
+            p.classList.remove("open");
+          }
+        });
+      });
+
+      // Canvases & DPI-aware sizing
+      const tsCanvas = el("ts"), tsCtx = tsCanvas.getContext("2d");
+      const phCanvas = el("phase"), phCtx = phCanvas.getContext("2d");
+
+      function resizeCanvases() {
+        const setSize = (cv, minW = 640, minH = 280) => {
+          const rect = cv.getBoundingClientRect();
+          cv.width = Math.max(minW, Math.round(rect.width * devicePixelRatio));
+          cv.height = Math.max(minH, Math.round(rect.height * devicePixelRatio));
+        };
+        setSize(tsCanvas, 680, 320);
+        setSize(phCanvas, 680, 320);
+        drawAll();
+      }
+      window.addEventListener("resize", resizeCanvases, { passive: true });
+
+      // Slider syncing & live recompute
+      function syncVal(id) {
+        const v = parseFloat(el(id).value);
+        state[id] = v;
+        const out = el(id + "_val");
+        if (out) {
+          let txt = v;
+          if (id === "K" || id === "T") txt = v.toFixed(0);
+          else if (id === "s") txt = v.toFixed(3);
+          else if (id === "dt") txt = v.toFixed(4);
+          else if (id === "tau") txt = v.toFixed(1);
+          else txt = v.toFixed(2);
+          out.textContent = txt;
+        }
+      }
+      sliders.forEach(id => {
+        syncVal(id);
+        el(id).addEventListener("input", () => { syncVal(id); recompute(); });
+      });
+
+      // ---- Simulation (full recompute on change) ----
+      function recompute() {
+        const r = state.r, K = state.K, m = state.m, s = state.s, Y = state.Y, tau = state.tau;
+        const x0 = state.x0, y0 = state.y0, dt = state.dt, T = state.T;
+
+        const N = Math.max(2, Math.floor(T / dt) + 1);
+        const d = Math.max(0, Math.round(tau / dt));
+
+        // allocate with pre-history (length N + d)
+        xs = new Array(N + d);
+        ys = new Array(N + d);
+        ts = new Array(N + d);
+
+        // fill history for t ≤ 0
+        for (let i = 0; i < d; i++) {
+          xs[i] = x0; ys[i] = y0; ts[i] = (i - d) * dt;
+        }
+        xs[d] = x0; ys[d] = y0; ts[d] = 0;
+
+        // integrate forward
+        const gainFactor = Y * Math.exp(-s * tau) * m; // constant part
+        for (let n = d; n < d + N - 1; n++) {
+          const x = xs[n], y = ys[n];
+          const xd = xs[n - d], yd = ys[n - d];
+          const dx = r * x * (1 - x / K) - m * x * y;
+          const dy = -s * y + gainFactor * xd * yd;
+          xs[n + 1] = Math.max(0, x + dt * dx);
+          ys[n + 1] = Math.max(0, y + dt * dy);
+          ts[n + 1] = ts[n] + dt;
+        }
+
+        // trim history for plotting
+        if (d > 0) { xs = xs.slice(d); ys = ys.slice(d); ts = ts.slice(d); }
+        drawAll();
+      }
+
+      // ---- Plotting helpers ----
+      function autoscale(arr, pad = 0.10) {
+        let min = Infinity, max = -Infinity;
+        for (let v of arr) { if (Number.isFinite(v)) { if (v < min) min = v; if (v > max) max = v; } }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) { min = 0; max = 1; }
+        if (Math.abs(max - min) < 1e-9) { max = min + 1; }
+        const span = max - min;
+        return { min: Math.max(0, min - pad * span), max: max + pad * span };
+      }
+      function drawAxes(ctx, W, H, x0, y0, x1, y1, xTicks, yTicks, xLabel, yLabel) {
+        // background & border
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--grid").trim();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(50, 14); ctx.lineTo(50, H - 38); ctx.lineTo(W - 16, H - 38); ctx.stroke();
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = "12px system-ui, sans-serif";
+        // ticks
+        const sx = v => 50 + (W - 66) * (v - x0) / (x1 - x0 + 1e-12);
+        const sy = v => (H - 38) - (H - 52) * (v - y0) / (y1 - y0 + 1e-12);
+
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        xTicks.forEach(t => {
+          const x = sx(t);
+          ctx.beginPath(); ctx.moveTo(x, H - 38); ctx.lineTo(x, H - 38 + 5); ctx.stroke();
+          ctx.fillText(formatTick(t), x, H - 28);
+        });
+        ctx.textAlign = "right"; ctx.textBaseline = "middle";
+        yTicks.forEach(t => {
+          const y = sy(t);
+          ctx.beginPath(); ctx.moveTo(50 - 5, y); ctx.lineTo(50, y); ctx.stroke();
+          ctx.fillText(formatTick(t), 46, y);
+        });
+        // labels
+        ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.fillText(xLabel, W - 40, H - 28);
+        ctx.save(); ctx.translate(18, 22); ctx.rotate(-Math.PI / 2); ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.fillText(yLabel, 0, 0); ctx.restore();
+
+        return { sx, sy };
+      }
+      function ticks(min, max, approx = 6) {
+        const span = max - min;
+        const raw = span / Math.max(1, approx);
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        const norm = raw / mag;
+        let step = 1 * mag;
+        if (norm > 5) step = 10 * mag;
+        else if (norm > 2) step = 5 * mag;
+        else if (norm > 1) step = 2 * mag;
+        const start = Math.ceil(min / step) * step;
+        const arr = [];
+        for (let v = start; v <= max + 1e-9; v += step) arr.push(v);
+        return arr;
+      }
+      function formatTick(v) {
+        const a = Math.abs(v);
+        if (a >= 1000 || a < 1e-3) return v.toExponential(0);
+        if (a < 1) return v.toFixed(2);
+        if (a < 10) return v.toFixed(1);
+        return v.toFixed(0);
+      }
+
+      function drawTimeSeries() {
+        const ctx = tsCtx, W = tsCanvas.width, H = tsCanvas.height;
+        const tmin = 0, tmax = ts.length ? ts[ts.length - 1] : state.T;
+        const yr = autoscale([...xs, ...ys]);
+        const xTicks = ticks(tmin, tmax, 7);
+        const yTicks = ticks(yr.min, yr.max, 6);
+        const { sx, sy } = drawAxes(ctx, W, H, tmin, yr.min, tmax, yr.max, xTicks, yTicks, "time", "population");
+
+        // prey series
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--prey").trim();
+        ctx.lineWidth = 1.6; ctx.beginPath();
+        for (let i = 0; i < xs.length; i++) { const x = sx(ts[i]), y = sy(xs[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.stroke();
+
+        // predator series
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--pred").trim();
+        ctx.lineWidth = 1.6; ctx.beginPath();
+        for (let i = 0; i < ys.length; i++) { const x = sx(ts[i]), y = sy(ys[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+
+      function drawPhase() {
+        const ctx = phCtx, W = phCanvas.width, H = phCanvas.height;
+        const xr = autoscale(xs), yr = autoscale(ys);
+        // make square aspect in data space by aligning ranges
+        const span = Math.max(xr.max - xr.min, yr.max - yr.min);
+        const xmid = (xr.max + xr.min) / 2, ymid = (yr.max + yr.min) / 2;
+        const x0 = Math.max(0, xmid - span / 2), x1 = xmid + span / 2;
+        const y0 = Math.max(0, ymid - span / 2), y1 = ymid + span / 2;
+
+        const xTicks = ticks(x0, x1, 6);
+        const yTicks = ticks(y0, y1, 6);
+        const { sx, sy } = drawAxes(ctx, W, H, x0, y0, x1, y1, xTicks, yTicks, "prey x", "predator y");
+
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--phase").trim();
+        ctx.lineWidth = 1.5; ctx.beginPath();
+        for (let i = 0; i < xs.length; i++) { const x = sx(xs[i]); const y = sy(ys[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+
+      function drawAll() { drawTimeSeries(); drawPhase(); }
+
+      // Export CSV
+      el("export").addEventListener("click", () => {
+        let csv = "t,x,y\n";
+        for (let i = 0; i < ts.length; i++) csv += `${ts[i]},${xs[i]},${ys[i]}\n`;
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "pred_prey_delay.csv";
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+      });
+
+      // First layout & compute
+      resizeCanvases();
+      recompute();
+    })();
+  </script>
+</body>
+
+</html>

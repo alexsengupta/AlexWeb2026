@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Alex - Climate Science Teaching</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 30px 40px 30px;
+        }
+
+        /* Hero section */
+        .hero {
+            background: linear-gradient(135deg, #0b1d2d 0%, #162a3c 70%, #1f3750 100%);
+            color: white;
+            padding: 60px 30px 40px;
+            text-align: left;
+            margin-bottom: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 45px rgba(5, 15, 35, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-top {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-text {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #1e5245 0%, #163d33 100%);
+            box-shadow: 0 6px 16px rgba(14, 45, 38, 0.45);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .home-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: width 0.5s, height 0.5s, top 0.5s, left 0.5s;
+        }
+
+        .home-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 14px 24px rgba(14, 45, 38, 0.5);
+        }
+
+        .home-btn:hover::before {
+            width: 120px;
+            height: 120px;
+            top: -30px;
+            left: -30px;
+        }
+
+        .home-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: #f6f8ff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-author {
+            font-size: 0.85rem;
+            letter-spacing: 0.6em;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        .hero-title {
+            margin: 0;
+            font-size: clamp(32px, 4vw, 52px);
+            font-weight: 600;
+            background: linear-gradient(90deg, #9bdcff, #fff5e1, #90b4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .wave-canopy {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 190px;
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        .wave-canopy canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .hero-line {
+            width: 100%;
+            height: 2px;
+            border: none;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.6), transparent);
+            margin: 10px 0 20px;
+        }
+
+        .hero-image {
+            width: min(100%, 860px);
+            height: 400px;
+            margin: 30px 0;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            align-self: stretch;
+        }
+
+        /* Slideshow container */
+        .slideshow-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slideshow-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 55%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 55%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        .slideshow-image.active {
+            opacity: 1;
+        }
+
+        /* Edge fade mask effect */
+        .hero-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 102, 204, 0.1) 70%, rgba(0, 102, 204, 0.3) 100%);
+            pointer-events: none;
+            border-radius: 12px;
+        }
+
+        /* Placeholder styling when no images */
+        .slideshow-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #0066cc;
+            border: 2px dashed #90caf9;
+            border-radius: 12px;
+        }
+
+        .slideshow-placeholder svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+
+        .hero h1 {
+            font-size: 2.2em;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        .hero p {
+            font-size: 1.1em;
+            opacity: 0.85;
+            max-width: 700px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-button {
+            background: white;
+            color: #0066cc;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .curriculum-section {
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .curriculum-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: none;
+            border-radius: 18px;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #112335, #1c3147);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 14px 28px rgba(7, 14, 28, 0.45);
+        }
+
+        .curriculum-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.2s ease;
+        }
+
+        .curriculum-toggle[aria-expanded="true"] svg {
+            transform: rotate(180deg);
+        }
+
+        .curriculum-panel {
+            margin-top: 16px;
+            border-radius: 18px;
+            background: rgba(10, 19, 32, 0.94);
+            color: #e8f0ff;
+            padding: 24px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 24px rgba(5, 10, 20, 0.4);
+        }
+
+        .curriculum-panel p {
+            margin-bottom: 16px;
+            opacity: 0.85;
+        }
+
+        .curriculum-level-group {
+            margin-top: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .curriculum-level-heading {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .curriculum-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .curriculum-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .curriculum-table th,
+        .curriculum-table td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .curriculum-table th {
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.75;
+        }
+
+        .course-pill {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            cursor: pointer;
+            margin-bottom: 8px;
+            text-decoration: none;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .course-pill:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .course-pill strong {
+            font-size: 0.92rem;
+            letter-spacing: 0.05em;
+        }
+
+        .course-pill span {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .requirement-tag {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .requirement-tag.core {
+            background: rgba(99, 230, 190, 0.25);
+            color: #d6fff1;
+        }
+
+        .requirement-tag.prescribed {
+            background: rgba(255, 221, 87, 0.25);
+            color: #fff6ce;
+        }
+
+        .requirement-tag.elective {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Section styles */
+        section {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: #0066cc;
+            font-size: 2em;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #0099ff;
+        }
+
+        h3 {
+            color: #333;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 20px 0;
+        }
+
+        .course-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .course-code {
+            background: #0066cc;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .course-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .course-image {
+            width: 100%;
+            height: 200px;
+            background: #e9ecef;
+            border-radius: 6px;
+            margin: 15px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .course-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Subtle edge fade for course images */
+        .course-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 70%, rgba(248, 249, 250, 0.3) 100%);
+            pointer-events: none;
+        }
+
+        .course-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+        }
+
+        .course-image-placeholder svg {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .course-info {
+            font-size: 0.95em;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .term-badge {
+            background: #e3f2fd;
+            color: #0066cc;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-right: 5px;
+        }
+
+        /* Pathway diagram */
+        .pathway-container {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e3f2fd 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+
+        .pathway-boxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pathway-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #0066cc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pathway-box h4 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+
+        .pathway-box ul {
+            list-style-position: inside;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        /* Enrollment chart */
+        .enrollment-chart {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            margin-top: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 80px;
+        }
+
+        .bar {
+            width: 100%;
+            background: linear-gradient(180deg, #0099ff, #0066cc);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            color: #0066cc;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2em;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content-wrapper">
+        <!-- Hero Section -->
+        <header class="hero" aria-labelledby="teaching-hero-title">
+            <div class="wave-canopy" aria-hidden="true">
+                <canvas id="waveCanvas"></canvas>
+            </div>
+            <div class="hero-top">
+                <a class="home-btn" href="../index.html" aria-label="Back to main dial">
+
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                    </svg>
+                </a>
+                <div class="hero-text">
+                    <span class="hero-author">Alex Sen Gupta</span>
+                    <h1 id="teaching-hero-title" class="hero-title">Teaching Portfolio</h1>
+                </div>
+            </div>
+            <hr class="hero-line" />
+            <div class="hero-image">
+                <div class="slideshow-container" id="heroSlideshow">
+                    <!-- Images will be dynamically loaded here by JavaScript -->
+                    <!-- Or you can add them manually like this:
+                    <img src="images/heron1.jpg" alt="Heron Island" class="slideshow-image active">
+                    <img src="images/heron2.jpg" alt="Heron Island" class="slideshow-image">
+                    <img src="images/heron3.jpg" alt="Heron Island" class="slideshow-image">
+                    -->
+                    <div class="slideshow-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        <div><strong>Drop your Heron Island images into the “images” folder</strong></div>
+                        <div style="margin-top: 5px; font-size: 12px;">They’ll load here automatically and fade through
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <a href="#convening" class="nav-button">Courses I Convene</a>
+                <a href="#teaching" class="nav-button">Courses I Teach</a>
+                <a href="#resources" class="nav-button">Student Resources</a>
+            </div>
+        </header>
+
+        <!-- Courses I Convene Section -->
+        <section id="convening">
+            <h2>Courses I Convene</h2>
+
+            <div class="course-grid">
+                <div class="course-card">
+                    <span class="course-code">MSCI3001/5004</span>
+                    <div class="course-name">Physical Oceanography</div>
+                    <div class="course-image">
+                        <img src="physical_oceanography.jpg" alt="Physical oceanography field work" />
+                    </div>
+                    <div class="course-info">
+                        <p><span class="term-badge">Term 2</span></p>
+                        <p>The way water circulates through the oceans shapes climate variability, marine ecosystems,
+                            and human societies. Through lectures, tutorials, and labs we dive into the physics behind
+                            everything from the East Australian Current to the global conveyor belt, from energetic
+                            eddies to the waves that reshape our beaches.</p>
+                        <p>Students learn how we measure the ocean, analyse real observations, and apply theoretical
+                            tools to real-world problems such as El Niño, the Great Pacific Garbage Patch, and global
+                            heat uptake. The hands-on computational work and data analysis build the quantitative and
+                            analytical skills essential for pathways in climate science, marine research, and
+                            environmental management.</p>
+                        <p style="margin-top: 10px;"><strong>Prerequisites:</strong> Any 6 units of credit of Level 1
+                            Mathematics</p>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <span class="course-code">MSCI2060</span>
+                    <div class="course-name">Tropical Marine Ecosystems</div>
+                    <div class="course-image">
+                        <img src="bleaching.png" alt="Heron Island coral reef field work" />
+                    </div>
+                    <div class="course-info">
+                        <p><span class="term-badge">Term 2C – intensive</span></p>
+                        <p>Tropical reefs are among the planet’s most diverse ecosystems yet they are extraordinarily
+                            sensitive to change. After several years of global bleaching and unprecedented mortality,
+                            understanding how these systems work—and fail—is critical. This intensive course provides a
+                            broad understanding of reef ecology, the physical and chemical environments that sustain
+                            them, and the drivers of degradation.</p>
+                        <p>Students explore the coral animal–plant symbiosis, reef fish communities, algae,
+                            invertebrates, and the mammals that interact with them, alongside the temperature, currents,
+                            and chemistry that govern reef health. Online modules prepare you for a compulsory field
+                            trip to Heron Island Research Station in the Great Barrier Reef, where you design and run a
+                            reef-based experiment and see the threats and conservation strategies first-hand.</p>
+                        <p style="margin-top: 10px;"><strong>Note:</strong> Includes a compulsory Heron Island field
+                            trip that incurs personal costs.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Courses I Teach Into Section -->
+        <section id="teaching">
+            <h2>Courses I Teach Into</h2>
+
+            <div class="course-grid">
+                <div class="course-card">
+                    <span class="course-code">MSCI1001</span>
+                    <div class="course-name">Introduction to Marine Science</div>
+                    <div class="course-info">
+                        <p><span class="term-badge">Term 2</span></p>
+                        <p>Discover the dynamic world of marine science by exploring the biological, chemical, physical,
+                            and geological processes that shape our oceans. Students investigate how these processes
+                            interact to create diverse ecosystems—from coral reefs to the deep sea—and how the ocean
+                            regulates climate and supports life on Earth.</p>
+                        <p>Through engaging lectures, hands-on practicals, and contemporary case studies you develop
+                            scientific literacy and an understanding of current challenges such as climate change, ocean
+                            acidification, and sustainable resource management. The course provides a springboard into
+                            marine biology, oceanography, climate science, and environmental management pathways.</p>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <span class="course-code">CLIM1001</span>
+                    <div class="course-name">Introduction to Climate Change</div>
+                    <div class="course-info">
+                        <p><span class="term-badge">Terms 2 & 3</span></p>
+                        <p>Why do people disagree about climate change and how can we separate fact from fiction? This
+                            online course tackles those questions head-on, blending core physical science with
+                            psychology, politics, energy systems, economics, ethics, and health.</p>
+                        <p>Students build climate literacy, engage with the peer-review process, and develop
+                            evidence-based reasoning skills that are valuable across every discipline. Weekly activities
+                            require about six hours and include collaborative group work, forum discussions, and
+                            analytical exercises—ideal for anyone wanting a solid grounding in climate change.</p>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <span class="course-code">CLIM3001/6001</span>
+                    <div class="course-name">Climate Systems Science</div>
+                    <div class="course-info">
+                        <p><span class="term-badge">Term 2</span></p>
+                        <p>Gain a comprehensive understanding of Earth’s climate system by studying the coupled
+                            atmosphere, ocean, biosphere, and cryosphere. We examine key feedbacks, the carbon and
+                            hydrological cycles, and the statistical tools used to detect environmental change.</p>
+                        <p>Students progress from conceptual models to state-of-the-art Earth system simulations,
+                            running experiments and analysing their outputs. This integrated lecture-and-lab experience
+                            builds the technical skills needed for research careers, climate-risk assessment, and
+                            further graduate study.</p>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <span class="course-code">AGSM MBA</span>
+                    <div class="course-name">Climate Science for Business Leaders</div>
+                    <div class="course-info">
+                        <p><span class="term-badge">AGSM MBA</span></p>
+                        <p>Part of the AGSM sustainability curriculum, this session equips future executives with the
+                            climate science fundamentals underpinning strategic decision-making. We cover the physical
+                            basis of climate change, the evidence for anthropogenic warming, projections and their
+                            uncertainties, and the physical impacts most relevant to business.</p>
+                        <p>Students learn to interpret scientific findings, evaluate claims, and integrate climate risk
+                            into corporate strategy—critical fluency for leading organisations through the low-carbon
+                            transition.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="curriculum" class="curriculum-section">
+            <button class="curriculum-toggle" aria-expanded="false" data-target="curriculumMajor">
+                Climate Systems Science Major (BSc)
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 10l5 5 5-5H7z" />
+                </svg>
+            </button>
+            <div id="curriculumMajor" class="curriculum-panel" hidden>
+                <p>Core sequence for the Bachelor of Science major. Select prescribed electives as advised in the UNSW
+                    Handbook.</p>
+                <div id="majorTables"></div>
+            </div>
+
+            <button class="curriculum-toggle" aria-expanded="false" data-target="curriculumAdvanced">
+                Climate Systems Science Major (Advanced Science)
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 10l5 5 5-5H7z" />
+                </svg>
+            </button>
+            <div id="curriculumAdvanced" class="curriculum-panel" hidden>
+                <p>Advanced Science students complete the same climate core plus additional research and science
+                    requirements.</p>
+                <div id="advancedTables"></div>
+            </div>
+
+            <button class="curriculum-toggle" aria-expanded="false" data-target="curriculumMinor">
+                Climate Systems Science Minor (24 UOC)
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 10l5 5 5-5H7z" />
+                </svg>
+            </button>
+            <div id="curriculumMinor" class="curriculum-panel" hidden>
+                <p>Complete 24 UOC by selecting from the courses below. Hover a course to view its description.</p>
+                <div id="minorTables"></div>
+            </div>
+        </section>
+
+        <!-- Resources Section -->
+        <section id="resources">
+            <h2>Resources for Students</h2>
+
+            <div class="pathway-boxes">
+                <div class="pathway-box">
+                    <h4>Office Hours</h4>
+                    <p>I meet students by appointment—please get in touch to arrange a time.</p>
+                    <p style="margin-top: 10px;"><strong>Email:</strong> <a href="mailto:a.sengupta@unsw.edu.au"
+                            style="color: #0066cc;">a.sengupta@unsw.edu.au</a></p>
+                </div>
+
+                <div class="pathway-box">
+                    <h4>Course Materials</h4>
+                    <ul>
+                        <li><a href="#" style="color: #0066cc;">MSCI3001/5004 Moodle</a></li>
+                        <li><a href="#" style="color: #0066cc;">MSCI2060 Moodle</a></li>
+                        <li><a href="#" style="color: #0066cc;">CLIM3001 Moodle</a></li>
+                    </ul>
+                </div>
+
+                <div class="pathway-box">
+                    <h4>Research Opportunities</h4>
+                    <p>Interested in climate science research? Contact me to discuss:</p>
+                    <ul style="margin-top: 10px;">
+                        <li>Honours projects</li>
+                        <li>Vacation research scholarships</li>
+                        <li>Research assistant positions</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h3 style="margin-top: 0;">Useful Links</h3>
+                <ul style="margin-left: 20px; line-height: 2;">
+                    <li><a href="https://www.handbook.unsw.edu.au/" style="color: #0066cc;">UNSW Handbook</a> - Official
+                        program and course information</li>
+                    <li><a href="#" style="color: #0066cc;">School of BEES</a> - Department website</li>
+                    <li><a href="#" style="color: #0066cc;">Climate Change Research Centre</a></li>
+                    <li><a href="#" style="color: #0066cc;">UNSW Science</a></li>
+                    <li><a href="https://www.unsw.edu.au/research/cmsi" style="color: #0066cc;">UNSW CMSI</a> - Climate
+                        Change Research Strategy Initiative</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 UNSW Sydney | School of Biological, Earth and Environmental Sciences</p>
+        <p style="margin-top: 10px;">Last updated: November 2025</p>
+    </div>
+
+    <script>
+        const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+        async function autoPopulateSlideshow(container) {
+            try {
+                const response = await fetch('images/');
+                if (!response.ok) return [];
+
+                const directoryListing = await response.text();
+                const dom = new DOMParser().parseFromString(directoryListing, 'text/html');
+                const entries = Array.from(dom.querySelectorAll('a[href]'))
+                    .map((link) => link.getAttribute('href'))
+                    .filter((href) => href && !href.startsWith('../'))
+                    .filter((href) => IMAGE_EXTENSIONS.some((ext) => href.toLowerCase().endsWith(ext)));
+
+                if (!entries.length) return [];
+
+                const fragment = document.createDocumentFragment();
+                entries.forEach((file, idx) => {
+                    const img = document.createElement('img');
+                    const safePath = file.startsWith('/') ? file : `images/${file}`;
+                    img.src = safePath;
+                    img.alt = `Teaching highlight ${idx + 1}`;
+                    img.className = 'slideshow-image';
+                    fragment.appendChild(img);
+                });
+
+                container.prepend(fragment);
+                return Array.from(container.querySelectorAll('.slideshow-image'));
+            } catch (error) {
+                console.warn('Unable to auto-load slideshow images:', error);
+                return [];
+            }
+        }
+
+        // Automatic slideshow functionality
+        async function initSlideshow() {
+            const container = document.getElementById('heroSlideshow');
+            if (!container) return;
+
+            let images = Array.from(container.querySelectorAll('.slideshow-image'));
+            if (!images.length) {
+                images = await autoPopulateSlideshow(container);
+            }
+
+            if (!images.length) {
+                // No images available - keep placeholder visible
+                return;
+            }
+
+            // Hide placeholder if images exist
+            const placeholder = container.querySelector('.slideshow-placeholder');
+            if (placeholder) {
+                placeholder.style.display = 'none';
+            }
+
+            let currentIndex = 0;
+            images[0].classList.add('active');
+
+            if (images.length > 1) {
+                setInterval(() => {
+                    images[currentIndex].classList.remove('active');
+                    currentIndex = (currentIndex + 1) % images.length;
+                    images[currentIndex].classList.add('active');
+                }, 5000);
+            }
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let current = '';
+            let row = [];
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === '"') {
+                    if (inQuotes && text[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(current);
+                    current = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (current || row.length) {
+                        row.push(current);
+                        rows.push(row);
+                        row = [];
+                        current = '';
+                    }
+                } else {
+                    current += char;
+                }
+            }
+
+            if (current || row.length) {
+                row.push(current);
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        function escapeHtml(str = '') {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        const MINOR_COURSES = [
+            { code: 'CLIM1001', name: 'Introduction to Climate Change', level: '1', terms: 'T2, T3', requirement: 'Prescribed elective', overview: 'Climate change fundamentals covering science, ethics, economics, and policy.' },
+            { code: 'CLIM2001', name: 'Fundamentals of Atmospheric Science', level: '2', terms: 'T1', requirement: 'Prescribed elective', overview: 'Core atmospheric physics and dynamics underpinning weather and climate.' },
+            { code: 'CLIM2002', name: 'Risks and Impacts of a Changing Climate', level: '2', terms: 'T1, T3', requirement: 'Prescribed elective', overview: 'Risk assessment and scenario analysis using real climate projection data.' },
+            { code: 'GEOS2291', name: 'Electrify Everything', level: '2', terms: 'T3', requirement: 'Prescribed elective', overview: 'Practical pathways for decarbonisation across energy, transport, and infrastructure.' },
+            { code: 'CLIM3001', name: 'Climate Systems Science', level: '3', terms: 'T2', requirement: 'Prescribed elective', overview: 'Advanced study of coupled climate system components and feedbacks.' },
+            { code: 'MSCI3001', name: 'Physical Oceanography', level: '3', terms: 'T2', requirement: 'Prescribed elective', overview: 'Ocean circulation, observations, and data analysis to solve real climate problems.' }
+        ];
+
+        const COURSE_TERMS = {
+            CHEM1011: 'T1', CHEM1031: 'T1',
+            MATH1131: 'T1', MATH1141: 'T1', MATH1231: 'T2', MATH1241: 'T2',
+            GEOS1701: 'T2', CLIM1001: 'T2, T3', PHYS1121: 'T1', PHYS1131: 'T1',
+            CLIM2001: 'T1', CLIM2002: 'T1, T3', GEOS2241: 'T3', GEOS2291: 'T3', GEOS2711: 'T2',
+            GEOS2821: 'T2', GEOS3761: 'T2', GEOS3821: 'T1', GEOS3921: 'T3',
+            CVEN2701: 'T2', CVEN3501: 'T1', MSCI3001: 'T2', CLIM3001: 'T2',
+            SCIF3041: 'T1, T2, T3', BEES3199: 'T1, T2, T3', SCIF3000: 'T1, T2',
+            MATH2301: 'T1', MATH2241: 'T1', MATH2011: 'T1', MATH2111: 'T1', MATH2121: 'T1',
+            MATH2901: 'T2', MATH3261: 'T2', MATH3201: 'T3', MATH3101: 'T2', MATH3041: 'T1'
+        };
+
+        let curriculumCache = null;
+
+        async function fetchCurriculumEntries() {
+            if (curriculumCache) return curriculumCache;
+            const response = await fetch('climate_science_courses_with_overviews.csv');
+            if (!response.ok) throw new Error('Failed to load curriculum data');
+            const text = await response.text();
+            const rows = parseCSV(text).filter((r) => r.length > 1);
+            const headers = rows.shift();
+            const mapIndex = headers.reduce((acc, key, idx) => {
+                acc[key.trim()] = idx;
+                return acc;
+            }, {});
+
+            curriculumCache = rows.map((row) => ({
+                code: row[mapIndex['Course Code']] || '',
+                level: row[mapIndex['Level']] || '',
+                requirement: row[mapIndex['Requirement Type']] || '',
+                advScience: (row[mapIndex['Advanced Science (CLIMB1)']] || '').toLowerCase(),
+                major: (row[mapIndex['Major (CLIME1)']] || '').toLowerCase(),
+                name: row[mapIndex['Course Name']] || '',
+                overview: row[mapIndex['Overview']] || ''
+            })).filter((item) => item.code);
+
+            return curriculumCache;
+        }
+
+        function normaliseTerms(raw) {
+            if (!raw) return ['OTHER'];
+            return raw.split(/[,&/]/).map((term) => term.trim().toUpperCase().replace('TERM', 'T')).filter(Boolean).
+                map((term) => ['T1', 'T2', 'T3'].includes(term) ? term : term.replace(/\s+/g, ''));
+        }
+
+        const HANDBOOK_BASE = 'https://www.handbook.unsw.edu.au/undergraduate/courses/2025/';
+
+        function formatRequirementTag(text = '') {
+            const normalized = text.toLowerCase();
+            let type = 'elective';
+            if (normalized.includes('core')) {
+                type = 'core';
+            } else if (normalized.includes('prescribed')) {
+                type = 'prescribed';
+            }
+            const label = text || 'Elective';
+            return `<span class="requirement-tag ${type}">${label}</span>`;
+        }
+
+        function renderLevelTables(containerId, entries) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const levelOrder = ['1', '2', '3'];
+            const grouped = levelOrder.map((level) => ({
+                level,
+                items: entries.filter((entry) => String(entry.level) === level)
+            })).filter((group) => group.items.length);
+
+            if (!grouped.length) {
+                container.innerHTML = '<p style="opacity:0.7;">No courses listed for this stream.</p>';
+                return;
+            }
+
+            grouped.forEach((group) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'curriculum-level-group';
+                const buckets = {
+                    T1: [],
+                    T2: [],
+                    T3: [],
+                    OTHER: []
+                };
+
+                group.items.forEach((item) => {
+                    const overview = escapeHtml(item.overview);
+                    const terms = normaliseTerms(item.terms || COURSE_TERMS[item.code.toUpperCase()]);
+                    const termSet = terms.length ? terms : ['OTHER'];
+                    termSet.forEach((term) => {
+                        const bucketKey = ['T1', 'T2', 'T3'].includes(term) ? term : 'OTHER';
+                        buckets[bucketKey].push({ ...item, overview, displayTerm: term });
+                    });
+                });
+
+                const termColumns = [
+                    { key: 'T1', label: 'Term 1' },
+                    { key: 'T2', label: 'Term 2' },
+                    { key: 'T3', label: 'Term 3' },
+                    { key: 'OTHER', label: 'Summer / Intensive' }
+                ];
+
+                const renderCell = (items) => {
+                    if (!items.length) return '<div style="opacity:0.4;">—</div>';
+                    return items.map((item) => `
+                        <a class="course-pill" title="${item.overview}" href="${HANDBOOK_BASE}${item.code.toLowerCase()}" target="_blank" rel="noopener">
+                            <strong>${item.code}</strong>
+                            <span>${item.name || ''}</span>
+                            ${formatRequirementTag(item.requirement)}
+                        </a>
+                    `).join('');
+                };
+
+                wrapper.innerHTML = `
+                    <div class="curriculum-level-heading">Level ${group.level}</div>
+                    <div class="curriculum-table-wrapper">
+                        <table class="curriculum-table">
+                            <thead>
+                                <tr>
+                                    ${termColumns.map((col) => `<th scope="col">${col.label}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    ${termColumns.map((col) => `<td>${renderCell(buckets[col.key])}</td>`).join('')}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        async function renderMajorTables(targetId, predicate) {
+            try {
+                const entries = await fetchCurriculumEntries();
+                const filtered = entries.filter(predicate).map((entry) => ({
+                    ...entry,
+                    terms: COURSE_TERMS[entry.code.toUpperCase()] || ''
+                }));
+                renderLevelTables(targetId, filtered);
+            } catch (error) {
+                console.warn(error);
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.innerHTML = '<p style="opacity:0.7;">Unable to load courses right now.</p>';
+                }
+            }
+        }
+
+        function renderMinorTables() {
+            renderLevelTables('minorTables', MINOR_COURSES);
+        }
+
+        function initCurriculumAccordion() {
+            const toggles = document.querySelectorAll('.curriculum-toggle');
+            if (!toggles.length) return;
+
+            const loadedPanels = new Set();
+
+            toggles.forEach((toggle) => {
+                toggle.addEventListener('click', async () => {
+                    const targetId = toggle.dataset.target;
+                    const panel = document.getElementById(targetId);
+                    if (!panel) return;
+
+                    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+                    toggle.setAttribute('aria-expanded', String(!expanded));
+                    panel.hidden = expanded;
+
+                    if (!expanded && !loadedPanels.has(targetId)) {
+                        loadedPanels.add(targetId);
+                        if (targetId === 'curriculumMinor') {
+                            renderMinorTables();
+                        } else if (targetId === 'curriculumMajor') {
+                            renderMajorTables('majorTables', (entry) => entry.major === 'yes');
+                        } else if (targetId === 'curriculumAdvanced') {
+                            renderMajorTables('advancedTables', (entry) => entry.advScience === 'yes');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize features when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initSlideshow();
+            initCurriculumAccordion();
+        });
+
+        // Hero wave animation
+        (() => {
+            const canvas = document.getElementById('waveCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width = 0;
+            let height = 0;
+            const waveFields = [];
+            const numFields = 7;
+
+            const setupFields = () => {
+                waveFields.length = 0;
+                for (let field = 0; field < numFields; field++) {
+                    const components = [];
+                    const numComponents = 16;
+                    for (let i = 0; i < numComponents; i++) {
+                        components.push({
+                            amplitude: 3 + Math.random() * 8,
+                            frequency: 0.004 + Math.random() * 0.015,
+                            phase: Math.random() * Math.PI * 2,
+                            speed: 0.01 + Math.random() * 0.02
+                        });
+                    }
+                    const hue = 190 + field * 10;
+                    const alpha = 0.35 + (field / numFields) * 0.35;
+                    waveFields.push({
+                        components,
+                        color: `hsla(${hue}, 80%, 70%, ${alpha})`,
+                        speedMultiplier: 0.9 + Math.random() * 0.2
+                    });
+                }
+            };
+
+            const resize = () => {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * window.devicePixelRatio;
+                canvas.height = rect.height * window.devicePixelRatio;
+                canvas.style.width = `${rect.width}px`;
+                canvas.style.height = `${rect.height}px`;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                width = rect.width;
+                height = rect.height;
+                setupFields();
+            };
+
+            let time = 0;
+            const draw = () => {
+                const gradient = ctx.createLinearGradient(0, 0, 0, height);
+                gradient.addColorStop(0, 'rgba(0, 26, 51, 0.45)');
+                gradient.addColorStop(1, 'rgba(0, 51, 102, 0.15)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+
+                const centerY = height * 0.65;
+                waveFields.forEach((field) => {
+                    ctx.beginPath();
+                    ctx.strokeStyle = field.color;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = field.color;
+                    for (let x = 0; x <= width; x++) {
+                        let y = centerY;
+                        field.components.forEach((component) => {
+                            y += component.amplitude * Math.sin(
+                                component.frequency * x +
+                                component.phase +
+                                time * component.speed * field.speedMultiplier
+                            );
+                        });
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                });
+                time += 1;
+                requestAnimationFrame(draw);
+            };
+
+            resize();
+            window.addEventListener('resize', resize);
+            draw();
+        })();
+    </script>
+</body>
+
+</html>

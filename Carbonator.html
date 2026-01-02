@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbonator - Climate Model</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: clamp(1.5rem, 3vw, 3rem);
+        }
+
+        .hero {
+            width: min(100%, 960px);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .hero-top {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .hero-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #1e5245 0%, #163d33 100%);
+            box-shadow: 0 4px 12px rgba(30, 82, 69, 0.35);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .home-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            transition: width 0.5s, height 0.5s, top 0.5s, left 0.5s;
+        }
+
+        .home-btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 12px 24px rgba(30, 82, 69, 0.45);
+        }
+
+        .home-btn:hover::before {
+            width: 110px;
+            height: 110px;
+            top: -30px;
+            left: -30px;
+        }
+
+        .home-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #f6f8ff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-author {
+            font-size: 0.85rem;
+            letter-spacing: 0.65em;
+            text-transform: uppercase;
+            color: #1e5245;
+            opacity: 0.8;
+        }
+
+        .hero-title {
+            font-size: clamp(32px, 4vw, 52px);
+            font-weight: 600;
+            margin: 0;
+            background: linear-gradient(90deg, #1e5245, #c4704f, #8b5a3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-line {
+            width: 100%;
+            height: 2px;
+            border: none;
+            background: linear-gradient(90deg, rgba(30, 82, 69, 0.85), rgba(196, 112, 79, 0.4));
+        }
+
+        .logo-container {
+            width: 700px;
+            max-width: 90vw;
+            margin-bottom: 3rem;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.1));
+        }
+
+        .logo-svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .content {
+            max-width: 800px;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #486072;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        p {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #df7926;
+        }
+
+        .feature-card h3 {
+            color: #486072;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="hero" aria-labelledby="carbonator-title">
+        <div class="hero-top" style="display: flex; gap: 15px; align-items: center;">
+            <a class="home-btn" href="index.html" aria-label="Back to home"
+                style="background: linear-gradient(135deg, #1e5245 0%, #163d33 100%);">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+            </a>
+            <div class="hero-text">
+                <span class="hero-author">Alex Sen Gupta</span>
+                <h1 id="carbonator-title" class="hero-title">Carbonator Browser</h1>
+            </div>
+        </div>
+        <hr class="hero-line" />
+    </header>
+
+    <div class="logo-container">
+        <svg class="logo-svg" viewBox="0 0 280.38 60.39" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <style>
+                    .globe-line {
+                        fill: none;
+                        stroke: #486072;
+                        stroke-miterlimit: 10;
+                        stroke-width: 2px;
+                    }
+
+                    .therm-outline {
+                        fill: none;
+                        stroke: #df7926;
+                        stroke-linecap: round;
+                        stroke-linejoin: round;
+                        stroke-width: 1.31px;
+                    }
+
+                    .mercury {
+                        fill: #df7926;
+                    }
+
+                    .text-blue {
+                        fill: #486072;
+                    }
+
+                    .text-orange {
+                        fill: #df7926;
+                    }
+                </style>
+            </defs>
+
+            <!-- CARB text -->
+            <g id="text-carb">
+                <path class="text-blue"
+                    d="M1.96,29.95c0-9.19,6.08-14.52,13.08-14.52,3.58,0,6.47,1.69,8.33,3.6l-3.3,4.02c-1.39-1.29-2.89-2.21-4.89-2.21-3.8,0-6.8,3.35-6.8,8.91s2.65,9,6.7,9c2.27,0,4.07-1.12,5.42-2.59l3.3,3.93c-2.3,2.68-5.36,4.07-8.95,4.07-7.03,0-12.89-4.87-12.89-14.2Z" />
+                <path class="text-blue"
+                    d="M33.17,15.94h7.5l8.7,27.71h-6.63l-3.62-14.03c-.77-2.77-1.51-6.05-2.25-8.94h-.17c-.67,2.93-1.41,6.17-2.18,8.94l-3.64,14.03h-6.4l8.7-27.71ZM30.21,32.18h13.33v4.87h-13.33v-4.87Z" />
+                <path class="text-blue"
+                    d="M52.03,15.94h9.98c5.88,0,10.69,2.04,10.69,8.63s-4.82,9.11-10.69,9.11h-3.71v9.97h-6.26V15.94ZM61.5,28.7c3.29,0,5.06-1.41,5.06-4.13s-1.77-3.65-5.06-3.65h-3.2v7.79h3.2ZM60.87,32.02l4.33-4.01,8.84,15.63h-7.01l-6.17-11.62Z" />
+                <path class="text-blue"
+                    d="M78.1,15.94h9.48c5.75,0,10.22,1.58,10.22,6.87,0,2.49-1.39,5.13-3.65,5.98v.17c2.83.74,5.02,2.82,5.02,6.52,0,5.64-4.77,8.16-10.79,8.16h-10.27V15.94ZM87.29,27.04c3.04,0,4.38-1.28,4.38-3.3,0-2.13-1.42-2.96-4.34-2.96h-2.97v6.26h2.93ZM87.86,38.81c3.41,0,5.18-1.21,5.18-3.73s-1.73-3.42-5.18-3.42h-3.5v7.15h3.5Z" />
+            </g>
+
+            <!-- Globe with Earth-like rotation - positioned between CARB and NATOR -->
+            <g id="globe" transform="translate(52, 0)">
+                <!-- Outer circle (static) -->
+                <circle class="globe-line" cx="74.51" cy="29.83" r="24.62" />
+
+                <!-- Meridian lines (these will animate for 3D effect) -->
+                <ellipse id="meridian1" class="globe-line" cx="74.29" cy="29.99" rx="13.51" ry="24.62" />
+                <ellipse id="meridian2" class="globe-line" cx="74.4" cy="30.11" rx="0.11" ry="23.37" />
+
+                <!-- Latitude lines (mostly static, slight animation) -->
+                <line id="equator" class="globe-line" x1="49.46" y1="30.49" x2="99.86" y2="30.49" />
+                <line id="latitude1" class="globe-line" x1="53.28" y1="16.3" x2="95.35" y2="16.3" />
+                <line id="latitude2" class="globe-line" x1="53.98" y1="43.4" x2="95.35" y2="43.4" />
+            </g>
+
+            <!-- Thermometer -->
+            <g id="thermometer">
+                <!-- Background to obscure globe behind thermometer -->
+                <rect x="136" y="20" width="20" height="40" rx="8" ry="8" fill="#dce3ee" opacity="1" />
+
+                <!-- Thermometer outline (no mercury version) -->
+                <path class="therm-outline"
+                    d="M148.93,45.35v-17.91h0c-.1-2.21-1.91-3.97-4.14-3.97s-4.05,1.76-4.14,3.97h0v17.91c-1.66,1.26-2.75,3.25-2.75,5.5,0,3.81,3.09,6.9,6.9,6.9s6.9-3.09,6.9-6.9c0-2.25-1.08-4.24-2.75-5.5Z" />
+
+                <!-- Mercury in bulb (static) -->
+                <path class="mercury"
+                    d="M146.04,49.48v-2.62h-2.53v2.62c-.61.36-1.01.96-1.01,1.65,0,1.1,1.02,1.99,2.28,1.99s2.28-.89,2.28-1.99c0-.69-.4-1.3-1.01-1.65" />
+
+                <!-- Mercury line extending from bulb (animated) -->
+                <line id="mercury-line" class="mercury" x1="144.78" y1="46.86" x2="144.78" y2="35" stroke="#df7926"
+                    stroke-width="2.5" stroke-linecap="round" />
+            </g>
+
+            <!-- NATOR text -->
+            <g id="text-nator">
+                <path class="text-orange"
+                    d="M154.83,15.94h6.42l7.23,13.78,2.74,6.09h.17c-.29-2.93-.8-6.81-.8-10.08v-9.79h5.97v27.71h-6.42l-7.23-13.81-2.74-6.05h-.17c.29,3.06.8,6.77.8,10.03v9.83h-5.97V15.94Z" />
+                <path class="text-orange"
+                    d="M188.26,15.94h7.5l8.7,27.71h-6.63l-3.62-14.03c-.77-2.77-1.51-6.05-2.25-8.94h-.17c-.67,2.93-1.41,6.17-2.18,8.94l-3.64,14.03h-6.4l8.7-27.71ZM185.3,32.18h13.33v4.87h-13.33v-4.87Z" />
+                <path class="text-orange" d="M209.78,21.19h-7.63v-5.25h21.52v5.25h-7.63v22.45h-6.26v-22.45Z" />
+                <path class="text-orange"
+                    d="M225.5,29.67c0-9.05,5.11-14.24,12.58-14.24s12.58,5.23,12.58,14.24-5.11,14.48-12.58,14.48-12.58-5.43-12.58-14.48ZM244.25,29.67c0-5.56-2.38-8.83-6.17-8.83s-6.16,3.28-6.16,8.83,2.39,9.08,6.16,9.08,6.17-3.52,6.17-9.08Z" />
+                <path class="text-orange"
+                    d="M255.89,15.94h9.98c5.88,0,10.69,2.04,10.69,8.63s-4.82,9.11-10.69,9.11h-3.71v9.97h-6.26V15.94ZM265.36,28.7c3.29,0,5.06-1.41,5.06-4.13s-1.77-3.65-5.06-3.65h-3.21v7.79h3.21ZM264.72,32.02l4.33-4.01,8.84,15.63h-7.01l-6.17-11.62Z" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="content">
+        <h1>Carbonator Climate Model</h1>
+
+        <div style="text-align: center; margin: 2rem 0;">
+            <a href="http://carbonator.org" style="display: inline-block; background: #df7926; color: white; padding: 1rem 2rem; 
+                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 1.1rem;
+                      box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;"
+                onmouseover="this.style.background='#c56820'" onmouseout="this.style.background='#df7926'">
+                Launch Carbonator →
+            </a>
+        </div>
+
+        <h2>What is Carbonator?</h2>
+        <p>
+            Carbonator is a simple climate model developed at UNSW's Climate Change Research Centre. Unlike full climate
+            models that can tell us how climate variables evolve at different locations, Carbonator focuses on globally
+            averaged changes—but does so with remarkable efficiency and accessibility.
+        </p>
+
+        <p>
+            Using only 20-30 lines of computer code, Carbonator can simulate decades of climate system evolution in just
+            a few seconds on your computer. Despite its simplicity, it's based on the same fundamental laws of physics
+            that underpin state-of-the-art climate models—particularly the conservation of energy—and produces results
+            remarkably similar to those complex models for key global variables.
+        </p>
+
+        <h2>How Does Carbonator Work?</h2>
+        <p>
+            Carbonator transforms six user-defined inputs into comprehensive climate projections:
+        </p>
+        <ul style="margin-left: 2rem; line-height: 1.8;">
+            <li><strong>CO₂ emissions</strong> - billions of tons of CO₂ released annually</li>
+            <li><strong>CH₄ emissions</strong> - methane release rates</li>
+            <li><strong>Human aerosol emissions</strong> - particles from pollution and industry</li>
+            <li><strong>Volcanic aerosol emissions</strong> - natural atmospheric particles</li>
+            <li><strong>Solar radiation</strong> - energy reaching Earth from the sun</li>
+            <li><strong>Surface reflectivity</strong> - Earth's albedo changes</li>
+        </ul>
+
+        <p>From these inputs, Carbonator calculates how key climate variables evolve over time:</p>
+        <ul style="margin-left: 2rem; line-height: 1.8;">
+            <li>Surface temperature</li>
+            <li>Deep ocean temperature</li>
+            <li>Sea level rise</li>
+            <li>Ocean pH (acidification)</li>
+            <li>Atmospheric concentrations of CO₂ and CH₄</li>
+        </ul>
+
+        <h2>For Teaching and Learning</h2>
+        <p>
+            Carbonator is specifically designed for inquiry-based, blended, and independent learning across secondary
+            schools through to university level. Science inquiry involves identifying and posing questions, and
+            Carbonator
+            provides an ideal platform for students to construct questions, develop hypotheses, and test predictions.
+        </p>
+
+        <div class="features">
+            <div class="feature-card">
+                <h3>Hypothesis Testing</h3>
+                <p>Run scenarios to see how the planet reacts to different emission pathways and interventions. Students
+                    can
+                    explore "what if" questions and immediately observe the consequences.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Understanding Models</h3>
+                <p>Learn what a model is and how simple models like Carbonator can reveal important information about
+                    the
+                    real world climate system.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Hands-On Climate Science</h3>
+                <p>Directly explore how and why greenhouse gases, aerosols, and other factors affect the climate system
+                    through interactive manipulation of variables.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Data Analysis Skills</h3>
+                <p>Export data to perform statistical analysis, create visualizations, and compare model outputs with
+                    observational data.</p>
+            </div>
+        </div>
+
+        <h3>Example Student Projects</h3>
+        <p>
+            Students can explore a wide range of climate science questions using Carbonator. Example investigations
+            include:
+        </p>
+        <ul style="margin-left: 2rem; line-height: 1.8;">
+            <li><strong>Climate Attribution:</strong> Investigate which factors drive observed climate changes by
+                comparing scenarios with natural forcings only (solar, volcanic) versus human forcings (CO₂, aerosols,
+                methane)</li>
+            <li><strong>Mitigation Strategies:</strong> Explore different pathways to limit warming, from immediate
+                emissions cuts to gradual phase-outs, and understand the consequences of delayed action</li>
+            <li><strong>Geoengineering Scenarios:</strong> Test whether proposed interventions like aerosol injection
+                could offset warming, and examine potential unintended consequences on sea level and ocean acidification
+            </li>
+        </ul>
+
+        <h2>For Research</h2>
+        <p>
+            While Carbonator's primary purpose is education, it has proven valuable for research applications where
+            rapid
+            hypothesis testing and probabilistic projections are needed. The model's transparency and computational
+            efficiency
+            make it ideal for exploring scenario uncertainties and conducting sensitivity analyses.
+        </p>
+
+        <div class="info-box">
+            <h3>Research Application Example</h3>
+            <p>
+                Sherwood et al. (2022) used an enhanced version of Carbonator to calculate probability distributions of
+                committed warming—the future warming that would occur if all emissions stopped immediately. Their study,
+                published in <em>Environmental Research Letters</em>, revealed that even with complete emissions
+                cessation
+                in 2020, there remained a 15% chance of exceeding the 1.5°C Paris target.
+            </p>
+            <p style="margin-top: 0.5rem;">
+                <a href="https://doi.org/10.1088/1748-9326/ac6ff6" target="_blank"
+                    style="color: #df7926; text-decoration: none; font-weight: bold;">
+                    Read the full study →
+                </a>
+            </p>
+        </div>
+
+        <p>
+            This demonstrates how simplified models can address urgent policy questions that complex models struggle
+            with
+            due to computational constraints. The study combined Carbonator with a Bayesian approach incorporating
+            multiple
+            lines of evidence, showing that the uncertainty in committed warming arises mainly from present-day aerosol
+            forcing.
+        </p>
+
+        <h2>Advanced Features</h2>
+        <p>
+            For advanced users, Carbonator offers additional capabilities:
+        </p>
+        <ul style="margin-left: 2rem; line-height: 1.8;">
+            <li><strong>Custom scenario development</strong> - Create detailed emission pathways using multiple control
+                points</li>
+            <li><strong>Data import/export</strong> - Import scenarios from spreadsheets and export results for further
+                analysis</li>
+            <li><strong>Parameter modification</strong> - Adjust model parameters to explore sensitivities</li>
+            <li><strong>Comparison tools</strong> - Compare multiple scenarios side-by-side</li>
+        </ul>
+
+        <div
+            style="background: #edf2f7; padding: 1.5rem; border-radius: 8px; margin-top: 2rem; border-left: 4px solid #486072;">
+            <h3 style="color: #486072; margin-top: 0;">Getting Started</h3>
+            <p style="margin-bottom: 0.5rem;">
+                Ready to explore climate science through hands-on modeling? Visit Carbonator to begin your
+                investigation.
+            </p>
+            <a href="http://carbonator.org" style="color: #df7926; text-decoration: none; font-weight: bold;">
+                Visit carbonator.org →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Advanced animation engine for Earth-like globe rotation and mercury bobbing
+        class CarbonatorAnimator {
+            constructor() {
+                // Globe elements for 3D rotation effect
+                this.meridian1 = document.getElementById('meridian1');
+                this.meridian2 = document.getElementById('meridian2');
+                this.equator = document.getElementById('equator');
+                this.latitude1 = document.getElementById('latitude1');
+                this.latitude2 = document.getElementById('latitude2');
+
+                // Thermometer mercury line
+                this.mercuryLine = document.getElementById('mercury-line');
+
+                // Animation state
+                this.time = 0;
+                this.isRunning = true;
+
+                // Globe rotation settings for Earth-like 3D effect
+                this.globeSpeed = 0.015; // Rotation speed
+                this.meridian1BaseRx = 13.51; // Original rx value
+                this.meridian2BaseRx = 0.11; // Original rx value (very thin)
+
+                // Mercury bobbing settings
+                this.mercurySpeed = 0.05;
+                this.mercuryBaseY2 = 35; // Base height of mercury line
+                this.mercuryAmplitude = 3; // How much the mercury moves up/down (pixels)
+
+                // Bind animate method
+                this.animate = this.animate.bind(this);
+
+                // Setup hover pause
+                this.setupEventListeners();
+
+                // Start animation
+                this.animate();
+            }
+
+            setupEventListeners() {
+                const logoContainer = document.querySelector('.logo-container');
+                logoContainer.addEventListener('mouseenter', () => {
+                    this.isRunning = false;
+                });
+                logoContainer.addEventListener('mouseleave', () => {
+                    this.isRunning = true;
+                });
+            }
+
+            animate() {
+                if (this.isRunning) {
+                    this.time += this.globeSpeed;
+
+                    // Earth-like 3D rotation effect
+                    // Meridians compress and expand to simulate 3D rotation
+                    // Using sine and cosine waves offset by 90 degrees (π/2)
+
+                    // First meridian - main visible meridian
+                    const rx1 = Math.abs(Math.cos(this.time)) * this.meridian1BaseRx;
+                    this.meridian1.setAttribute('rx', rx1);
+
+                    // Second meridian - 90 degrees offset (perpendicular)
+                    const rx2 = Math.abs(Math.sin(this.time)) * this.meridian1BaseRx * 0.4;
+                    this.meridian2.setAttribute('rx', Math.max(rx2, 0.11)); // Keep minimum width
+
+                    // Subtle latitude line movement to enhance 3D effect
+                    // Latitude lines compress slightly as globe rotates
+                    const latitudeScale = 1 + Math.sin(this.time) * 0.02;
+
+                    // Equator (main line)
+                    const equatorBase = { x1: 49.46, x2: 99.86, y: 30.49 };
+                    const equatorWidth = (equatorBase.x2 - equatorBase.x1) * latitudeScale;
+                    const equatorCenter = (equatorBase.x1 + equatorBase.x2) / 2;
+                    this.equator.setAttribute('x1', equatorCenter - equatorWidth / 2);
+                    this.equator.setAttribute('x2', equatorCenter + equatorWidth / 2);
+
+                    // Top latitude
+                    const lat1Base = { x1: 53.28, x2: 95.35, y: 16.3 };
+                    const lat1Width = (lat1Base.x2 - lat1Base.x1) * (1 + Math.sin(this.time + Math.PI * 0.3) * 0.03);
+                    const lat1Center = (lat1Base.x1 + lat1Base.x2) / 2;
+                    this.latitude1.setAttribute('x1', lat1Center - lat1Width / 2);
+                    this.latitude1.setAttribute('x2', lat1Center + lat1Width / 2);
+
+                    // Bottom latitude
+                    const lat2Base = { x1: 53.98, x2: 95.35, y: 43.4 };
+                    const lat2Width = (lat2Base.x2 - lat2Base.x1) * (1 + Math.sin(this.time - Math.PI * 0.3) * 0.03);
+                    const lat2Center = (lat2Base.x1 + lat2Base.x2) / 2;
+                    this.latitude2.setAttribute('x1', lat2Center - lat2Width / 2);
+                    this.latitude2.setAttribute('x2', lat2Center + lat2Width / 2);
+
+                    // Mercury line wobbling - extends from bulb upward with varying height
+                    const mercuryTime = this.time * (this.mercurySpeed / this.globeSpeed);
+                    const mercuryOffset = Math.sin(mercuryTime) * this.mercuryAmplitude;
+
+                    // Update y2 coordinate to make mercury rise and fall
+                    const newY2 = this.mercuryBaseY2 - mercuryOffset;
+                    this.mercuryLine.setAttribute('y2', newY2);
+                }
+
+                requestAnimationFrame(this.animate);
+            }
+        }
+
+        // Initialize animation when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new CarbonatorAnimator();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,879 @@
+:root {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(140% 160% at 0% 0%, rgba(44, 60, 108, 0.28), transparent 55%),
+    radial-gradient(160% 170% at 100% 100%, rgba(34, 74, 120, 0.22), transparent 60%),
+    #03060d;
+  color: #e4e9fa;
+  position: relative;
+  overflow: hidden;
+}
+
+.arc-dial {
+  position: absolute;
+  width: var(--dial-radius, 360px);
+  height: var(--dial-radius, 360px);
+  overflow: hidden;
+  outline: none;
+  cursor: default;
+}
+
+.arc-dial svg {
+  position: absolute;
+  width: calc(var(--dial-radius, 360px) * 2);
+  height: calc(var(--dial-radius, 360px) * 2);
+  top: calc(-1 * var(--dial-radius, 360px));
+  left: calc(-1 * var(--dial-radius, 360px));
+  display: block;
+}
+
+/* Nav dial specific - not clipped, shows full circle */
+.arc-dial--nav {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.arc-dial--nav svg {
+  position: relative;
+  width: var(--dial-radius, 260px);
+  height: var(--dial-radius, 260px);
+  top: 0;
+  left: 0;
+}
+
+.arc-dial--nav::before {
+  content: '';
+  display: none;
+  /* Removed as per user request */
+}
+
+.arc-dial .segments {
+  position: relative;
+  z-index: 2;
+}
+
+.arc-dial .segment-path {
+  fill: var(--fill, rgba(84, 116, 255, 0.7));
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1.2;
+  opacity: 0.32;
+  transition: opacity 160ms ease, stroke 180ms ease, filter 200ms ease;
+  cursor: pointer;
+}
+
+.arc-dial .segment-hit {
+  fill: rgba(0, 0, 0, 0.001);
+  pointer-events: auto;
+}
+
+.arc-dial .segment-label-hit {
+  fill: rgba(0, 0, 0, 0.001);
+  pointer-events: auto;
+}
+
+.arc-dial .segment.visible .segment-path {
+  opacity: 0.96;
+}
+
+/* Nav dial specific - show colors on all segments */
+.arc-dial--nav .segment-path {
+  opacity: 0.55;
+}
+
+.arc-dial--nav .segment.visible .segment-path {
+  opacity: 0.98;
+}
+
+.arc-dial .segment.active .segment-path,
+.arc-dial .segment-path:hover,
+.arc-dial .segment-path:focus-visible {
+  opacity: 1;
+  stroke: rgba(255, 255, 255, 0.52);
+  filter: drop-shadow(0 8px 24px rgba(118, 204, 255, 0.42));
+  outline: none;
+}
+
+.arc-dial .segment-thumb {
+  fill: rgba(6, 8, 15, 0.55);
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1.1;
+  opacity: 0;
+  transition: opacity 160ms ease, fill 180ms ease, stroke 180ms ease;
+  pointer-events: none;
+}
+
+.arc-dial .segment.visible .segment-thumb {
+  opacity: 0.94;
+}
+
+.arc-dial .segment.active .segment-thumb,
+.arc-dial .segment-path:hover+.segment-thumb,
+.arc-dial .segment-thumb:hover {
+  fill: rgba(15, 19, 34, 0.95);
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+.arc-dial .segment-label {
+  fill: #ffffff;
+  font-size: var(--segment-font-size, clamp(16px, 2.5vw, 24px));
+  text-anchor: middle;
+  dominant-baseline: middle;
+  alignment-baseline: middle;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 1;
+  /* Force full visibility */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+  /* Strong shadow for contrast */
+  transition: opacity 160ms ease, font-size 200ms ease;
+  pointer-events: none;
+}
+
+.arc-dial .segment-label.is-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.arc-dial .segment.visible .segment-label,
+.arc-dial .segment-label.visible {
+  opacity: 0.94;
+}
+
+.arc-dial .segment:not(.visible) {
+  pointer-events: none;
+}
+
+.arc-dial .segment.visible {
+  cursor: pointer;
+}
+
+.arc-dial .year-indicator {
+  stroke: #f2f5ff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Decorative ring for apps dial */
+.decorative-ring {
+  opacity: 0.6;
+  filter: drop-shadow(0 0 8px rgba(118, 163, 255, 0.3));
+  pointer-events: none;
+}
+
+/* Center title for apps dial */
+.dial-center-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  fill: #f6f8ff;
+  opacity: 0.85;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* Center label display for nav dial */
+.dial-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  max-width: 260px;
+  text-align: center;
+  display: grid;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dial-center-label {
+  font-size: clamp(18px, 2.2vw, 21px);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.3;
+  margin-bottom: 0.2rem;
+  color: #e4e9fa;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0;
+  white-space: normal;
+}
+
+.dial-center-sub {
+  font-size: clamp(10px, 0.8vw, 11px);
+  color: #aeb4c7;
+  font-weight: 400;
+  max-width: 80%;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.arc-dial--primary {
+  top: 0;
+  left: 0;
+}
+
+/* Icon hover boost */
+.segment-icon:hover {
+  transform: scale(1.15) !important;
+  filter: drop-shadow(0 0 20px rgba(118, 163, 255, 0.8)) !important;
+  opacity: 1 !important;
+  cursor: pointer;
+}
+
+.dial-tooltip {
+  position: fixed;
+  z-index: 999;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.32;
+  color: #f5f8ff;
+  background: rgba(15, 18, 32, 0.82);
+  border: 1px solid rgba(118, 163, 255, 0.35);
+  box-shadow: 0 18px 36px rgba(3, 8, 20, 0.45);
+  backdrop-filter: blur(12px);
+  transform: translate(-9999px, -9999px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  max-width: 280px;
+}
+
+.dial-tooltip.is-visible {
+  opacity: 1;
+}
+
+/* Rectangular Publications Timeline */
+.papers-timeline {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-45%);
+  width: 420px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(9, 14, 28, 0.92);
+  border: 1px solid rgba(118, 163, 255, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(3, 8, 20, 0.55);
+  backdrop-filter: blur(18px);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.timeline-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(118, 163, 255, 0.15);
+  background: rgba(15, 19, 34, 0.6);
+}
+
+.timeline-header h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f6f8ff;
+  letter-spacing: 0.02em;
+}
+
+.timeline-stats {
+  display: none;
+}
+
+.papers-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  overflow: hidden;
+  min-height: 300px;
+}
+
+.paper-card {
+  padding: 12px 14px;
+  background: rgba(15, 19, 34, 0.7);
+  border: 1px solid rgba(118, 163, 255, 0.2);
+  border-left: 3px solid #5e8bff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.paper-card:hover {
+  background: rgba(25, 29, 44, 0.95);
+  border-color: rgba(118, 163, 255, 0.5);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(118, 204, 255, 0.15);
+}
+
+.paper-card .paper-year {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(228, 233, 250, 0.6);
+  margin-bottom: 4px;
+}
+
+.paper-card .paper-title {
+  font-size: 13px;
+  color: #e4e9fa;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.timeline-slider {
+  padding: 16px 20px 20px;
+  background: rgba(15, 19, 34, 0.6);
+  border-top: 1px solid rgba(118, 163, 255, 0.15);
+}
+
+.timeline-slider input[type="range"] {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right,
+      hsl(10, 85%, 55%),
+      hsl(40, 85%, 55%),
+      hsl(120, 60%, 50%),
+      hsl(220, 85%, 60%));
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.timeline-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #f6f8ff;
+  border: 2px solid rgba(118, 163, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #f6f8ff;
+  border: 2px solid rgba(118, 163, 255, 0.8);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.year-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(228, 233, 250, 0.7);
+  font-weight: 500;
+}
+
+.year-current {
+  font-weight: 700;
+  color: #f6f8ff;
+  font-size: 13px;
+}
+
+/* Status indicator */
+.dial-status {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(6, 9, 20, 0.72);
+  color: #e4e9fa;
+  border: 1px solid rgba(118, 163, 255, 0.12);
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 1200;
+  font-family: Inter, system-ui, -apple-system, Roboto, Arial, sans-serif;
+  backdrop-filter: blur(6px);
+  display: none;
+}
+
+/* Page title */
+.page-title {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 600;
+  color: #f6f8ff;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  max-width: 440px;
+  text-align: right;
+  z-index: 150;
+}
+
+.page-title .name {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.page-title .roles {
+  font-size: clamp(13px, 1.5vw, 17px);
+  font-weight: 500;
+  color: rgba(228, 233, 250, 0.85);
+  display: block;
+}
+
+.page-title .roles .separator {
+  margin: 0 8px;
+  color: rgba(118, 163, 255, 0.5);
+}
+
+/* About Me box */
+.about-me {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 520px;
+  max-height: 280px;
+  display: flex;
+  gap: 20px;
+  background: rgba(9, 14, 28, 0.92);
+  border: 1px solid rgba(118, 163, 255, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(3, 8, 20, 0.55);
+  backdrop-filter: blur(18px);
+  padding: 20px;
+  z-index: 100;
+}
+
+.about-me-photo {
+  flex-shrink: 0;
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(118, 163, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(3, 8, 20, 0.4);
+  position: relative;
+}
+
+.about-me-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.about-me-photo img.active {
+  opacity: 1;
+}
+
+.about-me-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.about-me-header {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f6f8ff;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(118, 163, 255, 0.2);
+}
+
+.about-me-bio {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(228, 233, 250, 0.9);
+  padding-right: 8px;
+}
+
+.about-me-bio::-webkit-scrollbar {
+  width: 6px;
+}
+
+.about-me-bio::-webkit-scrollbar-track {
+  background: rgba(118, 163, 255, 0.08);
+  border-radius: 3px;
+}
+
+.about-me-bio::-webkit-scrollbar-thumb {
+  background: rgba(118, 163, 255, 0.3);
+  border-radius: 3px;
+}
+
+.about-me-bio::-webkit-scrollbar-thumb:hover {
+  background: rgba(118, 163, 255, 0.5);
+}
+
+/* Responsive Layout - Media Queries */
+
+/* Medium screens - slight adjustments */
+@media (max-width: 1400px) {
+  .papers-timeline {
+    width: 380px;
+  }
+
+  .about-me {
+    width: 480px;
+  }
+}
+
+/* 11-inch iPad and similar - scaled desktop layout */
+@media (max-width: 1200px) and (min-width: 1100px) {
+
+  /* Apps dial - 20% smaller */
+  .arc-dial--primary {
+    --dial-radius: 225px;
+  }
+
+  /* Publications - 10% smaller */
+  .papers-timeline {
+    width: 378px;
+  }
+
+  /* About Me - 10% smaller */
+  .about-me {
+    width: 468px;
+  }
+
+  /* Nav dial - shift left to be closer to apps dial */
+  .arc-dial--nav {
+    left: 42%;
+  }
+}
+
+/* Tablet and smaller - vertical stacking */
+@media (max-width: 1099px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Page title - move to top of stack */
+  .page-title {
+    position: relative;
+    top: 0;
+    right: 0;
+    text-align: center;
+    max-width: 100%;
+    margin-bottom: 30px;
+    order: 1;
+  }
+
+  /* Apps dial - stack order 2 */
+  .arc-dial--primary {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin: 0 auto 40px;
+    order: 2;
+  }
+
+  /* Nav dial - stack order 3 */
+  .arc-dial--nav {
+    position: relative;
+    top: 0;
+    left: 0;
+    transform: none;
+    margin: 0 auto 40px;
+    order: 3;
+  }
+
+  /* Publications - stack order 4 */
+  .papers-timeline {
+    position: relative;
+    top: 0;
+    right: 0;
+    transform: none;
+    margin: 0 auto 40px;
+    max-width: 90vw;
+    order: 4;
+  }
+
+  /* About Me - stack order 5 */
+  .about-me {
+    position: relative;
+    bottom: 0;
+    left: 0;
+    margin: 0 auto 40px;
+    max-width: 90vw;
+    order: 5;
+  }
+}
+
+/* Smaller tablets and large phones */
+@media (max-width: 768px) {
+  .arc-dial--primary {
+    --dial-radius: 220px;
+  }
+
+  .arc-dial--primary .dial-svg {
+    width: 220px;
+    height: 220px;
+  }
+
+  .arc-dial--nav {
+    --dial-radius: 280px;
+  }
+
+  .arc-dial--nav .dial-svg {
+    width: 280px;
+    height: 280px;
+  }
+
+  .arc-dial--nav::before {
+    width: 200px;
+    height: 200px;
+  }
+
+  .papers-timeline {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .about-me {
+    width: 100%;
+    max-width: 500px;
+    flex-direction: column;
+    align-items: center;
+    max-height: none;
+  }
+
+  .about-me-photo {
+    margin-bottom: 16px;
+  }
+
+  .about-me-content {
+    width: 100%;
+  }
+
+  .about-me-bio {
+    max-height: 200px;
+  }
+
+  .page-title .name {
+    font-size: 24px;
+  }
+
+  .page-title .roles {
+    font-size: 14px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .arc-dial--primary {
+    --dial-radius: 180px;
+  }
+
+  .arc-dial--primary .dial-svg {
+    width: 180px;
+    height: 180px;
+  }
+
+  .arc-dial--nav {
+    --dial-radius: 220px;
+  }
+
+  .arc-dial--nav .dial-svg {
+    width: 220px;
+    height: 220px;
+  }
+
+  .papers-timeline {
+    max-width: 100%;
+  }
+
+  .about-me {
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .about-me-photo {
+    width: 150px;
+    height: 150px;
+  }
+
+  .page-title .name {
+    font-size: 20px;
+  }
+
+  .page-title .roles {
+    font-size: 12px;
+  }
+
+  .page-title .roles .separator {
+    display: none;
+  }
+
+  .page-title .roles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Top Navigation Buttons */
+.top-nav {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 200;
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  background: rgba(15, 19, 34, 0.85);
+  border: 1px solid rgba(118, 163, 255, 0.4);
+  color: #e4e9fa;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:hover {
+  background: rgba(118, 163, 255, 0.15);
+  border-color: rgba(118, 163, 255, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+.nav-btn.active {
+  background: #f0f2f5;
+  /* Match modal bg */
+  color: #2c3e50;
+  border-color: rgba(118, 163, 255, 0.2);
+  border-bottom-color: transparent;
+  border-radius: 8px 8px 0 0;
+  z-index: 2001;
+  /* Above modal */
+  box-shadow: none;
+}
+
+/* Modal Panel */
+.modal-panel {
+  position: fixed;
+  top: 60px;
+  /* Adjust to overlap button bottom slightly */
+  left: 20px;
+  width: 90vw;
+  max-width: 1200px;
+  height: calc(100vh - 80px);
+  background: transparent;
+  z-index: 2000;
+  display: none;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  /* Panel styling */
+  background: #f0f2f5;
+  border-radius: 0 12px 12px 12px;
+  /* Top-left sharp to connect */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(118, 163, 255, 0.2);
+}
+
+.modal-panel.active {
+  display: flex;
+  opacity: 1;
+}
+
+.modal-header {
+  padding: 15px 30px;
+  background: #1a1e2e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(118, 163, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #f6f8ff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(228, 233, 250, 0.6);
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 10px;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.modal-content {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  background: #f0f2f5;
+  /* Light bg for the climate iframe */
+}
+
+.full-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}

@@ -1,0 +1,25 @@
+# Requirements for Alex Sen Gupta Personal Website
+# Python dependencies for backend data processing scripts
+
+# AI RSS Feed System (AI_RSSfeed/)
+feedparser==6.0.11
+python-dotenv==1.0.1
+openai==1.40.1
+requests==2.32.3
+
+# Climate Indices (climate indices/)
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+numpy>=1.24.0
+lxml>=4.9.0
+
+# PDF Summarizer (publications/pdf-summarizer/)
+google-generativeai>=0.3.0
+
+# Note: The main website (index.html) is a static site and does not require
+# any Python dependencies to run. These requirements are only needed if you
+# want to regenerate/update data files using the Python processing scripts.
+#
+# To use these scripts, you'll also need to create .env files with API keys:
+# - AI_RSSfeed/.env: OPENAI_API_KEY=your_key_here
+# - publications/pdf-summarizer/.env: GOOGLE_API_KEY=your_key_here

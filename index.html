@@ -1,132 +1,1440 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Arc Dial Selectors - Merged</title>
-  <link rel="stylesheet" href="css/homepage.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Sen Gupta - Research Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            overflow-x: hidden;
+            color: #2c3e50;
+        }
+
+        /* Upper background - animated gradient */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 50%, #e1f5fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 20s ease infinite;
+            z-index: -2;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Lower background - darker slate color */
+        .background-lower {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100%;
+            background: #d4e2ec;
+            z-index: -2;
+        }
+
+        /* Curved separator - positioned absolutely relative to publications */
+        .background-curve {
+            position: absolute;
+            top: -80px;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            z-index: 0;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .background-curve svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Particle canvas */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Top navigation bar */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-left {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(78, 205, 196, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.2);
+        }
+
+        /* Main container - no longer centered vertically */
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6rem 2rem 2rem;
+            position: relative;
+        }
+
+        /* Subtle header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #37474f;
+            letter-spacing: -0.01em;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #78909c;
+            font-weight: 400;
+        }
+
+        /* Navigation buttons container - 3 per row */
+        .nav-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 4rem;
+            padding: 0 1rem;
+        }
+
+        /* Compact nav button */
+        .nav-button {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out backwards;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .nav-button:nth-child(1) { animation-delay: 0.05s; }
+        .nav-button:nth-child(2) { animation-delay: 0.1s; }
+        .nav-button:nth-child(3) { animation-delay: 0.15s; }
+        .nav-button:nth-child(4) { animation-delay: 0.2s; }
+        .nav-button:nth-child(5) { animation-delay: 0.25s; }
+        .nav-button:nth-child(6) { animation-delay: 0.3s; }
+        .nav-button:nth-child(7) { animation-delay: 0.35s; }
+        .nav-button:nth-child(8) { animation-delay: 0.4s; }
+        .nav-button:nth-child(9) { animation-delay: 0.45s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Glow effect */
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150px;
+            height: 150px;
+            background: var(--glow-color);
+            border-radius: 50%;
+            filter: blur(50px);
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.4s ease;
+            z-index: -1;
+        }
+
+        .nav-button:hover::before {
+            opacity: 0.15;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-4px) scale(1.05);
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),
+                        0 0 30px var(--glow-color-alpha);
+        }
+
+        .nav-button:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        /* Button colors */
+        .nav-button:nth-child(1) { --glow-color: #ff6b6b; --glow-color-alpha: rgba(255, 107, 107, 0.2); }
+        .nav-button:nth-child(2) { --glow-color: #4ecdc4; --glow-color-alpha: rgba(78, 205, 196, 0.2); }
+        .nav-button:nth-child(3) { --glow-color: #6c5ce7; --glow-color-alpha: rgba(108, 92, 231, 0.2); }
+        .nav-button:nth-child(4) { --glow-color: #fdcb6e; --glow-color-alpha: rgba(253, 203, 110, 0.2); }
+        .nav-button:nth-child(5) { --glow-color: #ff6b6b; --glow-color-alpha: rgba(255, 107, 107, 0.2); }
+        .nav-button:nth-child(6) { --glow-color: #4ecdc4; --glow-color-alpha: rgba(78, 205, 196, 0.2); }
+        .nav-button:nth-child(7) { --glow-color: #6c5ce7; --glow-color-alpha: rgba(108, 92, 231, 0.2); }
+        .nav-button:nth-child(8) { --glow-color: #fdcb6e; --glow-color-alpha: rgba(253, 203, 110, 0.2); }
+        .nav-button:nth-child(9) { --glow-color: #ff6b6b; --glow-color-alpha: rgba(255, 107, 107, 0.2); }
+
+        .nav-button-icon {
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.1));
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-button:hover .nav-button-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Button tooltip */
+        .nav-button-tooltip {
+            position: fixed;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            max-width: 300px;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translate(-9999px, -9999px);
+        }
+
+        .nav-button-tooltip.visible {
+            opacity: 1;
+        }
+
+        /* Publications section - extends downward with background */
+        .publications {
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 2rem;
+            padding: 5rem 0 4rem;
+            position: relative;
+        }
+
+        .publications h3 {
+            font-size: 1.5rem;
+            color: #37474f;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .pub-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 0 2rem;
+        }
+
+        .year-slider-container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .year-slider {
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(to right, rgba(78, 205, 196, 0.5), rgba(78, 205, 196, 0.2));
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            direction: rtl;
+        }
+
+        .year-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(78, 205, 196, 0.9);
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .year-slider::-webkit-slider-thumb:hover {
+            background: rgba(78, 205, 196, 1);
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+        }
+
+        .year-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: rgba(78, 205, 196, 0.9);
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .year-slider::-moz-range-thumb:hover {
+            background: rgba(78, 205, 196, 1);
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+        }
+
+        .year-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #546e7a;
+            font-weight: 500;
+        }
+
+        .pub-timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+            min-height: 200px;
+        }
+
+        .pub-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            position: relative;
+            cursor: pointer;
+            min-width: 0;
+        }
+
+        .pub-card:hover {
+            background: rgba(255, 255, 255, 0.7);
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Tooltip for publications */
+        .pub-tooltip {
+            position: fixed;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            max-width: 400px;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translate(-9999px, -9999px);
+        }
+
+        .pub-tooltip.visible {
+            opacity: 1;
+        }
+
+        .pub-year {
+            font-size: 0.85rem;
+            color: #4ecdc4;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .pub-title {
+            font-size: 0.95rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .pub-journal {
+            font-size: 0.85rem;
+            color: #78909c;
+            font-style: italic;
+        }
+
+        /* Card Stack Interface */
+        .card-stack {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 85%;
+            max-width: 1000px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .card-stack.active {
+            right: 0;
+        }
+
+        .card-header {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 2rem 3rem 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h2 {
+            font-size: 1.75rem;
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #37474f;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .card-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .card-content {
+            padding: 2rem 3rem 3rem;
+            color: #546e7a;
+            line-height: 1.8;
+        }
+
+        .card-content p {
+            margin-bottom: 1rem;
+        }
+
+        .card-content iframe {
+            width: 100%;
+            height: 70vh;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Overlay backdrop */
+        .card-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .card-backdrop.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* About me section */
+        .about-images {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 1.5rem auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .about-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .about-image.active {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .nav-buttons-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card-stack {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-buttons-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .top-nav {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-left {
+                justify-content: center;
+            }
+
+            .pub-timeline {
+                grid-template-columns: 1fr;
+            }
+
+            .card-header {
+                padding: 1.5rem 2rem 1rem;
+            }
+
+            .card-content {
+                padding: 1.5rem 2rem 2rem;
+            }
+        }
+
+        /* ===== DARK THEME ===== */
+        body.dark-theme {
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .background {
+            background: linear-gradient(135deg, #0a1929 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        body.dark-theme .background-lower {
+            background: #0a1929;
+        }
+
+        /* Curve separator color in dark mode */
+        .background-curve path {
+            transition: fill 0.5s ease;
+            fill: #d4e2ec; /* Default light theme color */
+        }
+        
+        body.dark-theme .background-curve path {
+            fill: #0a1929;
+        }
+
+        body.dark-theme .top-nav {
+            background: rgba(10, 25, 41, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-theme .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0f7fa;
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+
+        body.dark-theme .nav-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
+            color: #fff;
+        }
+
+        body.dark-theme .header h1 {
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .header p {
+            color: #b0bec5;
+        }
+
+        body.dark-theme .nav-button {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .nav-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        body.dark-theme .publications h3 {
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .pub-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-theme .pub-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-theme .pub-title {
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .pub-journal,
+        body.dark-theme .year-labels {
+            color: #b0bec5;
+        }
+
+        body.dark-theme .card-stack {
+            background: rgba(10, 25, 41, 0.95);
+            color: #b0bec5;
+        }
+
+        body.dark-theme .card-header {
+            background: rgba(10, 25, 41, 0.98);
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-theme .card-header h2 {
+            color: #e0f7fa;
+        }
+
+        body.dark-theme .card-close {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0f7fa;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-theme .card-content {
+            color: #b0bec5;
+        }
+        
+        /* AI News Dark Mode Overrides */
+        body.dark-theme #ai-news-content h1,
+        body.dark-theme #ai-news-content h2,
+        body.dark-theme #ai-news-content strong {
+            color: #e0f7fa !important;
+        }
+        
+        body.dark-theme #ai-news-content p {
+            color: #b0bec5 !important;
+        }
+        
+        body.dark-theme #ai-news-content div[style*="background: white"] {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-left-color: #3498db !important;
+        }
+        
+        body.dark-theme #ai-news-content div[style*="background: #f8f9fa"] {
+            background: rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        body.dark-theme #ai-news-content summary,
+        body.dark-theme #ai-news-content a {
+            color: #4ecdc4 !important;
+        }
+    </style>
 </head>
-
 <body>
-
-  <!-- Top Navigation -->
-  <div class="top-nav">
-    <button id="btn-climate" class="nav-btn" onclick="openPanel('climate-panel', this)">
-      <span>🌍</span> Climate Indices
-    </button>
-    <button id="btn-ai-news" class="nav-btn" onclick="openPanel('ai-news-panel', this)">
-      <span>🤖</span> AI News
-    </button>
-  </div>
-
-  <!-- Climate Indices Modal -->
-  <div id="climate-panel" class="modal-panel">
-    <div class="modal-header">
-      <h2>Global Climate Indices</h2>
-      <button class="close-btn" onclick="closePanel('climate-panel')">×</button>
-    </div>
-    <div class="modal-content">
-      <iframe src="climate indices/index.html?v=20251219c" class="full-frame" title="Climate Dashboard"></iframe>
-    </div>
-  </div>
-
-  <!-- AI News Modal -->
-  <div id="ai-news-panel" class="modal-panel">
-    <div class="modal-header">
-      <h2>AI & AGI News Briefing</h2>
-      <button class="close-btn" onclick="closePanel('ai-news-panel')">×</button>
-    </div>
-    <div class="modal-content" style="overflow-y: auto; padding: 30px;">
-      <div id="ai-news-content" style="max-width: 900px; margin: 0 auto; line-height: 1.6; color: #2c3e50;">
-        Loading AI news...
-      </div>
-    </div>
-  </div>
-
-  <!-- Apps Dial removed -->
-
-  <!-- Papers Timeline (right side) -->
-  <div id="papersTimeline" class="papers-timeline"
-    data-csv="assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv">
-    <div class="timeline-header">
-      <h3>Publications</h3>
-      <div class="timeline-stats">
-        <span id="paperCount">0 papers</span>
-        <span id="yearRange">—</span>
-      </div>
+    <!-- Top Navigation with About Me on right -->
+    <div class="top-nav">
+        <div class="nav-left">
+            <button class="nav-btn" onclick="openCard('climate')">
+                🌍 Climate Indices
+            </button>
+            <button class="nav-btn" onclick="openCard('ai')">
+                🤖 AI News
+            </button>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button class="nav-btn" onclick="openCard('about')">
+                👤 About Me
+            </button>
+            <button class="nav-btn" onclick="toggleTheme()" title="Toggle Dark/Light Theme">
+                🌓
+            </button>
+        </div>
     </div>
 
-    <div class="papers-grid" id="papersGrid">
-      <!-- Paper cards inserted here by JavaScript -->
+    <!-- Upper animated background -->
+    <div class="background"></div>
+
+    <!-- Enhanced particle canvas -->
+    <canvas id="particles"></canvas>
+
+    <!-- Main content -->
+    <div class="container">
+        <!-- Subtle header -->
+        <div class="header">
+            <h1>Alex Sen Gupta</h1>
+            <p>Climate Scientist | Physical Oceanographer | Educator</p>
+        </div>
+
+        <!-- Navigation buttons matching nav dial items -->
+        <div class="nav-buttons-container">
+            <a href="Carbonator.html" class="nav-button" data-tooltip="Look into the future: an easy-to-use online climate model">
+                <img src="assets/graphics/03-carbonator.svg" alt="Carbonator" class="nav-button-icon">
+                <span>Carbonator</span>
+            </a>
+
+            <a href="app_playground.html" class="nav-button" data-tooltip="Explore all interactive web apps and simulations">
+                <img src="assets/graphics/02-app-playground.svg" alt="App Playground" class="nav-button-icon">
+                <span>App Playground</span>
+            </a>
+
+            <a href="AIrabbithole/index.html" class="nav-button" data-tooltip="My adventures with our intelligent alien neighbours …">
+                <img src="assets/graphics/01-ai-rabbit-hole.svg" alt="AI Rabbit Hole" class="nav-button-icon">
+                <span>Down the AI Rabbit Hole</span>
+            </a>
+
+            <a href="schematics/index.html" class="nav-button" data-tooltip="A picture tells a thousand words - scientific schematics …">
+                <img src="assets/graphics/09-science-in-pictures.svg" alt="Science in Pictures" class="nav-button-icon">
+                <span>Science in Pictures</span>
+            </a>
+
+            <a href="students/research_group_honeycomb.html" class="nav-button" data-tooltip="The future of climate science …">
+                <img src="assets/graphics/08-research-group.svg" alt="Research Group" class="nav-button-icon">
+                <span>Research Group</span>
+            </a>
+
+            <a href="https://www.marineheatwaves.org/tracker.html" class="nav-button" data-tooltip="Latest information on ocean temperature extremes around the world" target="_blank" rel="noopener noreferrer">
+                <img src="assets/graphics/07-marine-heatwaves.svg" alt="Marine Heatwaves" class="nav-button-icon">
+                <span>Marine Heatwaves</span>
+            </a>
+
+            <a href="teaching/teaching_portfolio.html" class="nav-button" data-tooltip="My courses at UNSW">
+                <img src="assets/graphics/06-teaching.svg" alt="Teaching" class="nav-button-icon">
+                <span>Teaching</span>
+            </a>
+
+            <a href="publications/publications.html" class="nav-button" data-tooltip="Simple summaries of my papers">
+                <img src="assets/graphics/05-publication-briefs.svg" alt="Publication Briefs" class="nav-button-icon">
+                <span>Publication Briefs</span>
+            </a>
+
+            <a href="seminars/index.html" class="nav-button" data-tooltip="A few of my online talks">
+                <img src="assets/graphics/04-seminars.svg" alt="Seminars" class="nav-button-icon">
+                <span>Seminars</span>
+            </a>
+        </div>
+
+        <!-- Publications section with background -->
+        <div class="publications">
+            <!-- Lower background with curved separator -->
+            <div class="background-lower"></div>
+            <div class="background-curve">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M0,60 Q300,0 600,40 T1200,60 L1200,120 L0,120 Z"/>
+                </svg>
+            </div>
+
+            <h3>Publications</h3>
+            <div class="pub-controls">
+                <div class="year-slider-container">
+                    <input type="range" id="yearSlider" class="year-slider" min="2004" max="2026" value="2026" step="1">
+                    <div class="year-labels">
+                        <span>2026</span>
+                        <span id="currentYear">2026</span>
+                        <span>2004</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pub-timeline" id="pubTimeline">
+                <!-- Publications will be loaded here -->
+            </div>
+        </div>
     </div>
 
-    <div class="timeline-slider">
-      <input type="range" id="yearSlider" min="2000" max="2025" value="2025" step="1">
-      <div class="year-labels">
-        <span class="year-min" id="yearMin">2000</span>
-        <span class="year-current" id="yearCurrent">2025</span>
-        <span class="year-max" id="yearMax">2025</span>
-      </div>
+    <!-- Card Stack Interface -->
+    <div class="card-backdrop" id="cardBackdrop"></div>
+    <div class="card-stack" id="cardStack">
+        <div class="card-header">
+            <h2 id="cardTitle">Card Title</h2>
+            <button class="card-close" id="cardClose">×</button>
+        </div>
+        <div class="card-content" id="cardContent">
+            <!-- Content will be loaded here -->
+        </div>
     </div>
-  </div>
 
-  <!-- Nav Dial (centered) -->
-  <div id="navDial" class="arc-dial arc-dial--nav" role="menu" aria-label="Navigation dial" tabindex="0"
-    style="--dial-radius: 750px; --segment-font-size: clamp(30px, 4vw, 48px);">
-    <svg class="dial-svg" viewBox="-1500 -1500 3000 3000" aria-hidden="true" style="overflow: visible;">
-      <defs>
-        <clipPath id="nav-viewport">
-          <path id="nav-viewport-window" d="" />
-        </clipPath>
-        <g class="dial-palette"></g>
-      </defs>
-      <g class="segments">
-        <g class="segment-backgrounds"></g>
-        <g class="segment-labels"></g>
-      </g>
-    </svg>
-    <div class="dial-center">
-      <div class="dial-center-label"></div>
-      <div class="dial-center-sub"></div>
-    </div>
-  </div>
+    <!-- Publication tooltip -->
+    <div class="pub-tooltip" id="pubTooltip"></div>
 
-  <!-- Page Title -->
-  <div class="page-title">
-    <span class="name">Alex Sen Gupta</span>
-    <span class="roles">Climate Scientist<span class="separator">|</span>Physical Oceanographer<span
-        class="separator">|</span>Educator</span>
-  </div>
+    <!-- Nav button tooltip -->
+    <div class="nav-button-tooltip" id="navButtonTooltip"></div>
 
-  <!-- About Me -->
-  <div class="about-me">
-    <div class="about-me-photo">
-      <img src="assets/images/Alex1.jpg" alt="Alex Sen Gupta teaching" class="active">
-      <img src="assets/images/Alex2.jpg" alt="Alex Sen Gupta in diving gear">
-      <img src="assets/images/Alex3.jpg" alt="Alex Sen Gupta snorkeling at Heron Island">
-    </div>
-    <div class="about-me-content">
-      <div class="about-me-header">About Me</div>
-      <div class="about-me-bio">
-        I'm a physical oceanographer and climate scientist at UNSW's Climate Change Research Centre. My research
-        explores how the ocean shapes climate variability and change, from shifts in large-scale circulation to the
-        dynamics and ecological consequences of marine heatwaves. I've worked on everything from biases in climate
-        models and Antarctic climate drivers to how warming oceans influence species distributions, including tuna
-        across the tropical Pacific. A major focus over the past decade has been understanding what triggers marine
-        heatwaves and how they impact marine ecosystems. I'm also drawn to clear, practical science communication and
-        developed an online climate simulator (carbonator.org) for students and the public. Recently I've been deep down
-        the AI rabbit hole, exploring how these tools are reshaping research and what that means for the future of
-        education and scientific training.
-      </div>
-    </div>
-  </div>
+    <script>
+        // ===== PARTICLE ANIMATION =====
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
 
-  <!-- PapaParse (robust CSV parser) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-  <script src="js/homepage.js"></script>
+        let particles = [];
+        const particleCount = 250;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.radius = Math.random() * 2.5 + 0.5;
+                this.opacity = Math.random() * 0.7 + 0.3;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.radius * 3
+                );
+                gradient.addColorStop(0, `rgba(78, 205, 196, ${this.opacity})`);
+                gradient.addColorStop(1, 'rgba(78, 205, 196, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                ctx.fillStyle = `rgba(108, 92, 231, ${this.opacity * 0.8})`;
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(78, 205, 196, ${0.3 * (1 - distance / 120)})`;
+                        ctx.lineWidth = 1.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            drawConnections();
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        // ===== PUBLICATIONS =====
+        let allPublications = [];
+        const pubTooltip = document.getElementById('pubTooltip');
+
+        function showPubTooltip(text, x, y) {
+            if (!text) return;
+            pubTooltip.textContent = text;
+            pubTooltip.classList.add('visible');
+            positionPubTooltip(x, y);
+        }
+
+        function hidePubTooltip() {
+            pubTooltip.classList.remove('visible');
+            pubTooltip.style.transform = 'translate(-9999px, -9999px)';
+        }
+
+        function positionPubTooltip(x, y) {
+            const offsetX = 20;
+            const offsetY = 20;
+            const minX = 12;
+            const minY = 12;
+            const maxX = window.innerWidth - pubTooltip.offsetWidth - 24;
+            const maxY = window.innerHeight - pubTooltip.offsetHeight - 24;
+            const nextX = Math.min(Math.max(minX, x + offsetX), maxX);
+            const nextY = Math.min(Math.max(minY, y + offsetY), maxY);
+            pubTooltip.style.transform = `translate(${nextX}px, ${nextY}px)`;
+        }
+
+        async function loadPublications() {
+            try {
+                const response = await fetch('assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv');
+                const csvText = await response.text();
+                const lines = csvText.split('\n');
+
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+
+                    const parts = [];
+                    let current = '';
+                    let inQuotes = false;
+
+                    for (let char of lines[i]) {
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            parts.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    parts.push(current.trim());
+
+                    if (parts.length >= 8) {
+                        const title = parts[1].replace(/^"|"$/g, '');
+                        const journal = parts[2].replace(/^"|"$/g, '');
+                        const dateStr = parts[3];
+                        const year = dateStr.substring(0, 4);
+                        const volume = parts[4].replace(/^"|"$/g, '');
+                        const issue = parts[5].replace(/^"|"$/g, '');
+                        const pages = parts[6].replace(/^"|"$/g, '');
+                        const doi = parts[7].replace(/^"|"$/g, '');
+
+                        // Build URL from DOI
+                        const url = doi ? `https://doi.org/${doi}` : '';
+
+                        let citation = `${title}`;
+                        if (year) citation += ` (${year})`;
+                        if (journal) {
+                            citation += `. ${journal}`;
+                            if (volume) {
+                                citation += `, ${volume}`;
+                                if (issue) citation += `(${issue})`;
+                            }
+                            if (pages) citation += `, ${pages}`;
+                            citation += '.';
+                        }
+
+                        allPublications.push({ title, journal, year, citation, url });
+                    }
+                }
+
+                allPublications.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+                displayPublications(allPublications);
+                setupYearSlider();
+            } catch (error) {
+                console.error('Error loading publications:', error);
+                displaySamplePublications();
+                setupYearSlider();
+            }
+        }
+
+        function displayPublications(pubs) {
+            const timeline = document.getElementById('pubTimeline');
+            timeline.innerHTML = pubs.map(pub => `
+                <div class="pub-card" data-year="${pub.year}" data-citation="${pub.citation || ''}" data-url="${pub.url || ''}" style="${pub.url ? 'cursor: pointer;' : ''}">
+                    <div class="pub-year">${pub.year}</div>
+                    <div class="pub-title">${pub.title}</div>
+                    <div class="pub-journal">${pub.journal}</div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.pub-card').forEach(card => {
+                const citation = card.dataset.citation;
+                const url = card.dataset.url;
+
+                // Tooltip
+                card.addEventListener('pointerenter', (e) => {
+                    showPubTooltip(citation, e.clientX, e.clientY);
+                });
+                card.addEventListener('pointermove', (e) => {
+                    positionPubTooltip(e.clientX, e.clientY);
+                });
+                card.addEventListener('pointerleave', () => {
+                    hidePubTooltip();
+                });
+
+                // Click to open URL
+                if (url) {
+                    card.addEventListener('click', () => {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    });
+                }
+            });
+        }
+
+        function displaySamplePublications() {
+            const samplePubs = [
+                {
+                    title: "PhD training needs a reboot in an AI world",
+                    journal: "Nature",
+                    year: "2025",
+                    citation: "PhD training needs a reboot in an AI world (2025). Nature.",
+                    url: "https://doi.org/10.1038/d41586-025-03572-w"
+                },
+                {
+                    title: "Global Mean Sea Level Changes to ENSO-Related Regional Land Water Storage",
+                    journal: "Geophysical Research Letters",
+                    year: "2025",
+                    citation: "Global Mean Sea Level Changes to ENSO-Related Regional Land Water Storage (2025). Geophysical Research Letters.",
+                    url: ""
+                }
+            ];
+            displayPublications(samplePubs);
+        }
+
+        function setupYearSlider() {
+            const slider = document.getElementById('yearSlider');
+            const currentYearLabel = document.getElementById('currentYear');
+            const cards = document.querySelectorAll('.pub-card');
+
+            slider.addEventListener('input', (e) => {
+                const selectedYear = e.target.value;
+                currentYearLabel.textContent = selectedYear;
+
+                // Show ONLY publications from the selected year
+                cards.forEach(card => {
+                    const cardYear = parseInt(card.dataset.year);
+                    if (cardYear === parseInt(selectedYear)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        loadPublications();
+
+        // ===== NAV BUTTON TOOLTIPS =====
+        const navButtonTooltip = document.getElementById('navButtonTooltip');
+
+        function showNavButtonTooltip(text, x, y) {
+            if (!text) return;
+            navButtonTooltip.textContent = text;
+            navButtonTooltip.classList.add('visible');
+            positionNavButtonTooltip(x, y);
+        }
+
+        function hideNavButtonTooltip() {
+            navButtonTooltip.classList.remove('visible');
+            navButtonTooltip.style.transform = 'translate(-9999px, -9999px)';
+        }
+
+        function positionNavButtonTooltip(x, y) {
+            const offsetX = 20;
+            const offsetY = 20;
+            const minX = 12;
+            const minY = 12;
+            const maxX = window.innerWidth - navButtonTooltip.offsetWidth - 24;
+            const maxY = window.innerHeight - navButtonTooltip.offsetHeight - 24;
+            const nextX = Math.min(Math.max(minX, x + offsetX), maxX);
+            const nextY = Math.min(Math.max(minY, y + offsetY), maxY);
+            navButtonTooltip.style.transform = `translate(${nextX}px, ${nextY}px)`;
+        }
+
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            const tooltipText = btn.dataset.tooltip;
+            btn.addEventListener('pointerenter', (e) => {
+                showNavButtonTooltip(tooltipText, e.clientX, e.clientY);
+            });
+            btn.addEventListener('pointermove', (e) => {
+                positionNavButtonTooltip(e.clientX, e.clientY);
+            });
+            btn.addEventListener('pointerleave', () => {
+                hideNavButtonTooltip();
+            });
+        });
+
+        // ===== AI NEWS FUNCTIONALITY =====
+        function parseAINewsMarkdown(markdown) {
+            const lines = markdown.split('\n');
+            let html = '';
+            let inArticles = false;
+            let inPodcasts = false;
+            let currentItem = {};
+            let itemCounter = 0;
+
+            const finishItem = () => {
+                if (!currentItem.title) return;
+
+                itemCounter++;
+                
+                if (inArticles) {
+                    // Article format
+                    html += `<div style="margin-bottom: 20px; padding: 16px; background: white; border-radius: 8px; border-left: 4px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+                    html += `<a href="${currentItem.url}" target="_blank" style="text-decoration: none; color: inherit; display: block; margin-bottom: 8px;">`;
+                    html += `<strong style="color: #2c3e50; font-size: 1.1em;">${currentItem.source}: ${currentItem.title}</strong>`;
+                    html += `</a>`;
+                    html += `<p style="margin: 8px 0; color: #555; line-height: 1.5;">${currentItem.oneLine}</p>`;
+                    html += `<details style="margin-top: 12px;">`;
+                    html += `<summary style="cursor: pointer; color: #3498db; font-size: 0.9em; user-select: none;">Show details...</summary>`;
+                    html += `<div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 4px;">`;
+                    html += `<p style="line-height: 1.6; color: #2c3e50; margin-bottom: 10px;">${currentItem.detailed}</p>`;
+                    if (currentItem.keywords) {
+                        html += `<p style="font-size: 0.85em; color: #7f8c8d;"><strong>Keywords:</strong> ${currentItem.keywords}</p>`;
+                    }
+                    html += `</div></details>`;
+                    html += `</div>`;
+                } else if (inPodcasts) {
+                    // Podcast format
+                    html += `<div style="margin-bottom: 20px; padding: 16px; background: white; border-radius: 8px; border-left: 4px solid #9b59b6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+                    html += `<a href="${currentItem.url}" target="_blank" style="text-decoration: none; color: #2c3e50; display: block; margin-bottom: 8px;">`;
+                    html += `<strong style="font-size: 1.1em;">${currentItem.title}</strong>`;
+                    html += `</a>`;
+                    html += `<p style="margin: 8px 0; color: #555; line-height: 1.6;">${currentItem.summary}</p>`;
+                    html += `</div>`;
+                }
+                currentItem = {};
+            };
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // Check for main sections
+                if (line.startsWith('# AI & AGI News Briefing')) {
+                    html += `<h1 style="color: #1a252f; margin-bottom: 24px; font-size: 1.8em; border-bottom: 3px solid #3498db; padding-bottom: 10px;">AI & AGI News Briefing</h1>`;
+                    inArticles = true;
+                    continue;
+                }
+
+                if (line.startsWith('# AI & AGI Podcast Episodes')) {
+                    finishItem();
+                    html += `<h1 style="color: #1a252f; margin: 32px 0 24px 0; font-size: 1.8em; border-bottom: 3px solid #9b59b6; padding-bottom: 10px;">AI & AGI Podcast Episodes</h1>`;
+                    inArticles = false;
+                    inPodcasts = true;
+                    continue;
+                }
+
+                // Skip separator lines and footer text
+                if (line.startsWith('---') || line.startsWith('If you\'d like') || line.startsWith('_Generated') || line.startsWith('_Tokens') || line.startsWith('_Cost')) {
+                    continue;
+                }
+
+                // Parse article items
+                if (inArticles && line.match(/^## N\d+\./)) {
+                    finishItem();
+                    currentItem.title = line.replace(/^## N\d+\.\s*/, '');
+                } else if (line.startsWith('- **Source:**')) {
+                    currentItem.source = line.replace('- **Source:**', '').trim();
+                } else if (line.startsWith('- **URL:**')) {
+                    const urlText = line.replace('- **URL:**', '').trim();
+                    const urlMatch = urlText.match(/\[.*?\]\((.*?)\)/);
+                    currentItem.url = urlMatch ? urlMatch[1] : urlText;
+                } else if (line.startsWith('- **One-line summary:**')) {
+                    currentItem.oneLine = line.replace('- **One-line summary:**', '').trim();
+                } else if (line.startsWith('- **Detailed summary')) {
+                    currentItem.detailed = line.replace(/- \*\*Detailed summary[^:]*:\*\*/, '').trim();
+                } else if (line.startsWith('- **Keywords')) {
+                    currentItem.keywords = line.replace(/- \*\*Keywords[^:]*:\*\*/, '').trim();
+                }
+
+                // Parse podcast items
+                if (inPodcasts && line.match(/^## P\d+\./)) {
+                    finishItem();
+                    currentItem.title = line.replace(/^## P\d+\.\s*/, '');
+                } else if (line.startsWith('- **Show:**')) {
+                    // Skip
+                } else if (line.startsWith('- **Episode:**')) {
+                    // Skip
+                } else if (line.startsWith('- **Summary')) {
+                    currentItem.summary = line.replace(/- \*\*Summary[^:]*:\*\*/, '').trim();
+                } else if (line.startsWith('- **URL:**')) {
+                    const urlText = line.replace('- **URL:**', '').trim();
+                    const urlMatch = urlText.match(/\[.*?\]\((.*?)\)/);
+                    currentItem.url = urlMatch ? urlMatch[1] : urlText;
+                }
+            }
+
+            finishItem();
+            return html;
+        }
+
+        async function loadAINews(targetElement) {
+            targetElement.innerHTML = '<div style="text-align: center; padding: 2rem; color: #546e7a;">Loading AI news...</div>';
+            
+            try {
+                // Load latest news
+                const response = await fetch('AI_RSSfeed/ai_news_outputs/ai_news_latest.md?v=' + new Date().getTime());
+                if (!response.ok) throw new Error('Failed to load AI news');
+
+                const markdown = await response.text();
+                let html = parseAINewsMarkdown(markdown);
+
+                // Load archives
+                try {
+                    const archiveResponse = await fetch('AI_RSSfeed/ai_news_outputs/archive_index.json?v=' + new Date().getTime());
+                    if (archiveResponse.ok) {
+                        const archiveIndex = await archiveResponse.json();
+
+                        if (archiveIndex.archives && archiveIndex.archives.length > 0) {
+                            html += `<div style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #ddd;">`;
+                            html += `<h2 style="color: #1a252f; margin-bottom: 20px; font-size: 1.4em;">📚 News Archives</h2>`;
+
+                            for (const archive of archiveIndex.archives) {
+                                html += `<details style="margin-bottom: 16px; border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #f9f9f9;">`;
+                                html += `<summary style="cursor: pointer; font-weight: bold; color: #2c3e50; font-size: 1.1em; user-select: none;">`;
+                                html += `📅 ${archive.display_date}`;
+                                html += `</summary>`;
+                                html += `<div class="archive-content" data-filename="${archive.filename}" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #ddd;">`;
+                                html += `<p style="color: #7f8c8d; font-style: italic;">Loading archive...</p>`;
+                                html += `</div>`;
+                                html += `</details>`;
+                            }
+                            html += `</div>`;
+                        }
+                    }
+                } catch (archiveError) {
+                    console.warn('Could not load archive index:', archiveError);
+                }
+
+                targetElement.innerHTML = html;
+
+                // Set up event listeners for archive expansion
+                targetElement.querySelectorAll('.archive-content').forEach(archiveDiv => {
+                    const details = archiveDiv.closest('details');
+                    if (details) {
+                        details.addEventListener('toggle', async function() {
+                            if (this.open && archiveDiv.innerHTML.includes('Loading archive...')) {
+                                const filename = archiveDiv.dataset.filename;
+                                try {
+                                    const archiveResponse = await fetch(`AI_RSSfeed/ai_news_outputs/${filename}?v=${new Date().getTime()}`);
+                                    if (archiveResponse.ok) {
+                                        const archiveMarkdown = await archiveResponse.text();
+                                        archiveDiv.innerHTML = parseAINewsMarkdown(archiveMarkdown);
+                                    } else {
+                                        archiveDiv.innerHTML = '<p style="color: #e74c3c;">Failed to load archive.</p>';
+                                    }
+                                } catch (error) {
+                                    archiveDiv.innerHTML = '<p style="color: #e74c3c;">Error loading archive: ' + error.message + '</p>';
+                                }
+                            }
+                        });
+                    }
+                });
+
+            } catch (error) {
+                targetElement.innerHTML = '<p style="color: #e74c3c; padding: 2rem; text-align: center;">Error loading AI news: ' + error.message + '<br><br>Please check that the file exists at: AI_RSSfeed/ai_news_outputs/ai_news_latest.md</p>';
+            }
+        }
+
+        // ===== CARD STACK FUNCTIONALITY =====
+        const cardStack = document.getElementById('cardStack');
+        const cardBackdrop = document.getElementById('cardBackdrop');
+        const cardClose = document.getElementById('cardClose');
+        const cardTitle = document.getElementById('cardTitle');
+        const cardContent = document.getElementById('cardContent');
+        let aboutInterval = null;
+
+        function openCard(type) {
+            let title = '';
+            let content = '';
+            let onOpen = null;
+
+            if (aboutInterval) {
+                clearInterval(aboutInterval);
+                aboutInterval = null;
+            }
+
+            switch(type) {
+                case 'about':
+                    title = 'About Me';
+                    content = `
+                        <div class="about-images">
+                            <img src="assets/images/Alex1.jpg" class="about-image active" alt="Research">
+                            <img src="assets/images/Alex2.jpg" class="about-image" alt="Fieldwork">
+                            <img src="assets/images/Alex3.jpg" class="about-image" alt="Teaching">
+                        </div>
+                        <p>I'm a physical oceanographer and climate scientist at UNSW's Climate Change Research Centre. My research explores how the ocean shapes climate variability and change, from shifts in large-scale circulation to the dynamics and ecological consequences of marine heatwaves.</p>
+                        <p>I've worked on everything from biases in climate models and reanalyses to improvements in marine heatwave forecasting, always with an eye toward making climate science more useful and accessible.</p>
+                        <p>Beyond research, I'm passionate about education and mentoring the next generation of scientists, and exploring how AI can transform both research practice and PhD training.</p>
+                    `;
+                    onOpen = () => {
+                        const photos = document.querySelectorAll('.about-image');
+                        if (photos.length > 1) {
+                            let currentIndex = 0;
+                            aboutInterval = setInterval(() => {
+                                photos[currentIndex].classList.remove('active');
+                                currentIndex = (currentIndex + 1) % photos.length;
+                                photos[currentIndex].classList.add('active');
+                            }, 4000);
+                        }
+                    };
+                    break;
+                case 'climate':
+                    title = 'Global Climate Indices';
+                    content = `<iframe src="climate indices/index.html" title="Climate Dashboard"></iframe>`;
+                    break;
+                case 'ai':
+                    title = 'AI & AGI News Briefing';
+                    content = '<div id="ai-news-placeholder"></div>';
+                    onOpen = () => {
+                        const el = document.getElementById('ai-news-placeholder');
+                        if (el) loadAINews(el);
+                    };
+                    break;
+            }
+
+            cardTitle.textContent = title;
+            cardContent.innerHTML = content;
+            cardStack.classList.add('active');
+            cardBackdrop.classList.add('active');
+            
+            if (onOpen) onOpen();
+        }
+
+        function closeCard() {
+            cardStack.classList.remove('active');
+            cardBackdrop.classList.remove('active');
+            if (aboutInterval) {
+                clearInterval(aboutInterval);
+                aboutInterval = null;
+            }
+        }
+
+        cardClose.addEventListener('click', closeCard);
+        cardBackdrop.addEventListener('click', closeCard);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && cardStack.classList.contains('active')) {
+                closeCard();
+            }
+        });
+
+        // ===== THEME TOGGLE =====
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+        }
+    </script>
 </body>
-
 </html>

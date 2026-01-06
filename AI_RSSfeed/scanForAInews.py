@@ -27,13 +27,13 @@ NEWS_FEEDS = {
     "Science": "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
     "Nature": "https://www.nature.com/nature.rss",
     "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
-    "Anthropic": "https://www.anthropic.com/news/rss.xml",
-    "Center for AI Safety": "https://www.safe.ai/blog?format=rss",
+    # "Anthropic": "https://www.anthropic.com/news/rss.xml",  # Feed no longer exists - removed
+    "Center for AI Safety Newsletter": "https://newsletter.safe.ai/feed",  # Updated to Substack feed
     "Future of Life Institute": "https://futureoflife.org/feed/",
-    "AI Now Institute": "https://ainowinstitute.org/feed.xml",
+    "AI Now Institute": "https://ainowinstitute.org/category/news/feed",  # Updated URL
     "OpenAI": "https://openai.com/blog/rss.xml",
-    "DeepMind": "https://deepmind.google/feed/basic.xml",
-    "Brookings – AI & Emerging Tech": "https://www.brookings.edu/series/artificial-intelligence/feed/",
+    # "DeepMind": "https://deepmind.google/feed/basic.xml",  # Feed no longer exists - removed
+    # "Brookings – AI & Emerging Tech": "https://www.brookings.edu/series/artificial-intelligence/feed/",  # Feed no longer exists - removed
     "MIT Technology Review": "https://www.technologyreview.com/feed/",
     "The Conversation – Technology": "https://theconversation.com/us/technology/articles.atom",
     "The Conversation – Education": "https://theconversation.com/us/education/articles.atom",
@@ -44,15 +44,14 @@ PODCAST_FEEDS = {
     "The Daily": "https://feeds.simplecast.com/54nAGcIl",
     "Lex Fridman Podcast": "https://lexfridman.com/feed/podcast/",
     "Making Sense with Sam Harris": "https://wakingup.libsyn.com/rss",
-    "The Ezra Klein Show": "https://feeds.megaphone.fm/ezrakleinshow",
-    "Eye on A.I.": "https://rss.art19.com/eye-on-ai",
-    "The Last Invention": "https://feeds.megaphone.fm/thelastinvention",
+    "The Ezra Klein Show": "https://feeds.simplecast.com/kEKXbjuJ",  # Updated to working Simplecast feed
+    "Eye on A.I.": "https://aneyeonai.libsyn.com/rss",  # Updated to working Libsyn feed
+    "The Last Invention": "https://feeds.megaphone.fm/thelastinvention",  # Working feed (tested)
     "The Diary Of A CEO": "https://rss2.flightcast.com/xmsftuzjjykcmqwolaqn6mdn",
-    "The Good Fight": "https://feeds.megaphone.fm/thegoodfight",
-    "In Machines We Trust (MIT Tech Review)": "https://feeds.megaphone.fm/inmachineswetrust",
-    "In Machines We Trust AI": "https://feeds.megaphone.fm/inmachineswetrustai",
-    "DeepMind: The Podcast": "https://feeds.simplecast.com/JT6pbPkg",
-    "Google DeepMind: The Podcast": "https://feeds.simplecast.com/JT6pbPkg",  # alias in case title differs
+    # "The Good Fight": "https://feeds.megaphone.fm/thegoodfight",  # Feed no longer exists - removed
+    "MIT Technology Review Narrated": "https://feeds.megaphone.fm/inmachineswetrust",  # Rebranded, working feed
+    # "In Machines We Trust AI": "https://feeds.megaphone.fm/inmachineswetrustai",  # Feed no longer exists - removed
+    "Google DeepMind: The Podcast": "https://feeds.simplecast.com/JT6pbPkg",
 }
 
 OUTPUT_DIR = "ai_news_outputs"
@@ -316,19 +315,47 @@ def collect_items_last_week():
             'type': item_type,
             'total_7days': 0,
             'ai_matched': 0,
-            'error': None
+            'error': None,
+            'last_item_date': None
         }
 
+        print(f"  Downloading {feed_name}...", end=" ", flush=True)
+
         try:
+            # Add timeout to prevent hanging on slow feeds
+            import socket
+            original_timeout = socket.getdefaulttimeout()
+            socket.setdefaulttimeout(30)  # 30 second timeout
+
             parsed = feedparser.parse(feed_url)
+
+            # Restore original timeout
+            socket.setdefaulttimeout(original_timeout)
+
+            print("✓")
         except Exception as e:
-            print(f"  Warning: Failed to parse {feed_name}: {e}")
+            print(f"✗ (Error: {e})")
             feed_stats[feed_name]['error'] = str(e)
+            # Restore timeout even on error
+            try:
+                socket.setdefaulttimeout(original_timeout)
+            except:
+                pass
             return
 
         feed_title = getattr(parsed.feed, "title", feed_name) or feed_name
 
-        for entry in getattr(parsed, "entries", []):
+        # Track the most recent item date (even if outside 7-day window)
+        all_entries = getattr(parsed, "entries", [])
+        if all_entries:
+            for entry in all_entries:
+                entry_date = parse_entry_date(entry)
+                if entry_date is not None:
+                    if feed_stats[feed_name]['last_item_date'] is None or entry_date > feed_stats[feed_name]['last_item_date']:
+                        feed_stats[feed_name]['last_item_date'] = entry_date
+                    break  # Assuming entries are sorted newest first
+
+        for entry in all_entries:
             entry_date = parse_entry_date(entry)
             if entry_date is None:
                 continue
@@ -361,10 +388,11 @@ def collect_items_last_week():
                 "date": entry_date.isoformat(),
             }
 
-            if item_type == "podcast":
-                combined_text = f"{title}\n{summary}"
-                ai_match = is_ai_related_text(combined_text)
+            # Check for AI keywords in both news and podcasts
+            combined_text = f"{title}\n{summary}"
+            ai_match = is_ai_related_text(combined_text)
 
+            if item_type == "podcast":
                 # Debug list: all podcasts
                 podcast_debug.append({
                     **item_data,
@@ -376,10 +404,10 @@ def collect_items_last_week():
                     podcast_items.append(item_data)
                     feed_stats[feed_name]['ai_matched'] += 1
             else:
+                # All news items go to model for AI filtering, but track keyword matches for statistics
                 news_items.append(item_data)
-                # News items all go to model, so count them as "matched" for now
-                # (actual AI filtering happens at model level)
-                feed_stats[feed_name]['ai_matched'] += 1
+                if ai_match:
+                    feed_stats[feed_name]['ai_matched'] += 1
 
     print("Fetching news feeds...")
     for name, url in NEWS_FEEDS.items():
@@ -533,27 +561,47 @@ def print_feed_statistics(feed_stats):
 
     def print_section(title, feeds):
         print(f"\n{title}")
-        print("-" * 80)
-        print(f"{'Feed Name':<40} {'Total':<10} {'AI Match':<12} {'Status'}")
-        print("-" * 80)
+        print("-" * 100)
+        print(f"{'Feed Name':<35} {'Total':<8} {'AI Kw':<8} {'Last Item':<20} {'Status'}")
+        print("-" * 100)
 
         for name, stats in sorted(feeds.items()):
             total = stats['total_7days']
             matched = stats['ai_matched']
             error = stats.get('error')
+            last_date = stats.get('last_item_date')
+
+            # Format last item date
+            if last_date:
+                if isinstance(last_date, datetime):
+                    days_ago = (datetime.now() - last_date).days
+                    if days_ago == 0:
+                        last_date_str = "Today"
+                    elif days_ago == 1:
+                        last_date_str = "Yesterday"
+                    elif days_ago < 7:
+                        last_date_str = f"{days_ago}d ago"
+                    else:
+                        last_date_str = last_date.strftime("%Y-%m-%d")
+                else:
+                    last_date_str = str(last_date)[:10]
+            else:
+                last_date_str = "Unknown"
 
             if error:
-                status = f"ERROR: {error[:30]}"
-            elif total == 0:
+                status = f"ERROR: {str(error)[:20]}"
+            elif total == 0 and not last_date:
                 status = "⚠️ NO ITEMS"
+            elif total == 0:
+                status = "No new (7d)"
             elif matched == 0:
                 status = "No AI matches"
             else:
                 status = "✓"
 
             # Truncate long feed names
-            display_name = name[:38] + ".." if len(name) > 40 else name
-            print(f"{display_name:<40} {total:<10} {matched:<12} {status}")
+            display_name = name[:33] + ".." if len(name) > 35 else name
+            print(f"{display_name:<35} {total:<8} {matched:<8} {last_date_str:<20} {status}")
 
         # Summary
         total_items = sum(s['total_7days'] for s in feeds.values())
@@ -594,29 +642,41 @@ def write_feed_statistics_file(feed_stats, timestamp_str):
     matched_podcasts = sum(s['ai_matched'] for s in podcast_feeds.values())
 
     lines.append("\n## Summary\n")
-    lines.append(f"- **News Feeds:** {len(news_feeds)} configured, {total_news} items found, {matched_news} sent to model\n")
-    lines.append(f"- **Podcast Feeds:** {len(podcast_feeds)} configured, {total_podcasts} items found, {matched_podcasts} AI-matched\n")
+    lines.append(f"- **News Feeds:** {len(news_feeds)} configured, {total_news} items found, {matched_news} with AI keywords (all sent to model)\n")
+    lines.append(f"- **Podcast Feeds:** {len(podcast_feeds)} configured, {total_podcasts} items found, {matched_podcasts} with AI keywords (only these sent to model)\n")
 
     def write_section(title, feeds):
         lines.append(f"\n## {title}\n")
-        lines.append("| Feed Name | Total Items (7d) | AI Matched | Status |")
-        lines.append("|-----------|------------------|------------|--------|")
+        lines.append("| Feed Name | Total Items (7d) | AI Keywords | Last Item Date | Status |")
+        lines.append("|-----------|------------------|-------------|----------------|--------|")
 
         for name, stats in sorted(feeds.items()):
             total = stats['total_7days']
             matched = stats['ai_matched']
             error = stats.get('error')
+            last_date = stats.get('last_item_date')
+
+            # Format last item date
+            if last_date:
+                if isinstance(last_date, datetime):
+                    last_date_str = last_date.strftime("%Y-%m-%d %H:%M")
+                else:
+                    last_date_str = str(last_date)
+            else:
+                last_date_str = "Unknown"
 
             if error:
                 status = f"ERROR: {error}"
-            elif total == 0:
+            elif total == 0 and not last_date:
                 status = "⚠️ No items"
+            elif total == 0:
+                status = "No new items (7d)"
             elif matched == 0:
                 status = "No AI matches"
             else:
                 status = "✓ Active"
 
-            lines.append(f"| {name} | {total} | {matched} | {status} |")
+            lines.append(f"| {name} | {total} | {matched} | {last_date_str} | {status} |")
 
         # Find feeds with issues
         zero_feeds = [name for name, s in feeds.items() if s['total_7days'] == 0 and not s.get('error')]

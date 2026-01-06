@@ -1,12 +1,30 @@
 {
   "archives": [
     {
+      "filename": "ai_news_20260105-0254.md",
+      "timestamp": "20260105-0254",
+      "date": "2026-01-05T02:54",
+      "display_date": "05/01/2026 02:54"
+    },
+    {
+      "filename": "ai_news_20260105-0210.md",
+      "timestamp": "20260105-0210",
+      "date": "2026-01-05T02:10",
+      "display_date": "05/01/2026 02:10"
+    },
+    {
+      "filename": "ai_news_20251225-1917.md",
+      "timestamp": "20251225-1917",
+      "date": "2025-12-25T19:17",
+      "display_date": "25/12/2025 19:17"
+    },
+    {
       "filename": "ai_news_20251222-2008.md",
       "timestamp": "20251222-2008",
       "date": "2025-12-22T20:08",
       "display_date": "22/12/2025 20:08"
     }
   ],
-  "generated": "2025-12-25T23:08:29.583099",
-  "latest_file": "ai_news_20251225-1917.md"
+  "generated": "2026-01-05T03:03:24.099383",
+  "latest_file": "ai_news_20260105-0303.md"
 }

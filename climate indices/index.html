@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Climate Indices Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -682,8 +685,8 @@
         async function loadENSO() {
             try {
                 const [oniResponse, nino34Response] = await Promise.all([
-                    fetch('data/oni_data.csv'),
-                    fetch('data/nino34_data.csv')
+                    fetch(`data/oni_data.csv?v=${new Date().getTime()}`),
+                    fetch(`data/nino34_data.csv?v=${new Date().getTime()}`)
                 ]);
 
                 const oniText = await oniResponse.text();
@@ -1022,7 +1025,7 @@
         // Load and plot SST data
         async function loadSST() {
             try {
-                const response = await fetch('data/sst_anomaly_data.csv');
+                const response = await fetch(`data/sst_anomaly_data.csv?v=${new Date().getTime()}`);
                 const text = await response.text();
                 const parsed = Papa.parse(text, { header: true, dynamicTyping: true });
 
@@ -1294,7 +1297,7 @@
         // Load and plot T2M data
         async function loadT2M() {
             try {
-                const response = await fetch('data/t2m_anomaly_data.csv');
+                const response = await fetch(`data/t2m_anomaly_data.csv?v=${new Date().getTime()}`);
                 const text = await response.text();
                 const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
 
@@ -1531,8 +1534,8 @@
         async function loadSeaIce() {
             try {
                 const [arcticResponse, antarcticResponse] = await Promise.all([
-                    fetch('data/arctic_seaice_data.csv'),
-                    fetch('data/antarctic_seaice_data.csv')
+                    fetch(`data/arctic_seaice_data.csv?v=${new Date().getTime()}`),
+                    fetch(`data/antarctic_seaice_data.csv?v=${new Date().getTime()}`)
                 ]);
 
                 const arcticText = await arcticResponse.text();
@@ -1789,7 +1792,7 @@
         // Load and plot CO2 data
         async function loadCO2() {
             try {
-                const response = await fetch('data/co2_data.csv');
+                const response = await fetch(`data/co2_data.csv?v=${new Date().getTime()}`);
                 const text = await response.text();
                 const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
 
@@ -2060,7 +2063,7 @@
         // Load and plot GISTEMP data
         async function loadGISTEMP() {
             try {
-                const response = await fetch('data/gistemp_data.csv');
+                const response = await fetch(`data/gistemp_data.csv?v=${new Date().getTime()}`);
                 const text = await response.text();
                 const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
 
@@ -2266,7 +2269,7 @@
         // Load and plot PDO data
         async function loadPDO() {
             try {
-                const response = await fetch('data/pdo_data.csv');
+                const response = await fetch(`data/pdo_data.csv?v=${new Date().getTime()}`);
                 const text = await response.text();
                 const data = Papa.parse(text, { header: true, dynamicTyping: true }).data;
 

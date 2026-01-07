@@ -1393,7 +1393,16 @@
                     break;
                 case 'climate':
                     title = 'Global Climate Indices';
-                    content = `<iframe src="climate indices/index.html" title="Climate Dashboard"></iframe>`;
+                    // Add timestamp to prevent caching
+                    const timestamp = new Date().getTime();
+                    content = `<iframe id="climateIframe" title="Climate Dashboard"></iframe>`;
+                    onOpen = () => {
+                        // Set src after iframe is in DOM and force reload
+                        const iframe = document.getElementById('climateIframe');
+                        if (iframe) {
+                            iframe.src = `climate indices/index.html?v=${timestamp}&nocache=${Math.random()}`;
+                        }
+                    };
                     break;
                 case 'ai':
                     title = 'AI & AGI News Briefing';

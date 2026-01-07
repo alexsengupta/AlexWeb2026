@@ -1,8 +1,17 @@
+# Environment variables
 .env
-.env
-AI_RSSfeed/ai_news_outputs/
-climate indices/data/
+
+# Generated AI RSS outputs (ignore contents, keep directory)
+AI_RSSfeed/ai_news_outputs/*
+!AI_RSSfeed/ai_news_outputs/.gitkeep
+
+# Generated climate index data (note space in directory name)
+climate indices/data/*
+!climate indices/data/.gitkeep
+
+# OS / editor noise
 .DS_Store
 .vscode/
+
+# Old / deprecated work
 old/
-simulations/.DS_Store

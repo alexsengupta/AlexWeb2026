@@ -2,3 +2,7 @@
 .env
 AI_RSSfeed/ai_news_outputs/
 climate indices/data/
+.DS_Store
+.vscode/
+old/
+simulations/.DS_Store

@@ -462,19 +462,24 @@ def call_model_for_news(news_items):
     if not news_items:
         return "No news items to process.", None
         
-    items_text = build_items_text(news_items[:MAX_CANDIDATES_FOR_MODEL])
+    items_text = build_items_text(news_items)
 
     system_prompt = """
 You are an AI research analyst producing a structured news briefing.
 Output ONLY the markdown format described below, with NO extra commentary.
 
-Include news items whose main subject is substantially about:
+Include ALL news items whose main subject is substantially about:
 - AI, machine learning, deep learning, AGI, LLMs
 - AI safety, alignment, governance, ethics, regulation
 - AI's impact on education, research, climate, economics, policy, society
 - AI harms, misuse, or major deployments
 
 EXCLUDE items that only mention AI in passing or are primarily about unrelated topics.
+
+ORDERING INSTRUCTIONS:
+Sort the items by strategic importance:
+1. Place big-picture topics FIRST (AI impacts on Education, Research, AGI, Society, Policy).
+2. Place technical developments, tools, and industry news later in the list.
 
 OUTPUT FORMAT:
 # AI & AGI News Briefing
@@ -520,6 +525,11 @@ IMPORTANT: These episodes have already been pre-filtered as AI-related.
 Your job is to summarize ALL of them, not to filter further.
 Include EVERY episode provided unless it is clearly a false positive
 (e.g., "AI" in the title refers to something other than artificial intelligence).
+
+ORDERING INSTRUCTIONS:
+Sort the episodes by strategic importance:
+1. Place big-picture topics FIRST (AGI, Education, Research, Society, Policy).
+2. Place technical discussions later.
 
 OUTPUT FORMAT:
 # AI & AGI Podcast Episodes

@@ -87,16 +87,16 @@ MODEL_PRICING = {
 # Regex patterns for AI relevance (case-insensitive, word-boundary aware)
 AI_PATTERNS = [
     r'\bai\b',                      # "AI" as a word (not "said", "wait", etc.)
-    r'\ba\.i\.\b',                  # "A.I."
+    r'\ba\.i\.\b',                # "A.I."
     r'\bartificial intelligence\b',
     r'\bagi\b',                     # Artificial General Intelligence
-    r'\bmachine learning\b',
-    r'\bdeep learning\b',
-    r'\bneural network',            # neural network(s)
-    r'\blarge language model',      # LLM(s)
-    r'\bllm\b',
-    r'\bgpt[-\s]?\d',               # GPT-4, GPT 5, etc.
-    r'\bchatgpt\b',
+    r'\bmachine[-\s]?learning\b',  # machine learning / machine-learning
+    r'\bdeep[-\s]?learning\b',
+    r'\bneural networks?\b',        # neural network(s)
+    r'\blarge language models?\b',  # LLM / LLMs
+    r'\bllms?\b',
+    r'\bgpt[-\s]?\d+(?:\.\d+)?\b',  # GPT-4, GPT 5, GPT-5.1, etc.
+    r'\bchat\s*gpt\b',
     r'\bclaude\b',                  # Anthropic's Claude
     r'\bgemini\b',                  # Google's Gemini (context-dependent but worth catching)
     r'\bopenai\b',
@@ -104,18 +104,16 @@ AI_PATTERNS = [
     r'\bdeepmi?nd\b',               # DeepMind
     r'\balignment\b',               # AI alignment
     r'\bai safety\b',
-    r'\bai risk',
-    r'\bai polic',                  # policy, policies
-    r'\bai govern',                 # governance, government
-    r'\bai regulation',
+    r'\b(ai\s*risk|ai\s*risks)\b',
+    r'\bai polic(?:y|ies)\b',       # policy, policies
+    r'\bai govern(?:ance|ment)\b',  # governance, government
+    r'\bai regulation\b',
     r'\bai ethics\b',
-    r'\bgenerative ai\b',
-    r'\bfoundation model',
+    r'\bgenerative\s*ai\b',
+    r'\bfoundation model(s)?\b',
     r'\btransformer\s*(model|architecture)?\b',
     r'\breinforcement learning\b',
-    r'\bautonomous\s+(weapon|system|agent)',
-    r'\brobot(ic)?s?\b.*\b(ai|intelligen)',  # robotics + AI context
-    r'\b(ai|intelligen).*\brobot',
+    r'\bautonomous\s+(weapon|system|agent)s?\b',
 ]
 
 # Compile patterns for efficiency
@@ -125,11 +123,23 @@ _AI_REGEX = re.compile('|'.join(AI_PATTERNS), re.IGNORECASE)
 def is_ai_related_text(text: str) -> bool:
     """
     Check if text is AI-related using regex patterns.
-    More robust than simple substring matching.
+
+    Strips HTML and URLs/domains before matching to avoid false positives
+    caused by domains like "mgln.ai" appearing in titles or summaries.
     """
     if not text:
         return False
-    return bool(_AI_REGEX.search(text))
+
+    # Remove HTML tags
+    clean = re.sub(r'<[^>]+>', ' ', text)
+
+    # Remove URLs and bare domains (http(s) links, www., and tokens like example.ai)
+    clean = re.sub(r'https?://\S+|www\.\S+|\b\S+\.\w{2,}\b', ' ', clean)
+
+    # Collapse whitespace
+    clean = re.sub(r'\s+', ' ', clean).strip()
+
+    return bool(_AI_REGEX.search(clean))
 
 
 # ----------------- SETUP -----------------
@@ -393,20 +403,22 @@ def collect_items_last_week():
             ai_match = is_ai_related_text(combined_text)
 
             if item_type == "podcast":
-                # Debug list: all podcasts
+                # Debug list: all podcasts (for manual review)
                 podcast_debug.append({
                     **item_data,
                     "ai_keyword_match": ai_match,
                 })
 
-                # Only include AI-related podcasts for model
+                # Only include podcast episodes that matched AI keywords for the model
                 if ai_match:
                     podcast_items.append(item_data)
                     feed_stats[feed_name]['ai_matched'] += 1
             else:
-                # All news items go to model for AI filtering, but track keyword matches for statistics
-                news_items.append(item_data)
+                # Only include news items that matched AI keywords for the model
+                # (These items were pre-filtered by the keyword detector; the model
+                #  should order and summarize ALL supplied items.)
                 if ai_match:
+                    news_items.append(item_data)
                     feed_stats[feed_name]['ai_matched'] += 1
 
     print("Fetching news feeds...")
@@ -424,17 +436,51 @@ def collect_items_last_week():
     podcast_items.sort(key=lambda x: x["date"], reverse=True)
     podcast_debug.sort(key=lambda x: x["date"], reverse=True)
 
-    print(f"\nFound {len(news_items)} news items, {len(podcast_items)} AI-related podcasts "
-          f"(of {len(podcast_debug)} total podcasts)")
+    print(f"\nFound {len(news_items)} news items, {len(podcast_items)} podcast episodes "
+          f"(to be filtered by model)")
 
     return news_items, podcast_items, podcast_debug, feed_stats
 
 
 # ----------------- LLM CALLS -----------------
 
+def determine_priority(item):
+    """
+    Assign a priority tag (HIGH, MEDIUM, LOW) to guide ordering.
+    HIGH = societal impact, AGI/ASI, alignment, governance, policy, education, research, climate
+    LOW  = primarily technical items (benchmarks, parameters, infra, model internals)
+    MEDIUM = items in-between
+    """
+    text = ((item.get('title') or '') + ' ' + (item.get('summary') or '')).lower()
+
+    HIGH_PATTERNS = [
+        r'\bagi\b', r'\basi\b', r'\balignment\b', r'\bai safety\b',
+        r'\bgovern(?:ance|ment)\b', r'\bpolicy\b', r'\bregulat', r'\bethic',
+        r'\bsociet', r'\beducation\b', r'\bresearch\b', r'\bimpact\b', r'\bclimat'
+    ]
+
+    TECHNICAL_PATTERNS = [
+        r'\bgpt\b', r'\bllm(s)?\b', r'\bmodel(s)?\b', r'\bparameters?\b',
+        r'\bbenchmark(s)?\b', r'\bcompute\b', r'\binfrastructure\b', r'\blatency\b',
+        r'\boptimis', r'\bperformance\b', r'\bagent(s)?\b', r'\bcodex\b',
+        r'\bdeep[-\s]?learning\b', r'\bneural networks?\b'
+    ]
+
+    for pat in HIGH_PATTERNS:
+        if re.search(pat, text):
+            return "HIGH"
+
+    for pat in TECHNICAL_PATTERNS:
+        if re.search(pat, text):
+            return "LOW"
+
+    return "MEDIUM"
+
+
 def build_items_text(items):
     """
     Construct plain-text blocks describing each item for the model.
+    Each block contains a Priority field to guide the LLM's ordering.
     """
     blocks = []
     for i, item in enumerate(items, start=1):
@@ -442,8 +488,11 @@ def build_items_text(items):
         if len(truncated_summary) > MAX_SUMMARY_CHARS:
             truncated_summary = truncated_summary[:MAX_SUMMARY_CHARS] + "..."
 
+        priority = determine_priority(item)
+
         block = [
             f"Item {i}:",
+            f"Priority: {priority}",
             f"Type: {item['item_type']}",
             f"Source: {item['source']}",
             f"Title: {item['title']}",
@@ -468,18 +517,21 @@ def call_model_for_news(news_items):
 You are an AI research analyst producing a structured news briefing.
 Output ONLY the markdown format described below, with NO extra commentary.
 
-Include ALL news items whose main subject is substantially about:
-- AI, machine learning, deep learning, AGI, LLMs
-- AI safety, alignment, governance, ethics, regulation
-- AI's impact on education, research, climate, economics, policy, society
-- AI harms, misuse, or major deployments
+IMPORTANT: The list of NEWS ITEMS provided has already been pre-filtered for AI relevance by keyword matching. YOU MUST INCLUDE and SUMMARIZE ALL the items supplied. Do NOT exclude any items.
 
-EXCLUDE items that only mention AI in passing or are primarily about unrelated topics.
+ORDERING RULES (use the provided Priority field):
+1. Sort items by Priority: HIGH first, then MEDIUM, then LOW.
+2. Within each Priority group, order by strategic importance:
+   a. AGI / ASI / alignment / existential risk topics
+   b. Societal impact, policy, governance, ethics
+   c. Research & education impacts
+   d. Broad impacts (climate, economics, public health)
+   e. Technical developments, tools, benchmarks
 
-ORDERING INSTRUCTIONS:
-Sort the items by strategic importance:
-1. Place big-picture topics FIRST (AI impacts on Education, Research, AGI, Society, Policy).
-2. Place technical developments, tools, and industry news later in the list.
+TASK:
+- For each supplied item, provide a one-line summary (~25 words) and a detailed summary (~150 words.
+- Ensure the output list follows the exact ordering rules above; the first item should be N1, second N2, etc.
+- Provide a brief list of keywords for each item.
 
 OUTPUT FORMAT:
 # AI & AGI News Briefing
@@ -491,9 +543,9 @@ OUTPUT FORMAT:
 - **Detailed summary:** <~150 words>
 - **Keywords:** keyword1; keyword2; keyword3
 
-[Continue for all qualifying items...]
+[Continue for ALL supplied items...]
 
-If no items qualify, write: "No strongly AI-related news items found."
+If no items are provided, write: "No strongly AI-related news items found."
 """.strip()
 
     response = client.chat.completions.create(
@@ -521,15 +573,11 @@ def call_model_for_podcasts(podcast_items):
 You are an AI research analyst summarizing podcast episodes about AI.
 Output ONLY the markdown format below, NO extra commentary.
 
-IMPORTANT: These episodes have already been pre-filtered as AI-related.
-Your job is to summarize ALL of them, not to filter further.
-Include EVERY episode provided unless it is clearly a false positive
-(e.g., "AI" in the title refers to something other than artificial intelligence).
+The episodes provided are pre-filtered for AI relevance. YOU MUST INCLUDE and SUMMARIZE ALL supplied episodes.
 
-ORDERING INSTRUCTIONS:
-Sort the episodes by strategic importance:
-1. Place big-picture topics FIRST (AGI, Education, Research, Society, Policy).
-2. Place technical discussions later.
+ORDERING RULES (use the Priority field):
+1. Sort episodes by Priority: HIGH (societal/AGI/education/research impact) first, then MEDIUM, then LOW (technical discussions).
+2. Within priority, prefer episodes that examine societal impacts, policy, or AGI discussions.
 
 OUTPUT FORMAT:
 # AI & AGI Podcast Episodes
@@ -541,14 +589,16 @@ OUTPUT FORMAT:
 - **Summary:** <~150 words, accessible to general audience>
 - **URL:** <Link>
 
-[Continue for ALL episodes...]
+[Continue for ALL supplied episodes...]
+
+If no episodes are supplied, write: "No AI-related podcast episodes found."
 """.strip()
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"PODCAST EPISODES (all pre-filtered as AI-related):\n\n{items_text}"},
+            {"role": "user", "content": f"PODCAST EPISODES:\n\n{items_text}"},
         ],
     )
 
@@ -880,7 +930,7 @@ def main():
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     # Process news
-    print("\nProcessing news items with model...")
+    print(f"\nProcessing {len(news_items)} news items with model...")
     news_markdown, news_usage = call_model_for_news(news_items)
     if news_usage:
         total_cost += compute_cost(MODEL_NAME, news_usage)

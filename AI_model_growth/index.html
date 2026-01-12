@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Growth | Frontier Models</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <a href="https://epoch.ai/" target="_blank" rel="noopener noreferrer" class="highlight">EPOCH.AI</a> Explorer
+                </div>
+                <h1>Frontier AI Models Evolution</h1>
+                <p class="subtitle">Visualizing the exponential growth of artificial intelligence.</p>
+            </div>
+
+            <div class="view-switcher">
+                <button class="view-tab active" data-view="market">Scale</button>
+                <button class="view-tab" data-view="benchmarks">Capability</button>
+                <button class="view-tab" data-view="autonomy">Autonomy</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <aside class="controls">
+                <div class="control-group">
+                    <div id="market-controls" class="view-controls">
+                        <div class="control-group">
+                            <label for="y-axis">Y Axis Metric</label>
+                            <select id="y-axis">
+                                <option value="Training compute (FLOP)" selected>Training Compute (FLOP)</option>
+                                <option value="Parameters">Parameters</option>
+                                <option value="Training dataset size (gradients)">Dataset Size</option>
+                                <option value="Training compute cost (2023 USD)">Training Cost (2023 USD)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="color-by">Color By</label>
+                            <select id="color-by">
+                                <option value="Domain" selected>Domain</option>
+                                <option value="Organization categorization">Organization Type</option>
+                                <option value="Country (of organization)">Country</option>
+                            </select>
+                        </div>
+
+                        <div class="trend-toggle">
+                            <label class="switch">
+                                <input type="checkbox" id="show-trends" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Show Trend Lines</span>
+                        </div>
+                    </div>
+
+                    <!-- Benchmarks Controls -->
+                    <div id="benchmark-controls" class="view-controls" style="display: none;">
+                        <div class="control-group">
+                            <label>Benchmark Mode:</label>
+                            <div class="radio-group">
+                                <label class="radio-item">
+                                    <input type="radio" name="benchmark-mode" value="eci" checked>
+                                    <span>Capability Index (ECI)</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="benchmark-mode" value="combined">
+                                    <span>Standardized Benchmarks (Combined)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Autonomy Controls -->
+                    <div id="autonomy-controls" class="view-controls" style="display: none;">
+                        <div class="control-group">
+                            <label for="autonomy-x-axis">X Axis Metric</label>
+                            <select id="autonomy-x-axis">
+                                <option value="Release date" selected>Release Date</option>
+                                <option value="Training compute (FLOP)">Training Compute (FLOP)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="granular-filters" class="filters-section">
+                        <!-- Dynamic filters (Organizations/Benchmarks) will be injected here -->
+                    </div>
+
+                    <div id="variable-explanations" class="explanations-section">
+                        <!-- Dynamic content will be injected here -->
+                    </div>
+
+                    <div class="legend-container" id="legend">
+                        <!-- Legend items will be injected here -->
+                    </div>
+            </aside>
+
+            <main class="chart-container">
+                <div id="chart"></div>
+            </main>
+        </div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+    <script src="app.js"></script>
+</body>
+
+</html>

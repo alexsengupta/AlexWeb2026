@@ -451,8 +451,8 @@
             position: fixed;
             top: 0;
             right: -100%;
-            width: 85%;
-            max-width: 1000px;
+            width: 90%;
+            max-width: 1400px;
             height: 100vh;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(40px);
@@ -519,7 +519,7 @@
 
         .card-content iframe {
             width: 100%;
-            height: 70vh;
+            height: 80vh;
             border: none;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -753,6 +753,9 @@
             </button>
             <button class="nav-btn" onclick="openCard('ai')">
                 🤖 AI News
+            </button>
+            <button class="nav-btn" onclick="openCard('aiscaling')">
+                📈 AI Scaling
             </button>
         </div>
         <div style="display: flex; gap: 1rem;">
@@ -1410,6 +1413,19 @@
                     onOpen = () => {
                         const el = document.getElementById('ai-news-placeholder');
                         if (el) loadAINews(el);
+                    };
+                    break;
+                case 'aiscaling':
+                    title = 'AI Model Scaling & Benchmarks';
+                    // Add timestamp to prevent caching
+                    const scalingTimestamp = new Date().getTime();
+                    content = `<iframe id="aiScalingIframe" title="AI Scaling Dashboard"></iframe>`;
+                    onOpen = () => {
+                        // Set src after iframe is in DOM and force reload
+                        const iframe = document.getElementById('aiScalingIframe');
+                        if (iframe) {
+                            iframe.src = `AI_model_growth/index.html?v=${scalingTimestamp}&nocache=${Math.random()}`;
+                        }
                     };
                     break;
             }

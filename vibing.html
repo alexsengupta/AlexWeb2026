@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibing for Fun</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        #code-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: rgba(0, 0, 0, 0.3); /* Less faint */
+            font-size: 14px;
+            white-space: pre;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .code-column {
+            position: absolute;
+            top: -100%;
+            animation: scrollDown linear infinite;
+        }
+
+        @keyframes scrollDown {
+            0% { transform: translateY(-50%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            padding: 0 40px;
+            background: rgb(18, 14, 119);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .banner-image {
+            height: 140px;
+            width: auto;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .home-btn {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .home-btn:hover {
+            background: #e0e0e0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        .definition-text {
+            max-width: 800px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            font-style: italic;
+            margin: 0;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Apps Grid */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        /* From Uiverse.io by Galahhad */ 
+        .ui-btn {
+          --btn-default-bg: rgb(41, 41, 41);
+          --btn-padding: 15px 20px;
+          --btn-hover-bg: rgb(90, 90, 90);
+          --btn-transition: .3s;
+          --btn-letter-spacing: .1rem;
+          --btn-animation-duration: 1.2s;
+          --btn-shadow-color: rgba(0, 0, 0, 0.137);
+          --btn-shadow: 0 2px 10px 0 var(--btn-shadow-color);
+          --hover-btn-color: #FAC921;
+          --default-btn-color: #fff;
+          --font-size: 16px;
+          /* 👆 this field should not be empty */
+          --font-weight: 600;
+          --font-family: Menlo,Roboto Mono,monospace;
+          /* 👆 this field should not be empty */
+        }
+        
+        /* button settings 👆 */
+        
+        .ui-btn {
+          box-sizing: border-box;
+          padding: var(--btn-padding);
+          display: flex;
+          flex-direction: column; /* Added for layout */
+          align-items: center;
+          justify-content: center;
+          color: var(--default-btn-color);
+          font: var(--font-weight) var(--font-size) var(--font-family);
+          background: var(--btn-default-bg);
+          border: none;
+          cursor: pointer;
+          transition: var(--btn-transition);
+          overflow: visible;
+          box-shadow: var(--btn-shadow);
+          text-decoration: none; /* Added for link */
+          border-radius: 12px; /* Added for aesthetics */
+          min-height: 120px; /* Added for consistency */
+          position: relative;
+        }
+        
+        .ui-btn span {
+          letter-spacing: var(--btn-letter-spacing);
+          transition: var(--btn-transition);
+          box-sizing: border-box;
+          position: relative;
+          background: inherit;
+          font-size: 1.2rem; /* Adjusted size */
+          margin-bottom: 8px; /* Spacing for desc */
+          text-transform: uppercase;
+        }
+
+        .ui-btn:hover, .ui-btn:focus {
+          background: var(--btn-hover-bg);
+        }
+        
+        .ui-btn:hover span, .ui-btn:focus span {
+          color: var(--hover-btn-color);
+        }
+
+        .ui-btn[data-tooltip]::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          left: 50%;
+          top: calc(100% + 10px);
+          transform: translateX(-50%) translateY(-6px);
+          max-width: min(320px, 80vw);
+          padding: 10px 12px;
+          background: rgba(248, 244, 236, 0.96);
+          color: #2d2a25;
+          font-size: 0.9rem;
+          line-height: 1.32;
+          border-radius: 12px;
+          border: 1px solid rgba(60, 52, 44, 0.12);
+          box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+          opacity: 0;
+          pointer-events: none;
+          text-align: left;
+          white-space: normal;
+          transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+          z-index: 5;
+        }
+
+        .ui-btn:hover::after,
+        .ui-btn:focus-visible::after {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .btn-desc {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            font-weight: 400;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="code-background"></div>
+
+    <header>
+        <img src="assets/graphics/vibe.jpg" alt="Vibing" class="banner-image">
+        <div class="header-content">
+            <div class="header-top">
+                <a href="index.html" class="home-btn">
+                    <span>&larr;</span> Home
+                </a>
+                <h1>Vibing for Fun</h1>
+            </div>
+            <p class="definition-text">
+                "In computer programming, vibe coding is an AI-assisted software development technique. It is a chatbot-based approach to creating software where the developer describes a project or task to a large language model (LLM), which generates source code based on the prompt."
+            </p>
+        </div>
+    </header>
+
+    <main>
+        <div class="apps-grid">
+            <a href="simulations/traffic_model/motorway_traffic.html" class="ui-btn" data-tooltip="Modelled on the M25 motorway 'the road to hell' where I spent many frustrated hours, wondering why we suddenly get traffic jams, with no sign of any accidents.">
+                <span>Traffic Simulation</span>
+                <div class="btn-desc">Simulating traffic flow dynamics</div>
+            </a>
+            
+            <a href="simulations/flocking/boids_demo.html" class="ui-btn" data-tooltip="It's always amazed me how agents following a few simple rules can generate spectacular, lifelike behaviour.">
+                <span>Flocking Simulation</span>
+                <div class="btn-desc">Boids algorithm demonstration</div>
+            </a>
+
+            <a href="vibe/family_tree/FamilyTreeBuilder.html" class="ui-btn" data-tooltip="This family tree builder is a self-contained open source code (you can download the html page and use the app without an internet connection, and you are free to modify the code to add whatever functionality you want). You can also save your family tree in the standard GEDCOM format and import it in other ancestry software.">
+                <span>Family Tree</span>
+                <div class="btn-desc">Offline-friendly open-source builder</div>
+            </a>
+        </div>
+    </main>
+
+    <script>
+        // Background Animation Script
+        const codeContainer = document.getElementById('code-background');
+        
+        // Sample code snippets
+        const codeSnippets = [
+            "function openPanel(id, btn) {",
+            "    if (activePanelId === id) {",
+            "        closePanel(id);",
+            "        return;",
+            "    }",
+            "    const panel = document.getElementById(id);",
+            "    if (panel) {",
+            "        const iframe = panel.querySelector('iframe');",
+            "        panel.classList.add('active');",
+            "        document.body.style.overflow = 'hidden';",
+            "    }",
+            "}",
+            "const computeColors = (count, offset = 216) =>",
+            "    Array.from({ length: count }, (_, idx) => {",
+            "        const hue = (offset + idx * (360 / count)) % 360;",
+            "        return [",
+            "            { offset: '0%', color: `hsla(${hue}, 82%, 68%, 0.95)` },",
+            "            { offset: '100%', color: `hsla(${(hue + 36) % 360}, 65%, 36%, 0.88)` }",
+            "        ];",
+            "    });",
+            "const createArcDial = (el, options) => {",
+            "    const defaults = {",
+            "        outerRadius: 360,",
+            "        innerRadius: 240,",
+            "        viewportInner: 180,",
+            "    };",
+            "    const settings = { ...defaults, ...options };",
+            "    const svg = el.querySelector('svg');",
+            "    if (!svg) return;",
+            "}"
+        ];
+
+        function createCodeColumn(leftPos) {
+            const col = document.createElement('div');
+            col.className = 'code-column';
+            col.style.left = leftPos + 'px';
+            col.style.animationDuration = (10 + Math.random() * 15) + 's'; // Faster scroll
+            col.style.opacity = 0.3 + Math.random() * 0.7;
+            
+            // Fill column with random code lines
+            let content = '';
+            for (let i = 0; i < 60; i++) {
+                content += codeSnippets[Math.floor(Math.random() * codeSnippets.length)] + '\n';
+            }
+            col.innerText = content;
+            
+            codeContainer.appendChild(col);
+        }
+
+        // Create columns across the screen
+        const colWidth = 350;
+        const numCols = Math.ceil(window.innerWidth / colWidth);
+        
+        for (let i = 0; i < numCols; i++) {
+            createCodeColumn(i * colWidth);
+        }
+
+        // Button Text Scramble Effect
+        const buttons = document.querySelectorAll('.ui-btn');
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+";
+
+        buttons.forEach(btn => {
+            const span = btn.querySelector('span');
+            if (!span) return;
+            
+            // Store original text
+            span.dataset.value = span.innerText;
+            
+            btn.addEventListener('mouseenter', () => {
+                let iteration = 0;
+                clearInterval(btn.interval);
+                
+                btn.interval = setInterval(() => {
+                    span.innerText = span.dataset.value
+                        .split("")
+                        .map((letter, index) => {
+                            if(index < iteration) return span.dataset.value[index];
+                            return chars[Math.floor(Math.random() * chars.length)];
+                        })
+                        .join("");
+                    
+                    if(iteration >= span.dataset.value.length) clearInterval(btn.interval);
+                    iteration += 1 / 3; // Speed of decoding
+                }, 30);
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                clearInterval(btn.interval);
+                span.innerText = span.dataset.value;
+            });
+        });
+    </script>
+</body>
+</html>

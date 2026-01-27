@@ -1588,8 +1588,9 @@ document.addEventListener('keydown', (e) => {
         hitArea: { outerOffset: 200 },
         iconSize: 435,
         items: [
+            { label: 'Vibing for Fun', tooltip: 'AI-assisted software development experiments', url: 'vibing.html', icon: 'assets/graphics/10-vibing.svg' },
             { label: 'Carbonator', tooltip: 'Look into the future: an easy-to-use online climate model', url: 'Carbonator.html', icon: 'assets/graphics/03-carbonator.svg' },
-            { label: 'App Playground', tooltip: 'Explore all interactive web apps and simulations', url: 'app_playground.html', icon: 'assets/graphics/02-app-playground.svg' },
+            { label: 'Academic Apps', tooltip: 'Explore all interactive web apps and simulations', url: 'app_playground.html', icon: 'assets/graphics/02-app-playground.svg' },
             { label: 'Down the AI Rabbit Hole', tooltip: 'My adventures with our intelligent alien neighbours …', url: 'AIrabbithole/index.html', icon: 'assets/graphics/01-ai-rabbit-hole.svg' },
             { label: 'Science in Pictures', tooltip: 'A picture tells a thousand words - scientific schematics …', url: 'schematics/index.html', icon: 'assets/graphics/09-science-in-pictures.svg' },
             { label: 'Research Group', tooltip: 'The future of climate science …', url: 'students/research_group_honeycomb.html', icon: 'assets/graphics/08-research-group.svg' },

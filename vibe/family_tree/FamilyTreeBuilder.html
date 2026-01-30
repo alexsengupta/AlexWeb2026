@@ -93,7 +93,12 @@
     
     .logo svg { width: 32px; height: 32px; opacity: 0.9; }
     
-    .header-actions { display: flex; gap: 8px; }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
     
     .btn {
       padding: 8px 16px;
@@ -117,6 +122,23 @@
     .btn-header:hover { 
       background: rgba(255,255,255,0.2);
       transform: translateY(-1px);
+    }
+
+    .header-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      appearance: none;
+    }
+
+    .header-select option {
+      color: #0f172a;
     }
     
     .btn-primary { background: var(--primary-light); color: white; }
@@ -548,7 +570,12 @@
         <input type="file" id="file-input" accept=".json,.ged" onchange="handleFileLoad(event)" style="display:none">
         <button class="btn btn-header" onclick="saveTree()">💾 Save</button>
         <button class="btn btn-header" onclick="exportGedcom()" title="Export as GEDCOM">📤 GEDCOM</button>
-        <button class="btn btn-header" onclick="visualizeOptimizedLayout()" title="Visualize Optimized Layout">Visualize</button>
+        <select id="report-select" class="header-select" onchange="handleReportChange(this.value)" title="Export reports">
+          <option value="">Reports</option>
+          <option value="people">A: People report (PDF)</option>
+          <option value="full">B: Full tree (vector PDF)</option>
+          <option value="blood">C: Bloodline tree (vector PDF)</option>
+        </select>
         <button class="btn btn-header" onclick="openHelp()" title="Help">Help</button>
       </div>
     </header>
@@ -643,7 +670,7 @@
           <ul class="modal-list">
             <li>Use Save/Load for JSON backups.</li>
             <li>Export GEDCOM to share with other genealogy tools.</li>
-            <li>Visualize opens an optimized layout in a new window.</li>
+            <li>Reports exports PDF-friendly layouts (people list, full tree, bloodline).</li>
           </ul>
         </div>
       </div>
@@ -1619,9 +1646,11 @@
     // ============================================================================
     
     function calculateLayout(options = {}) {
-      const persons = tree.persons;
-      const unions = tree.unions;
-      const focalPersonId = tree.settings.focalPersonId;
+      const persons = options.persons || tree.persons;
+      const unions = options.unions || tree.unions;
+      const focalPersonId = options.focalPersonId !== undefined
+        ? options.focalPersonId
+        : tree.settings.focalPersonId;
       const optimize = !!options.optimize;
       const optimizeIterations = options.optimizeIterations ?? 6;
       const optimizeStrength = options.optimizeStrength ?? 0.35;
@@ -2669,6 +2698,15 @@
         const displaySurname = data.surnameCurrent || data.surnameAtBirth || '';
         const showDetails = isVisible;
         const groupOpacity = showDetails ? 1 : 0.25;
+        const birthYear = getYearFromDate(data.dateOfBirth);
+        const deathYear = getYearFromDate(data.dateOfDeath);
+        const yearY = 38;
+        const yearLeftX = 26;
+        const yearRightX = width - 26;
+        const avatarSize = 44;
+        const avatarRadius = 22;
+        const avatarY = 14;
+        const avatarCenterY = avatarY + avatarRadius;
         
         let colors;
         if (!isVisible) {
@@ -2726,15 +2764,15 @@
                     font-family="'DM Sans', sans-serif">${personNum}</text>
               
               ${isUnknown ? `
-                <circle cx="${width/2}" cy="34" r="16" fill="${colors.border}" opacity="0.2"/>
-                <text x="${width/2}" y="40" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
+                <text x="${width/2}" y="${avatarCenterY + 6}" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
               ` : data.imageData ? `
-                <image x="${width/2 - 18}" y="16" width="36" height="36" href="${data.imageData}" 
-                  clip-path="circle(18px at 18px 18px)" preserveAspectRatio="xMidYMid slice"/>
+                <image x="${width/2 - avatarRadius}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${data.imageData}" 
+                  clip-path="circle(${avatarRadius}px at ${avatarRadius}px ${avatarRadius}px)" preserveAspectRatio="xMidYMid slice"/>
               ` : `
-                <circle cx="${width/2}" cy="34" r="16" fill="${colors.border}" opacity="0.3"/>
-                <circle cx="${width/2}" cy="30" r="6" fill="${colors.border}" opacity="0.4"/>
-                <ellipse cx="${width/2}" cy="42" rx="10" ry="6" fill="${colors.border}" opacity="0.4"/>
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.3"/>
+                <circle cx="${width/2}" cy="${avatarCenterY - 6}" r="7" fill="${colors.border}" opacity="0.4"/>
+                <ellipse cx="${width/2}" cy="${avatarCenterY + 9}" rx="12" ry="7" fill="${colors.border}" opacity="0.4"/>
               `}
               
               <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600" 
@@ -2746,6 +2784,14 @@
                       fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">
                   ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '…' : displaySurname}
                 </text>
+              ` : ''}
+              ${birthYear ? `
+                <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${birthYear}</text>
+              ` : ''}
+              ${deathYear ? `
+                <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${deathYear}</text>
               ` : ''}
               
               ${isFocal ? `
@@ -2896,12 +2942,12 @@
           <div class="form-group">
             <label>Date of Birth</label>
             <input type="date" value="${person.dateOfBirth || ''}" 
-                   onchange="updatePerson('${person.id}', { dateOfBirth: this.value })">
+                   onblur="updatePerson('${person.id}', { dateOfBirth: this.value })">
           </div>
           <div class="form-group">
             <label>Date of Death</label>
             <input type="date" value="${person.dateOfDeath || ''}" 
-                   onchange="updatePerson('${person.id}', { dateOfDeath: this.value })">
+                   onblur="updatePerson('${person.id}', { dateOfDeath: this.value })">
           </div>
         `;
       } else if (currentTab === 'biography') {
@@ -3067,6 +3113,12 @@
       const firstName = (person.firstName || '').trim();
       return altName || firstName || 'New Person';
     }
+
+    function getYearFromDate(dateStr) {
+      if (!dateStr) return '';
+      const match = String(dateStr).match(/^(\d{4})/);
+      return match ? match[1] : '';
+    }
     
     // Get the display number for a person
     function getPersonNumber(personId) {
@@ -3151,15 +3203,22 @@
       renderCanvas();
     }
     
-    function visualizeOptimizedLayout() {
-      const { nodes, edges } = calculateLayout({ optimize: true });
-      if (nodes.length === 0) {
-        alert('No people to visualize.');
-        return;
+    function handleReportChange(value) {
+      if (!value) return;
+      if (value === 'people') {
+        openPeopleReport();
+      } else if (value === 'full') {
+        openVectorTreeReport({ mode: 'full' });
+      } else if (value === 'blood') {
+        openVectorTreeReport({ mode: 'blood' });
       }
-      
+      const select = document.getElementById('report-select');
+      if (select) select.value = '';
+    }
+
+    function getThemeColors() {
       const style = getComputedStyle(document.documentElement);
-      const themeColors = {
+      return {
         gridLine: style.getPropertyValue('--grid-line').trim() || '#e5e7eb',
         textMain: style.getPropertyValue('--text-main').trim() || '#1f2937',
         textMuted: style.getPropertyValue('--text-muted').trim() || '#6b7280',
@@ -3171,13 +3230,22 @@
         female: style.getPropertyValue('--female').trim() || '#fce7f3',
         femaleBorder: style.getPropertyValue('--female-border').trim() || '#f9a8d4'
       };
-      
-      const edgeColors = {
+    }
+
+    function getEdgeColors() {
+      const style = getComputedStyle(document.documentElement);
+      return {
         partner: style.getPropertyValue('--partner-line').trim() || '#ec4899',
         child: style.getPropertyValue('--child-line').trim() || '#60a5fa'
       };
-      
-      const padding = 200;
+    }
+
+    function buildTreeSvg(nodes, edges, options = {}) {
+      const themeColors = options.themeColors || getThemeColors();
+      const edgeColors = options.edgeColors || getEdgeColors();
+      const padding = options.padding ?? 200;
+      const includeGrid = options.includeGrid !== false;
+
       const allX = nodes.map(n => n.x);
       const allY = nodes.map(n => n.y);
       const minX = Math.min(...allX);
@@ -3185,37 +3253,50 @@
       const minY = Math.min(...allY);
       const maxY = Math.max(...allY) + nodes[0].height;
       const viewBox = `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`;
-      
+
       let svgHtml = `
-        <svg viewBox="${viewBox}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="${viewBox}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${themeColors.gridLine}" stroke-width="0.5" opacity="0.5"/>
-            </pattern>
+            ${includeGrid ? `
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${themeColors.gridLine}" stroke-width="0.5" opacity="0.5"/>
+              </pattern>
+            ` : ''}
             <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
             </filter>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)"/>
+          ${includeGrid
+            ? '<rect width="100%" height="100%" fill="url(#grid)"/>'
+            : `<rect width="100%" height="100%" fill="${themeColors.cardBg}"/>`}
       `;
-      
+
       edges.forEach(edge => {
         const color = edge.type === 'partner' ? edgeColors.partner : edgeColors.child;
         const width = edge.type === 'partner' ? 2.5 : 2;
-        svgHtml += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}" 
+        svgHtml += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}"
                   stroke="${color}" stroke-width="${width}" stroke-linecap="round" opacity="0.9"/>`;
       });
-      
+
       nodes.forEach(node => {
-        const { id, data, x, y, width, height } = node;
+        const { data, x, y, width, height } = node;
         const isUnknown = data.isUnknown;
         const isVisible = data.isVisible !== false;
         const personNum = data.displayNum || '?';
-        
         const displayName = isUnknown ? '?' : getPreferredName(data);
         const displaySurname = data.surnameCurrent || data.surnameAtBirth || '';
         const showDetails = isVisible;
-        
+        const groupOpacity = showDetails ? 1 : 0.25;
+        const birthYear = getYearFromDate(data.dateOfBirth);
+        const deathYear = getYearFromDate(data.dateOfDeath);
+        const yearY = 38;
+        const yearLeftX = 26;
+        const yearRightX = width - 26;
+        const avatarSize = 44;
+        const avatarRadius = 22;
+        const avatarY = 14;
+        const avatarCenterY = avatarY + avatarRadius;
+
         let colors;
         if (!isVisible) {
           colors = { bg: themeColors.cardBg, border: themeColors.unknownBorder, accent: themeColors.unknownBorder };
@@ -3228,60 +3309,72 @@
         } else {
           colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#475569' };
         }
-        
+
         const strokeStyle = isUnknown && isVisible ? 'stroke-dasharray="6 4"' : '';
-        
+
         svgHtml += `
           <g transform="translate(${x}, ${y})" opacity="${groupOpacity}">
-            <rect width="${width}" height="${height}" rx="10" 
-                  fill="${colors.bg}" 
-                  stroke="${colors.border}" 
+            <rect width="${width}" height="${height}" rx="10"
+                  fill="${colors.bg}"
+                  stroke="${colors.border}"
                   stroke-width="1.5"
                   ${strokeStyle}
                   filter="url(#card-shadow)"/>
             ${showDetails ? `
               <rect width="${width}" height="6" rx="10" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
               <rect x="0" y="3" width="${width}" height="6" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
-              
+
               <circle cx="12" cy="12" r="10" fill="${isUnknown ? '#cbd5e1' : colors.accent}" opacity="0.9"/>
-              <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600" 
+              <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600"
                     font-family="'DM Sans', sans-serif">${personNum}</text>
-              
+
               ${isUnknown ? `
-                <circle cx="${width/2}" cy="34" r="16" fill="${colors.border}" opacity="0.2"/>
-                <text x="${width/2}" y="40" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
+                <text x="${width/2}" y="${avatarCenterY + 6}" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
               ` : data.imageData ? `
-                <image x="${width/2 - 18}" y="16" width="36" height="36" href="${data.imageData}" 
-                  clip-path="circle(18px at 18px 18px)" preserveAspectRatio="xMidYMid slice"/>
+                <image x="${width/2 - avatarRadius}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${data.imageData}"
+                  clip-path="circle(${avatarRadius}px at ${avatarRadius}px ${avatarRadius}px)" preserveAspectRatio="xMidYMid slice"/>
               ` : `
-                <circle cx="${width/2}" cy="34" r="16" fill="${colors.border}" opacity="0.3"/>
-                <circle cx="${width/2}" cy="30" r="6" fill="${colors.border}" opacity="0.4"/>
-                <ellipse cx="${width/2}" cy="42" rx="10" ry="6" fill="${colors.border}" opacity="0.4"/>
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.3"/>
+                <circle cx="${width/2}" cy="${avatarCenterY - 6}" r="7" fill="${colors.border}" opacity="0.4"/>
+                <ellipse cx="${width/2}" cy="${avatarCenterY + 9}" rx="12" ry="7" fill="${colors.border}" opacity="0.4"/>
               `}
-              
-              <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600" 
+
+              <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600"
                     fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="'DM Sans', sans-serif">
                 ${isUnknown ? 'Unknown' : (displayName.length > 12 ? displayName.substring(0, 11) + '…' : displayName)}
               </text>
               ${!isUnknown && displaySurname ? `
-                <text x="${width/2}" y="80" text-anchor="middle" font-size="10" 
+                <text x="${width/2}" y="80" text-anchor="middle" font-size="10"
                       fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">
                   ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '…' : displaySurname}
                 </text>
+              ` : ''}
+              ${birthYear ? `
+                <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${birthYear}</text>
+              ` : ''}
+              ${deathYear ? `
+                <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${deathYear}</text>
               ` : ''}
             ` : ''}
           </g>
         `;
       });
-      
+
       svgHtml += '</svg>';
-      
+      return { svgHtml, viewBox };
+    }
+
+    function openReportWindow({ title, bodyHtml, extraStyles, landscape }) {
       const win = window.open('', '_blank');
       if (!win) {
-        alert('Pop-up blocked. Allow pop-ups to view the optimized layout.');
+        alert('Pop-up blocked. Allow pop-ups to export the report.');
         return;
       }
-      
+
+      const pageSize = landscape ? 'landscape' : 'portrait';
       win.opener = null;
       win.document.write(`
         <!doctype html>
@@ -3289,23 +3382,247 @@
           <head>
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1"/>
-            <title>Optimized Family Layout</title>
+            <title>${title}</title>
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
             <style>
-              html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
-              body { font-family: 'DM Sans', sans-serif; background: ${themeColors.cardBg}; }
-              .wrap { width: 100%; height: 100%; }
-              svg { width: 100%; height: 100%; display: block; }
+              :root { color-scheme: light; }
+              html, body { margin: 0; padding: 0; height: 100%; }
+              body { font-family: "DM Sans", sans-serif; background: #f8fafc; color: #0f172a; }
+              .report-toolbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 16px;
+                background: #0f172a;
+                color: #fff;
+              }
+              .report-title { font-size: 16px; font-weight: 600; }
+              .report-actions button {
+                border: none;
+                border-radius: 6px;
+                background: #38bdf8;
+                color: #0f172a;
+                padding: 8px 12px;
+                font-weight: 600;
+                cursor: pointer;
+              }
+              .report-content { padding: 16px; }
+              @media print {
+                @page { size: ${pageSize}; margin: 0; }
+                body { background: #fff; }
+                .report-toolbar { display: none; }
+                .report-content { padding: 0; }
+              }
+              ${extraStyles || ''}
             </style>
           </head>
           <body>
-            <div class="wrap">
-              ${svgHtml}
+            <div class="report-toolbar">
+              <div class="report-title">${title}</div>
+              <div class="report-actions">
+                <button onclick="window.print()">Save as PDF</button>
+              </div>
+            </div>
+            <div class="report-content">
+              ${bodyHtml}
             </div>
           </body>
         </html>
       `);
       win.document.close();
+    }
+
+    function openPeopleReport() {
+      const people = Object.values(tree.persons);
+      if (people.length === 0) {
+        alert('No people to report.');
+        return;
+      }
+
+      people.sort((a, b) => (a.displayNum || 0) - (b.displayNum || 0));
+
+      const rowsHtml = people.map(person => {
+        const displayName = person.isUnknown ? 'Unknown' : getPreferredName(person);
+        const surname = person.surnameCurrent || person.surnameAtBirth || '';
+        const fullName = [displayName, surname].filter(Boolean).join(' ');
+        const birthPlace = [person.cityOfBirth, person.countryOfBirth].filter(Boolean).join(', ');
+        const birthLine = [person.dateOfBirth, birthPlace].filter(Boolean).join(' • ');
+        const deathLine = person.dateOfDeath || '';
+        const genderLabel = person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : 'Unknown';
+
+        return `
+          <section class="person-row">
+            <div class="person-info">
+              <div class="person-title">#${person.displayNum || '?'} ${fullName || 'Unnamed'}</div>
+              <div class="person-meta">${genderLabel}</div>
+              ${birthLine ? `<div class="person-line"><span>Born:</span> ${birthLine}</div>` : ''}
+              ${deathLine ? `<div class="person-line"><span>Died:</span> ${deathLine}</div>` : ''}
+              ${person.profession ? `<div class="person-line"><span>Profession:</span> ${person.profession}</div>` : ''}
+              ${person.interestingFacts ? `<div class="person-notes">${person.interestingFacts}</div>` : ''}
+            </div>
+            <div class="person-photo">
+              ${person.imageData ? `<img src="${person.imageData}" alt="Photo of ${fullName || 'person'}">` : '<div class="photo-placeholder">No photo</div>'}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      openReportWindow({
+        title: `${tree.settings.treeName || 'Family Tree'} - People Report`,
+        bodyHtml: `<div class="people-report">${rowsHtml}</div>`,
+        extraStyles: `
+          .people-report { display: grid; gap: 16px; }
+          .person-row {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            page-break-inside: avoid;
+          }
+          .person-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+          .person-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 8px; }
+          .person-line { font-size: 13px; margin-bottom: 6px; }
+          .person-line span { color: #475569; font-weight: 600; margin-right: 6px; }
+          .person-notes { font-size: 12.5px; line-height: 1.5; color: #334155; margin-top: 6px; white-space: pre-wrap; }
+          .person-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+          }
+          .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+          .photo-placeholder { font-size: 11px; color: #94a3b8; text-align: center; padding: 8px; }
+          @media print {
+            .person-row { border: 1px solid #cbd5f5; }
+            .people-report { gap: 12px; }
+          }
+        `
+      });
+    }
+
+    function getBloodlineIds(rootId) {
+      if (!rootId || !tree.persons[rootId]) return new Set();
+      const connections = {};
+      Object.keys(tree.persons).forEach(pid => {
+        connections[pid] = new Set();
+      });
+
+      Object.values(tree.unions).forEach(union => {
+        const parents = [union.partner1Id, union.partner2Id].filter(Boolean);
+        union.childrenIds.forEach(childId => {
+          parents.forEach(parentId => {
+            connections[parentId]?.add(childId);
+            connections[childId]?.add(parentId);
+          });
+        });
+      });
+
+      const reachable = new Set();
+      const queue = [rootId];
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (reachable.has(current)) continue;
+        reachable.add(current);
+        connections[current]?.forEach(neighbor => {
+          if (!reachable.has(neighbor)) queue.push(neighbor);
+        });
+      }
+      return reachable;
+    }
+
+    function buildFilteredTree(ids) {
+      const filteredPersons = {};
+      ids.forEach(id => {
+        if (tree.persons[id]) filteredPersons[id] = { ...tree.persons[id] };
+      });
+
+      const filteredUnions = {};
+      Object.values(tree.unions).forEach(union => {
+        const partner1Id = ids.has(union.partner1Id) ? union.partner1Id : null;
+        const partner2Id = ids.has(union.partner2Id) ? union.partner2Id : null;
+        const childrenIds = union.childrenIds.filter(cid => ids.has(cid));
+
+        const hasPartners = !!(partner1Id || partner2Id);
+        const hasChildren = childrenIds.length > 0;
+        const hasPair = partner1Id && partner2Id;
+
+        if (!hasPartners) return;
+        if (!hasChildren && !hasPair) return;
+
+        filteredUnions[union.id] = {
+          ...union,
+          partner1Id,
+          partner2Id,
+          childrenIds
+        };
+      });
+
+      return { persons: filteredPersons, unions: filteredUnions };
+    }
+
+    function openVectorTreeReport({ mode }) {
+      let layoutOptions = { optimize: true };
+      let title = 'Family Tree Report';
+      let nodes = [];
+      let edges = [];
+
+      if (mode === 'full') {
+        const layout = calculateLayout(layoutOptions);
+        nodes = layout.nodes;
+        edges = layout.edges;
+        title = `${tree.settings.treeName || 'Family Tree'} - Full Tree`;
+      } else if (mode === 'blood') {
+        if (!selectedPersonId) {
+          alert('Select a person to generate a bloodline report.');
+          return;
+        }
+        const bloodIds = getBloodlineIds(selectedPersonId);
+        const subset = buildFilteredTree(bloodIds);
+        const layout = calculateLayout({
+          ...layoutOptions,
+          persons: subset.persons,
+          unions: subset.unions,
+          focalPersonId: selectedPersonId
+        });
+        nodes = layout.nodes;
+        edges = layout.edges;
+        const selectedPerson = tree.persons[selectedPersonId];
+        title = `${tree.settings.treeName || 'Family Tree'} - Bloodline of ${getPreferredName(selectedPerson)}`;
+      }
+
+      if (nodes.length === 0) {
+        alert('No people to export.');
+        return;
+      }
+
+      const { svgHtml } = buildTreeSvg(nodes, edges, { includeGrid: true });
+      openReportWindow({
+        title,
+        bodyHtml: `<div class="svg-report">${svgHtml}</div>`,
+        extraStyles: `
+          .report-content { padding: 0; height: calc(100vh - 52px); }
+          .svg-report { width: 100%; height: 100%; }
+          .svg-report svg { width: 100%; height: 100%; display: block; }
+          @media print {
+            .report-content { height: 100vh; }
+          }
+        `,
+        landscape: true
+      });
+    }
+
+    function visualizeOptimizedLayout() {
+      openVectorTreeReport({ mode: 'full' });
     }
     
     function toggleDarkMode() {

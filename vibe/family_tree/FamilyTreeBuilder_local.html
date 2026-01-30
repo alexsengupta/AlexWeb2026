@@ -1,0 +1,4103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Tree Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --primary: #1e40af;
+      --primary-light: #3b82f6;
+      --bg-app: #f8fafc;
+      --bg-panel: #ffffff;
+      --bg-canvas: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --input-bg: #ffffff;
+      --male: #dbeafe;
+      --male-border: #3b82f6;
+      --female: #fce7f3;
+      --female-border: #ec4899;
+      --unknown-bg: #f1f5f9;
+      --unknown-border: #94a3b8;
+      --partner-line: #ec4899;
+      --child-line: #3b82f6;
+      --card-bg: #ffffff;
+      --grid-line: #e5e7eb;
+      --button-bg: #f3f4f6;
+      --button-hover: #e5e7eb;
+    }
+    
+    :root.dark-mode {
+      --primary: #3b82f6;
+      --primary-light: #60a5fa;
+      --bg-app: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-canvas: #1e293b;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --input-bg: #334155;
+      --male: #1e3a5f;
+      --male-border: #60a5fa;
+      --female: #4a1942;
+      --female-border: #f472b6;
+      --unknown-bg: #334155;
+      --unknown-border: #64748b;
+      --partner-line: #f472b6;
+      --child-line: #60a5fa;
+      --card-bg: #334155;
+      --grid-line: #334155;
+      --button-bg: #334155;
+      --button-hover: #475569;
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg-app);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+    
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      color: white;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-image {
+      height: 86.4px;
+      width: auto;
+      display: block;
+    }
+    
+    .logo svg { width: 32px; height: 32px; opacity: 0.9; }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    
+    .btn-header {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+    }
+    .btn-header:hover { 
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-header.btn-toggle-active {
+      background: rgba(34, 197, 94, 0.22);
+      border-color: rgba(34, 197, 94, 0.45);
+      color: #dcfce7;
+    }
+
+    .btn-header.btn-toggle-active:hover {
+      background: rgba(34, 197, 94, 0.32);
+    }
+
+    .header-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      appearance: none;
+    }
+
+    .header-select option {
+      color: #0f172a;
+    }
+    
+    .btn-primary { background: var(--primary-light); color: white; }
+    .btn-primary:hover { background: var(--primary); }
+    
+    .btn-action {
+      background: #0ea5e9;
+      color: white;
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .btn-action:hover { background: #0284c7; }
+    
+    .btn-secondary {
+      background: var(--button-bg);
+      color: var(--text-main);
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--button-hover); }
+    
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+    
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: 
+        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 70%),
+        var(--bg-app);
+    }
+    
+    #tree-canvas {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #tree-canvas:active { cursor: grabbing; }
+    
+    .canvas-toolbar {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+      background: var(--bg-panel);
+      padding: 6px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+    }
+    
+    .toolbar-btn {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text-main);
+      transition: all 0.15s;
+    }
+    .toolbar-btn:hover { background: var(--button-hover); }
+    
+    .info-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .person-count, .focal-indicator {
+      background: var(--bg-panel);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    
+    .focal-indicator { color: var(--primary); }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      width: min(720px, 92vw);
+      max-height: 82vh;
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      overflow: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .modal-header h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .modal-section {
+      margin-bottom: 16px;
+    }
+
+    .modal-section h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .modal-section p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .modal-list {
+      margin: 8px 0 0 18px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .modal-list li {
+      margin-bottom: 6px;
+    }
+
+    .legend {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: var(--bg-panel);
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    .legend-title {
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .legend-line {
+      width: 28px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .legend-line.partner { background: var(--partner-line); }
+    .legend-line.child { background: var(--child-line); }
+    .legend-box {
+      width: 20px;
+      height: 14px;
+      border-radius: 3px;
+      border: 2px dashed var(--unknown-border);
+      background: var(--unknown-bg);
+    }
+    
+    .edit-panel {
+      width: 320px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.04);
+    }
+    
+    .edit-panel.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-panel);
+    }
+    
+    .panel-header h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .panel-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #fef3c7;
+      color: #92400e;
+      margin-left: 8px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    
+    .close-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .close-btn:hover { background: var(--button-hover); color: var(--text-main); }
+    
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-panel);
+    }
+    
+    .panel-tabs button {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .panel-tabs button:hover { color: var(--text-main); background: rgba(0,0,0,0.02); }
+    .panel-tabs button.active { 
+      color: var(--primary); 
+      border-bottom-color: var(--primary);
+      background: var(--bg-panel);
+    }
+    
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 18px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+      background: var(--input-bg);
+      color: var(--text-main);
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .radio-group {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+    
+    .panel-actions {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: #fafbfc;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    
+    .action-section {
+      margin-bottom: 12px;
+    }
+    
+    .action-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    
+    .image-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .image-preview {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 3px solid var(--border);
+    }
+    
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .image-preview svg {
+      width: 48px;
+      color: #cbd5e1;
+    }
+
+    .doc-dropzone {
+      border: 2px dashed var(--border);
+      background: #f8fafc;
+      color: var(--text-muted);
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .doc-dropzone.is-dragover {
+      border-color: var(--primary-light);
+      background: #eff6ff;
+      color: var(--text-main);
+    }
+
+    .doc-folder-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    .doc-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-panel);
+      font-size: 12px;
+    }
+
+    .doc-item-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .doc-item-name {
+      font-weight: 600;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+
+    .doc-item-path {
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+
+    .doc-item button {
+      border: none;
+      background: var(--button-bg);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .doc-item button:hover {
+      background: var(--button-hover);
+    }
+
+    .doc-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo">
+        <img src="logo.png" alt="Family Tree Builder" class="logo-image">
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-header" onclick="startNewTree()">+ New Tree</button>
+        <button class="btn btn-header" onclick="document.getElementById('file-input').click()">📂 Load</button>
+        <input type="file" id="file-input" accept=".json,.ged" onchange="handleFileLoad(event)" style="display:none">
+        <button class="btn btn-header" onclick="saveTree()">💾 Save</button>
+        <button class="btn btn-header" onclick="exportGedcom()" title="Export as GEDCOM">📤 GEDCOM</button>
+        <button class="btn btn-header" id="autosave-btn" onclick="toggleAutosave()" title="Toggle autosave">Autosave: Off</button>
+        <select id="report-select" class="header-select" onchange="handleReportChange(this.value)" title="Export reports">
+          <option value="">Reports</option>
+          <option value="people">A: People report (PDF)</option>
+          <option value="full">B: Full tree (vector PDF)</option>
+          <option value="blood">C: Bloodline tree (vector PDF)</option>
+        </select>
+        <button class="btn btn-header" onclick="openHelp()" title="Help">Help</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="canvas-container">
+        <svg id="tree-canvas"></svg>
+        <div class="canvas-toolbar">
+          <button class="toolbar-btn" onclick="zoomIn()" title="Zoom In">+</button>
+          <button class="toolbar-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+          <button class="toolbar-btn" onclick="zoomToExtents()" title="Zoom to Extents">⤢</button>
+          <button class="toolbar-btn" onclick="undo()" title="Undo">⟲</button>
+          <button class="toolbar-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode" id="dark-mode-btn">🌙</button>
+        </div>
+        <div class="legend">
+          <div class="legend-title">Legend</div>
+          <div class="legend-item">
+            <div class="legend-line partner"></div>
+            <span>Union (couple)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line child"></div>
+            <span>Parent → Child</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box"></div>
+            <span>Unknown Person</span>
+          </div>
+          <div class="legend-title" style="margin-top: 12px;">Selection Highlights</div>
+          <div class="legend-item">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: #2563eb;"></div>
+            <span>Selected</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: #8b5cf6;"></div>
+            <span>Parent</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: #f97316;"></div>
+            <span>Child</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: #10b981;"></div>
+            <span>Sibling</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: #ec4899;"></div>
+            <span>Partner</span>
+          </div>
+        </div>
+        <div class="info-bar">
+          <div class="person-count" id="person-count">0 people</div>
+          <div class="focal-indicator" id="focal-indicator"></div>
+        </div>
+      </div>
+      
+      <div class="edit-panel empty" id="edit-panel">
+        <p>Select a person to view details</p>
+      </div>
+    </main>
+    
+    <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+    <div id="help-modal" class="modal-backdrop" onclick="handleHelpBackdrop(event)">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <div class="modal-header">
+          <h2 id="help-title">How to use Family Tree Builder</h2>
+          <button class="modal-close" onclick="closeHelp()" aria-label="Close">×</button>
+        </div>
+        <div class="modal-section">
+          <h3>Getting started</h3>
+          <p>Select a card to edit details. Use the buttons in the right panel to add parents, partners,
+            children, or siblings. Unknown cards are placeholders you can click to fill in later.</p>
+        </div>
+        <div class="modal-section">
+          <h3>Build relationships</h3>
+          <ul class="modal-list">
+            <li>Use Add Parents/Partner/Child/Sibling to grow the tree.</li>
+            <li>Use Move Earlier/Later to reorder siblings or partners within a family.</li>
+            <li>Set a focal person to center the layout around a specific line.</li>
+          </ul>
+        </div>
+        <div class="modal-section">
+          <h3>Navigate</h3>
+          <ul class="modal-list">
+            <li>Drag the canvas to pan. Scroll or use + / − to zoom.</li>
+            <li>Use Zoom to Extents to fit the whole tree in view.</li>
+            <li>Undo lets you step back through recent edits.</li>
+          </ul>
+        </div>
+        <div class="modal-section">
+          <h3>Save and share</h3>
+          <ul class="modal-list">
+            <li>Use Save/Load for JSON backups.</li>
+            <li>Autosave writes JSON to a chosen folder and filename.</li>
+            <li>Export GEDCOM to share with other genealogy tools.</li>
+            <li>Reports exports PDF-friendly layouts (people list, full tree, bloodline).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================================
+    // DATA MODEL
+    // ============================================================================
+    
+    let tree = {
+      version: '2.0',
+      persons: {},
+      unions: {},
+      settings: { 
+        treeName: 'My Family Tree',
+        focalPersonId: null
+      }
+    };
+    
+    let selectedPersonId = null;
+    let zoom = 1;
+    let pan = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let currentTab = 'personal';
+    
+    const MAX_HISTORY = 20;
+    const historyStack = [];
+    const AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000;
+    let autosaveEnabled = false;
+    let autosaveIntervalId = null;
+    let autosaveFileHandle = null;
+    let autosaveFilename = '';
+    let autosaveDirectoryName = '';
+    let autosaveInProgress = false;
+    let documentsBaseHandle = null;
+    let documentsBaseName = '';
+    
+    function pushHistory() {
+      const snapshot = {
+        treeJson: JSON.stringify(tree),
+        selectedPersonId,
+        personCounter,
+        zoom,
+        pan: { ...pan }
+      };
+      
+      historyStack.push(snapshot);
+      if (historyStack.length > MAX_HISTORY) historyStack.shift();
+    }
+    
+    function undo() {
+      if (historyStack.length === 0) return;
+      const snapshot = historyStack.pop();
+      tree = JSON.parse(snapshot.treeJson);
+      selectedPersonId = snapshot.selectedPersonId;
+      personCounter = snapshot.personCounter;
+      zoom = snapshot.zoom;
+      pan = snapshot.pan;
+      render();
+    }
+    
+    function generateId(prefix) {
+      return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    let personCounter = 1;
+    
+    function createPerson(overrides = {}) {
+      return {
+        id: generateId('p'),
+        displayNum: personCounter++,
+        firstName: '',
+        altName: '',
+        surnameCurrent: '',
+        surnameAtBirth: '',
+        gender: 'unknown',
+        dateOfBirth: '',
+        dateOfDeath: '',
+        cityOfBirth: '',
+        countryOfBirth: '',
+        profession: '',
+        interestingFacts: '',
+        imageData: null,
+        linkedDocuments: [],
+        documentFolder: '',
+        isAdopted: false,
+        isVisible: true,
+        isUnknown: false,
+        ...overrides
+      };
+    }
+    
+    function createUnknownPerson() {
+      return createPerson({
+        firstName: 'Unknown',
+        isUnknown: true
+      });
+    }
+    
+    function createUnion(partner1Id, partner2Id) {
+      return {
+        id: generateId('u'),
+        partner1Id,
+        partner2Id,
+        childrenIds: [],
+        marriageDate: '',
+        divorceDate: '',
+        order: 1
+      };
+    }
+
+    // ============================================================================
+    // TREE OPERATIONS
+    // ============================================================================
+    
+    function startNewTree() {
+      if (Object.keys(tree.persons).length > 0) {
+        if (!confirm('Start a new tree? Current tree will be lost unless saved.')) return;
+        pushHistory();
+      }
+      
+      personCounter = 1;  // Reset counter
+      
+      tree = {
+        version: '2.0',
+        persons: {},
+        unions: {},
+        settings: { treeName: 'My Family Tree', focalPersonId: null }
+      };
+      
+      const person = createPerson();
+      tree.persons[person.id] = person;
+      tree.settings.focalPersonId = person.id;
+      selectedPersonId = person.id;
+      render();
+      runAutosave('new-tree');
+    }
+    
+    function updatePerson(id, updates) {
+      if (tree.persons[id]) {
+        const prev = tree.persons[id];
+        const hasChanges = Object.keys(updates).some(key => prev[key] !== updates[key]);
+        if (!hasChanges) return;
+        
+        pushHistory();
+        tree.persons[id] = { ...prev, ...updates };
+        // If updating an unknown person with real info, mark as known
+        if ((updates.firstName && updates.firstName !== 'Unknown') || (updates.altName && updates.altName.trim())) {
+          tree.persons[id].isUnknown = false;
+        }
+        render();
+      }
+    }
+    
+    function deletePerson(id) {
+      // Don't allow deleting focal person
+      if (id === tree.settings.focalPersonId) {
+        alert("Cannot delete the focal person. Set a different person as focal first.");
+        return;
+      }
+      
+      // Find all people who would become orphaned (disconnected from focal)
+      const orphans = findOrphansAfterDeletion(id);
+      
+      if (orphans.length > 0) {
+        const orphanNames = orphans.map(pid => {
+          const p = tree.persons[pid];
+          return p?.isUnknown ? 'Unknown' : (getPreferredName(p) || 'Unnamed');
+        }).join(', ');
+        
+        if (!confirm(`Deleting this person will also remove ${orphans.length} disconnected people:\n${orphanNames}\n\nContinue?`)) {
+          return;
+        }
+        
+        pushHistory();
+        // Delete all orphans
+        orphans.forEach(pid => removePersonCompletely(pid));
+      } else {
+        pushHistory();
+      }
+      
+      // Now delete the target person
+      removePersonCompletely(id);
+      
+      selectedPersonId = null;
+      render();
+    }
+    
+    function findOrphansAfterDeletion(deletedId) {
+      // Simulate the deletion and find who becomes unreachable from focal
+      const focalId = tree.settings.focalPersonId;
+      if (!focalId || focalId === deletedId) return [];
+      
+      // Build adjacency: who is connected to whom (excluding deletedId)
+      const connections = {};
+      Object.keys(tree.persons).forEach(pid => {
+        if (pid !== deletedId) connections[pid] = new Set();
+      });
+      
+      Object.values(tree.unions).forEach(union => {
+        const relevantPartners = [union.partner1Id, union.partner2Id].filter(p => p && p !== deletedId);
+        const relevantChildren = union.childrenIds.filter(c => c !== deletedId);
+        
+        // Partners connect to each other
+        if (relevantPartners.length === 2) {
+          connections[relevantPartners[0]]?.add(relevantPartners[1]);
+          connections[relevantPartners[1]]?.add(relevantPartners[0]);
+        }
+        
+        // Parents connect to children
+        relevantPartners.forEach(pid => {
+          relevantChildren.forEach(cid => {
+            connections[pid]?.add(cid);
+            connections[cid]?.add(pid);
+          });
+        });
+        
+        // Siblings connect to each other (through parent union)
+        relevantChildren.forEach(c1 => {
+          relevantChildren.forEach(c2 => {
+            if (c1 !== c2) connections[c1]?.add(c2);
+          });
+        });
+      });
+      
+      // BFS from focal to find all reachable
+      const reachable = new Set();
+      const queue = [focalId];
+      
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (reachable.has(current)) continue;
+        reachable.add(current);
+        
+        connections[current]?.forEach(neighbor => {
+          if (!reachable.has(neighbor)) queue.push(neighbor);
+        });
+      }
+      
+      // Anyone not reachable (and not the deleted person) is an orphan
+      return Object.keys(tree.persons).filter(pid => 
+        pid !== deletedId && !reachable.has(pid)
+      );
+    }
+    
+    function removePersonCompletely(id) {
+      // Remove from unions as partner
+      Object.values(tree.unions).forEach(union => {
+        if (union.partner1Id === id) union.partner1Id = null;
+        if (union.partner2Id === id) union.partner2Id = null;
+      });
+      
+      // Remove from unions as child
+      Object.values(tree.unions).forEach(union => {
+        union.childrenIds = union.childrenIds.filter(cid => cid !== id);
+      });
+      
+      // Clean up unions that now have no partners and no children
+      Object.keys(tree.unions).forEach(uid => {
+        const union = tree.unions[uid];
+        if (!union.partner1Id && !union.partner2Id && union.childrenIds.length === 0) {
+          delete tree.unions[uid];
+        }
+      });
+      
+      delete tree.persons[id];
+    }
+    
+    function setAsFocalPerson(id) {
+      if (tree.persons[id] && !tree.persons[id].isUnknown) {
+        tree.settings.focalPersonId = id;
+        render();
+      }
+    }
+    
+    function addPartner(personId) {
+      pushHistory();
+      const partner = createPerson();
+      tree.persons[partner.id] = partner;
+      
+      // Determine union order
+      const existingUnions = Object.values(tree.unions).filter(
+        u => u.partner1Id === personId || u.partner2Id === personId
+      );
+      const order = existingUnions.length + 1;
+      
+      const union = createUnion(personId, partner.id);
+      union.order = order;
+      tree.unions[union.id] = union;
+      
+      selectedPersonId = partner.id;
+      render();
+      runAutosave('person-added');
+    }
+    
+    function addChild(personId, specificUnionId = null) {
+      pushHistory();
+      const child = createPerson();
+      tree.persons[child.id] = child;
+      
+      let union;
+      
+      if (specificUnionId) {
+        union = tree.unions[specificUnionId];
+      } else {
+        // Find existing union or create new one with unknown partner
+        union = Object.values(tree.unions).find(
+          u => u.partner1Id === personId || u.partner2Id === personId
+        );
+        
+        if (!union) {
+          // Create union with unknown partner
+          const unknownPartner = createUnknownPerson();
+          tree.persons[unknownPartner.id] = unknownPartner;
+          union = createUnion(personId, unknownPartner.id);
+          tree.unions[union.id] = union;
+        }
+      }
+      
+      union.childrenIds.push(child.id);
+      selectedPersonId = child.id;
+      render();
+      runAutosave('person-added');
+    }
+    
+    function addParents(personId) {
+      // Check if already has parents
+      const existingParentUnion = Object.values(tree.unions).find(
+        u => u.childrenIds.includes(personId)
+      );
+      
+      if (existingParentUnion) {
+        alert("This person already has parents. Select a parent to edit or replace them.");
+        return;
+      }
+      
+      pushHistory();
+      
+      const parent1 = createPerson({ gender: 'male' });
+      const parent2 = createPerson({ gender: 'female' });
+      
+      tree.persons[parent1.id] = parent1;
+      tree.persons[parent2.id] = parent2;
+      
+      const union = createUnion(parent1.id, parent2.id);
+      union.childrenIds = [personId];
+      tree.unions[union.id] = union;
+      
+      selectedPersonId = parent1.id;
+      render();
+      runAutosave('person-added');
+    }
+    
+    function addSibling(personId) {
+      pushHistory();
+      const sibling = createPerson();
+      tree.persons[sibling.id] = sibling;
+      
+      let parentUnion = Object.values(tree.unions).find(
+        u => u.childrenIds.includes(personId)
+      );
+      
+      if (!parentUnion) {
+        // Create parents (both unknown) and add both people as children
+        const parent1 = createUnknownPerson();
+        const parent2 = createUnknownPerson();
+        tree.persons[parent1.id] = parent1;
+        tree.persons[parent2.id] = parent2;
+        
+        parentUnion = createUnion(parent1.id, parent2.id);
+        parentUnion.childrenIds = [personId];
+        tree.unions[parentUnion.id] = parentUnion;
+      }
+      
+      parentUnion.childrenIds.push(sibling.id);
+      selectedPersonId = sibling.id;
+      render();
+      runAutosave('person-added');
+    }
+    
+    function moveChildInUnion(unionId, childId, direction) {
+      const union = tree.unions[unionId];
+      if (!union) return;
+      const idx = union.childrenIds.indexOf(childId);
+      if (idx === -1) return;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= union.childrenIds.length) return;
+      
+      pushHistory();
+      union.childrenIds.splice(idx, 1);
+      union.childrenIds.splice(newIdx, 0, childId);
+      render();
+    }
+    
+    function movePartnerUnion(personId, unionId, direction) {
+      const partnerUnions = Object.values(tree.unions).filter(
+        u => u.partner1Id === personId || u.partner2Id === personId
+      );
+      
+      if (partnerUnions.length <= 1) return;
+      
+      partnerUnions.sort((a, b) => (a.order || 1) - (b.order || 1));
+      const idx = partnerUnions.findIndex(u => u.id === unionId);
+      const swapIdx = idx + direction;
+      
+      if (idx === -1 || swapIdx < 0 || swapIdx >= partnerUnions.length) return;
+      
+      pushHistory();
+      const ordered = [...partnerUnions];
+      const [moved] = ordered.splice(idx, 1);
+      ordered.splice(swapIdx, 0, moved);
+      
+      ordered.forEach((u, i) => {
+        u.order = i + 1;
+      });
+      
+      render();
+    }
+    
+    function replaceUnknown(unknownId) {
+      // Convert unknown to editable real person
+      if (tree.persons[unknownId]?.isUnknown) {
+        pushHistory();
+        tree.persons[unknownId].isUnknown = false;
+        tree.persons[unknownId].firstName = '';
+        tree.persons[unknownId].altName = '';
+        selectedPersonId = unknownId;
+        render();
+      }
+    }
+
+    // ============================================================================
+    // FILE OPERATIONS
+    // ============================================================================
+
+    function updateAutosaveButton() {
+      const btn = document.getElementById('autosave-btn');
+      if (!btn) return;
+      btn.textContent = autosaveEnabled ? 'Autosave: On' : 'Autosave: Off';
+      btn.classList.toggle('btn-toggle-active', autosaveEnabled);
+      if (autosaveEnabled && autosaveFilename) {
+        const location = autosaveDirectoryName
+          ? `${autosaveDirectoryName}/${autosaveFilename}`
+          : autosaveFilename;
+        btn.title = `Autosaving to ${location}`;
+      } else {
+        btn.title = 'Toggle autosave';
+      }
+    }
+
+    function setAutosaveEnabled(enabled) {
+      autosaveEnabled = enabled;
+      if (autosaveEnabled) {
+        startAutosaveTimer();
+      } else {
+        stopAutosaveTimer();
+      }
+      updateAutosaveButton();
+    }
+
+    function startAutosaveTimer() {
+      stopAutosaveTimer();
+      autosaveIntervalId = setInterval(() => {
+        runAutosave('interval');
+      }, AUTOSAVE_INTERVAL_MS);
+    }
+
+    function stopAutosaveTimer() {
+      if (autosaveIntervalId) {
+        clearInterval(autosaveIntervalId);
+        autosaveIntervalId = null;
+      }
+    }
+
+    async function toggleAutosave() {
+      if (autosaveEnabled) {
+        setAutosaveEnabled(false);
+        return;
+      }
+
+      const configured = await configureAutosave();
+      if (!configured) {
+        setAutosaveEnabled(false);
+        return;
+      }
+
+      setAutosaveEnabled(true);
+      runAutosave('enabled');
+    }
+
+    async function configureAutosave() {
+      if (!window.showSaveFilePicker) {
+        alert('Autosave requires a browser that supports the File System Access API (Chrome/Edge).');
+        return false;
+      }
+
+      const defaultName = (tree.settings.treeName || 'family-tree').replace(/[^a-z0-9]/gi, '_') + '.json';
+      try {
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: defaultName,
+          types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+        });
+        autosaveDirectoryName = '';
+        autosaveFileHandle = fileHandle;
+        autosaveFilename = fileHandle.name || defaultName;
+
+        updateAutosaveButton();
+        return true;
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error(err);
+        return false;
+      }
+    }
+
+    async function runAutosave(reason) {
+      if (!autosaveEnabled || autosaveInProgress) return;
+      if (!autosaveFileHandle) {
+        const configured = await configureAutosave();
+        if (!configured) {
+          setAutosaveEnabled(false);
+          return;
+        }
+      }
+
+      autosaveInProgress = true;
+      try {
+        const dataStr = JSON.stringify(tree, null, 2);
+        const writable = await autosaveFileHandle.createWritable();
+        await writable.write(dataStr);
+        await writable.close();
+      } catch (err) {
+        console.error(err);
+        alert('Autosave failed. You may need to re-enable autosave and pick a new location.');
+        setAutosaveEnabled(false);
+      } finally {
+        autosaveInProgress = false;
+      }
+    }
+
+    // ============================================================================
+    // LINKED DOCUMENTS
+    // ============================================================================
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeFolderName(value) {
+      return String(value || '')
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 60) || 'Person';
+    }
+
+    function getPersonFolderName(person) {
+      const displayName = person?.isUnknown ? 'Unknown' : getPreferredName(person);
+      const safeName = sanitizeFolderName(displayName || 'Person');
+      const displayNum = person?.displayNum || 'X';
+      return `${safeName}_${displayNum}`;
+    }
+
+    function getDocumentsFolderName(person) {
+      return person?.documentFolder || getPersonFolderName(person);
+    }
+
+    function getDocumentsFolderDisplay(person) {
+      const folderName = getDocumentsFolderName(person);
+      return documentsBaseName ? `${documentsBaseName}/${folderName}` : folderName;
+    }
+
+    function makeUniqueFilename(filename, existing) {
+      if (!existing.has(filename)) return filename;
+      const dotIndex = filename.lastIndexOf('.');
+      const base = dotIndex === -1 ? filename : filename.slice(0, dotIndex);
+      const ext = dotIndex === -1 ? '' : filename.slice(dotIndex);
+      let counter = 1;
+      let candidate = `${base} (${counter})${ext}`;
+      while (existing.has(candidate)) {
+        counter += 1;
+        candidate = `${base} (${counter})${ext}`;
+      }
+      return candidate;
+    }
+
+    async function ensureDocumentsBaseHandle() {
+      if (documentsBaseHandle) return documentsBaseHandle;
+      if (!window.showDirectoryPicker) {
+        alert('Document linking requires a browser that supports folder access (Chrome/Edge).');
+        return null;
+      }
+
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        documentsBaseHandle = handle;
+        documentsBaseName = handle.name || '';
+        return handle;
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error(err);
+        return null;
+      }
+    }
+
+    function handleDocDragOver(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add('is-dragover');
+    }
+
+    function handleDocDragLeave(event) {
+      event.currentTarget.classList.remove('is-dragover');
+    }
+
+    async function handleDocDrop(event, personId) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('is-dragover');
+      const files = Array.from(event.dataTransfer?.files || []);
+      await addDocumentsToPerson(personId, files);
+    }
+
+    function triggerDocumentPicker(personId) {
+      const input = document.getElementById(`doc-input-${personId}`);
+      if (input) input.click();
+    }
+
+    async function handleDocInputChange(event, personId) {
+      const files = Array.from(event.target.files || []);
+      event.target.value = '';
+      await addDocumentsToPerson(personId, files);
+    }
+
+    async function addDocumentsToPerson(personId, files) {
+      if (!files || files.length === 0) return;
+      const person = tree.persons[personId];
+      if (!person) return;
+
+      const baseHandle = await ensureDocumentsBaseHandle();
+      if (!baseHandle) return;
+
+      const folderName = getDocumentsFolderName(person);
+      const existingDocs = Array.isArray(person.linkedDocuments)
+        ? [...person.linkedDocuments]
+        : [];
+      const existingSet = new Set(existingDocs);
+
+      try {
+        const personDir = await baseHandle.getDirectoryHandle(folderName, { create: true });
+        for (const file of files) {
+          const safeName = makeUniqueFilename(file.name, existingSet);
+          const fileHandle = await personDir.getFileHandle(safeName, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(file);
+          await writable.close();
+          existingSet.add(safeName);
+          existingDocs.push(safeName);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to copy one or more documents. Please try again.');
+        return;
+      }
+
+      const updates = { linkedDocuments: existingDocs };
+      if (!person.documentFolder) updates.documentFolder = folderName;
+      updatePerson(personId, updates);
+      runAutosave('documents-added');
+    }
+
+    function removeLinkedDocument(personId, index) {
+      const person = tree.persons[personId];
+      if (!person || !Array.isArray(person.linkedDocuments)) return;
+      const updated = [...person.linkedDocuments];
+      if (index < 0 || index >= updated.length) return;
+      updated.splice(index, 1);
+      updatePerson(personId, { linkedDocuments: updated });
+    }
+    
+    async function saveTree() {
+      const defaultName = (tree.settings.treeName || 'family-tree').replace(/[^a-z0-9]/gi, '_') + '.json';
+      const dataStr = JSON.stringify(tree, null, 2);
+      
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: defaultName,
+            types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(dataStr);
+          await writable.close();
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+          return;
+        }
+      }
+      
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = defaultName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function normalizeLoadedTree(loaded) {
+      if (!loaded || typeof loaded !== 'object') return loaded;
+      
+      loaded.version = loaded.version || '2.0';
+      loaded.persons = loaded.persons || {};
+      loaded.unions = loaded.unions || {};
+      loaded.settings = loaded.settings || {};
+      loaded.settings.treeName = loaded.settings.treeName || 'My Family Tree';
+      if (!('focalPersonId' in loaded.settings)) loaded.settings.focalPersonId = null;
+      
+      Object.values(loaded.persons).forEach(person => {
+        if (!person || typeof person !== 'object') return;
+        
+        if (!('firstName' in person)) person.firstName = '';
+        if (!('altName' in person)) person.altName = '';
+        if (!('surnameCurrent' in person)) person.surnameCurrent = '';
+        if (!('surnameAtBirth' in person)) person.surnameAtBirth = '';
+        if (!('gender' in person)) person.gender = 'unknown';
+        if (!('dateOfBirth' in person)) person.dateOfBirth = person.birthDate || '';
+        if (!('dateOfDeath' in person)) person.dateOfDeath = person.deathDate || '';
+        if (!('cityOfBirth' in person)) person.cityOfBirth = '';
+        if (!('countryOfBirth' in person)) person.countryOfBirth = '';
+        if (!('profession' in person)) person.profession = '';
+        if (!('interestingFacts' in person)) person.interestingFacts = person.notes || '';
+        if (!('imageData' in person)) person.imageData = null;
+        if (!('linkedDocuments' in person)) person.linkedDocuments = [];
+        if (!Array.isArray(person.linkedDocuments)) person.linkedDocuments = [];
+        if (!('documentFolder' in person)) person.documentFolder = '';
+        if (!('isAdopted' in person)) person.isAdopted = false;
+        if (!('isVisible' in person)) person.isVisible = true;
+        if (!('isUnknown' in person)) person.isUnknown = false;
+        
+        if (person.birthPlace && !person.cityOfBirth && !person.countryOfBirth) {
+          const parts = person.birthPlace.split(',').map(part => part.trim()).filter(Boolean);
+          person.cityOfBirth = parts.shift() || '';
+          person.countryOfBirth = parts.join(', ');
+        }
+        
+        if (person.birthDate && !person.dateOfBirth) person.dateOfBirth = person.birthDate;
+        if (person.deathDate && !person.dateOfDeath) person.dateOfDeath = person.deathDate;
+      });
+      
+      Object.values(loaded.unions).forEach(union => {
+        if (!union || typeof union !== 'object') return;
+        if (!Array.isArray(union.childrenIds)) union.childrenIds = [];
+        if (!('order' in union)) union.order = 1;
+      });
+      
+      return loaded;
+    }
+    
+    function loadTree(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const loaded = JSON.parse(e.target.result);
+          tree = normalizeLoadedTree(loaded);
+          
+          // Ensure focal person is set
+          if (!tree.settings.focalPersonId || !tree.persons[tree.settings.focalPersonId]) {
+            const firstPerson = Object.keys(tree.persons).find(id => !tree.persons[id].isUnknown);
+            tree.settings.focalPersonId = firstPerson || Object.keys(tree.persons)[0];
+          }
+          
+          // Restore person counter to highest displayNum + 1
+          let maxNum = 0;
+          Object.values(tree.persons).forEach(p => {
+            if (p.displayNum && p.displayNum > maxNum) maxNum = p.displayNum;
+          });
+          personCounter = maxNum + 1;
+          
+          // Ensure all persons have displayNum
+          Object.values(tree.persons).forEach(p => {
+            if (!p.displayNum) {
+              p.displayNum = personCounter++;
+            }
+          });
+          
+          selectedPersonId = null;
+          pan = { x: 0, y: 0 };
+          zoom = 1;
+          render();
+        } catch (err) {
+          alert('Failed to load file: Invalid format');
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    // ============================================================================
+    // GEDCOM IMPORT/EXPORT
+    // ============================================================================
+    
+    function handleFileLoad(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const filename = file.name.toLowerCase();
+      if (filename.endsWith('.ged')) {
+        importGedcom(event);
+      } else {
+        loadTree(event);
+      }
+      // Reset file input
+      event.target.value = '';
+    }
+    
+    function exportGedcom() {
+      const lines = [];
+      
+      // Header
+      lines.push('0 HEAD');
+      lines.push('1 SOUR FamilyTreeBuilder');
+      lines.push('2 VERS 1.0');
+      lines.push('1 GEDC');
+      lines.push('2 VERS 5.5.1');
+      lines.push('2 FORM LINEAGE-LINKED');
+      lines.push('1 CHAR UTF-8');
+      
+      // Map our IDs to GEDCOM pointers
+      const personIdToPointer = {};
+      const unionIdToPointer = {};
+      let indiCounter = 1;
+      let famCounter = 1;
+      
+      Object.keys(tree.persons).forEach(id => {
+        personIdToPointer[id] = `@I${indiCounter++}@`;
+      });
+      
+      Object.keys(tree.unions).forEach(id => {
+        unionIdToPointer[id] = `@F${famCounter++}@`;
+      });
+      
+      // Build union lookup for each person
+      const personToFamilyAsSpouse = {};
+      const personToFamilyAsChild = {};
+      
+      Object.entries(tree.unions).forEach(([unionId, union]) => {
+        if (union.partner1Id) {
+          if (!personToFamilyAsSpouse[union.partner1Id]) personToFamilyAsSpouse[union.partner1Id] = [];
+          personToFamilyAsSpouse[union.partner1Id].push(unionId);
+        }
+        if (union.partner2Id) {
+          if (!personToFamilyAsSpouse[union.partner2Id]) personToFamilyAsSpouse[union.partner2Id] = [];
+          personToFamilyAsSpouse[union.partner2Id].push(unionId);
+        }
+        union.childrenIds.forEach(childId => {
+          personToFamilyAsChild[childId] = unionId;
+        });
+      });
+      
+      // Individual records
+      Object.entries(tree.persons).forEach(([id, person]) => {
+        const pointer = personIdToPointer[id];
+        lines.push(`0 ${pointer} INDI`);
+        
+        // Name
+        if (person.isUnknown) {
+          lines.push('1 NAME Unknown //');
+        } else {
+          const firstName = person.firstName || '';
+          const lastName = person.surnameAtBirth || person.surnameCurrent || '';
+          lines.push(`1 NAME ${firstName} /${lastName}/`);
+          if (person.altName) lines.push(`1 NICK ${person.altName}`);
+          if (person.surnameCurrent && person.surnameCurrent !== person.surnameAtBirth) {
+            lines.push(`1 _SCUR ${person.surnameCurrent}`);
+          }
+        }
+        
+        // Sex
+        if (person.gender === 'male') {
+          lines.push('1 SEX M');
+        } else if (person.gender === 'female') {
+          lines.push('1 SEX F');
+        }
+        
+        // Birth
+        const birthPlace = [person.cityOfBirth, person.countryOfBirth].filter(Boolean).join(', ');
+        if (person.dateOfBirth || birthPlace) {
+          lines.push('1 BIRT');
+          if (person.dateOfBirth) lines.push(`2 DATE ${formatGedcomDate(person.dateOfBirth)}`);
+          if (birthPlace) lines.push(`2 PLAC ${birthPlace}`);
+        }
+        
+        // Death
+        if (person.dateOfDeath) {
+          lines.push('1 DEAT');
+          lines.push(`2 DATE ${formatGedcomDate(person.dateOfDeath)}`);
+        }
+        
+        // Notes
+        if (person.interestingFacts) {
+          lines.push('1 NOTE ' + person.interestingFacts.replace(/\n/g, ' '));
+        }
+        
+        if (person.isAdopted) {
+          lines.push('1 _ADOPTED Y');
+        }
+        if (person.isVisible === false) {
+          lines.push('1 _VISIBLE N');
+        }
+        
+        // Family links
+        const familiesAsSpouse = personToFamilyAsSpouse[id] || [];
+        familiesAsSpouse.forEach(unionId => {
+          lines.push(`1 FAMS ${unionIdToPointer[unionId]}`);
+        });
+        
+        const familyAsChild = personToFamilyAsChild[id];
+        if (familyAsChild) {
+          lines.push(`1 FAMC ${unionIdToPointer[familyAsChild]}`);
+        }
+      });
+      
+      // Family records
+      Object.entries(tree.unions).forEach(([id, union]) => {
+        const pointer = unionIdToPointer[id];
+        lines.push(`0 ${pointer} FAM`);
+        
+        // Determine husband/wife based on gender
+        const p1 = tree.persons[union.partner1Id];
+        const p2 = tree.persons[union.partner2Id];
+        
+        let husbId = null, wifeId = null;
+        
+        if (p1 && p2) {
+          if (p1.gender === 'male' && p2.gender === 'female') {
+            husbId = union.partner1Id;
+            wifeId = union.partner2Id;
+          } else if (p1.gender === 'female' && p2.gender === 'male') {
+            husbId = union.partner2Id;
+            wifeId = union.partner1Id;
+          } else {
+            // Same sex or unknown - use partner1 as HUSB for compatibility
+            husbId = union.partner1Id;
+            wifeId = union.partner2Id;
+          }
+        } else if (p1) {
+          if (p1.gender === 'female') wifeId = union.partner1Id;
+          else husbId = union.partner1Id;
+        } else if (p2) {
+          if (p2.gender === 'female') wifeId = union.partner2Id;
+          else husbId = union.partner2Id;
+        }
+        
+        if (husbId) lines.push(`1 HUSB ${personIdToPointer[husbId]}`);
+        if (wifeId) lines.push(`1 WIFE ${personIdToPointer[wifeId]}`);
+        
+        // Children
+        union.childrenIds.forEach(childId => {
+          lines.push(`1 CHIL ${personIdToPointer[childId]}`);
+        });
+      });
+      
+      // Trailer
+      lines.push('0 TRLR');
+      
+      // Save file
+      const content = lines.join('\n');
+      downloadFile(content, (tree.settings.treeName || 'family-tree') + '.ged', 'text/plain');
+    }
+    
+    function formatGedcomDate(dateStr) {
+      // Convert YYYY-MM-DD to GEDCOM format (DD MMM YYYY)
+      if (!dateStr) return '';
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const day = parseInt(parts[2], 10);
+        const month = months[parseInt(parts[1], 10) - 1];
+        const year = parts[0];
+        return `${day} ${month} ${year}`;
+      }
+      return dateStr;
+    }
+    
+    function parseGedcomDate(dateStr) {
+      // Convert GEDCOM date (DD MMM YYYY or variations) to YYYY-MM-DD
+      if (!dateStr) return '';
+      const months = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+                       JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' };
+      
+      // Remove qualifiers like ABT, BEF, AFT, etc.
+      dateStr = dateStr.replace(/^(ABT|BEF|AFT|CAL|EST|FROM|TO|BET|AND)\s*/gi, '').trim();
+      
+      const parts = dateStr.split(/\s+/);
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = months[parts[1].toUpperCase()] || '01';
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+      } else if (parts.length === 2) {
+        // MMM YYYY
+        const month = months[parts[0].toUpperCase()] || '01';
+        const year = parts[1];
+        return `${year}-${month}-01`;
+      } else if (parts.length === 1 && parts[0].length === 4) {
+        // Just year
+        return `${parts[0]}-01-01`;
+      }
+      return '';
+    }
+    
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    function importGedcom(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target.result;
+          const parsed = parseGedcom(content);
+          
+          // Reset tree
+          tree = {
+            settings: {
+              treeName: file.name.replace(/\.(ged|GED)$/, ''),
+              focalPersonId: null
+            },
+            persons: {},
+            unions: {}
+          };
+          personCounter = 1;
+          
+          // Map GEDCOM pointers to our IDs
+          const pointerToPersonId = {};
+          const pointerToUnionId = {};
+          
+          // Create persons
+          Object.entries(parsed.individuals).forEach(([pointer, indi]) => {
+            const id = 'p' + Date.now() + Math.random().toString(36).substr(2, 5);
+            pointerToPersonId[pointer] = id;
+            
+            const nameParts = parseGedcomName(indi.NAME || 'Unknown //');
+            const birthPlace = (indi.BIRT?.PLAC || '').split(',').map(p => p.trim()).filter(Boolean);
+            const birthCity = birthPlace[0] || '';
+            const birthCountry = birthPlace.length > 1 ? birthPlace[birthPlace.length - 1] : '';
+            
+            tree.persons[id] = {
+              id,
+              firstName: nameParts.first,
+              altName: indi.NICK || '',
+              surnameAtBirth: nameParts.last,
+              surnameCurrent: indi._SCUR || nameParts.last,
+              gender: indi.SEX === 'M' ? 'male' : indi.SEX === 'F' ? 'female' : 'unknown',
+              dateOfBirth: parseGedcomDate(indi.BIRT?.DATE || ''),
+              dateOfDeath: parseGedcomDate(indi.DEAT?.DATE || ''),
+              cityOfBirth: birthCity,
+              countryOfBirth: birthCountry,
+              profession: '',
+              interestingFacts: indi.NOTE || '',
+              linkedDocuments: [],
+              documentFolder: '',
+              isAdopted: (indi._ADOPTED || '').toUpperCase().startsWith('Y'),
+              isVisible: !((indi._VISIBLE || '').toUpperCase().startsWith('N')),
+              isUnknown: (indi.NAME || '').toLowerCase().includes('unknown'),
+              displayNum: personCounter++
+            };
+          });
+          
+          // Create unions
+          Object.entries(parsed.families).forEach(([pointer, fam]) => {
+            const id = 'u' + Date.now() + Math.random().toString(36).substr(2, 5);
+            pointerToUnionId[pointer] = id;
+            
+            const partner1Id = fam.HUSB ? pointerToPersonId[fam.HUSB] : null;
+            const partner2Id = fam.WIFE ? pointerToPersonId[fam.WIFE] : null;
+            const childrenIds = (fam.CHIL || []).map(ptr => pointerToPersonId[ptr]).filter(Boolean);
+            
+            tree.unions[id] = {
+              id,
+              partner1Id,
+              partner2Id,
+              childrenIds,
+              order: 1
+            };
+          });
+          
+          // Set focal person to first non-unknown person
+          const firstPerson = Object.values(tree.persons).find(p => !p.isUnknown);
+          tree.settings.focalPersonId = firstPerson?.id || Object.keys(tree.persons)[0];
+          
+          selectedPersonId = null;
+          pan = { x: 0, y: 0 };
+          zoom = 1;
+          render();
+          
+          const indiCount = Object.keys(tree.persons).length;
+          const famCount = Object.keys(tree.unions).length;
+          alert(`Successfully imported GEDCOM:\n• ${indiCount} individuals\n• ${famCount} families`);
+        } catch (err) {
+          console.error(err);
+          alert('Failed to import GEDCOM file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    function parseGedcom(content) {
+      const lines = content.split(/\r?\n/);
+      const individuals = {};
+      const families = {};
+      
+      let currentRecord = null;
+      let currentPointer = null;
+      let currentSubtag = null;
+      
+      lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        
+        // Parse level, tag, and value
+        const match = line.match(/^(\d+)\s+(@[^@]+@)?\s*(\S+)\s*(.*)?$/);
+        if (!match) return;
+        
+        const level = parseInt(match[1], 10);
+        const pointer = match[2] || null;
+        const tag = match[3];
+        const value = match[4] || '';
+        
+        if (level === 0) {
+          // New record
+          currentSubtag = null;
+          if (tag === 'INDI') {
+            currentRecord = 'INDI';
+            currentPointer = pointer;
+            individuals[pointer] = {};
+          } else if (tag === 'FAM') {
+            currentRecord = 'FAM';
+            currentPointer = pointer;
+            families[pointer] = { CHIL: [] };
+          } else {
+            currentRecord = null;
+            currentPointer = null;
+          }
+        } else if (level === 1 && currentRecord) {
+          currentSubtag = tag;
+          
+          if (currentRecord === 'INDI') {
+            if (tag === 'NAME' || tag === 'SEX' || tag === 'NOTE' || tag === 'NICK' || tag === '_SCUR' || tag === '_ADOPTED' || tag === '_VISIBLE') {
+              individuals[currentPointer][tag] = value;
+            } else if (tag === 'BIRT' || tag === 'DEAT') {
+              individuals[currentPointer][tag] = {};
+            } else if (tag === 'FAMS' || tag === 'FAMC') {
+              // Family links - we'll process these through the FAM records
+            }
+          } else if (currentRecord === 'FAM') {
+            if (tag === 'HUSB' || tag === 'WIFE') {
+              families[currentPointer][tag] = value;
+            } else if (tag === 'CHIL') {
+              families[currentPointer].CHIL.push(value);
+            }
+          }
+        } else if (level === 2 && currentRecord && currentSubtag) {
+          if (currentRecord === 'INDI') {
+            if ((currentSubtag === 'BIRT' || currentSubtag === 'DEAT') && (tag === 'DATE' || tag === 'PLAC')) {
+              if (!individuals[currentPointer][currentSubtag]) {
+                individuals[currentPointer][currentSubtag] = {};
+              }
+              individuals[currentPointer][currentSubtag][tag] = value;
+            }
+          }
+        }
+      });
+      
+      return { individuals, families };
+    }
+    
+    function parseGedcomName(nameStr) {
+      // Parse "FirstName /LastName/" format
+      const match = nameStr.match(/^([^/]*)\s*\/([^/]*)\/?\s*$/);
+      if (match) {
+        return {
+          first: match[1].trim() || 'Unknown',
+          last: match[2].trim() || ''
+        };
+      }
+      return { first: nameStr.trim() || 'Unknown', last: '' };
+    }
+    
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file || !selectedPersonId) return;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 250;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+          } else {
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          
+          updatePerson(selectedPersonId, { imageData: canvas.toDataURL('image/jpeg', 0.8) });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    // ============================================================================
+    // LAYOUT ENGINE - Union Bar Pattern
+    // ============================================================================
+    
+    function calculateLayout(options = {}) {
+      const persons = options.persons || tree.persons;
+      const unions = options.unions || tree.unions;
+      const focalPersonId = options.focalPersonId !== undefined
+        ? options.focalPersonId
+        : tree.settings.focalPersonId;
+      const optimize = !!options.optimize;
+      const optimizeIterations = options.optimizeIterations ?? 6;
+      const optimizeStrength = options.optimizeStrength ?? 0.35;
+      
+      if (Object.keys(persons).length === 0) return { nodes: [], edges: [] };
+      
+      const CARD_WIDTH = 150;
+      const CARD_HEIGHT = 90;
+      const MIN_H_GAP = 50;   // Minimum gap between unrelated units
+      const SIBLING_GAP = 30; // Tighter gap between siblings
+      const PARTNER_GAP = 20;     // Gap between partners in same union
+      const V_GAP = 140;          // Vertical gap between generations
+      const UNION_BAR_DROP = 30;  // How far below cards the union bar sits
+      const UNION_BAR_SPACING = 20; // Vertical spacing between stacked union bars
+      const CHILD_BRANCH_OFFSET = 12; // Keep child branch lines off union bars
+      const MAX_CHILD_ALIGN_SHIFT = CARD_WIDTH * 2; // Prevent extreme child block jumps
+      const MAX_PARTNER_TETHER = CARD_WIDTH * 4; // Limit distance for secondary partner unions
+      
+      // Build relationship indices
+      const personToParentUnion = {};
+      const personToPartnerUnions = {};
+      
+      Object.values(unions).forEach(union => {
+        union.childrenIds.forEach(childId => {
+          personToParentUnion[childId] = union.id;
+        });
+        
+        [union.partner1Id, union.partner2Id].forEach(pid => {
+          if (pid) {
+            if (!personToPartnerUnions[pid]) personToPartnerUnions[pid] = [];
+            personToPartnerUnions[pid].push(union.id);
+          }
+        });
+      });
+      
+      // Sort partner unions by order
+      Object.keys(personToPartnerUnions).forEach(pid => {
+        personToPartnerUnions[pid].sort((a, b) => 
+          (unions[a].order || 1) - (unions[b].order || 1)
+        );
+      });
+      
+      // ========================================================================
+      // PHASE 1: Assign Generations
+      // ========================================================================
+      
+      const generations = {};
+      
+      if (!focalPersonId || !persons[focalPersonId]) {
+        Object.keys(persons).forEach(pid => generations[pid] = 0);
+      } else {
+        const queue = [{ id: focalPersonId, gen: 0 }];
+        const visited = new Set();
+        
+        while (queue.length > 0) {
+          const { id, gen } = queue.shift();
+          if (visited.has(id)) continue;
+          visited.add(id);
+          generations[id] = gen;
+          
+          // Partners same generation
+          const partnerUnions = personToPartnerUnions[id] || [];
+          partnerUnions.forEach(uid => {
+            const union = unions[uid];
+            const partnerId = union.partner1Id === id ? union.partner2Id : union.partner1Id;
+            if (partnerId && !visited.has(partnerId)) {
+              queue.push({ id: partnerId, gen });
+            }
+            
+            // Children generation + 1
+            union.childrenIds.forEach(childId => {
+              if (!visited.has(childId)) {
+                queue.push({ id: childId, gen: gen + 1 });
+              }
+            });
+          });
+          
+          // Parents generation - 1
+          const parentUnionId = personToParentUnion[id];
+          if (parentUnionId) {
+            const parentUnion = unions[parentUnionId];
+            [parentUnion.partner1Id, parentUnion.partner2Id].forEach(pid => {
+              if (pid && !visited.has(pid)) {
+                queue.push({ id: pid, gen: gen - 1 });
+              }
+            });
+            
+            // Siblings same generation
+            parentUnion.childrenIds.forEach(sibId => {
+              if (sibId !== id && !visited.has(sibId)) {
+                queue.push({ id: sibId, gen });
+              }
+            });
+          }
+        }
+        
+        // Handle disconnected
+        Object.keys(persons).forEach(pid => {
+          if (generations[pid] === undefined) generations[pid] = 0;
+        });
+      }
+      
+      // ========================================================================
+      // PHASE 2: Build Union Units (close nuclear families)
+      // ========================================================================
+      
+      const primaryUnionForPerson = {};
+      Object.keys(personToPartnerUnions).forEach(pid => {
+        const unionsForPerson = personToPartnerUnions[pid];
+        if (unionsForPerson && unionsForPerson.length > 0) {
+          primaryUnionForPerson[pid] = unionsForPerson[0];
+        }
+      });
+      
+      function getPrimaryUnitId(personId) {
+        const unionId = primaryUnionForPerson[personId];
+        return unionId ? `u:${unionId}` : `p:${personId}`;
+      }
+      
+      const unitMembers = {};
+      const unitChildren = {};
+      const unitGen = {};
+      
+      Object.values(unions).forEach(union => {
+        const partners = [union.partner1Id, union.partner2Id].filter(Boolean);
+        if (partners.length === 0) return;
+        
+        const unitId = `u:${union.id}`;
+        unitMembers[unitId] = partners;
+        unitGen[unitId] = Math.min(...partners.map(pid => generations[pid] ?? 0));
+        
+        const childUnits = [];
+        const seenChildUnits = new Set();
+        union.childrenIds.forEach(childId => {
+          const childUnitId = getPrimaryUnitId(childId);
+          if (!seenChildUnits.has(childUnitId)) {
+            seenChildUnits.add(childUnitId);
+            childUnits.push(childUnitId);
+          }
+        });
+        unitChildren[unitId] = childUnits;
+      });
+      
+      Object.keys(persons).forEach(pid => {
+        if (primaryUnionForPerson[pid]) return;
+        const unitId = `p:${pid}`;
+        unitMembers[unitId] = [pid];
+        unitChildren[unitId] = [];
+        unitGen[unitId] = generations[pid] ?? 0;
+      });
+      
+      // ========================================================================
+      // PHASE 3: Unit widths (partner row only)
+      // ========================================================================
+      
+      const widthCache = {};
+      
+      function getUnitWidth(unitId) {
+        if (widthCache[unitId] !== undefined) return widthCache[unitId];
+        const members = unitMembers[unitId] || [];
+        const memberCount = Math.max(1, members.length);
+        const width = memberCount * CARD_WIDTH + (memberCount - 1) * PARTNER_GAP;
+        widthCache[unitId] = width;
+        return width;
+      }
+      
+      Object.keys(unitMembers).forEach(uid => getUnitWidth(uid));
+      
+      const unitParents = {};
+      Object.keys(unitChildren).forEach(parentUnitId => {
+        const children = unitChildren[parentUnitId] || [];
+        children.forEach(childUnitId => {
+          if (!unitParents[childUnitId]) unitParents[childUnitId] = [];
+          unitParents[childUnitId].push(parentUnitId);
+        });
+      });
+      
+      const childUnitOrder = {};
+      Object.values(unions).forEach(union => {
+        union.childrenIds.forEach((childId, idx) => {
+          const childUnitId = getPrimaryUnitId(childId);
+          if (childUnitOrder[childUnitId] === undefined) {
+            childUnitOrder[childUnitId] = idx;
+          }
+        });
+      });
+      
+      const unitGenGroups = {};
+      Object.keys(unitGen).forEach(uid => {
+        const gen = unitGen[uid];
+        if (!unitGenGroups[gen]) unitGenGroups[gen] = [];
+        unitGenGroups[gen].push(uid);
+      });
+      
+      const gensAsc = Object.keys(unitGenGroups).map(Number).sort((a, b) => a - b);
+      const gensDesc = [...gensAsc].reverse();
+      
+      const unitSortKey = {};
+      Object.keys(unitMembers).forEach(uid => {
+        const members = unitMembers[uid] || [];
+        const nums = members.map(pid => persons[pid]?.displayNum || 0);
+        unitSortKey[uid] = nums.length ? Math.min(...nums) : 0;
+      });
+      
+      const genOrder = {};
+      const unitOrderIndex = {};
+      
+      function rebuildOrderIndex(gen) {
+        genOrder[gen].forEach((uid, idx) => {
+          unitOrderIndex[uid] = idx;
+        });
+      }
+      
+      gensAsc.forEach(gen => {
+        genOrder[gen] = [...unitGenGroups[gen]].sort((a, b) => {
+          const ka = unitSortKey[a];
+          const kb = unitSortKey[b];
+          if (ka !== kb) return ka - kb;
+          return a.localeCompare(b);
+        });
+        rebuildOrderIndex(gen);
+      });
+      
+      function reorderGeneration(gen, neighborType) {
+        const units = genOrder[gen];
+        if (!units || units.length === 0) return;
+        
+        const barycenter = {};
+        
+        units.forEach(uid => {
+          const neighbors = neighborType === 'parents'
+            ? (unitParents[uid] || [])
+            : (unitChildren[uid] || []);
+          
+          if (neighbors.length === 0) {
+            barycenter[uid] = unitOrderIndex[uid];
+            return;
+          }
+          
+          let sum = 0;
+          let count = 0;
+          neighbors.forEach(nid => {
+            if (unitOrderIndex[nid] !== undefined) {
+              sum += unitOrderIndex[nid];
+              count += 1;
+            }
+          });
+          
+          barycenter[uid] = count > 0 ? sum / count : unitOrderIndex[uid];
+        });
+        
+        const groupMap = new Map();
+        
+        units.forEach(uid => {
+          const parents = unitParents[uid] || [];
+          const groupKey = parents.length === 1 ? parents[0] : uid;
+          
+          if (!groupMap.has(groupKey)) {
+            groupMap.set(groupKey, {
+              key: groupKey,
+              units: [],
+              barySum: 0,
+              baryCount: 0,
+              tie: unitOrderIndex[uid]
+            });
+          }
+          
+          const group = groupMap.get(groupKey);
+          group.units.push(uid);
+          group.barySum += barycenter[uid];
+          group.baryCount += 1;
+          group.tie = Math.min(group.tie, unitOrderIndex[uid]);
+        });
+        
+        const groups = Array.from(groupMap.values());
+        groups.forEach(group => {
+          group.barycenter = group.barySum / group.baryCount;
+        });
+        
+        groups.sort((a, b) => {
+          if (a.barycenter !== b.barycenter) return a.barycenter - b.barycenter;
+          return a.tie - b.tie;
+        });
+        
+        const newOrder = [];
+        
+        groups.forEach(group => {
+          if (group.key.startsWith('u:')) {
+            group.units.sort((a, b) => {
+              const ao = childUnitOrder[a];
+              const bo = childUnitOrder[b];
+              if (ao !== undefined && bo !== undefined && ao !== bo) return ao - bo;
+              if (ao !== undefined && bo === undefined) return -1;
+              if (ao === undefined && bo !== undefined) return 1;
+              return unitOrderIndex[a] - unitOrderIndex[b];
+            });
+          } else {
+            group.units.sort((a, b) => unitOrderIndex[a] - unitOrderIndex[b]);
+          }
+          newOrder.push(...group.units);
+        });
+        
+        genOrder[gen] = newOrder;
+        rebuildOrderIndex(gen);
+      }
+      
+      function buildBlocks(order) {
+        const blocks = [];
+        let i = 0;
+        while (i < order.length) {
+          const uid = order[i];
+          const parents = unitParents[uid] || [];
+          const groupKey = parents.length === 1 ? parents[0] : uid;
+          const units = [uid];
+          i++;
+          while (i < order.length) {
+            const nextId = order[i];
+            const nextParents = unitParents[nextId] || [];
+            const nextKey = nextParents.length === 1 ? nextParents[0] : nextId;
+            if (nextKey !== groupKey) break;
+            units.push(nextId);
+            i++;
+          }
+          blocks.push({ key: groupKey, units });
+        }
+        return blocks;
+      }
+      
+      function flattenBlocks(blocks) {
+        return blocks.flatMap(block => block.units);
+      }
+      
+      function countCrossings(order, neighborType) {
+        const neighborIndices = [];
+        order.forEach(uid => {
+          const neighbors = neighborType === 'parents'
+            ? (unitParents[uid] || [])
+            : (unitChildren[uid] || []);
+          
+          neighbors.forEach(nid => {
+            const nIdx = unitOrderIndex[nid];
+            if (nIdx !== undefined) neighborIndices.push(nIdx);
+          });
+        });
+        
+        let crossings = 0;
+        for (let i = 0; i < neighborIndices.length; i++) {
+          for (let j = i + 1; j < neighborIndices.length; j++) {
+            if (neighborIndices[i] > neighborIndices[j]) crossings++;
+          }
+        }
+        return crossings;
+      }
+      
+      function transposeGeneration(gen, neighborType) {
+        let order = genOrder[gen];
+        if (!order || order.length < 2) return;
+        
+        for (let pass = 0; pass < 3; pass++) {
+          const blocks = buildBlocks(order);
+          let anySwap = false;
+          
+          for (let i = 0; i < blocks.length - 1; i++) {
+            const baseOrder = flattenBlocks(blocks);
+            const baseCross = countCrossings(baseOrder, neighborType);
+            
+            const temp = blocks[i];
+            blocks[i] = blocks[i + 1];
+            blocks[i + 1] = temp;
+            
+            const swappedOrder = flattenBlocks(blocks);
+            const swappedCross = countCrossings(swappedOrder, neighborType);
+            
+            if (swappedCross < baseCross) {
+              anySwap = true;
+            } else {
+              const revert = blocks[i];
+              blocks[i] = blocks[i + 1];
+              blocks[i + 1] = revert;
+            }
+          }
+          
+          order = flattenBlocks(blocks);
+          if (!anySwap) break;
+        }
+        
+        genOrder[gen] = order;
+        rebuildOrderIndex(gen);
+      }
+      
+      const sweepCount = optimize ? 8 : 5;
+      for (let iter = 0; iter < sweepCount; iter++) {
+        gensAsc.forEach(gen => {
+          reorderGeneration(gen, 'parents');
+          transposeGeneration(gen, 'parents');
+        });
+        gensDesc.forEach(gen => {
+          reorderGeneration(gen, 'children');
+          transposeGeneration(gen, 'children');
+        });
+      }
+      
+      const unitPositions = {};
+      
+      gensAsc.forEach(gen => {
+        let x = 0;
+        genOrder[gen].forEach(uid => {
+          const width = getUnitWidth(uid);
+          unitPositions[uid] = { left: x, right: x + width };
+          x += width + MIN_H_GAP;
+        });
+      });
+      
+      const relaxIterations = optimize ? 6 : 4;
+      for (let iter = 0; iter < relaxIterations; iter++) {
+        gensAsc.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units || units.length === 0) return;
+          
+          const targetLeft = {};
+          
+          units.forEach(uid => {
+            const width = getUnitWidth(uid);
+            let desiredCenter = null;
+            
+            const children = unitChildren[uid] || [];
+            if (children.length > 0) {
+              const childPositions = children.map(cid => unitPositions[cid]).filter(Boolean);
+              if (childPositions.length > 0) {
+                const childLeft = Math.min(...childPositions.map(p => p.left));
+                const childRight = Math.max(...childPositions.map(p => p.right));
+                desiredCenter = (childLeft + childRight) / 2;
+              }
+            }
+            
+            if (desiredCenter === null) {
+              const parents = unitParents[uid] || [];
+              const parentPositions = parents.map(pid => unitPositions[pid]).filter(Boolean);
+              if (parentPositions.length > 0) {
+                const parentCenters = parentPositions.map(p => (p.left + p.right) / 2);
+                desiredCenter = parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length;
+              }
+            }
+            
+            if (desiredCenter === null) {
+              desiredCenter = (unitPositions[uid].left + unitPositions[uid].right) / 2;
+            }
+            
+            targetLeft[uid] = desiredCenter - width / 2;
+          });
+          
+          let prevRight = null;
+          units.forEach(uid => {
+            const width = getUnitWidth(uid);
+            let left = targetLeft[uid];
+            if (prevRight !== null) {
+              left = Math.max(left, prevRight + MIN_H_GAP);
+            }
+            unitPositions[uid] = { left, right: left + width };
+            prevRight = left + width;
+          });
+          
+          let nextLeft = null;
+          for (let i = units.length - 1; i >= 0; i--) {
+            const uid = units[i];
+            const width = getUnitWidth(uid);
+            let left = unitPositions[uid].left;
+            if (nextLeft !== null) {
+              const maxLeft = nextLeft - MIN_H_GAP - width;
+              if (left > maxLeft) left = maxLeft;
+            }
+            unitPositions[uid] = { left, right: left + width };
+            nextLeft = left;
+          }
+        });
+      }
+      
+      // Extra pull to reduce long parent/child spans in dense trees
+      const EDGE_PULL_ITERATIONS = optimize ? 4 : 3;
+      const EDGE_PULL_STRENGTH = optimize ? 0.6 : 0.45;
+      const MAX_EDGE_PULL = CARD_WIDTH * 1.5;
+      
+      for (let iter = 0; iter < EDGE_PULL_ITERATIONS; iter++) {
+        gensAsc.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units || units.length === 0) return;
+          
+          const targetLeft = {};
+          
+          units.forEach(uid => {
+            const width = getUnitWidth(uid);
+            const curr = unitPositions[uid];
+            if (!curr) return;
+            const center = (curr.left + curr.right) / 2;
+            
+            const neighbors = [
+              ...(unitChildren[uid] || []),
+              ...(unitParents[uid] || [])
+            ];
+            
+            if (neighbors.length === 0) {
+              targetLeft[uid] = curr.left;
+              return;
+            }
+            
+            let sum = 0;
+            let count = 0;
+            neighbors.forEach(nid => {
+              const nPos = unitPositions[nid];
+              if (!nPos) return;
+              const nCenter = (nPos.left + nPos.right) / 2;
+              let dx = nCenter - center;
+              if (Math.abs(dx) > MAX_EDGE_PULL) {
+                dx = Math.sign(dx) * MAX_EDGE_PULL;
+              }
+              sum += dx;
+              count += 1;
+            });
+            
+            if (count === 0) {
+              targetLeft[uid] = curr.left;
+              return;
+            }
+            
+            const desiredCenter = center + (sum / count) * EDGE_PULL_STRENGTH;
+            targetLeft[uid] = desiredCenter - width / 2;
+          });
+          
+          let prevRight = null;
+          units.forEach(uid => {
+            const width = getUnitWidth(uid);
+            let left = targetLeft[uid] ?? unitPositions[uid].left;
+            if (prevRight !== null) {
+              left = Math.max(left, prevRight + MIN_H_GAP);
+            }
+            unitPositions[uid] = { left, right: left + width };
+            prevRight = left + width;
+          });
+          
+          let nextLeft = null;
+          for (let i = units.length - 1; i >= 0; i--) {
+            const uid = units[i];
+            const width = getUnitWidth(uid);
+            let left = unitPositions[uid].left;
+            if (nextLeft !== null) {
+              const maxLeft = nextLeft - MIN_H_GAP - width;
+              if (left > maxLeft) left = maxLeft;
+            }
+            unitPositions[uid] = { left, right: left + width };
+            nextLeft = left;
+          }
+        });
+      }
+      
+      // Pack disconnected components to prevent global drift
+      const componentOf = {};
+      const components = [];
+      const visitedUnits = new Set();
+      
+      Object.keys(unitMembers).forEach(startId => {
+        if (visitedUnits.has(startId)) return;
+        const queue = [startId];
+        const compUnits = [];
+        visitedUnits.add(startId);
+        
+        while (queue.length > 0) {
+          const uid = queue.pop();
+          compUnits.push(uid);
+          const neighbors = [
+            ...(unitChildren[uid] || []),
+            ...(unitParents[uid] || [])
+          ];
+          neighbors.forEach(nid => {
+            if (!visitedUnits.has(nid)) {
+              visitedUnits.add(nid);
+              queue.push(nid);
+            }
+          });
+        }
+        
+        const compId = components.length;
+        components.push({ id: compId, units: compUnits });
+        compUnits.forEach(uid => { componentOf[uid] = compId; });
+      });
+      
+      function shiftComponent(compId, dx) {
+        if (Math.abs(dx) < 1) return;
+        const comp = components[compId];
+        if (!comp) return;
+        comp.units.forEach(uid => {
+          const pos = unitPositions[uid];
+          if (pos) {
+            pos.left += dx;
+            pos.right += dx;
+          }
+        });
+      }
+      
+      for (let pass = 0; pass < 3; pass++) {
+        let anyShift = false;
+        gensAsc.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units || units.length === 0) return;
+          
+          const compMap = new Map();
+          units.forEach(uid => {
+            const compId = componentOf[uid];
+            const pos = unitPositions[uid];
+            if (pos === undefined || compId === undefined) return;
+            if (!compMap.has(compId)) {
+              compMap.set(compId, { id: compId, left: pos.left, right: pos.right });
+            } else {
+              const comp = compMap.get(compId);
+              comp.left = Math.min(comp.left, pos.left);
+              comp.right = Math.max(comp.right, pos.right);
+            }
+          });
+          
+          const comps = Array.from(compMap.values()).sort((a, b) => a.left - b.left);
+          
+          for (let i = 1; i < comps.length; i++) {
+            const prev = comps[i - 1];
+            const curr = comps[i];
+            const gap = curr.left - prev.right;
+            if (gap > MIN_H_GAP) {
+              const shift = gap - MIN_H_GAP;
+              shiftComponent(curr.id, -shift);
+              curr.left -= shift;
+              curr.right -= shift;
+              anyShift = true;
+            }
+          }
+        });
+        
+        if (!anyShift) break;
+      }
+      
+      const positions = {};
+      const memberOwner = {};
+      
+      Object.keys(unitPositions).forEach(uid => {
+        const members = unitMembers[uid] || [];
+        if (members.length === 0) return;
+        
+        const width = getUnitWidth(uid);
+        const memberCount = members.length;
+        const coupleWidth = memberCount * CARD_WIDTH + (memberCount - 1) * PARTNER_GAP;
+        const left = unitPositions[uid].left;
+        let x = left + (width - coupleWidth) / 2;
+        const gen = unitGen[uid] ?? 0;
+        
+        members.forEach(pid => {
+          positions[pid] = { x, y: gen * (CARD_HEIGHT + V_GAP) };
+          memberOwner[pid] = uid;
+          x += CARD_WIDTH + PARTNER_GAP;
+        });
+      });
+      
+      // Position any remaining unpositioned people
+      let fallbackX = 0;
+      if (Object.keys(positions).length > 0) {
+        fallbackX = Math.max(...Object.values(positions).map(p => p.x)) + CARD_WIDTH + MIN_H_GAP * 2;
+      }
+      Object.keys(persons).forEach(pid => {
+        if (!positions[pid]) {
+          positions[pid] = { x: fallbackX, y: generations[pid] * (CARD_HEIGHT + V_GAP) };
+          fallbackX += CARD_WIDTH + MIN_H_GAP;
+        }
+      });
+      
+      // ========================================================================
+      // PHASE 6: Center Everything
+      // ========================================================================
+      
+      if (Object.keys(positions).length > 0) {
+        const allX = Object.values(positions).map(p => p.x);
+        const allY = Object.values(positions).map(p => p.y);
+        const minX = Math.min(...allX);
+        const maxX = Math.max(...allX) + CARD_WIDTH;
+        const minY = Math.min(...allY);
+        
+        const offsetX = -(maxX + minX) / 2;
+        const offsetY = -minY + 50;
+        
+        Object.keys(positions).forEach(id => {
+          positions[id].x += offsetX;
+          positions[id].y += offsetY;
+        });
+      }
+      
+      // ========================================================================
+      // PHASE 7: Generate Nodes and Edges with Union Bar Pattern
+      // ========================================================================
+      
+      const nodes = Object.values(persons).map(person => ({
+        id: person.id,
+        data: person,
+        x: positions[person.id]?.x || 0,
+        y: positions[person.id]?.y || 0,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT
+      }));
+      
+      const edges = [];
+      
+      // Track which unions we've drawn to avoid duplicates
+      const drawnUnions = new Set();
+      
+      // Track union bar Y-offsets per generation to prevent overlap
+      const unionCountsByGen = {};
+      Object.values(unions).forEach(union => {
+        const pid = union.partner1Id || union.partner2Id;
+        if (!pid) return;
+        const genKey = generations[pid] ?? 0;
+        unionCountsByGen[genKey] = (unionCountsByGen[genKey] || 0) + 1;
+      });
+      
+      const unionBarSpacingByGen = {};
+      Object.keys(unionCountsByGen).forEach(genKey => {
+        const count = unionCountsByGen[genKey];
+        const maxDrop = V_GAP - UNION_BAR_DROP - CHILD_BRANCH_OFFSET - 20;
+        const spacing = Math.min(UNION_BAR_SPACING, Math.max(6, maxDrop / Math.max(1, count)));
+        unionBarSpacingByGen[genKey] = spacing;
+      });
+      
+      const unionBarOffsets = {};
+      
+      Object.values(unions).forEach(union => {
+        if (drawnUnions.has(union.id)) return;
+        drawnUnions.add(union.id);
+        
+        const p1Pos = positions[union.partner1Id];
+        const p2Pos = positions[union.partner2Id];
+        
+        if (!p1Pos && !p2Pos) return;
+        
+        // Determine union bar Y position (with offset for multiple unions at same level)
+        const parentY = (p1Pos || p2Pos).y;
+        const genKey = generations[union.partner1Id] ?? generations[union.partner2Id] ?? 0;
+        if (unionBarOffsets[genKey] === undefined) unionBarOffsets[genKey] = 0;
+        const spacing = unionBarSpacingByGen[genKey] ?? UNION_BAR_SPACING;
+        const barOffset = unionBarOffsets[genKey] * spacing;
+        unionBarOffsets[genKey]++;
+        
+        const unionBarY = parentY + CARD_HEIGHT + UNION_BAR_DROP + barOffset;
+        
+        // Metadata for this union's edges
+        const edgeMeta = {
+          unionId: union.id,
+          partners: [union.partner1Id, union.partner2Id].filter(Boolean),
+          children: union.childrenIds
+        };
+        
+        if (p1Pos && p2Pos) {
+          // Two partners - draw union bar connecting them
+          const leftPos = p1Pos.x < p2Pos.x ? p1Pos : p2Pos;
+          const rightPos = p1Pos.x < p2Pos.x ? p2Pos : p1Pos;
+          const leftId = p1Pos.x < p2Pos.x ? union.partner1Id : union.partner2Id;
+          const rightId = p1Pos.x < p2Pos.x ? union.partner2Id : union.partner1Id;
+          
+          const leftCenterX = leftPos.x + CARD_WIDTH / 2;
+          const rightCenterX = rightPos.x + CARD_WIDTH / 2;
+          
+          // Vertical drop from left partner
+          edges.push({
+            type: 'partner',
+            x1: leftCenterX, y1: leftPos.y + CARD_HEIGHT,
+            x2: leftCenterX, y2: unionBarY,
+            ...edgeMeta
+          });
+          
+          // Vertical drop from right partner
+          edges.push({
+            type: 'partner',
+            x1: rightCenterX, y1: rightPos.y + CARD_HEIGHT,
+            x2: rightCenterX, y2: unionBarY,
+            ...edgeMeta
+          });
+          
+          // Horizontal union bar
+          edges.push({
+            type: 'partner',
+            x1: leftCenterX, y1: unionBarY,
+            x2: rightCenterX, y2: unionBarY,
+            ...edgeMeta
+          });
+          
+          // Children drop from union bar center
+          if (union.childrenIds.length > 0) {
+            const children = union.childrenIds.map(id => ({ id, pos: positions[id] })).filter(c => c.pos);
+            if (children.length > 0) {
+              const unionCenterX = (leftCenterX + rightCenterX) / 2;
+            const childBranchY = unionBarY + CHILD_BRANCH_OFFSET;
+              
+              // Drop from union bar to child branch level
+              edges.push({
+                type: 'child',
+                x1: unionCenterX, y1: unionBarY,
+                x2: unionCenterX, y2: childBranchY,
+                ...edgeMeta
+              });
+              
+              // Horizontal branch to children
+              const childCenters = children.map(c => c.pos.x + CARD_WIDTH / 2);
+              const leftmost = Math.min(...childCenters);
+              const rightmost = Math.max(...childCenters);
+              
+              if (children.length > 1 || childCenters[0] !== unionCenterX) {
+                edges.push({
+                  type: 'child',
+                  x1: Math.min(leftmost, unionCenterX), y1: childBranchY,
+                  x2: Math.max(rightmost, unionCenterX), y2: childBranchY,
+                  ...edgeMeta
+                });
+              }
+              
+              // Individual drops to each child
+              children.forEach(child => {
+                const cx = child.pos.x + CARD_WIDTH / 2;
+                edges.push({
+                  type: 'child',
+                  x1: cx, y1: childBranchY,
+                  x2: cx, y2: child.pos.y,
+                  ...edgeMeta,
+                  targetChildId: child.id  // Specific child this edge goes to
+                });
+              });
+            }
+          }
+        } else {
+          // Single parent - just vertical line to children
+          const parentPos = p1Pos || p2Pos;
+          const parentId = p1Pos ? union.partner1Id : union.partner2Id;
+          const parentCenterX = parentPos.x + CARD_WIDTH / 2;
+          
+          if (union.childrenIds.length > 0) {
+            const children = union.childrenIds.map(id => ({ id, pos: positions[id] })).filter(c => c.pos);
+            if (children.length > 0) {
+            const childBranchY = unionBarY + CHILD_BRANCH_OFFSET;
+              
+              edges.push({
+                type: 'child',
+                x1: parentCenterX, y1: parentPos.y + CARD_HEIGHT,
+                x2: parentCenterX, y2: childBranchY,
+                ...edgeMeta
+              });
+              
+              const childCenters = children.map(c => c.pos.x + CARD_WIDTH / 2);
+              const leftmost = Math.min(...childCenters);
+              const rightmost = Math.max(...childCenters);
+              
+              if (children.length > 1 || childCenters[0] !== parentCenterX) {
+                edges.push({
+                  type: 'child',
+                  x1: Math.min(leftmost, parentCenterX), y1: childBranchY,
+                  x2: Math.max(rightmost, parentCenterX), y2: childBranchY,
+                  ...edgeMeta
+                });
+              }
+              
+              children.forEach(child => {
+                const cx = child.pos.x + CARD_WIDTH / 2;
+                edges.push({
+                  type: 'child',
+                  x1: cx, y1: childBranchY,
+                  x2: cx, y2: child.pos.y,
+                  ...edgeMeta,
+                  targetChildId: child.id
+                });
+              });
+            }
+          }
+        }
+      });
+      
+      return { nodes, edges };
+    }
+
+    // ============================================================================
+    // RENDERING
+    // ============================================================================
+    
+    function render() {
+      renderCanvas();
+      renderPanel();
+      
+      const realPeople = Object.values(tree.persons).filter(p => !p.isUnknown).length;
+      const unknownPeople = Object.values(tree.persons).filter(p => p.isUnknown).length;
+      document.getElementById('person-count').textContent = 
+        `${realPeople} people` + (unknownPeople > 0 ? ` (${unknownPeople} unknown)` : '');
+      
+      const focal = tree.persons[tree.settings.focalPersonId];
+      document.getElementById('focal-indicator').textContent = 
+        focal ? `⌂ ${getPreferredName(focal)}` : '';
+    }
+    
+    function renderCanvas() {
+      const svg = document.getElementById('tree-canvas');
+      const { nodes, edges } = calculateLayout();
+      
+      const svgRect = svg.getBoundingClientRect();
+      const centerX = svgRect.width / 2 + pan.x;
+      const centerY = svgRect.height / 2 + pan.y;
+      
+      // Determine highlighted people (selected + immediate family with roles)
+      const highlighted = new Set();
+      const familyRoles = {}; // personId -> 'parent' | 'child' | 'sibling' | 'partner'
+      
+      if (selectedPersonId && tree.persons[selectedPersonId]) {
+        highlighted.add(selectedPersonId);
+        
+        // Find parents
+        const parentUnion = Object.values(tree.unions).find(u => 
+          u.childrenIds.includes(selectedPersonId)
+        );
+        if (parentUnion) {
+          if (parentUnion.partner1Id) familyRoles[parentUnion.partner1Id] = 'parent';
+          if (parentUnion.partner2Id) familyRoles[parentUnion.partner2Id] = 'parent';
+          // Siblings (including half-siblings through this union)
+          parentUnion.childrenIds.forEach(sibId => {
+            if (sibId !== selectedPersonId) familyRoles[sibId] = 'sibling';
+          });
+        }
+        
+        // Find children and partners
+        const partnerUnions = Object.values(tree.unions).filter(u =>
+          u.partner1Id === selectedPersonId || u.partner2Id === selectedPersonId
+        );
+        partnerUnions.forEach(union => {
+          // Partner
+          const partnerId = union.partner1Id === selectedPersonId ? union.partner2Id : union.partner1Id;
+          if (partnerId) familyRoles[partnerId] = 'partner';
+          // Children
+          union.childrenIds.forEach(childId => familyRoles[childId] = 'child');
+        });
+      }
+      
+      // Role colors
+      const roleColors = {
+        parent: '#8b5cf6',   // Purple
+        child: '#f97316',    // Orange
+        sibling: '#10b981',  // Green
+        partner: '#ec4899'   // Pink
+      };
+      
+      // Get current theme colors from CSS variables
+      const style = getComputedStyle(document.documentElement);
+      const themeColors = {
+        gridLine: style.getPropertyValue('--grid-line').trim() || '#e5e7eb',
+        textMain: style.getPropertyValue('--text-main').trim() || '#1f2937',
+        textMuted: style.getPropertyValue('--text-muted').trim() || '#6b7280',
+        unknownBg: style.getPropertyValue('--unknown-bg').trim() || '#f8fafc',
+        unknownBorder: style.getPropertyValue('--unknown-border').trim() || '#94a3b8',
+        cardBg: style.getPropertyValue('--card-bg').trim() || '#ffffff',
+        male: style.getPropertyValue('--male').trim() || '#dbeafe',
+        maleBorder: style.getPropertyValue('--male-border').trim() || '#3b82f6',
+        female: style.getPropertyValue('--female').trim() || '#fce7f3',
+        femaleBorder: style.getPropertyValue('--female-border').trim() || '#f9a8d4',
+      };
+      
+      let html = `
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${themeColors.gridLine}" stroke-width="0.5" opacity="0.5"/>
+          </pattern>
+          <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+          </filter>
+          <filter id="glow-selected" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.6"/>
+          </filter>
+          <filter id="glow-parent" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#8b5cf6" flood-opacity="0.5"/>
+          </filter>
+          <filter id="glow-child" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f97316" flood-opacity="0.5"/>
+          </filter>
+          <filter id="glow-sibling" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#10b981" flood-opacity="0.5"/>
+          </filter>
+          <filter id="glow-partner" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ec4899" flood-opacity="0.5"/>
+          </filter>
+        </defs>
+        <rect class="canvas-bg" width="100%" height="100%" fill="url(#grid)"/>
+        <g transform="translate(${centerX}, ${centerY}) scale(${zoom})">
+      `;
+      
+      // Draw edges - determine which should be highlighted
+      edges.forEach(edge => {
+        const baseColor = edge.type === 'partner' ? 'var(--partner-line)' : 'var(--child-line)';
+        const baseWidth = edge.type === 'partner' ? 2.5 : 2;
+        
+        // Determine if this edge should be highlighted
+        let isHighlighted = false;
+        let highlightColor = baseColor;
+        
+        if (selectedPersonId) {
+          // Check if selected person is involved in this edge's union
+          const selectedIsPartner = edge.partners?.includes(selectedPersonId);
+          const selectedIsChild = edge.children?.includes(selectedPersonId);
+          const selectedIsTargetChild = edge.targetChildId === selectedPersonId;
+          
+          // Check if edge connects to family members
+          const connectsToParent = edge.partners?.some(p => familyRoles[p] === 'parent');
+          const connectsToChild = edge.children?.some(c => familyRoles[c] === 'child') || 
+                                  familyRoles[edge.targetChildId] === 'child';
+          const connectsToPartner = edge.partners?.some(p => familyRoles[p] === 'partner');
+          
+          if (edge.type === 'partner') {
+            // Highlight partner lines if selected is one of the partners, or connects selected to their partner
+            isHighlighted = selectedIsPartner || connectsToPartner ||
+                           (connectsToParent && selectedIsChild);
+          } else {
+            // Highlight child lines connecting selected to parents or to children
+            if (selectedIsChild || selectedIsTargetChild) {
+              isHighlighted = true; // Lines going TO the selected person from parents
+            } else if (selectedIsPartner && (connectsToChild || edge.children?.length > 0)) {
+              isHighlighted = true; // Lines going FROM selected to their children
+            } else if (connectsToParent && selectedIsChild) {
+              isHighlighted = true; // Branch lines when selected is a child
+            }
+          }
+        }
+        
+        const opacity = selectedPersonId ? (isHighlighted ? 1 : 0.2) : 1;
+        const width = isHighlighted ? baseWidth + 1.5 : baseWidth;
+        
+        html += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}" 
+                  stroke="${baseColor}" stroke-width="${width}" stroke-linecap="round" opacity="${opacity}"/>`;
+      });
+      
+      // Draw nodes
+      nodes.forEach(node => {
+        const { id, data, x, y, width, height } = node;
+        const isSelected = highlighted.has(id);
+        const familyRole = familyRoles[id];
+        const isFamily = !!familyRole;
+        const isFocal = id === tree.settings.focalPersonId;
+        const isUnknown = data.isUnknown;
+        const isVisible = data.isVisible !== false;
+        const personNum = data.displayNum || '?';
+        
+        const displayName = isUnknown ? '?' : getPreferredName(data);
+        const displaySurname = data.surnameCurrent || data.surnameAtBirth || '';
+        const showDetails = isVisible;
+        const groupOpacity = showDetails ? 1 : 0.25;
+        const birthYear = getYearFromDate(data.dateOfBirth);
+        const deathYear = getYearFromDate(data.dateOfDeath);
+        const yearY = 38;
+        const yearLeftX = 26;
+        const yearRightX = width - 26;
+        const avatarSize = 44;
+        const avatarRadius = 22;
+        const avatarY = 14;
+        const avatarCenterY = avatarY + avatarRadius;
+        
+        let colors;
+        if (!isVisible) {
+          colors = { bg: themeColors.cardBg, border: themeColors.unknownBorder, accent: themeColors.unknownBorder };
+        } else if (isUnknown) {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#64748b' };
+        } else if (data.gender === 'male') {
+          colors = { bg: themeColors.male, border: themeColors.maleBorder, accent: '#1d4ed8' };
+        } else if (data.gender === 'female') {
+          colors = { bg: themeColors.female, border: themeColors.femaleBorder, accent: '#be185d' };
+        } else {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#475569' };
+        }
+        
+        const strokeStyle = isUnknown && isVisible ? 'stroke-dasharray="6 4"' : '';
+        
+        // Determine stroke based on state
+        let strokeWidth, strokeColor, filterEffect;
+        if (isSelected) {
+          strokeWidth = 5;
+          strokeColor = '#2563eb';
+          filterEffect = 'filter="url(#glow-selected)"';
+        } else if (familyRole) {
+          strokeWidth = 3.5;
+          strokeColor = roleColors[familyRole];
+          filterEffect = `filter="url(#glow-${familyRole})"`;
+        } else if (isFocal) {
+          strokeWidth = 2.5;
+          strokeColor = '#059669';
+          filterEffect = 'filter="url(#card-shadow)"';
+        } else {
+          strokeWidth = 1.5;
+          strokeColor = colors.border;
+          filterEffect = 'filter="url(#card-shadow)"';
+        }
+        
+        // Dim non-highlighted cards when selection is active
+        const baseOpacity = (selectedPersonId && !isSelected && !isFamily) ? 0.4 : 1;
+        const cardOpacity = showDetails ? baseOpacity : Math.min(baseOpacity, 0.25);
+        
+        html += `
+          <g transform="translate(${x}, ${y})" style="cursor: pointer; opacity: ${cardOpacity}">
+            <rect width="${width}" height="${height}" rx="10" 
+                  fill="${colors.bg}" 
+                  stroke="${strokeColor}" 
+                  stroke-width="${strokeWidth}"
+                  ${strokeStyle}
+                  ${filterEffect}/>
+            ${showDetails ? `
+              <rect width="${width}" height="6" rx="10" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+              <rect x="0" y="3" width="${width}" height="6" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+              
+              <circle cx="12" cy="12" r="10" fill="${isUnknown ? '#cbd5e1' : colors.accent}" opacity="0.9"/>
+              <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600" 
+                    font-family="'DM Sans', sans-serif">${personNum}</text>
+              
+              ${isUnknown ? `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
+                <text x="${width/2}" y="${avatarCenterY + 6}" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
+              ` : data.imageData ? `
+                <image x="${width/2 - avatarRadius}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${data.imageData}" 
+                  clip-path="circle(${avatarRadius}px at ${avatarRadius}px ${avatarRadius}px)" preserveAspectRatio="xMidYMid slice"/>
+              ` : `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.3"/>
+                <circle cx="${width/2}" cy="${avatarCenterY - 6}" r="7" fill="${colors.border}" opacity="0.4"/>
+                <ellipse cx="${width/2}" cy="${avatarCenterY + 9}" rx="12" ry="7" fill="${colors.border}" opacity="0.4"/>
+              `}
+              
+              <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600" 
+                    fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="'DM Sans', sans-serif">
+                ${isUnknown ? 'Unknown' : (displayName.length > 12 ? displayName.substring(0, 11) + '…' : displayName)}
+              </text>
+              ${!isUnknown && displaySurname ? `
+                <text x="${width/2}" y="80" text-anchor="middle" font-size="10" 
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">
+                  ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '…' : displaySurname}
+                </text>
+              ` : ''}
+              ${birthYear ? `
+                <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${birthYear}</text>
+              ` : ''}
+              ${deathYear ? `
+                <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${deathYear}</text>
+              ` : ''}
+              
+              ${isFocal ? `
+                <circle cx="${width - 12}" cy="12" r="8" fill="#059669"/>
+                <text x="${width - 12}" y="16" text-anchor="middle" font-size="10" fill="white">⌂</text>
+              ` : ''}
+              
+              ${familyRole && !isSelected ? `
+                <rect x="${width/2 - 28}" y="${height + 4}" width="56" height="16" rx="8" 
+                      fill="${roleColors[familyRole]}" opacity="0.9"/>
+                <text x="${width/2}" y="${height + 15}" text-anchor="middle" font-size="9" font-weight="600"
+                      fill="white" font-family="'DM Sans', sans-serif">
+                  ${familyRole.toUpperCase()}
+                </text>
+              ` : ''}
+              ${isSelected ? `
+                <rect x="${width/2 - 32}" y="${height + 4}" width="64" height="16" rx="8" 
+                      fill="#2563eb"/>
+                <text x="${width/2}" y="${height + 15}" text-anchor="middle" font-size="9" font-weight="600"
+                      fill="white" font-family="'DM Sans', sans-serif">
+                  SELECTED
+                </text>
+              ` : ''}
+            ` : ''}
+            
+            <rect width="${width}" height="${height}" rx="10" fill="transparent" 
+                  onclick="${isUnknown ? `replaceUnknown('${id}')` : `selectPerson('${id}')`}" 
+                  style="pointer-events: all;"/>
+          </g>
+        `;
+      });
+      
+      // Empty state
+      if (nodes.length === 0) {
+        html += `
+          <g onclick="startNewTree()" style="cursor: pointer">
+            <rect x="-100" y="-30" width="200" height="60" rx="30" fill="#1e40af" filter="url(#card-shadow)"/>
+            <text x="0" y="8" text-anchor="middle" font-size="16" fill="white" font-weight="600" 
+                  font-family="'DM Sans', sans-serif">+ Start Your Tree</text>
+          </g>
+        `;
+      }
+      
+      html += '</g>';
+      svg.innerHTML = html;
+    }
+    
+    function renderPanel() {
+      const panel = document.getElementById('edit-panel');
+      
+      if (!selectedPersonId || !tree.persons[selectedPersonId]) {
+        panel.className = 'edit-panel empty';
+        panel.innerHTML = '<p>Select a person to view details</p>';
+        return;
+      }
+      
+      const person = tree.persons[selectedPersonId];
+      panel.className = 'edit-panel';
+      
+      const isFocal = selectedPersonId === tree.settings.focalPersonId;
+      const isUnknown = person.isUnknown;
+      const panelName = isUnknown ? 'Unknown Person' : getPreferredName(person);
+      
+      panel.innerHTML = `
+        <div class="panel-header">
+          <h2>
+            ${panelName}
+            ${isFocal ? '<span class="panel-badge">Focal Person</span>' : ''}
+          </h2>
+          <button class="close-btn" onclick="deselectPerson()">×</button>
+        </div>
+        
+        <div class="panel-tabs">
+          <button class="${currentTab === 'personal' ? 'active' : ''}" onclick="switchTab('personal')">Personal</button>
+          <button class="${currentTab === 'biography' ? 'active' : ''}" onclick="switchTab('biography')">Biography</button>
+          <button class="${currentTab === 'image' ? 'active' : ''}" onclick="switchTab('image')">Image</button>
+        </div>
+        
+        <div class="panel-content">
+          ${renderTabContent(person)}
+        </div>
+        
+        <div class="panel-actions">
+          ${renderPanelActions(person)}
+        </div>
+      `;
+    }
+    
+    function renderTabContent(person) {
+      if (currentTab === 'personal') {
+        return `
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" value="${person.firstName || ''}" 
+                   onchange="updatePerson('${person.id}', { firstName: this.value })" 
+                   placeholder="Enter first name">
+          </div>
+          <div class="form-group">
+            <label>Alternative Name</label>
+            <input type="text" value="${person.altName || ''}" 
+                   onchange="updatePerson('${person.id}', { altName: this.value })" 
+                   placeholder="Nickname / preferred name">
+          </div>
+          <div class="form-group">
+            <label>Current Surname</label>
+            <input type="text" value="${person.surnameCurrent || ''}" 
+                   onchange="updatePerson('${person.id}', { surnameCurrent: this.value })"
+                   placeholder="Current surname">
+          </div>
+          <div class="form-group">
+            <label>Surname at Birth</label>
+            <input type="text" value="${person.surnameAtBirth || ''}" 
+                   onchange="updatePerson('${person.id}', { surnameAtBirth: this.value })"
+                   placeholder="Maiden name / birth surname">
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="gender" value="female" 
+                       ${person.gender === 'female' ? 'checked' : ''}
+                       onchange="updatePerson('${person.id}', { gender: 'female' })"> Female
+              </label>
+              <label>
+                <input type="radio" name="gender" value="male" 
+                       ${person.gender === 'male' ? 'checked' : ''}
+                       onchange="updatePerson('${person.id}', { gender: 'male' })"> Male
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Flags</label>
+            <div class="radio-group">
+              <label>
+                <input type="checkbox" 
+                       ${person.isAdopted ? 'checked' : ''} 
+                       onchange="updatePerson('${person.id}', { isAdopted: this.checked })">
+                Adopted
+              </label>
+              <label>
+                <input type="checkbox" 
+                       ${person.isVisible === false ? '' : 'checked'} 
+                       onchange="updatePerson('${person.id}', { isVisible: this.checked })">
+                Visible
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" value="${person.dateOfBirth || ''}" 
+                   onblur="updatePerson('${person.id}', { dateOfBirth: this.value })">
+          </div>
+          <div class="form-group">
+            <label>Date of Death</label>
+            <input type="date" value="${person.dateOfDeath || ''}" 
+                   onblur="updatePerson('${person.id}', { dateOfDeath: this.value })">
+          </div>
+        `;
+      } else if (currentTab === 'biography') {
+        const docs = Array.isArray(person.linkedDocuments) ? person.linkedDocuments : [];
+        const folderPath = getDocumentsFolderDisplay(person);
+        const folderNote = person.documentFolder || documentsBaseHandle
+          ? `Saved in: ${escapeHtml(folderPath)}`
+          : `Choose a base folder on first drop. Folder will be: ${escapeHtml(folderPath)}`;
+        const docItems = docs.length
+          ? docs.map((name, index) => `
+              <div class="doc-item">
+                <div class="doc-item-meta">
+                  <div class="doc-item-name">${escapeHtml(name)}</div>
+                  <div class="doc-item-path">${escapeHtml(folderPath)}/${escapeHtml(name)}</div>
+                </div>
+                <button onclick="removeLinkedDocument('${person.id}', ${index})">Remove</button>
+              </div>
+            `).join('')
+          : '<div class="doc-empty">No documents linked yet.</div>';
+        return `
+          <div class="form-group">
+            <label>City of Birth</label>
+            <input type="text" value="${person.cityOfBirth || ''}" 
+                   onchange="updatePerson('${person.id}', { cityOfBirth: this.value })"
+                   placeholder="City">
+          </div>
+          <div class="form-group">
+            <label>Country of Birth</label>
+            <input type="text" value="${person.countryOfBirth || ''}" 
+                   onchange="updatePerson('${person.id}', { countryOfBirth: this.value })"
+                   placeholder="Country">
+          </div>
+          <div class="form-group">
+            <label>Profession</label>
+            <input type="text" value="${person.profession || ''}" 
+                   onchange="updatePerson('${person.id}', { profession: this.value })"
+                   placeholder="Occupation">
+          </div>
+          <div class="form-group">
+            <label>Interesting Facts</label>
+            <textarea onchange="updatePerson('${person.id}', { interestingFacts: this.value })"
+                      placeholder="Notes, stories, memories...">${person.interestingFacts || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Linked Documents</label>
+            <div class="doc-dropzone" ondragover="handleDocDragOver(event)"
+                 ondragleave="handleDocDragLeave(event)"
+                 ondrop="handleDocDrop(event, '${person.id}')"
+                 onclick="triggerDocumentPicker('${person.id}')">
+              Drop files here or click to add
+            </div>
+            <input type="file" id="doc-input-${person.id}" multiple
+                   onchange="handleDocInputChange(event, '${person.id}')"
+                   style="display: none;">
+            <div class="doc-folder-note">${folderNote}</div>
+            <div class="doc-list">
+              ${docItems}
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="image-section">
+            <div class="image-preview">
+              ${person.imageData 
+                ? `<img src="${person.imageData}" alt="${getPreferredName(person)}">`
+                : `<svg viewBox="0 0 24 24" fill="currentColor">
+                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                   </svg>`
+              }
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('image-input').click()">
+              Upload Image
+            </button>
+            ${person.imageData 
+              ? `<button class="btn btn-secondary" onclick="updatePerson('${person.id}', { imageData: null })">
+                   Remove Image
+                 </button>`
+              : ''
+            }
+          </div>
+        `;
+      }
+    }
+    
+    function renderPanelActions(person) {
+      let html = '';
+      const isFocal = person.id === tree.settings.focalPersonId;
+      
+      // Get relationships
+      const parentUnion = Object.values(tree.unions).find(u => u.childrenIds.includes(person.id));
+      const partnerUnions = Object.values(tree.unions).filter(
+        u => u.partner1Id === person.id || u.partner2Id === person.id
+      );
+      
+      // Family Actions
+      html += '<div class="action-section"><div class="action-section-title">Add Family</div>';
+      
+      // Add Parents (only if no parent union exists)
+      if (!parentUnion) {
+        html += `<button class="btn btn-action" onclick="addParents('${person.id}')">Add Parents</button>`;
+      }
+      
+      // Add Sibling
+      html += `<button class="btn btn-action" onclick="addSibling('${person.id}')">Add Sibling</button>`;
+      
+      // Add Partner
+      html += `<button class="btn btn-action" onclick="addPartner('${person.id}')">Add Partner</button>`;
+      
+      // Add Child - with partner selection if multiple
+      if (partnerUnions.length === 0) {
+        html += `<button class="btn btn-action" onclick="addChild('${person.id}')">Add Child</button>`;
+      } else if (partnerUnions.length === 1) {
+        const union = partnerUnions[0];
+        const partnerId = union.partner1Id === person.id ? union.partner2Id : union.partner1Id;
+        const partner = tree.persons[partnerId];
+        const partnerLabel = getPersonLabel(partner);
+        html += `<button class="btn btn-action" onclick="addChild('${person.id}', '${union.id}')">Add Child with ${partnerLabel}</button>`;
+      } else {
+        partnerUnions.forEach(union => {
+          const partnerId = union.partner1Id === person.id ? union.partner2Id : union.partner1Id;
+          const partner = tree.persons[partnerId];
+          const partnerLabel = getPersonLabel(partner);
+          html += `<button class="btn btn-action" onclick="addChild('${person.id}', '${union.id}')">Add Child with ${partnerLabel}</button>`;
+        });
+      }
+      
+      html += '</div>';
+      
+      // Ordering Actions
+      const hasSiblingOrder = parentUnion && parentUnion.childrenIds.length > 1;
+      const hasPartnerOrder = partnerUnions.length > 1;
+      
+      if (hasSiblingOrder || hasPartnerOrder) {
+        html += '<div class="action-section"><div class="action-section-title">Order</div>';
+        
+        if (hasSiblingOrder) {
+          const idx = parentUnion.childrenIds.indexOf(person.id);
+          if (idx > 0) {
+            html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', -1)">Move Earlier in Siblings</button>`;
+          }
+          if (idx < parentUnion.childrenIds.length - 1) {
+            html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', 1)">Move Later in Siblings</button>`;
+          }
+        }
+        
+        if (hasPartnerOrder) {
+          const orderedUnions = [...partnerUnions].sort((a, b) => (a.order || 1) - (b.order || 1));
+          orderedUnions.forEach((union, idx) => {
+            const partnerId = union.partner1Id === person.id ? union.partner2Id : union.partner1Id;
+            const partner = tree.persons[partnerId];
+            const partnerLabel = getPersonLabel(partner);
+            
+            if (idx > 0) {
+              html += `<button class="btn btn-secondary" onclick="movePartnerUnion('${person.id}', '${union.id}', -1)">Move ${partnerLabel} Earlier</button>`;
+            }
+            if (idx < orderedUnions.length - 1) {
+              html += `<button class="btn btn-secondary" onclick="movePartnerUnion('${person.id}', '${union.id}', 1)">Move ${partnerLabel} Later</button>`;
+            }
+          });
+        }
+        
+        html += '</div>';
+      }
+      
+      // Other Actions
+      html += '<div class="action-section"><div class="action-section-title">Other</div>';
+      
+      if (!isFocal) {
+        html += `<button class="btn btn-secondary" onclick="setAsFocalPerson('${person.id}')">Set as Focal Person</button>`;
+      }
+      
+      if (!isFocal) {
+        html += `<button class="btn btn-danger" onclick="deletePerson('${person.id}')">Delete Person</button>`;
+      }
+      
+      html += '</div>';
+      
+      return html;
+    }
+    
+    // Get a unique label for a person (name + number)
+    function getPersonLabel(person) {
+      if (!person) return 'Unknown';
+      const num = person.displayNum || '?';
+      if (person.isUnknown) return `Unknown (#${num})`;
+      
+      const name = getPreferredName(person) || 'Unnamed';
+      return `${name} (#${num})`;
+    }
+
+    function getPreferredName(person) {
+      if (!person) return '';
+      const altName = (person.altName || '').trim();
+      const firstName = (person.firstName || '').trim();
+      return altName || firstName || 'New Person';
+    }
+
+    function getYearFromDate(dateStr) {
+      if (!dateStr) return '';
+      const match = String(dateStr).match(/^(\d{4})/);
+      return match ? match[1] : '';
+    }
+    
+    // Get the display number for a person
+    function getPersonNumber(personId) {
+      const person = tree.persons[personId];
+      return person?.displayNum || '?';
+    }
+    
+    function switchTab(tabName) {
+      currentTab = tabName;
+      renderPanel();
+    }
+    
+    function selectPerson(id) {
+      selectedPersonId = id;
+      currentTab = 'personal';
+      render();
+    }
+    
+    function deselectPerson() {
+      selectedPersonId = null;
+      render();
+    }
+
+    function openHelp() {
+      const modal = document.getElementById('help-modal');
+      if (!modal) return;
+      modal.classList.add('active');
+    }
+
+    function closeHelp() {
+      const modal = document.getElementById('help-modal');
+      if (!modal) return;
+      modal.classList.remove('active');
+    }
+
+    function handleHelpBackdrop(event) {
+      if (event.target && event.target.id === 'help-modal') {
+        closeHelp();
+      }
+    }
+
+    // ============================================================================
+    // ZOOM & PAN
+    // ============================================================================
+    
+    function zoomIn() {
+      zoom = Math.min(zoom + 0.15, 2);
+      renderCanvas();
+    }
+    
+    function zoomOut() {
+      zoom = Math.max(zoom - 0.15, 0.1); // change the 0.1 to zoom out further
+      renderCanvas();
+    }
+    
+    function zoomToExtents() {
+      const svg = document.getElementById('tree-canvas');
+      const { nodes } = calculateLayout();
+      
+      if (!nodes.length) return;
+      
+      const svgRect = svg.getBoundingClientRect();
+      const padding = 120;
+      const allX = nodes.map(n => n.x);
+      const allY = nodes.map(n => n.y);
+      const minX = Math.min(...allX);
+      const maxX = Math.max(...allX) + nodes[0].width;
+      const minY = Math.min(...allY);
+      const maxY = Math.max(...allY) + nodes[0].height;
+      
+      const contentWidth = maxX - minX + padding * 2;
+      const contentHeight = maxY - minY + padding * 2;
+      
+      const zoomX = svgRect.width / contentWidth;
+      const zoomY = svgRect.height / contentHeight;
+      zoom = Math.max(0.1, Math.min(2, Math.min(zoomX, zoomY)));
+      
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      pan = { x: -centerX * zoom, y: -centerY * zoom };
+      
+      renderCanvas();
+    }
+
+    function handleReportChange(value) {
+      if (!value) return;
+      if (value === 'people') {
+        openPeopleReport();
+      } else if (value === 'full') {
+        openVectorTreeReport({ mode: 'full' });
+      } else if (value === 'blood') {
+        openVectorTreeReport({ mode: 'blood' });
+      }
+      const select = document.getElementById('report-select');
+      if (select) select.value = '';
+    }
+
+    function getThemeColors() {
+      const style = getComputedStyle(document.documentElement);
+      return {
+        gridLine: style.getPropertyValue('--grid-line').trim() || '#e5e7eb',
+        textMain: style.getPropertyValue('--text-main').trim() || '#1f2937',
+        textMuted: style.getPropertyValue('--text-muted').trim() || '#6b7280',
+        unknownBg: style.getPropertyValue('--unknown-bg').trim() || '#f8fafc',
+        unknownBorder: style.getPropertyValue('--unknown-border').trim() || '#94a3b8',
+        cardBg: style.getPropertyValue('--card-bg').trim() || '#ffffff',
+        male: style.getPropertyValue('--male').trim() || '#dbeafe',
+        maleBorder: style.getPropertyValue('--male-border').trim() || '#3b82f6',
+        female: style.getPropertyValue('--female').trim() || '#fce7f3',
+        femaleBorder: style.getPropertyValue('--female-border').trim() || '#f9a8d4'
+      };
+    }
+
+    function getEdgeColors() {
+      const style = getComputedStyle(document.documentElement);
+      return {
+        partner: style.getPropertyValue('--partner-line').trim() || '#ec4899',
+        child: style.getPropertyValue('--child-line').trim() || '#60a5fa'
+      };
+    }
+
+    function buildTreeSvg(nodes, edges, options = {}) {
+      const themeColors = options.themeColors || getThemeColors();
+      const edgeColors = options.edgeColors || getEdgeColors();
+      const padding = options.padding ?? 200;
+      const includeGrid = options.includeGrid !== false;
+
+      const allX = nodes.map(n => n.x);
+      const allY = nodes.map(n => n.y);
+      const minX = Math.min(...allX);
+      const maxX = Math.max(...allX) + nodes[0].width;
+      const minY = Math.min(...allY);
+      const maxY = Math.max(...allY) + nodes[0].height;
+      const viewBox = `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`;
+
+      let svgHtml = `
+        <svg viewBox="${viewBox}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            ${includeGrid ? `
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${themeColors.gridLine}" stroke-width="0.5" opacity="0.5"/>
+              </pattern>
+            ` : ''}
+            <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+            </filter>
+          </defs>
+          ${includeGrid
+            ? '<rect width="100%" height="100%" fill="url(#grid)"/>'
+            : `<rect width="100%" height="100%" fill="${themeColors.cardBg}"/>`}
+      `;
+
+      edges.forEach(edge => {
+        const color = edge.type === 'partner' ? edgeColors.partner : edgeColors.child;
+        const width = edge.type === 'partner' ? 2.5 : 2;
+        svgHtml += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}"
+                  stroke="${color}" stroke-width="${width}" stroke-linecap="round" opacity="0.9"/>`;
+      });
+
+      nodes.forEach(node => {
+        const { data, x, y, width, height } = node;
+        const isUnknown = data.isUnknown;
+        const isVisible = data.isVisible !== false;
+        const personNum = data.displayNum || '?';
+        const displayName = isUnknown ? '?' : getPreferredName(data);
+        const displaySurname = data.surnameCurrent || data.surnameAtBirth || '';
+        const showDetails = isVisible;
+        const groupOpacity = showDetails ? 1 : 0.25;
+        const birthYear = getYearFromDate(data.dateOfBirth);
+        const deathYear = getYearFromDate(data.dateOfDeath);
+        const yearY = 38;
+        const yearLeftX = 26;
+        const yearRightX = width - 26;
+        const avatarSize = 44;
+        const avatarRadius = 22;
+        const avatarY = 14;
+        const avatarCenterY = avatarY + avatarRadius;
+
+        let colors;
+        if (!isVisible) {
+          colors = { bg: themeColors.cardBg, border: themeColors.unknownBorder, accent: themeColors.unknownBorder };
+        } else if (isUnknown) {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#64748b' };
+        } else if (data.gender === 'male') {
+          colors = { bg: themeColors.male, border: themeColors.maleBorder, accent: '#1d4ed8' };
+        } else if (data.gender === 'female') {
+          colors = { bg: themeColors.female, border: themeColors.femaleBorder, accent: '#be185d' };
+        } else {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#475569' };
+        }
+
+        const strokeStyle = isUnknown && isVisible ? 'stroke-dasharray="6 4"' : '';
+
+        svgHtml += `
+          <g transform="translate(${x}, ${y})" opacity="${groupOpacity}">
+            <rect width="${width}" height="${height}" rx="10"
+                  fill="${colors.bg}"
+                  stroke="${colors.border}"
+                  stroke-width="1.5"
+                  ${strokeStyle}
+                  filter="url(#card-shadow)"/>
+            ${showDetails ? `
+              <rect width="${width}" height="6" rx="10" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+              <rect x="0" y="3" width="${width}" height="6" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+
+              <circle cx="12" cy="12" r="10" fill="${isUnknown ? '#cbd5e1' : colors.accent}" opacity="0.9"/>
+              <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600"
+                    font-family="DM Sans, Segoe UI, sans-serif">${personNum}</text>
+
+              ${isUnknown ? `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
+                <text x="${width/2}" y="${avatarCenterY + 6}" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
+              ` : data.imageData ? `
+                <image x="${width/2 - avatarRadius}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${data.imageData}"
+                  clip-path="circle(${avatarRadius}px at ${avatarRadius}px ${avatarRadius}px)" preserveAspectRatio="xMidYMid slice"/>
+              ` : `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.3"/>
+                <circle cx="${width/2}" cy="${avatarCenterY - 6}" r="7" fill="${colors.border}" opacity="0.4"/>
+                <ellipse cx="${width/2}" cy="${avatarCenterY + 9}" rx="12" ry="7" fill="${colors.border}" opacity="0.4"/>
+              `}
+
+              <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600"
+                    fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="DM Sans, Segoe UI, sans-serif">
+                ${isUnknown ? 'Unknown' : (displayName.length > 12 ? displayName.substring(0, 11) + '…' : displayName)}
+              </text>
+              ${!isUnknown && displaySurname ? `
+                <text x="${width/2}" y="80" text-anchor="middle" font-size="10"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">
+                  ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '…' : displaySurname}
+                </text>
+              ` : ''}
+              ${birthYear ? `
+                <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${birthYear}</text>
+              ` : ''}
+              ${deathYear ? `
+                <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${deathYear}</text>
+              ` : ''}
+            ` : ''}
+          </g>
+        `;
+      });
+
+      svgHtml += '</svg>';
+      return { svgHtml, viewBox };
+    }
+
+    function openReportWindow({ title, bodyHtml, extraStyles, landscape }) {
+      const win = window.open('', '_blank');
+      if (!win) {
+        alert('Pop-up blocked. Allow pop-ups to export the report.');
+        return;
+      }
+
+      const pageSize = landscape ? 'landscape' : 'portrait';
+      win.opener = null;
+      win.document.write(`
+        <!doctype html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1"/>
+            <title>${title}</title>
+            <style>
+              :root { color-scheme: light; }
+              html, body { margin: 0; padding: 0; height: 100%; }
+              body { font-family: "DM Sans", "Segoe UI", sans-serif; background: #f8fafc; color: #0f172a; }
+              .report-toolbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 16px;
+                background: #0f172a;
+                color: #fff;
+              }
+              .report-title { font-size: 16px; font-weight: 600; }
+              .report-actions button {
+                border: none;
+                border-radius: 6px;
+                background: #38bdf8;
+                color: #0f172a;
+                padding: 8px 12px;
+                font-weight: 600;
+                cursor: pointer;
+              }
+              .report-content { padding: 16px; }
+              @media print {
+                @page { size: ${pageSize}; margin: 0; }
+                body { background: #fff; }
+                .report-toolbar { display: none; }
+                .report-content { padding: 0; }
+              }
+              ${extraStyles || ''}
+            </style>
+          </head>
+          <body>
+            <div class="report-toolbar">
+              <div class="report-title">${title}</div>
+              <div class="report-actions">
+                <button onclick="window.print()">Save as PDF</button>
+              </div>
+            </div>
+            <div class="report-content">
+              ${bodyHtml}
+            </div>
+          </body>
+        </html>
+      `);
+      win.document.close();
+    }
+
+    function openPeopleReport() {
+      const people = Object.values(tree.persons);
+      if (people.length === 0) {
+        alert('No people to report.');
+        return;
+      }
+
+      people.sort((a, b) => (a.displayNum || 0) - (b.displayNum || 0));
+
+      const rowsHtml = people.map(person => {
+        const displayName = person.isUnknown ? 'Unknown' : getPreferredName(person);
+        const surname = person.surnameCurrent || person.surnameAtBirth || '';
+        const fullName = [displayName, surname].filter(Boolean).join(' ');
+        const birthPlace = [person.cityOfBirth, person.countryOfBirth].filter(Boolean).join(', ');
+        const birthLine = [person.dateOfBirth, birthPlace].filter(Boolean).join(' • ');
+        const deathLine = person.dateOfDeath || '';
+        const genderLabel = person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : 'Unknown';
+
+        return `
+          <section class="person-row">
+            <div class="person-info">
+              <div class="person-title">#${person.displayNum || '?'} ${fullName || 'Unnamed'}</div>
+              <div class="person-meta">${genderLabel}</div>
+              ${birthLine ? `<div class="person-line"><span>Born:</span> ${birthLine}</div>` : ''}
+              ${deathLine ? `<div class="person-line"><span>Died:</span> ${deathLine}</div>` : ''}
+              ${person.profession ? `<div class="person-line"><span>Profession:</span> ${person.profession}</div>` : ''}
+              ${person.interestingFacts ? `<div class="person-notes">${person.interestingFacts}</div>` : ''}
+            </div>
+            <div class="person-photo">
+              ${person.imageData ? `<img src="${person.imageData}" alt="Photo of ${fullName || 'person'}">` : '<div class="photo-placeholder">No photo</div>'}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      openReportWindow({
+        title: `${tree.settings.treeName || 'Family Tree'} - People Report`,
+        bodyHtml: `<div class="people-report">${rowsHtml}</div>`,
+        extraStyles: `
+          .people-report { display: grid; gap: 16px; }
+          .person-row {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            page-break-inside: avoid;
+          }
+          .person-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+          .person-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 8px; }
+          .person-line { font-size: 13px; margin-bottom: 6px; }
+          .person-line span { color: #475569; font-weight: 600; margin-right: 6px; }
+          .person-notes { font-size: 12.5px; line-height: 1.5; color: #334155; margin-top: 6px; white-space: pre-wrap; }
+          .person-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+          }
+          .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+          .photo-placeholder { font-size: 11px; color: #94a3b8; text-align: center; padding: 8px; }
+          @media print {
+            .person-row { border: 1px solid #cbd5f5; }
+            .people-report { gap: 12px; }
+          }
+        `
+      });
+    }
+
+    function getBloodlineIds(rootId) {
+      if (!rootId || !tree.persons[rootId]) return new Set();
+      const connections = {};
+      Object.keys(tree.persons).forEach(pid => {
+        connections[pid] = new Set();
+      });
+
+      Object.values(tree.unions).forEach(union => {
+        const parents = [union.partner1Id, union.partner2Id].filter(Boolean);
+        union.childrenIds.forEach(childId => {
+          parents.forEach(parentId => {
+            connections[parentId]?.add(childId);
+            connections[childId]?.add(parentId);
+          });
+        });
+      });
+
+      const reachable = new Set();
+      const queue = [rootId];
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (reachable.has(current)) continue;
+        reachable.add(current);
+        connections[current]?.forEach(neighbor => {
+          if (!reachable.has(neighbor)) queue.push(neighbor);
+        });
+      }
+      return reachable;
+    }
+
+    function buildFilteredTree(ids) {
+      const filteredPersons = {};
+      ids.forEach(id => {
+        if (tree.persons[id]) filteredPersons[id] = { ...tree.persons[id] };
+      });
+
+      const filteredUnions = {};
+      Object.values(tree.unions).forEach(union => {
+        const partner1Id = ids.has(union.partner1Id) ? union.partner1Id : null;
+        const partner2Id = ids.has(union.partner2Id) ? union.partner2Id : null;
+        const childrenIds = union.childrenIds.filter(cid => ids.has(cid));
+
+        const hasPartners = !!(partner1Id || partner2Id);
+        const hasChildren = childrenIds.length > 0;
+        const hasPair = partner1Id && partner2Id;
+
+        if (!hasPartners) return;
+        if (!hasChildren && !hasPair) return;
+
+        filteredUnions[union.id] = {
+          ...union,
+          partner1Id,
+          partner2Id,
+          childrenIds
+        };
+      });
+
+      return { persons: filteredPersons, unions: filteredUnions };
+    }
+
+    function openVectorTreeReport({ mode }) {
+      let layoutOptions = { optimize: true };
+      let title = 'Family Tree Report';
+      let nodes = [];
+      let edges = [];
+
+      if (mode === 'full') {
+        const layout = calculateLayout(layoutOptions);
+        nodes = layout.nodes;
+        edges = layout.edges;
+        title = `${tree.settings.treeName || 'Family Tree'} - Full Tree`;
+      } else if (mode === 'blood') {
+        if (!selectedPersonId) {
+          alert('Select a person to generate a bloodline report.');
+          return;
+        }
+        const bloodIds = getBloodlineIds(selectedPersonId);
+        const subset = buildFilteredTree(bloodIds);
+        const layout = calculateLayout({
+          ...layoutOptions,
+          persons: subset.persons,
+          unions: subset.unions,
+          focalPersonId: selectedPersonId
+        });
+        nodes = layout.nodes;
+        edges = layout.edges;
+        const selectedPerson = tree.persons[selectedPersonId];
+        title = `${tree.settings.treeName || 'Family Tree'} - Bloodline of ${getPreferredName(selectedPerson)}`;
+      }
+
+      if (nodes.length === 0) {
+        alert('No people to export.');
+        return;
+      }
+
+      const { svgHtml } = buildTreeSvg(nodes, edges, { includeGrid: true });
+      openReportWindow({
+        title,
+        bodyHtml: `<div class="svg-report">${svgHtml}</div>`,
+        extraStyles: `
+          .report-content { padding: 0; height: calc(100vh - 52px); }
+          .svg-report { width: 100%; height: 100%; }
+          .svg-report svg { width: 100%; height: 100%; display: block; }
+          @media print {
+            .report-content { height: 100vh; }
+          }
+        `,
+        landscape: true
+      });
+    }
+
+    function visualizeOptimizedLayout() {
+      openVectorTreeReport({ mode: 'full' });
+    }
+    
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle('dark-mode');
+      const isDark = document.documentElement.classList.contains('dark-mode');
+      document.getElementById('dark-mode-btn').textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+      renderCanvas(); // Re-render to update SVG colors
+    }
+    
+    // Initialize dark mode from localStorage
+    function initDarkMode() {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode === 'true') {
+        document.documentElement.classList.add('dark-mode');
+        document.getElementById('dark-mode-btn').textContent = '☀️';
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initDarkMode();
+      updateAutosaveButton();
+      
+      const svg = document.getElementById('tree-canvas');
+      let dragStartPos = null;
+      
+      svg.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('canvas-bg') || e.target.tagName === 'svg') {
+          isDragging = true;
+          dragStart = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+          dragStartPos = { x: e.clientX, y: e.clientY }; // Track start for click detection
+          svg.style.cursor = 'grabbing';
+        }
+      });
+      
+      svg.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          pan = { x: e.clientX - dragStart.x, y: e.clientY - dragStart.y };
+          renderCanvas();
+        }
+      });
+      
+      svg.addEventListener('mouseup', (e) => {
+        if (isDragging && dragStartPos) {
+          // Check if it was a click (minimal movement) vs a drag
+          const dx = Math.abs(e.clientX - dragStartPos.x);
+          const dy = Math.abs(e.clientY - dragStartPos.y);
+          
+          if (dx < 5 && dy < 5) {
+            // It was a click, not a drag - deselect
+            deselectPerson();
+          }
+        }
+        isDragging = false;
+        dragStartPos = null;
+        svg.style.cursor = 'grab';
+      });
+      
+      svg.addEventListener('mouseleave', () => {
+        isDragging = false;
+        svg.style.cursor = 'grab';
+      });
+      
+      svg.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        zoom = e.deltaY < 0 
+          ? Math.min(zoom + 0.1, 2) 
+          : Math.max(zoom - 0.1, 0.1);
+        renderCanvas();
+      });
+      
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeHelp();
+      });
+      
+      render();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ocean SST Explorer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; }
+
+#map { position: absolute; inset: 0; z-index: 0; }
+
+/* ── Control panel (top-left) ────────────────────────────────────── */
+.ctrl {
+  position: absolute; top: 10px; left: 10px; z-index: 1000;
+  background: rgba(26,26,46,0.95); color: #e0e0e0;
+  padding: 16px; border-radius: 10px; width: 280px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  max-height: calc(100vh - 20px); overflow-y: auto;
+}
+.ctrl h2 { font-size: 16px; margin-bottom: 10px; color: #64b5f6; display: flex; align-items: center; gap: 8px; }
+.ctrl select, .ctrl button {
+  width: 100%; padding: 8px 10px; margin-bottom: 8px;
+  border: 1px solid #64b5f6; border-radius: 5px;
+  font-size: 13px; background: #16213e; color: #e0e0e0;
+  cursor: pointer;
+}
+.ctrl select:hover, .ctrl button:hover { border-color: #90caf9; background: #1a2744; }
+.ctrl button { background: #1b3a5c; }
+.ctrl button:active { background: #245080; }
+.ctrl .desc {
+  font-size: 12px; line-height: 1.5; padding: 8px 10px;
+  background: rgba(100,181,246,0.08); border-left: 3px solid #64b5f6;
+  border-radius: 4px; margin-bottom: 10px;
+}
+.ctrl .desc strong { display: block; color: #90caf9; margin-bottom: 4px; }
+.ctrl label { font-size: 12px; color: #90caf9; display: flex; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 6px; }
+.ctrl label input[type=checkbox] { cursor: pointer; }
+.info-btn {
+  background: none; border: 1.5px solid #64b5f6; color: #64b5f6;
+  width: auto !important; height: 24px; border-radius: 4px; font-size: 12px;
+  font-weight: 600; cursor: pointer; padding: 0 8px; margin: 0; line-height: 22px;
+  text-align: center; flex-shrink: 0;
+}
+.info-btn:hover { background: #64b5f6; color: #1a1a2e; }
+
+/* ── Legend (bottom-left) ────────────────────────────────────────── */
+.legend {
+  position: absolute; bottom: 20px; left: 10px; z-index: 1000;
+  background: rgba(255,255,255,0.95); padding: 8px 10px;
+  border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  width: 280px;
+}
+.legend canvas { width: 100%; height: 18px; display: block; border-radius: 3px; }
+.legend .labels { display: flex; justify-content: space-between; font-size: 11px; margin-top: 3px; color: #333; }
+.legend .title { font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #333; text-align: center; }
+
+/* ── Info panel (right side, click) ──────────────────────────────── */
+.info-panel {
+  position: absolute; top: 10px; right: 10px; z-index: 1000;
+  background: rgba(26,26,46,0.97); color: #e0e0e0;
+  padding: 16px; border-radius: 10px; width: 380px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  display: none;
+  max-height: calc(100vh - 20px); overflow-y: auto;
+}
+.info-panel.visible { display: block; }
+.info-panel h3 { font-size: 15px; color: #64b5f6; margin-bottom: 10px; }
+.info-panel .close-btn {
+  position: absolute; top: 10px; right: 14px;
+  background: none; border: none; color: #90caf9;
+  font-size: 20px; cursor: pointer; width: auto; padding: 0;
+}
+.info-panel table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+.info-panel td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.info-panel td:first-child { color: #90caf9; white-space: nowrap; width: 45%; }
+.info-panel canvas { width: 100%; height: 200px; background: #0d1b2a; border-radius: 6px; cursor: crosshair; }
+
+/* ── Info modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 3000;
+  background: rgba(0,0,0,0.6); display: none;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal {
+  background: #1a1a2e; color: #e0e0e0; border-radius: 12px;
+  padding: 24px; max-width: 560px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+.modal h2 { color: #64b5f6; margin-bottom: 12px; font-size: 18px; }
+.modal h3 { color: #90caf9; margin: 14px 0 6px; font-size: 14px; }
+.modal p, .modal li { font-size: 13px; line-height: 1.6; }
+.modal ul { padding-left: 18px; }
+.modal .close-modal {
+  float: right; background: none; border: none; color: #90caf9;
+  font-size: 22px; cursor: pointer;
+}
+
+/* ── Chart tooltip ───────────────────────────────────────────────── */
+.chart-tooltip {
+  position: absolute; pointer-events: none; z-index: 10;
+  background: rgba(26,26,46,0.95); color: #e0e0e0;
+  padding: 5px 9px; border-radius: 5px; font-size: 12px;
+  white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  display: none;
+}
+
+/* ── Loading overlay ─────────────────────────────────────────────── */
+.loading {
+  position: absolute; inset: 0; z-index: 2000;
+  background: rgba(26,26,46,0.9); display: flex;
+  align-items: center; justify-content: center;
+  color: #64b5f6; font-size: 18px;
+}
+.loading.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading">Loading metadata...</div>
+<div id="map"></div>
+
+<!-- Control Panel -->
+<div class="ctrl">
+  <h2>Ocean SST Explorer <button class="info-btn" id="btnInfo" title="About this tool">Info</button></h2>
+  <select id="varSelect"></select>
+  <div class="desc" id="varDesc"></div>
+  <div style="display:flex; gap:6px; margin-bottom:8px;">
+    <button id="btnRescale" style="flex:1">Rescale to View</button>
+    <button id="btnReset" style="flex:1">Reset Scale</button>
+  </div>
+  <label><input type="checkbox" id="chkCities"> Show major cities</label>
+</div>
+
+<!-- Legend -->
+<div class="legend" id="legend">
+  <div class="title" id="legendTitle"></div>
+  <canvas id="legendBar" height="18"></canvas>
+  <div class="labels" id="legendLabels"></div>
+</div>
+
+<!-- Info Panel (click) -->
+<div class="info-panel" id="infoPanel">
+  <button class="close-btn" id="infoClose">&times;</button>
+  <h3 id="infoTitle">Location Info</h3>
+  <table id="infoTable"><tbody></tbody></table>
+  <div style="position:relative;">
+    <canvas id="seasonChart"></canvas>
+    <div class="chart-tooltip" id="chartTooltip"></div>
+  </div>
+</div>
+
+<!-- Info Modal -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal">
+    <button class="close-modal" id="closeModal">&times;</button>
+    <h2>About Ocean SST Explorer</h2>
+    <p><strong>Dataset:</strong> NOAA Optimum Interpolation SST v2 (OI SSTv2), 0.25&deg; daily resolution, 1982&ndash;2025.</p>
+    <h3>Map Variables</h3>
+    <ul>
+      <li><strong>SSTA Standard Deviation</strong> &ndash; Spread of daily sea surface temperature anomalies. Higher values indicate more variable ocean temperatures.</li>
+      <li><strong>SSTA Memory (&tau;)</strong> &ndash; Decorrelation timescale from lag-1 autocorrelation. Longer &tau; means anomalies persist for more days.</li>
+      <li><strong>SSTA Trend</strong> &ndash; Linear trend in SST anomalies over 1982&ndash;2025. Positive = warming, negative = cooling (&deg;C per decade).</li>
+      <li><strong>SSTA Skewness</strong> &ndash; Asymmetry of the anomaly distribution. Positive skew means warm extremes are more intense than cold extremes.</li>
+      <li><strong>Mean SST</strong> &ndash; Annual mean climatological SST from K=4 harmonic fit.</li>
+      <li><strong>Min / Max Climatological SST</strong> &ndash; Coldest and warmest days in the seasonal cycle (harmonic reconstruction).</li>
+      <li><strong>Seasonal Range</strong> &ndash; Difference between max and min climatological SST.</li>
+      <li><strong>Day of Max / Min SST</strong> &ndash; Day of year when climatological SST peaks or reaches its minimum.</li>
+    </ul>
+    <h3>Click Interaction</h3>
+    <p>Click any ocean point to see location statistics and a seasonal cycle chart. The chart shows the K=4 harmonic reconstruction with the 25th/75th percentile thresholds. Red shading = warmest quarter (summer), blue shading = coolest quarter (winter).</p>
+    <h3>Controls</h3>
+    <ul>
+      <li><strong>Rescale to View</strong> &ndash; Recomputes the color scale from the currently visible map extent. For trend and skewness, the scale is kept symmetric about zero.</li>
+      <li><strong>Reset Scale</strong> &ndash; Returns to the default global color scale.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════════════
+let META = null;
+let dataCache = {};
+let harmonicsData = null;
+let currentVar = null;
+let currentData = null;
+let vmin = 0, vmax = 1;
+let dataLayer = null;
+let clickMarker = null;
+
+// Variables where color scale must be symmetric about zero
+const DIVERGING_VARS = new Set(['ssta_trend', 'ssta_skew']);
+
+// Chart state for interactive hover
+let chartState = null;
+
+// ═══════════════════════════════════════════════════════════════════
+//  Major cities
+// ═══════════════════════════════════════════════════════════════════
+const CITIES = [
+  {name:'New York',lat:40.71,lon:-74.01},{name:'Miami',lat:25.76,lon:-80.19},
+  {name:'Los Angeles',lat:33.94,lon:-118.41},{name:'Vancouver',lat:49.28,lon:-123.12},
+  {name:'London',lat:51.51,lon:-0.13},{name:'Lisbon',lat:38.72,lon:-9.14},
+  {name:'Reykjavik',lat:64.15,lon:-21.94},{name:'Dakar',lat:14.69,lon:-17.44},
+  {name:'Lagos',lat:6.45,lon:3.41},{name:'Cape Town',lat:-33.92,lon:18.42},
+  {name:'Mumbai',lat:19.08,lon:72.88},{name:'Singapore',lat:1.35,lon:103.82},
+  {name:'Jakarta',lat:-6.21,lon:106.85},{name:'Perth',lat:-31.95,lon:115.86},
+  {name:'Sydney',lat:-33.87,lon:151.21},{name:'Melbourne',lat:-37.81,lon:144.96},
+  {name:'Auckland',lat:-36.85,lon:174.76},{name:'Tokyo',lat:35.68,lon:139.69},
+  {name:'Shanghai',lat:31.23,lon:121.47},{name:'Hong Kong',lat:22.32,lon:114.17},
+  {name:'Honolulu',lat:21.31,lon:-157.86},{name:'Rio de Janeiro',lat:-22.91,lon:-43.17},
+  {name:'Buenos Aires',lat:-34.60,lon:-58.38},{name:'Lima',lat:-12.05,lon:-77.04},
+  {name:'Oslo',lat:59.91,lon:10.75},{name:'Suva',lat:-18.14,lon:178.44},
+  {name:'Durban',lat:-29.86,lon:31.02},{name:'Casablanca',lat:33.59,lon:-7.62},
+];
+
+let citiesLayer = null;
+
+function createCitiesLayer() {
+  const markers = CITIES.map(c => {
+    const m = L.circleMarker([c.lat, c.lon], {
+      radius: 4, color: '#333', fillColor: '#fff', fillOpacity: 0.9, weight: 1.5
+    });
+    m.bindTooltip(c.name, {permanent: true, direction: 'right', offset: [6, 0],
+      className: 'city-label'});
+    return m;
+  });
+  return L.layerGroup(markers);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Map setup
+// ═══════════════════════════════════════════════════════════════════
+const map = L.map('map', {
+  center: [20, 0],
+  zoom: 2,
+  minZoom: 2,
+  maxZoom: 8,
+  maxBounds: [[-90, -Infinity], [90, Infinity]],
+  maxBoundsViscosity: 1.0,
+  worldCopyJump: true,
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; CARTO | SST data: NOAA OI SSTv2',
+  subdomains: 'abcd',
+  maxZoom: 19,
+}).addTo(map);
+
+// ═══════════════════════════════════════════════════════════════════
+//  Colormap lookup
+// ═══════════════════════════════════════════════════════════════════
+let cmapCache = {};
+
+function getCmap(name) {
+  if (cmapCache[name]) return cmapCache[name];
+  const raw = META.colormaps[name];
+  const buf = new Uint8Array(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    buf[i * 3]     = raw[i][0];
+    buf[i * 3 + 1] = raw[i][1];
+    buf[i * 3 + 2] = raw[i][2];
+  }
+  cmapCache[name] = buf;
+  return buf;
+}
+
+function applyColormap(value, lo, hi, cmap) {
+  if (isNaN(value)) return null;
+  let t = (value - lo) / (hi - lo);
+  t = Math.max(0, Math.min(1, t));
+  const idx = Math.min(255, Math.floor(t * 255));
+  return [cmap[idx * 3], cmap[idx * 3 + 1], cmap[idx * 3 + 2]];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Grid data lookup helpers
+// ═══════════════════════════════════════════════════════════════════
+function latToRow(lat) {
+  const lat0 = META.lat[0];
+  const dlat = META.lat[1] - META.lat[0];
+  const row = Math.round((lat - lat0) / dlat);
+  return Math.max(0, Math.min(META.nlat - 1, row));
+}
+
+function lonToCol(lon) {
+  const lon0 = META.lon[0];
+  const dlon = META.lon[1] - META.lon[0];
+  const col = Math.round((lon - lon0) / dlon);
+  return Math.max(0, Math.min(META.nlon - 1, col));
+}
+
+function gridIndex(row, col) {
+  return row * META.nlon + col;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Custom Leaflet GridLayer for data rendering
+// ═══════════════════════════════════════════════════════════════════
+const DataGridLayer = L.GridLayer.extend({
+  createTile: function(coords) {
+    const tile = document.createElement('canvas');
+    const tileSize = this.getTileSize();
+    tile.width = tileSize.x;
+    tile.height = tileSize.y;
+
+    if (!currentData || !META) return tile;
+
+    const ctx = tile.getContext('2d');
+    const imgData = ctx.createImageData(tileSize.x, tileSize.y);
+    const pixels = imgData.data;
+
+    const vcfg = META.variables[currentVar];
+    const cmap = getCmap(vcfg.cmap);
+
+    const nwPoint = coords.scaleBy(tileSize);
+    const zoom = coords.z;
+
+    for (let py = 0; py < tileSize.y; py++) {
+      for (let px = 0; px < tileSize.x; px++) {
+        const point = L.point(nwPoint.x + px, nwPoint.y + py);
+        const latlng = map.unproject(point, zoom);
+
+        let lng = latlng.lng;
+        while (lng > 180) lng -= 360;
+        while (lng < -180) lng += 360;
+
+        const row = latToRow(latlng.lat);
+        const col = lonToCol(lng);
+        const val = currentData[gridIndex(row, col)];
+
+        const off = (py * tileSize.x + px) * 4;
+        const rgb = applyColormap(val, vmin, vmax, cmap);
+        if (rgb) {
+          pixels[off]     = rgb[0];
+          pixels[off + 1] = rgb[1];
+          pixels[off + 2] = rgb[2];
+          pixels[off + 3] = 210;
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return tile;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Legend rendering
+// ═══════════════════════════════════════════════════════════════════
+function updateLegend() {
+  const vcfg = META.variables[currentVar];
+  const cmap = getCmap(vcfg.cmap);
+  const canvas = document.getElementById('legendBar');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = 36;
+  canvas.style.height = '18px';
+
+  for (let x = 0; x < w; x++) {
+    const t = x / (w - 1);
+    const idx = Math.min(255, Math.floor(t * 255));
+    ctx.fillStyle = `rgb(${cmap[idx*3]},${cmap[idx*3+1]},${cmap[idx*3+2]})`;
+    ctx.fillRect(x, 0, 1, h);
+  }
+
+  const units = vcfg.units ? ` (${vcfg.units})` : '';
+  document.getElementById('legendTitle').textContent = vcfg.title + units;
+
+  // Build tick labels
+  const isDOY = currentVar === 'day_of_max' || currentVar === 'day_of_min';
+  const labelsDiv = document.getElementById('legendLabels');
+  labelsDiv.innerHTML = '';
+
+  if (isDOY) {
+    // Show month labels for cyclic day-of-year
+    const months = ['Jan','','Mar','','May','','Jul','','Sep','','Nov',''];
+    for (let m = 0; m < 12; m++) {
+      const span = document.createElement('span');
+      span.textContent = months[m];
+      span.style.fontSize = '10px';
+      labelsDiv.appendChild(span);
+    }
+  } else {
+    // Show 5 evenly-spaced tick labels
+    const nTicks = 5;
+    for (let i = 0; i <= nTicks; i++) {
+      const v = vmin + (vmax - vmin) * i / nTicks;
+      const span = document.createElement('span');
+      span.textContent = v.toFixed(1);
+      labelsDiv.appendChild(span);
+    }
+  }
+}
+
+function dayOfYearToLabel(doy) {
+  const d = new Date(2000, 0, doy);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Variable loading and switching
+// ═══════════════════════════════════════════════════════════════════
+async function loadVariable(varName) {
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('loading').textContent = `Loading ${META.variables[varName].title}...`;
+
+  if (!dataCache[varName]) {
+    const resp = await fetch(`data/${META.variables[varName].file}`);
+    const buf = await resp.arrayBuffer();
+    dataCache[varName] = new Float32Array(buf);
+  }
+
+  currentVar = varName;
+  currentData = dataCache[varName];
+
+  const vcfg = META.variables[varName];
+  vmin = vcfg.vmin;
+  vmax = vcfg.vmax;
+
+  document.getElementById('varDesc').innerHTML =
+    `<strong>${vcfg.title}</strong>${vcfg.description}`;
+
+  updateLegend();
+  refreshDataLayer();
+
+  document.getElementById('loading').classList.add('hidden');
+}
+
+function refreshDataLayer() {
+  if (dataLayer) { map.removeLayer(dataLayer); }
+  dataLayer = new DataGridLayer({ tileSize: 256, opacity: 1, updateWhenZooming: false });
+  dataLayer.addTo(map);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Rescale to visible bounds
+// ═══════════════════════════════════════════════════════════════════
+function rescaleToView() {
+  if (!currentData || !META) return;
+  const bounds = map.getBounds();
+  const south = Math.max(bounds.getSouth(), META.lat[0]);
+  const north = Math.min(bounds.getNorth(), META.lat[META.nlat - 1]);
+  let west = Math.max(bounds.getWest(), META.lon[0]);
+  let east = Math.min(bounds.getEast(), META.lon[META.nlon - 1]);
+
+  const r0 = latToRow(south), r1 = latToRow(north);
+  const c0 = lonToCol(west), c1 = lonToCol(east);
+
+  let lo = Infinity, hi = -Infinity;
+  const rMin = Math.min(r0, r1), rMax = Math.max(r0, r1);
+  const cMin = Math.min(c0, c1), cMax = Math.max(c0, c1);
+
+  for (let r = rMin; r <= rMax; r++) {
+    for (let c = cMin; c <= cMax; c++) {
+      const v = currentData[gridIndex(r, c)];
+      if (!isNaN(v)) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    }
+  }
+  if (lo < hi) {
+    // For diverging variables, keep symmetric about zero
+    if (DIVERGING_VARS.has(currentVar)) {
+      const absMax = Math.max(Math.abs(lo), Math.abs(hi));
+      vmin = -absMax;
+      vmax = absMax;
+    } else {
+      vmin = lo;
+      vmax = hi;
+    }
+    updateLegend();
+    refreshDataLayer();
+  }
+}
+
+function resetScale() {
+  if (!META || !currentVar) return;
+  const vcfg = META.variables[currentVar];
+  vmin = vcfg.vmin;
+  vmax = vcfg.vmax;
+  updateLegend();
+  refreshDataLayer();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Click interaction
+// ═══════════════════════════════════════════════════════════════════
+async function handleMapClick(e) {
+  let lng = e.latlng.lng;
+  while (lng > 180) lng -= 360;
+  while (lng < -180) lng += 360;
+  const lat = e.latlng.lat;
+
+  const row = latToRow(lat);
+  const col = lonToCol(lng);
+  const idx = gridIndex(row, col);
+
+  if (!dataCache['clim_mean']) {
+    const resp = await fetch('data/clim_mean.bin');
+    dataCache['clim_mean'] = new Float32Array(await resp.arrayBuffer());
+  }
+  if (isNaN(dataCache['clim_mean'][idx])) return;
+
+  if (!harmonicsData) {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('loading').textContent = 'Loading seasonal data...';
+    const resp = await fetch('data/harmonics.bin');
+    harmonicsData = new Float32Array(await resp.arrayBuffer());
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  if (clickMarker) map.removeLayer(clickMarker);
+  clickMarker = L.circleMarker(e.latlng, {
+    radius: 6, color: '#ff5722', fillColor: '#ff5722',
+    fillOpacity: 0.8, weight: 2
+  }).addTo(map);
+
+  const gridLat = META.lat[row];
+  const gridLon = META.lon[col];
+  const stats = {};
+
+  const statVars = ['clim_mean','ssta_std','ssta_tau','ssta_trend','ssta_skew',
+                    'clim_min','clim_max','clim_range','day_of_max','day_of_min'];
+  for (const sv of statVars) {
+    if (!dataCache[sv]) {
+      const resp = await fetch(`data/${META.variables[sv].file}`);
+      dataCache[sv] = new Float32Array(await resp.arrayBuffer());
+    }
+    stats[sv] = dataCache[sv][idx];
+  }
+
+  const N = META.nlat * META.nlon;
+  const a0 = harmonicsData[idx];
+  const acos = [], bsin = [];
+  for (let k = 0; k < 4; k++) acos.push(harmonicsData[(1 + k) * N + idx]);
+  for (let k = 0; k < 4; k++) bsin.push(harmonicsData[(5 + k) * N + idx]);
+
+  const P = 366;
+  const cycle = new Float64Array(P);
+  for (let d = 0; d < P; d++) {
+    let val = a0;
+    for (let k = 0; k < 4; k++) {
+      const freq = k + 1;
+      const angle = 2 * Math.PI * freq * (d + 1) / P;
+      val += acos[k] * Math.cos(angle) + bsin[k] * Math.sin(angle);
+    }
+    cycle[d] = val;
+  }
+
+  const sorted = Array.from(cycle).sort((a, b) => a - b);
+  const p25 = sorted[Math.floor(0.25 * (P - 1))];
+  const p75 = sorted[Math.floor(0.75 * (P - 1))];
+
+  showInfoPanel(gridLat, gridLon, stats, cycle, p25, p75);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Info panel rendering
+// ═══════════════════════════════════════════════════════════════════
+function showInfoPanel(lat, lon, stats, cycle, p25, p75) {
+  const panel = document.getElementById('infoPanel');
+  panel.classList.add('visible');
+
+  document.getElementById('infoTitle').textContent =
+    `${Math.abs(lat).toFixed(2)}\u00b0${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}\u00b0${lon >= 0 ? 'E' : 'W'}`;
+
+  const tbody = document.querySelector('#infoTable tbody');
+  tbody.innerHTML = '';
+  const rows = [
+    ['Mean SST', fmtStat(stats.clim_mean, '\u00b0C')],
+    ['Seasonal Min', fmtStat(stats.clim_min, '\u00b0C')],
+    ['Seasonal Max', fmtStat(stats.clim_max, '\u00b0C')],
+    ['Seasonal Range', fmtStat(stats.clim_range, '\u00b0C')],
+    ['Day of Max', dayOfYearToLabel(Math.round(stats.day_of_max))],
+    ['Day of Min', dayOfYearToLabel(Math.round(stats.day_of_min))],
+    ['SSTA Std Dev', fmtStat(stats.ssta_std, '\u00b0C')],
+    ['SSTA Trend', fmtStat(stats.ssta_trend, '\u00b0C/dec')],
+    ['SSTA Memory (\u03c4)', fmtStat(stats.ssta_tau, ' days')],
+    ['SSTA Skewness', fmtStat(stats.ssta_skew, '')],
+  ];
+  for (const [label, value] of rows) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${label}</td><td>${value}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  drawSeasonalChart(cycle, p25, p75);
+}
+
+function fmtStat(v, unit) {
+  if (v == null || isNaN(v)) return '--';
+  return v.toFixed(2) + unit;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Seasonal cycle chart (Canvas, interactive)
+// ═══════════════════════════════════════════════════════════════════
+// Season boundaries (meteorological): day-of-year (1-based) for 1 Dec, 1 Mar, 1 Jun, 1 Sep
+const SEASON_DAYS = [
+  {doy: 60,  label: '1 Mar'},
+  {doy: 153, label: '1 Jun'},
+  {doy: 245, label: '1 Sep'},
+  {doy: 336, label: '1 Dec'},
+];
+
+function drawSeasonalChart(cycle, p25, p75, hoverDay) {
+  const canvas = document.getElementById('seasonChart');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const ml = 50, mr = 30, mt = 15, mb = 30;
+  const pw = w - ml - mr;
+  const ph = h - mt - mb;
+
+  ctx.fillStyle = '#0d1b2a';
+  ctx.fillRect(0, 0, w, h);
+
+  let yMin = Infinity, yMax = -Infinity;
+  for (let i = 0; i < cycle.length; i++) {
+    if (cycle[i] < yMin) yMin = cycle[i];
+    if (cycle[i] > yMax) yMax = cycle[i];
+  }
+  const yPad = (yMax - yMin) * 0.1 || 1;
+  yMin -= yPad; yMax += yPad;
+
+  function xPos(dayIdx) { return ml + (dayIdx / 365) * pw; }
+  function yPos(val) { return mt + ph - ((val - yMin) / (yMax - yMin)) * ph; }
+
+  // Store chart state for hover
+  chartState = { cycle, p25, p75, ml, mr, mt, mb, pw, ph, w, h, yMin, yMax, xPos, yPos };
+
+  // Shade summer/winter
+  for (let d = 0; d < 366; d++) {
+    const x = xPos(d);
+    const xw = pw / 366;
+    if (cycle[d] >= p75) {
+      ctx.fillStyle = 'rgba(244,67,54,0.18)';
+      ctx.fillRect(x, mt, xw + 1, ph);
+    } else if (cycle[d] <= p25) {
+      ctx.fillStyle = 'rgba(33,150,243,0.18)';
+      ctx.fillRect(x, mt, xw + 1, ph);
+    }
+  }
+
+  // Season boundary lines
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '9px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.textAlign = 'center';
+  for (const s of SEASON_DAYS) {
+    const x = xPos(s.doy - 1);
+    ctx.beginPath(); ctx.moveTo(x, mt); ctx.lineTo(x, mt + ph); ctx.stroke();
+    ctx.fillText(s.label, x, mt + ph + 24);
+  }
+  ctx.setLineDash([]);
+
+  // Y grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 0.5;
+  const nTicks = 5;
+  for (let i = 0; i <= nTicks; i++) {
+    const yv = yMin + (yMax - yMin) * i / nTicks;
+    const y = yPos(yv);
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y); ctx.stroke();
+    ctx.fillStyle = '#90caf9';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(yv.toFixed(1), ml - 5, y + 3);
+  }
+
+  // Month labels
+  const monthStarts = [1,32,60,91,121,152,182,213,244,274,305,335];
+  const monthNames = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+  ctx.fillStyle = '#90caf9';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  for (let m = 0; m < 12; m++) {
+    const midDay = monthStarts[m] + (m < 11 ? (monthStarts[m+1] - monthStarts[m]) / 2 : 15);
+    ctx.fillText(monthNames[m], xPos(midDay - 1), mt + ph + 14);
+  }
+
+  // P25 / P75 dashed lines
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(244,67,54,0.6)';
+  ctx.beginPath(); ctx.moveTo(ml, yPos(p75)); ctx.lineTo(ml + pw, yPos(p75)); ctx.stroke();
+  ctx.strokeStyle = 'rgba(33,150,243,0.6)';
+  ctx.beginPath(); ctx.moveTo(ml, yPos(p25)); ctx.lineTo(ml + pw, yPos(p25)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(244,67,54,0.8)';
+  ctx.fillText('75th', ml + pw + 3, yPos(p75) + 3);
+  ctx.fillStyle = 'rgba(33,150,243,0.8)';
+  ctx.fillText('25th', ml + pw + 3, yPos(p25) + 3);
+
+  // Seasonal cycle line
+  ctx.strokeStyle = '#e0e0e0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let d = 0; d < 366; d++) {
+    const x = xPos(d);
+    const y = yPos(cycle[d]);
+    if (d === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Y-axis label
+  ctx.save();
+  ctx.translate(12, mt + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#90caf9';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SST (\u00b0C)', 0, 0);
+  ctx.restore();
+
+  // Hover crosshair
+  if (hoverDay != null && hoverDay >= 0 && hoverDay < 366) {
+    const hx = xPos(hoverDay);
+    const hy = yPos(cycle[hoverDay]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(hx, mt); ctx.lineTo(hx, mt + ph); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(hx, hy, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#ff5722';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+// Chart hover interaction
+function setupChartHover() {
+  const canvas = document.getElementById('seasonChart');
+  const tooltip = document.getElementById('chartTooltip');
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!chartState) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const { cycle, p25, p75, ml, pw, mt, ph } = chartState;
+
+    // Check if within plot area
+    if (mx < ml || mx > ml + pw || my < mt || my > mt + ph) {
+      tooltip.style.display = 'none';
+      drawSeasonalChart(cycle, p25, p75); // redraw without crosshair
+      return;
+    }
+
+    const dayIdx = Math.round(((mx - ml) / pw) * 365);
+    const d = Math.max(0, Math.min(365, dayIdx));
+    const sst = cycle[d];
+    const dateLabel = dayOfYearToLabel(d + 1);
+
+    // Update tooltip
+    tooltip.style.display = 'block';
+    tooltip.textContent = `${dateLabel}: ${sst.toFixed(2)}\u00b0C`;
+    // Position tooltip near cursor
+    let tx = mx + 12;
+    let ty = my - 24;
+    if (tx + 120 > rect.width) tx = mx - 120;
+    if (ty < 0) ty = my + 12;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+
+    drawSeasonalChart(cycle, p25, p75, d);
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+    if (chartState) {
+      drawSeasonalChart(chartState.cycle, chartState.p25, chartState.p75);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Wire up UI events
+// ═══════════════════════════════════════════════════════════════════
+document.getElementById('varSelect').addEventListener('change', (e) => {
+  loadVariable(e.target.value);
+});
+
+document.getElementById('btnRescale').addEventListener('click', rescaleToView);
+document.getElementById('btnReset').addEventListener('click', resetScale);
+
+document.getElementById('infoClose').addEventListener('click', () => {
+  document.getElementById('infoPanel').classList.remove('visible');
+  if (clickMarker) { map.removeLayer(clickMarker); clickMarker = null; }
+  chartState = null;
+});
+
+document.getElementById('btnInfo').addEventListener('click', () => {
+  document.getElementById('infoModal').classList.add('visible');
+});
+document.getElementById('closeModal').addEventListener('click', () => {
+  document.getElementById('infoModal').classList.remove('visible');
+});
+document.getElementById('infoModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('infoModal'))
+    document.getElementById('infoModal').classList.remove('visible');
+});
+
+document.getElementById('chkCities').addEventListener('change', (e) => {
+  if (e.target.checked) {
+    if (!citiesLayer) citiesLayer = createCitiesLayer();
+    citiesLayer.addTo(map);
+  } else if (citiesLayer) {
+    map.removeLayer(citiesLayer);
+  }
+});
+
+map.on('click', handleMapClick);
+
+setupChartHover();
+
+// ═══════════════════════════════════════════════════════════════════
+//  Initialise
+// ═══════════════════════════════════════════════════════════════════
+(async function init() {
+  try {
+    const resp = await fetch('data/metadata.json');
+    META = await resp.json();
+  } catch (err) {
+    document.getElementById('loading').textContent = 'Failed to load metadata. Run: python -m http.server 8080';
+    return;
+  }
+
+  const sel = document.getElementById('varSelect');
+  for (const [vname, vcfg] of Object.entries(META.variables)) {
+    const opt = document.createElement('option');
+    opt.value = vname;
+    opt.textContent = vcfg.title;
+    sel.appendChild(opt);
+  }
+
+  await loadVariable(Object.keys(META.variables)[0]);
+})();
+</script>
+</body>
+</html>

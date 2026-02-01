@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandelbrot Explorer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #e0e0e0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #mainCanvas {
+    display: block;
+    position: absolute;
+    top: 0; left: 0;
+    cursor: crosshair;
+  }
+
+  /* Preview canvas for zoom animation */
+  #previewCanvas {
+    display: none;
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+  }
+
+  /* Selection rectangle */
+  #selectionRect {
+    display: none;
+    position: absolute;
+    border: 2px dashed rgba(255, 220, 50, 0.9);
+    background: rgba(255, 220, 50, 0.08);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Controls panel */
+  #controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+    z-index: 20;
+    min-width: 220px;
+    font-size: 13px;
+    transition: opacity 0.3s;
+  }
+
+  #controls.collapsed {
+    min-width: auto;
+    padding: 8px 12px;
+  }
+
+  #controls.collapsed .ctrl-body { display: none; }
+
+  #toggleControls {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 14px;
+    float: right;
+    padding: 0 0 0 8px;
+    line-height: 1;
+  }
+  #toggleControls:hover { color: #fff; }
+
+  .ctrl-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .ctrl-section {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .ctrl-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  .ctrl-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .ctrl-value {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: #ccc;
+    word-break: break-all;
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .ctrl-row label {
+    font-size: 12px;
+    color: #aaa;
+    min-width: 70px;
+  }
+
+  .ctrl-row input[type="range"] {
+    flex: 1;
+    accent-color: #5b8def;
+    height: 4px;
+  }
+
+  .ctrl-row .range-val {
+    font-family: monospace;
+    font-size: 12px;
+    color: #ccc;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .ctrl-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+  }
+  .ctrl-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .palette-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .palette-swatch {
+    width: 28px;
+    height: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .palette-swatch:hover { transform: scale(1.1); }
+  .palette-swatch.active { border-color: #fff; }
+
+  /* Progress bar */
+  #progressBar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: #5b8def;
+    transition: width 0.1s;
+    z-index: 20;
+    opacity: 0;
+  }
+  #progressBar.active { opacity: 1; }
+
+  /* Help hint */
+  #helpHint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 25, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #888;
+    z-index: 20;
+    white-space: nowrap;
+    transition: opacity 1s;
+  }
+
+  /* ===== Tutorial Overlay ===== */
+  #tutorialOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  #tutorialOverlay.visible { display: flex; }
+
+  #tutorialBox {
+    background: #13131f;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    width: min(880px, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px 36px 24px;
+    position: relative;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+  }
+
+  #tutorialClose {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: none; border: none;
+    color: #666; font-size: 22px;
+    cursor: pointer; line-height: 1;
+  }
+  #tutorialClose:hover { color: #fff; }
+
+  .tut-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .tut-subtitle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  /* Slide container */
+  .tut-slides { position: relative; }
+  .tut-slide {
+    display: none;
+    animation: tutFadeIn 0.35s ease;
+  }
+  .tut-slide.active { display: block; }
+  @keyframes tutFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tut-slide h3 {
+    font-size: 17px;
+    color: #ccc;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .tut-slide p, .tut-slide li {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: #aaa;
+    margin-bottom: 10px;
+  }
+  .tut-slide ul { padding-left: 20px; margin-bottom: 12px; }
+  .tut-slide li { margin-bottom: 4px; }
+
+  .tut-slide .keyword {
+    color: #7eb8f7;
+    font-weight: 600;
+  }
+  .tut-slide .explode {
+    color: #f76e6e;
+  }
+  .tut-slide .stable {
+    color: #6ef79e;
+  }
+  .tut-slide .math {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    color: #d4b8ff;
+    white-space: nowrap;
+  }
+  .tut-slide .math-block {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: rgba(255,255,255,0.04);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #d4b8ff;
+    text-align: center;
+    margin: 14px 0;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Canvas visualizations inside slides */
+  .tut-canvas-wrap {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .tut-canvas-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .tut-canvas-col .tut-canvas-label {
+    font-size: 12px;
+    color: #888;
+    font-family: monospace;
+  }
+  .tut-canvas-col .tut-canvas-result {
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 18px;
+  }
+  .tut-anim-canvas {
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0a0a14;
+  }
+
+  .tut-play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(91, 141, 239, 0.15);
+    border: 1px solid rgba(91, 141, 239, 0.3);
+    color: #7eb8f7;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    margin: 8px auto;
+    display: flex;
+    width: fit-content;
+    transition: background 0.15s;
+  }
+  .tut-play-btn:hover { background: rgba(91, 141, 239, 0.25); }
+  .tut-play-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Navigation dots & arrows */
+  .tut-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .tut-nav-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #ccc;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    min-width: 80px;
+  }
+  .tut-nav-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .tut-nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .tut-dots {
+    display: flex;
+    gap: 8px;
+  }
+  .tut-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    transition: background 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .tut-dot:hover { background: rgba(255,255,255,0.3); }
+  .tut-dot.active {
+    background: #5b8def;
+    transform: scale(1.3);
+  }
+
+  .tut-note {
+    font-size: 12px;
+    color: #555;
+    font-style: italic;
+    margin-top: 8px;
+  }
+
+  /* Zoom level badge */
+  #zoomBadge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(15, 15, 25, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #aaa;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="mainCanvas"></canvas>
+<canvas id="previewCanvas"></canvas>
+<div id="selectionRect"></div>
+<div id="progressBar"></div>
+
+<div id="zoomBadge">1x</div>
+
+<div id="controls">
+  <button id="toggleControls" title="Toggle panel">&#9776;</button>
+  <div class="ctrl-title">Mandelbrot Explorer</div>
+  <!-- Hidden refs for JS compatibility -->
+  <span id="infoCenter" style="display:none"></span>
+  <span id="infoWidth" style="display:none"></span>
+  <div class="ctrl-body">
+
+    <div class="ctrl-section">
+      <div class="ctrl-row">
+        <label>Iterations</label>
+        <input type="range" id="iterSlider" min="50" max="5000" value="200" step="10">
+        <span class="range-val" id="iterVal">200</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+        <input type="checkbox" id="autoIter" checked>
+        <label for="autoIter" style="font-size:11px; color:#888; cursor:pointer;">Auto-adjust with zoom</label>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <div class="ctrl-label">Color Palette</div>
+      <div class="palette-row" id="paletteRow"></div>
+    </div>
+
+    <div class="ctrl-section btn-row" style="border-bottom:none;">
+      <button class="ctrl-btn" id="btnBack" disabled>&#8592; Back</button>
+      <button class="ctrl-btn" id="btnReset">Reset</button>
+      <button class="ctrl-btn" id="btnSave">Save Image</button>
+      <button class="ctrl-btn" id="btnInfo" style="background:rgba(91,141,239,0.15); border-color:rgba(91,141,239,0.3); color:#7eb8f7;">? How it works</button>
+    </div>
+  </div>
+</div>
+
+<div id="helpHint">Click and drag to select a region to zoom into</div>
+
+<!-- ===== Tutorial Overlay ===== -->
+<div id="tutorialOverlay">
+  <div id="tutorialBox">
+    <button id="tutorialClose">&times;</button>
+    <div class="tut-title">How the Mandelbrot Set Works</div>
+    <div class="tut-subtitle">An interactive explanation &mdash; no maths degree required</div>
+
+    <div class="tut-slides" id="tutSlides">
+
+      <!-- SLIDE 1: Simple iteration -->
+      <div class="tut-slide active" data-slide="0">
+        <h3>Step 1: What is an "iteration"?</h3>
+        <p>An <span class="keyword">iteration</span> means repeating the same rule over and over, feeding the result back in each time. Think of it like a machine: you put a number in, the machine does something to it, and the output becomes the next input.</p>
+        <p>Let's start with the simplest possible rule:</p>
+        <div class="math-block">z &rarr; z + x &nbsp;&nbsp;&nbsp; (starting from z = 0)</div>
+        <p>Pick a value for <span class="math">x</span> and watch what happens to <span class="math">z</span> as we keep applying the rule:</p>
+        <div class="tut-canvas-wrap">
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">x = 0.3</div>
+            <canvas class="tut-anim-canvas" id="tut1a" width="340" height="100"></canvas>
+            <div class="tut-canvas-result explode" id="tut1a-result"></div>
+          </div>
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">x = -0.5</div>
+            <canvas class="tut-anim-canvas" id="tut1b" width="340" height="100"></canvas>
+            <div class="tut-canvas-result explode" id="tut1b-result"></div>
+          </div>
+        </div>
+        <button class="tut-play-btn" id="tut1-play">&#9654; Run iterations</button>
+        <p>With this simple rule, the numbers always march off toward infinity (unless <span class="math">x = 0</span>). That's pretty boring &mdash; <span class="explode">everything explodes</span>. Let's make the rule more interesting...</p>
+      </div>
+
+      <!-- SLIDE 2: Squaring iteration + number line -->
+      <div class="tut-slide" data-slide="1">
+        <h3>Step 2: Add some squaring</h3>
+        <p>Now let's change the rule to include <span class="keyword">squaring</span>:</p>
+        <div class="math-block">z &rarr; z&sup2; + x &nbsp;&nbsp;&nbsp; (starting from z = 0)</div>
+        <p>This tiny change makes things <em>much</em> more interesting. For some values of <span class="math">x</span>, the numbers still explode to infinity. But for others, they stay small and bounce around forever!</p>
+        <div class="tut-canvas-wrap">
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">x = 0.5 </div>
+            <canvas class="tut-anim-canvas" id="tut2a" width="340" height="140"></canvas>
+            <div class="tut-canvas-result" id="tut2a-result"></div>
+          </div>
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">x = -0.5</div>
+            <canvas class="tut-anim-canvas" id="tut2b" width="340" height="140"></canvas>
+            <div class="tut-canvas-result" id="tut2b-result"></div>
+          </div>
+        </div>
+        <button class="tut-play-btn" id="tut2-play">&#9654; Run iterations</button>
+        <p id="tut2-transition" style="display:none;">So <span class="math">x = 0.5</span> and <span class="math">x = -0.5</span> sit on a <span class="keyword">number line</span>. What if we tested <em>every</em> value of <span class="math">x</span> and coloured the result &mdash; <span class="stable">green</span> for stable, <span class="explode">red</span> for explodes?</p>
+        <div class="tut-canvas-wrap">
+          <canvas class="tut-anim-canvas" id="tut3a" width="700" height="50" style="display:none;"></canvas>
+        </div>
+        <button class="tut-play-btn" id="tut3-play" style="display:none;">&#9654; Colour the whole number line</button>
+        <p id="tut2-outro" style="display:none;">That's nice, but it's just a 1D line. What if we could do this across a whole <em>2D plane</em> of values?</p>
+      </div>
+
+      <!-- SLIDE 3: Introducing complex numbers -->
+      <div class="tut-slide" data-slide="2">
+        <h3>Step 3: From a line to a plane</h3>
+        <p>To go from a line to a plane, we need a way to describe points in 2D. This is where <span class="keyword">complex numbers</span> come in.</p>
+        <p>Don't worry &mdash; a complex number is just <strong>a point on a 2D plane</strong>. Instead of one number <span class="math">x</span>, we write <span class="math">c = x + iy</span>, where <span class="math">x</span> is the horizontal position and <span class="math">y</span> is the vertical position. The letter <span class="math">i</span> is a special marker that just means "this part goes up/down."</p>
+        <div class="tut-canvas-wrap">
+          <canvas class="tut-anim-canvas" id="tut3b" width="300" height="260"></canvas>
+        </div>
+        <p>So complex numbers are just <em>coordinates</em>. Now our rule becomes:</p>
+        <div class="math-block">z &rarr; z&sup2; + c &nbsp;&nbsp;&nbsp; where c is a point on the plane</div>
+        <p class="tut-note">The squaring of complex numbers involves a twist (literally &mdash; it rotates and scales). But the key idea is the same: iterate, and see if the result explodes or not.</p>
+      </div>
+
+      <!-- SLIDE 4: Colouring the plane -->
+      <div class="tut-slide" data-slide="3">
+        <h3>Step 4: Colour every point</h3>
+        <p>Now we do something bold: we test <span class="keyword">every single point</span> on the plane. For each point <span class="math">c</span>, we run the rule <span class="math">z &rarr; z&sup2; + c</span> over and over and ask: does it explode, or stay small?</p>
+        <p>Here's a map of the plane. Let's pick two points and test them &mdash; one deep <span class="stable">inside the dark region</span>, and one clearly <span class="explode">outside</span>:</p>
+
+        <div class="tut-canvas-wrap">
+          <!-- Main map + iteration panels in a row -->
+          <div class="tut-canvas-col">
+            <canvas class="tut-anim-canvas" id="tut4map" width="420" height="300"></canvas>
+            <div style="font-size:11px; color:#555; margin-top:2px;">The complex plane</div>
+          </div>
+          <div class="tut-canvas-col" style="justify-content:center;">
+            <div class="tut-canvas-label" style="color:#4cbb7c;">&#9679; c = -0.5 + 0i &nbsp;(inside)</div>
+            <canvas class="tut-anim-canvas" id="tut4a" width="200" height="160"></canvas>
+            <div class="tut-canvas-result" id="tut4a-result"></div>
+            <div style="height:8px;"></div>
+            <div class="tut-canvas-label" style="color:#e8834a;">&#9679; c = 0.4 + 0.3i &nbsp;(outside)</div>
+            <canvas class="tut-anim-canvas" id="tut4b" width="200" height="160"></canvas>
+            <div class="tut-canvas-result" id="tut4b-result"></div>
+          </div>
+        </div>
+
+        <button class="tut-play-btn" id="tut4-play">&#9654; Step 1: Test these two points</button>
+        <button class="tut-play-btn" id="tut4c-play" style="display:none;">&#9654; Step 2: Now colour every point on the map</button>
+        <p id="tut4-explain" style="display:none;">Now imagine doing this for <em>every single point</em>. Points that never escape are <strong style="color:#fff">black</strong>. Points that escape get coloured by <span class="keyword">how quickly</span> they escape &mdash; fast escapers get one colour, slow ones get another.</p>
+      </div>
+
+      <!-- SLIDE 5: The Mandelbrot set -->
+      <div class="tut-slide" data-slide="4">
+        <h3>Step 5: The Mandelbrot Set</h3>
+        <p>That image you just watched being built? <strong>That's the Mandelbrot set.</strong></p>
+        <p>Formally, the <span class="keyword">Mandelbrot set</span> is the collection of all points <span class="math">c</span> where the iteration <span class="math">z &rarr; z&sup2; + c</span> does <em>not</em> fly off to infinity. Those are the black points in the image.</p>
+        <p>But the real magic is at the <span class="keyword">boundary</span> &mdash; the edge between the black region and the coloured region. That's where the incredible detail lives:</p>
+        <ul>
+          <li>The boundary is <strong>infinitely detailed</strong> &mdash; you can keep zooming in forever and always find new patterns</li>
+          <li>As you zoom in, you find <strong>tiny copies of the whole shape</strong> hiding inside the detail &mdash; this is called <span class="keyword">self-similarity</span></li>
+          <li>The coloured bands show <em>how many iterations</em> it took for that point to escape &mdash; nearby colours mean similar escape times</li>
+        </ul>
+        <div class="tut-canvas-wrap">
+          <canvas class="tut-anim-canvas" id="tut5" width="700" height="180"></canvas>
+        </div>
+        <button class="tut-play-btn" id="tut5-play">&#9654; Zoom into the boundary</button>
+        <p class="tut-note">Each zoom reveals structure that wasn't visible before, yet the same patterns keep reappearing at every scale.</p>
+      </div>
+
+      <!-- SLIDE 6: Chaos + go explore -->
+      <div class="tut-slide" data-slide="5">
+        <h3>Step 6: Chaos at the edge</h3>
+        <p>Here's the mind-bending part. Take two points that are <em>incredibly</em> close together near the boundary. One might escape after 50 iterations. The other might never escape at all. A <span class="keyword">tiny</span> change in starting position leads to a <span class="keyword">huge</span> difference in outcome.</p>
+        <p>This is a hallmark of <span class="keyword">chaos</span> &mdash; extreme sensitivity to starting conditions. It's the same idea behind "the butterfly effect" in weather: a small change now can lead to a completely different result later.</p>
+        <div class="tut-canvas-wrap">
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">c = -0.7500 + 0.1000i</div>
+            <canvas class="tut-anim-canvas" id="tut6a" width="280" height="200"></canvas>
+            <div class="tut-canvas-result" id="tut6a-result"></div>
+          </div>
+          <div class="tut-canvas-col">
+            <div class="tut-canvas-label">c = -0.7485 + 0.1000i</div>
+            <canvas class="tut-anim-canvas" id="tut6b" width="280" height="200"></canvas>
+            <div class="tut-canvas-result" id="tut6b-result"></div>
+          </div>
+        </div>
+        <button class="tut-play-btn" id="tut6-play">&#9654; Compare neighbours</button>
+        <p style="margin-top:16px;">That's the Mandelbrot set: a simple rule, applied over and over, creating infinite complexity from almost nothing.</p>
+        <p><strong style="color:#7eb8f7; font-size:15px;">Now close this and explore it yourself. Drag a rectangle on the boundary and zoom in &mdash; see what you discover!</strong></p>
+      </div>
+
+    </div>
+
+    <div class="tut-nav">
+      <button class="tut-nav-btn" id="tutPrev" disabled>&larr; Back</button>
+      <div class="tut-dots" id="tutDots"></div>
+      <button class="tut-nav-btn" id="tutNext">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================
+// Mandelbrot Explorer — All logic in one script block
+// =====================================================
+
+// --- Color Palettes ---
+const PALETTES = [
+  {
+    name: 'Ocean',
+    stops: [
+      [0, 7, 100],
+      [32, 107, 203],
+      [237, 255, 255],
+      [255, 170, 0],
+      [0, 2, 0],
+    ]
+  },
+  {
+    name: 'Fire',
+    stops: [
+      [0, 0, 0],
+      [128, 0, 0],
+      [255, 100, 0],
+      [255, 255, 50],
+      [255, 255, 220],
+    ]
+  },
+  {
+    name: 'Neon',
+    stops: [
+      [0, 0, 30],
+      [20, 0, 80],
+      [100, 0, 200],
+      [255, 0, 150],
+      [255, 200, 255],
+    ]
+  },
+  {
+    name: 'Mono',
+    stops: [
+      [0, 0, 0],
+      [60, 60, 60],
+      [140, 140, 140],
+      [220, 220, 220],
+      [255, 255, 255],
+    ]
+  },
+];
+
+// Build palette lookup tables (1024 entries each)
+const PALETTE_SIZE = 1024;
+const paletteTables = PALETTES.map(p => buildPaletteTable(p.stops, PALETTE_SIZE));
+
+function buildPaletteTable(stops, size) {
+  const table = new Uint8Array(size * 3);
+  const nStops = stops.length;
+  for (let i = 0; i < size; i++) {
+    const t = i / size * (nStops - 1);
+    const idx = Math.floor(t);
+    const frac = t - idx;
+    const s0 = stops[Math.min(idx, nStops - 1)];
+    const s1 = stops[Math.min(idx + 1, nStops - 1)];
+    table[i * 3]     = s0[0] + (s1[0] - s0[0]) * frac;
+    table[i * 3 + 1] = s0[1] + (s1[1] - s0[1]) * frac;
+    table[i * 3 + 2] = s0[2] + (s1[2] - s0[2]) * frac;
+  }
+  return table;
+}
+
+// --- State ---
+let currentPalette = 0;
+let maxIter = 200;
+let autoIterEnabled = true;
+
+// View bounds
+const INITIAL_BOUNDS = { xMin: -2.5, xMax: 1.0, yMin: -1.25, yMax: 1.25 };
+let bounds = { ...INITIAL_BOUNDS };
+let history = [];
+let effectiveInitialWidth = null; // Set after first render's aspect correction
+
+// Canvas refs
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const previewCanvas = document.getElementById('previewCanvas');
+const previewCtx = previewCanvas.getContext('2d');
+
+// UI refs
+const selectionRect = document.getElementById('selectionRect');
+const progressBar = document.getElementById('progressBar');
+const zoomBadge = document.getElementById('zoomBadge');
+const helpHint = document.getElementById('helpHint');
+const iterSlider = document.getElementById('iterSlider');
+const iterVal = document.getElementById('iterVal');
+const autoIterCheckbox = document.getElementById('autoIter');
+const btnBack = document.getElementById('btnBack');
+const btnReset = document.getElementById('btnReset');
+const btnSave = document.getElementById('btnSave');
+const infoCenter = document.getElementById('infoCenter');
+const infoWidth = document.getElementById('infoWidth');
+const controlsPanel = document.getElementById('controls');
+const paletteRow = document.getElementById('paletteRow');
+
+// Workers
+let workers = [];
+let workerCount = 0;
+let pendingRender = null;
+let isRendering = false;
+let renderGeneration = 0; // to discard stale renders
+
+// --- Web Worker Setup (inline blob workers) ---
+function createWorkerCode() {
+  return `
+    self.onmessage = function(e) {
+      const { startRow, endRow, width, xMin, xMax, yMin, yMax, maxIter, generation } = e.data;
+      const height = (yMax - yMin) / (xMax - xMin) * width;
+      const rows = endRow - startRow;
+      // Store iteration + smooth value as Float32
+      const iterData = new Float32Array(rows * width);
+
+      for (let py = 0; py < rows; py++) {
+        const y0 = yMin + (startRow + py) / height * (yMax - yMin);
+        for (let px = 0; px < width; px++) {
+          const x0 = xMin + px / width * (xMax - xMin);
+          let x = 0, y = 0, x2 = 0, y2 = 0;
+          let iter = 0;
+          while (x2 + y2 <= 4 && iter < maxIter) {
+            y = 2 * x * y + y0;
+            x = x2 - y2 + x0;
+            x2 = x * x;
+            y2 = y * y;
+            iter++;
+          }
+          if (iter < maxIter) {
+            // Smooth coloring
+            const log_zn = Math.log(x2 + y2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            iterData[py * width + px] = iter + 1 - nu;
+          } else {
+            iterData[py * width + px] = -1; // Interior
+          }
+        }
+      }
+      self.postMessage({ startRow, endRow, iterData, generation }, [iterData.buffer]);
+    };
+  `;
+}
+
+function initWorkers() {
+  workerCount = navigator.hardwareConcurrency || 4;
+  const blob = new Blob([createWorkerCode()], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  for (let i = 0; i < workerCount; i++) {
+    workers.push(new Worker(url));
+  }
+  URL.revokeObjectURL(url);
+}
+
+// --- Rendering ---
+function render(animate = false) {
+  renderGeneration++;
+  const gen = renderGeneration;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Adjust bounds to match canvas aspect ratio
+  const canvasAspect = w / h;
+  const boundsWidth = bounds.xMax - bounds.xMin;
+  const boundsHeight = bounds.yMax - bounds.yMin;
+  const boundsAspect = boundsWidth / boundsHeight;
+
+  if (canvasAspect > boundsAspect) {
+    // Canvas is wider — expand x
+    const cx = (bounds.xMin + bounds.xMax) / 2;
+    const newWidth = boundsHeight * canvasAspect;
+    bounds.xMin = cx - newWidth / 2;
+    bounds.xMax = cx + newWidth / 2;
+  } else {
+    // Canvas is taller — expand y
+    const cy = (bounds.yMin + bounds.yMax) / 2;
+    const newHeight = boundsWidth / canvasAspect;
+    bounds.yMin = cy - newHeight / 2;
+    bounds.yMax = cy + newHeight / 2;
+  }
+
+  // Record effective initial width on first render
+  if (effectiveInitialWidth === null) {
+    effectiveInitialWidth = bounds.xMax - bounds.xMin;
+  }
+
+  // Auto-adjust iterations
+  if (autoIterEnabled) {
+    const currentWidth = bounds.xMax - bounds.xMin;
+    const zoomFactor = effectiveInitialWidth / currentWidth;
+    maxIter = Math.round(200 + 50 * Math.log2(Math.max(1, zoomFactor)));
+    maxIter = Math.max(50, Math.min(10000, maxIter));
+    iterSlider.value = maxIter;
+    iterVal.textContent = maxIter;
+  }
+
+  updateInfo();
+  isRendering = true;
+  showProgress(0);
+
+  // Dispatch strips to workers
+  const stripHeight = Math.ceil(h / workerCount);
+  let completed = 0;
+  const imageData = ctx.createImageData(w, h);
+  const pixels = imageData.data;
+  const palette = paletteTables[currentPalette];
+
+  workers.forEach((worker, i) => {
+    const startRow = i * stripHeight;
+    const endRow = Math.min(startRow + stripHeight, h);
+    if (startRow >= h) {
+      completed++;
+      if (completed === workerCount) finishRender(imageData, gen);
+      return;
+    }
+
+    worker.onmessage = function(e) {
+      if (e.data.generation !== gen) return; // Discard stale
+      const { startRow: sr, endRow: er, iterData } = e.data;
+      const rows = er - sr;
+
+      for (let py = 0; py < rows; py++) {
+        for (let px = 0; px < w; px++) {
+          const idx = py * w + px;
+          const pIdx = ((sr + py) * w + px) * 4;
+          const val = iterData[idx];
+          if (val < 0) {
+            // Interior — black
+            pixels[pIdx] = 0;
+            pixels[pIdx + 1] = 0;
+            pixels[pIdx + 2] = 0;
+            pixels[pIdx + 3] = 255;
+          } else {
+            // Map to palette cyclically
+            const t = (val % 256) / 256;
+            const ci = Math.floor(t * PALETTE_SIZE) % PALETTE_SIZE;
+            pixels[pIdx]     = palette[ci * 3];
+            pixels[pIdx + 1] = palette[ci * 3 + 1];
+            pixels[pIdx + 2] = palette[ci * 3 + 2];
+            pixels[pIdx + 3] = 255;
+          }
+        }
+      }
+
+      completed++;
+      showProgress(completed / workerCount);
+      if (completed === workerCount) finishRender(imageData, gen);
+    };
+
+    worker.postMessage({
+      startRow, endRow, width: w,
+      xMin: bounds.xMin, xMax: bounds.xMax,
+      yMin: bounds.yMin, yMax: bounds.yMax,
+      maxIter, generation: gen
+    });
+  });
+}
+
+function finishRender(imageData, gen) {
+  if (gen !== renderGeneration) return;
+  ctx.putImageData(imageData, 0, 0);
+  isRendering = false;
+  hideProgress();
+
+  // If a zoom animation is in progress, signal that the render is ready
+  if (zoomAnimating) {
+    onRenderComplete();
+  }
+}
+
+// --- Progress Bar ---
+function showProgress(frac) {
+  progressBar.classList.add('active');
+  progressBar.style.width = (frac * 100) + '%';
+}
+
+function hideProgress() {
+  progressBar.classList.remove('active');
+  progressBar.style.width = '0%';
+}
+
+// --- Human-readable zoom formatting ---
+function formatZoom(z) {
+  if (z < 1000) {
+    return z.toFixed(z < 10 ? 1 : 0) + '× magnification';
+  }
+  const units = [
+    { threshold: 1e15, label: 'thousand trillion' },
+    { threshold: 1e12, label: 'trillion' },
+    { threshold: 1e9,  label: 'billion' },
+    { threshold: 1e6,  label: 'million' },
+    { threshold: 1e3,  label: 'thousand' },
+  ];
+  for (const u of units) {
+    if (z >= u.threshold) {
+      const val = z / u.threshold;
+      // Show 1 decimal for values < 10, otherwise round
+      const numStr = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
+      return numStr + ' ' + u.label + '× magnification';
+    }
+  }
+  return Math.round(z) + '× magnification';
+}
+
+// --- Info Updates ---
+function updateInfo() {
+  const cx = ((bounds.xMin + bounds.xMax) / 2);
+  const cy = ((bounds.yMin + bounds.yMax) / 2);
+  const sign = cy >= 0 ? '+' : '-';
+  infoCenter.textContent = `${cx.toPrecision(8)} ${sign} ${Math.abs(cy).toPrecision(8)}i`;
+  const w = bounds.xMax - bounds.xMin;
+  infoWidth.textContent = w.toExponential(4);
+
+  const refWidth = effectiveInitialWidth || (INITIAL_BOUNDS.xMax - INITIAL_BOUNDS.xMin);
+  const zoomLevel = refWidth / w;
+  zoomBadge.textContent = formatZoom(zoomLevel);
+
+  btnBack.disabled = history.length === 0;
+}
+
+// --- Selection Rectangle ---
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let dragEnd = { x: 0, y: 0 };
+let currentSelRect = null; // The computed aspect-locked rect
+
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  isDragging = true;
+  dragStart.x = e.clientX;
+  dragStart.y = e.clientY;
+  dragEnd.x = e.clientX;
+  dragEnd.y = e.clientY;
+  selectionRect.style.display = 'block';
+  computeSelectionRect();
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  dragEnd.x = e.clientX;
+  dragEnd.y = e.clientY;
+  computeSelectionRect();
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (!isDragging || e.button !== 0) return;
+  isDragging = false;
+  selectionRect.style.display = 'none';
+
+  if (!currentSelRect || currentSelRect.w < 10 || currentSelRect.h < 10) return;
+
+  zoomToRect(currentSelRect);
+});
+
+function computeSelectionRect() {
+  // Use the diagonal of the drag as the size reference,
+  // then lock to canvas aspect ratio.
+  const aspect = canvas.width / canvas.height;
+  const dx = dragEnd.x - dragStart.x;
+  const dy = dragEnd.y - dragStart.y;
+
+  // Use the larger of |dx| or |dy| scaled by aspect to determine size
+  let w, h;
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+
+  if (absDx / aspect >= absDy) {
+    // Width-dominant drag
+    w = absDx;
+    h = absDx / aspect;
+  } else {
+    // Height-dominant drag
+    h = absDy;
+    w = absDy * aspect;
+  }
+
+  // Anchor from dragStart, extending in the drag direction
+  let x = (dx >= 0) ? dragStart.x : dragStart.x - w;
+  let y = (dy >= 0) ? dragStart.y : dragStart.y - h;
+
+  currentSelRect = { x, y, w, h };
+
+  selectionRect.style.left = x + 'px';
+  selectionRect.style.top = y + 'px';
+  selectionRect.style.width = w + 'px';
+  selectionRect.style.height = h + 'px';
+}
+
+// --- Zoom Animation ---
+// Track whether animation and render have each finished.
+// Crossfade only when BOTH are done.
+let zoomAnimDone = false;
+let zoomRenderDone = false;
+let zoomAnimating = false;
+
+function zoomToRect(rect) {
+  // Convert pixel rect to complex bounds
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const newXMin = bounds.xMin + (rect.x / cw) * (bounds.xMax - bounds.xMin);
+  const newXMax = bounds.xMin + ((rect.x + rect.w) / cw) * (bounds.xMax - bounds.xMin);
+  const newYMin = bounds.yMin + (rect.y / ch) * (bounds.yMax - bounds.yMin);
+  const newYMax = bounds.yMin + ((rect.y + rect.h) / ch) * (bounds.yMax - bounds.yMin);
+
+  // Save history
+  history.push({ ...bounds, maxIter });
+
+  // Reset synchronisation flags
+  zoomAnimDone = false;
+  zoomRenderDone = false;
+  zoomAnimating = true;
+
+  // 1) Start the zoom animation on the PREVIEW canvas (visible layer)
+  startZoomAnimation(rect, () => {
+    zoomAnimDone = true;
+    maybeFinishZoom();
+  });
+
+  // 2) Start computing the new region on the MAIN canvas (hidden underneath)
+  bounds = { xMin: newXMin, xMax: newXMax, yMin: newYMin, yMax: newYMax };
+  render();
+
+  // Hide help hint after first zoom
+  if (helpHint.style.opacity !== '0') {
+    helpHint.style.opacity = '0';
+    setTimeout(() => helpHint.style.display = 'none', 1000);
+  }
+}
+
+function startZoomAnimation(rect, onComplete) {
+  // Snapshot current canvas onto the preview (top layer)
+  previewCanvas.width = canvas.width;
+  previewCanvas.height = canvas.height;
+  previewCanvas.style.width = canvas.style.width;
+  previewCanvas.style.height = canvas.style.height;
+
+  // Copy the current rendered image as our animation source
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = canvas.width;
+  sourceCanvas.height = canvas.height;
+  sourceCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+  previewCanvas.style.display = 'block';
+  previewCanvas.style.opacity = '1';
+  previewCanvas.style.transition = '';
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const startTime = performance.now();
+
+  // Scale duration with zoom depth for a cinematic feel
+  const zoomRatio = Math.max(1.5, cw / rect.w);
+  const duration = Math.min(1800, 700 + zoomRatio * 80);
+
+  // ---------------------------------------------------------------
+  // The key idea: interpolate in the COMPLEX PLANE, then project
+  // back to pixel crop coordinates on the source image.
+  //
+  // The source image represents the current complex-plane viewport
+  // (bounds at the time of the snapshot — saved before zoomToRect
+  // overwrites them). We need those bounds to map between pixels
+  // and complex coordinates.
+  // ---------------------------------------------------------------
+  const srcBounds = history[history.length - 1]; // the bounds we just pushed
+  const srcW = srcBounds.xMax - srcBounds.xMin;
+  const srcH = srcBounds.yMax - srcBounds.yMin;
+
+  // Start viewport = full source bounds
+  const startCR = (srcBounds.xMin + srcBounds.xMax) / 2;
+  const startCI = (srcBounds.yMin + srcBounds.yMax) / 2;
+  const startSpanR = srcW;
+  const startSpanI = srcH;
+
+  // End viewport = the selected rectangle mapped to complex coords
+  const endCR = srcBounds.xMin + (rect.x + rect.w / 2) / cw * srcW;
+  const endCI = srcBounds.yMin + (rect.y + rect.h / 2) / ch * srcH;
+  const endSpanR = rect.w / cw * srcW;
+  const endSpanI = rect.h / ch * srcH;
+
+  // Log of scale ratio for exponential zoom interpolation
+  const logScale = Math.log(endSpanR / startSpanR);
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const rawT = Math.min(1, elapsed / duration);
+    // Ease in-out cubic
+    const t = rawT < 0.5
+      ? 4 * rawT * rawT * rawT
+      : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+
+    // Exponential zoom interpolation (constant perceived speed)
+    const scale = Math.exp(logScale * t);
+    const spanR = startSpanR * scale;
+    const spanI = startSpanI * scale;
+
+    // The center must also interpolate exponentially to look straight.
+    // Think of it this way: at each moment, the center offset from
+    // start should be proportional to how much we've "used up" of the
+    // zoom. With exponential zoom, the correct blending is:
+    //   center(t) = start + (end - start) * (1 - scale) / (1 - endScale)
+    // This keeps the target point at a fixed screen position throughout.
+    const endScale = endSpanR / startSpanR;
+    const blend = (logScale === 0) ? t : (1 - scale) / (1 - endScale);
+    const curCR = startCR + (endCR - startCR) * blend;
+    const curCI = startCI + (endCI - startCI) * blend;
+
+    // Now map this complex-plane viewport back to pixel coordinates
+    // on the source image
+    const cropX = (curCR - spanR / 2 - srcBounds.xMin) / srcW * cw;
+    const cropY = (curCI - spanI / 2 - srcBounds.yMin) / srcH * ch;
+    const cropW = spanR / srcW * cw;
+    const cropH = spanI / srcH * ch;
+
+    previewCtx.clearRect(0, 0, cw, ch);
+    previewCtx.imageSmoothingEnabled = true;
+    previewCtx.imageSmoothingQuality = 'high';
+    previewCtx.drawImage(sourceCanvas, cropX, cropY, cropW, cropH, 0, 0, cw, ch);
+
+    if (rawT < 1) {
+      requestAnimationFrame(step);
+    } else {
+      onComplete();
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function onRenderComplete() {
+  zoomRenderDone = true;
+  maybeFinishZoom();
+}
+
+function maybeFinishZoom() {
+  if (!zoomAnimating) return;
+  if (!zoomAnimDone || !zoomRenderDone) return;
+
+  // Both done — crossfade from the (blurry) preview to the (sharp) main canvas
+  zoomAnimating = false;
+  previewCanvas.style.transition = 'opacity 0.3s ease-out';
+  previewCanvas.style.opacity = '0';
+  setTimeout(() => {
+    previewCanvas.style.display = 'none';
+    previewCanvas.style.transition = '';
+  }, 300);
+}
+
+// --- Double-click zoom ---
+canvas.addEventListener('dblclick', (e) => {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const px = e.clientX;
+  const py = e.clientY;
+
+  // Zoom 4x centered on click
+  const zoomFactor = 4;
+
+  // Build a pixel rect for the animation
+  const rectW = cw / zoomFactor;
+  const rectH = ch / zoomFactor;
+  const rectX = px - rectW / 2;
+  const rectY = py - rectH / 2;
+
+  // Use zoomToRect which handles everything uniformly
+  zoomToRect({ x: rectX, y: rectY, w: rectW, h: rectH });
+});
+
+// --- Navigation Buttons ---
+btnBack.addEventListener('click', goBack);
+btnReset.addEventListener('click', resetView);
+
+function goBack() {
+  if (history.length === 0) return;
+  const prev = history.pop();
+  maxIter = prev.maxIter;
+  iterSlider.value = maxIter;
+  iterVal.textContent = maxIter;
+  bounds = { xMin: prev.xMin, xMax: prev.xMax, yMin: prev.yMin, yMax: prev.yMax };
+  render();
+}
+
+function resetView() {
+  history = [];
+  bounds = { ...INITIAL_BOUNDS };
+  effectiveInitialWidth = null;
+  maxIter = 200;
+  autoIterEnabled = true;
+  autoIterCheckbox.checked = true;
+  iterSlider.value = 200;
+  iterVal.textContent = '200';
+  render();
+}
+
+// --- Save Image ---
+btnSave.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'mandelbrot.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+// --- Iteration Slider ---
+iterSlider.addEventListener('input', () => {
+  maxIter = parseInt(iterSlider.value);
+  iterVal.textContent = maxIter;
+  autoIterEnabled = false;
+  autoIterCheckbox.checked = false;
+});
+
+iterSlider.addEventListener('change', () => {
+  render();
+});
+
+autoIterCheckbox.addEventListener('change', () => {
+  autoIterEnabled = autoIterCheckbox.checked;
+  if (autoIterEnabled) render();
+});
+
+// --- Palette Swatches ---
+function buildPaletteSwatches() {
+  paletteRow.innerHTML = '';
+  PALETTES.forEach((p, i) => {
+    const swatch = document.createElement('div');
+    swatch.className = 'palette-swatch' + (i === currentPalette ? ' active' : '');
+    swatch.title = p.name;
+    // Create gradient background from stops
+    const stops = p.stops.map((s, j) => `rgb(${s[0]},${s[1]},${s[2]}) ${j / (p.stops.length - 1) * 100}%`);
+    swatch.style.background = `linear-gradient(90deg, ${stops.join(', ')})`;
+    swatch.addEventListener('click', () => {
+      currentPalette = i;
+      document.querySelectorAll('.palette-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      render();
+    });
+    paletteRow.appendChild(swatch);
+  });
+}
+
+// --- Toggle Controls ---
+document.getElementById('toggleControls').addEventListener('click', () => {
+  controlsPanel.classList.toggle('collapsed');
+});
+
+// --- Keyboard Shortcuts ---
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  switch (e.key.toLowerCase()) {
+    case 'r': resetView(); break;
+    case 'b': goBack(); break;
+    case 'h': controlsPanel.classList.toggle('collapsed'); break;
+    case '1': case '2': case '3': case '4':
+      const pi = parseInt(e.key) - 1;
+      if (pi < PALETTES.length) {
+        currentPalette = pi;
+        buildPaletteSwatches();
+        render();
+      }
+      break;
+    case '+': case '=':
+      maxIter = Math.min(10000, maxIter + 50);
+      iterSlider.value = maxIter;
+      iterVal.textContent = maxIter;
+      autoIterEnabled = false;
+      autoIterCheckbox.checked = false;
+      render();
+      break;
+    case '-':
+      maxIter = Math.max(50, maxIter - 50);
+      iterSlider.value = maxIter;
+      iterVal.textContent = maxIter;
+      autoIterEnabled = false;
+      autoIterCheckbox.checked = false;
+      render();
+      break;
+  }
+});
+
+// --- Resize Handling ---
+let resizeTimeout;
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
+
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    resizeCanvas();
+    render();
+  }, 300);
+});
+
+// --- Init ---
+// =====================================================
+// Tutorial System
+// =====================================================
+
+const tutOverlay = document.getElementById('tutorialOverlay');
+const tutSlides = document.querySelectorAll('.tut-slide');
+const tutDots = document.getElementById('tutDots');
+const tutPrev = document.getElementById('tutPrev');
+const tutNext = document.getElementById('tutNext');
+let tutCurrent = 0;
+const TUT_COUNT = tutSlides.length;
+
+// Build dots
+for (let i = 0; i < TUT_COUNT; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'tut-dot' + (i === 0 ? ' active' : '');
+  dot.addEventListener('click', () => goToSlide(i));
+  tutDots.appendChild(dot);
+}
+
+function goToSlide(n) {
+  tutSlides[tutCurrent].classList.remove('active');
+  tutDots.children[tutCurrent].classList.remove('active');
+  tutCurrent = n;
+  tutSlides[tutCurrent].classList.add('active');
+  tutDots.children[tutCurrent].classList.add('active');
+  tutPrev.disabled = tutCurrent === 0;
+  tutNext.textContent = tutCurrent === TUT_COUNT - 1 ? 'Close' : 'Next \u2192';
+}
+
+tutPrev.addEventListener('click', () => { if (tutCurrent > 0) goToSlide(tutCurrent - 1); });
+tutNext.addEventListener('click', () => {
+  if (tutCurrent < TUT_COUNT - 1) goToSlide(tutCurrent + 1);
+  else closeTutorial();
+});
+document.getElementById('tutorialClose').addEventListener('click', closeTutorial);
+document.getElementById('btnInfo').addEventListener('click', openTutorial);
+
+function openTutorial() {
+  tutOverlay.classList.add('visible');
+}
+function closeTutorial() {
+  tutOverlay.classList.remove('visible');
+}
+
+// --- Helper: draw a number line / axis ---
+function drawNumberLine(ctx, w, h, xMin, xMax, label) {
+  const pad = 20;
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, h / 2);
+  ctx.lineTo(w - pad, h / 2);
+  ctx.stroke();
+  // Ticks
+  ctx.fillStyle = '#666';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (let v = Math.ceil(xMin); v <= Math.floor(xMax); v++) {
+    const x = pad + (v - xMin) / (xMax - xMin) * (w - 2 * pad);
+    ctx.beginPath();
+    ctx.moveTo(x, h / 2 - 4);
+    ctx.lineTo(x, h / 2 + 4);
+    ctx.stroke();
+    ctx.fillText(v, x, h / 2 + 15);
+  }
+}
+
+// --- Helper: draw a dot on number line ---
+function drawDotOnLine(ctx, w, h, xMin, xMax, val, color, radius) {
+  const pad = 20;
+  const x = pad + (val - xMin) / (xMax - xMin) * (w - 2 * pad);
+  ctx.beginPath();
+  ctx.arc(x, h / 2, radius || 5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// --- Helper: draw 2D complex plane ---
+function drawComplexPlane(ctx, w, h, rMin, rMax, iMin, iMax, pad) {
+  pad = pad || 30;
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  // Axes
+  const ox = pad + (0 - rMin) / (rMax - rMin) * (w - 2 * pad);
+  const oy = pad + (0 - iMin) / (iMax - iMin) * (h - 2 * pad);
+  ctx.strokeStyle = '#444';
+  // Horizontal axis
+  ctx.beginPath(); ctx.moveTo(pad, oy); ctx.lineTo(w - pad, oy); ctx.stroke();
+  // Vertical axis
+  ctx.beginPath(); ctx.moveTo(ox, pad); ctx.lineTo(ox, h - pad); ctx.stroke();
+  // Labels
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Real', w / 2, h - 4);
+  ctx.save();
+  ctx.translate(10, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Imaginary', 0, 0);
+  ctx.restore();
+}
+
+// --- Helper: complex to pixel ---
+function c2px(r, i, w, h, rMin, rMax, iMin, iMax, pad) {
+  pad = pad || 30;
+  return {
+    x: pad + (r - rMin) / (rMax - rMin) * (w - 2 * pad),
+    y: pad + (i - iMin) / (iMax - iMin) * (h - 2 * pad)
+  };
+}
+
+// --- Helper: animate iterations with a trail ---
+function animateIterations(canvasId, resultId, iterFn, opts) {
+  const cvs = document.getElementById(canvasId);
+  const cCtx = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  const maxSteps = opts.maxSteps || 20;
+  const delay = opts.delay || 250;
+  const xMin = opts.xMin, xMax = opts.xMax;
+  const is2D = opts.is2D || false;
+  const iMin = opts.iMin, iMax = opts.iMax;
+  const pad = opts.pad || (is2D ? 30 : 20);
+
+  let step = 0;
+  let z = opts.startZ || (is2D ? { r: 0, i: 0 } : 0);
+  const trail = [is2D ? { ...z } : z];
+  const escaped = { did: false, at: -1 };
+
+  function draw() {
+    cCtx.clearRect(0, 0, w, h);
+    if (is2D) {
+      drawComplexPlane(cCtx, w, h, xMin, xMax, iMin, iMax, pad);
+      // Draw trail
+      cCtx.strokeStyle = 'rgba(91,141,239,0.4)';
+      cCtx.lineWidth = 1.5;
+      cCtx.beginPath();
+      for (let j = 0; j < trail.length; j++) {
+        const p = c2px(trail[j].r, trail[j].i, w, h, xMin, xMax, iMin, iMax, pad);
+        if (j === 0) cCtx.moveTo(p.x, p.y); else cCtx.lineTo(p.x, p.y);
+      }
+      cCtx.stroke();
+      // Draw dots
+      trail.forEach((pt, j) => {
+        const p = c2px(pt.r, pt.i, w, h, xMin, xMax, iMin, iMax, pad);
+        cCtx.beginPath();
+        cCtx.arc(p.x, p.y, j === trail.length - 1 ? 5 : 3, 0, Math.PI * 2);
+        cCtx.fillStyle = j === trail.length - 1 ? '#5b8def' : 'rgba(91,141,239,0.5)';
+        cCtx.fill();
+      });
+      // Label current
+      const last = trail[trail.length - 1];
+      const lp = c2px(last.r, last.i, w, h, xMin, xMax, iMin, iMax, pad);
+      cCtx.fillStyle = '#aaa';
+      cCtx.font = '10px monospace';
+      cCtx.textAlign = 'left';
+      cCtx.fillText(`z=${last.r.toFixed(2)}+${last.i.toFixed(2)}i`, lp.x + 8, lp.y - 6);
+      // Step count
+      cCtx.fillStyle = '#555';
+      cCtx.font = '10px monospace';
+      cCtx.textAlign = 'right';
+      cCtx.fillText(`step ${step}`, w - 8, 14);
+    } else {
+      drawNumberLine(cCtx, w, h, xMin, xMax);
+      // Draw trail
+      trail.forEach((v, j) => {
+        const clampedV = Math.max(xMin, Math.min(xMax, v));
+        drawDotOnLine(cCtx, w, h, xMin, xMax, clampedV,
+          j === trail.length - 1 ? '#5b8def' : 'rgba(91,141,239,0.4)',
+          j === trail.length - 1 ? 5 : 3);
+      });
+      // Label
+      const last = trail[trail.length - 1];
+      cCtx.fillStyle = '#aaa';
+      cCtx.font = '11px monospace';
+      cCtx.textAlign = 'center';
+      const clampedLast = Math.max(xMin, Math.min(xMax, last));
+      const lx = 20 + (clampedLast - xMin) / (xMax - xMin) * (w - 40);
+      cCtx.fillText(`z=${last.toFixed(3)}`, lx, h / 2 - 12);
+      cCtx.fillStyle = '#555';
+      cCtx.textAlign = 'right';
+      cCtx.fillText(`step ${step}`, w - 8, 14);
+    }
+  }
+
+  draw();
+
+  function iterate() {
+    if (step >= maxSteps) {
+      // Finished
+      const res = document.getElementById(resultId);
+      if (res) {
+        if (escaped.did) {
+          res.textContent = `Escaped after ${escaped.at} steps`;
+          res.className = 'tut-canvas-result explode';
+        } else {
+          res.textContent = `Stayed stable after ${maxSteps} steps`;
+          res.className = 'tut-canvas-result stable';
+        }
+      }
+      return;
+    }
+    z = iterFn(z);
+    step++;
+    trail.push(is2D ? { ...z } : z);
+    // Check escape
+    const mag = is2D ? Math.sqrt(z.r * z.r + z.i * z.i) : Math.abs(z);
+    if (mag > 10 && !escaped.did) {
+      escaped.did = true;
+      escaped.at = step;
+    }
+    draw();
+    if (mag < 1e6 && step < maxSteps) {
+      setTimeout(iterate, delay);
+    } else if (step < maxSteps && mag >= 1e6) {
+      // Escaped far enough, show result
+      const res = document.getElementById(resultId);
+      if (res) {
+        res.textContent = `Exploded after ${escaped.at} steps!`;
+        res.className = 'tut-canvas-result explode';
+      }
+    }
+  }
+
+  setTimeout(iterate, delay);
+}
+
+// --- SLIDE 1: z -> z + x ---
+document.getElementById('tut1-play').addEventListener('click', function() {
+  this.disabled = true;
+  document.getElementById('tut1a-result').textContent = '';
+  document.getElementById('tut1b-result').textContent = '';
+  animateIterations('tut1a', 'tut1a-result',
+    (z) => z + 0.3,
+    { maxSteps: 15, delay: 300, xMin: -1, xMax: 6 });
+  animateIterations('tut1b', 'tut1b-result',
+    (z) => z + (-0.5),
+    { maxSteps: 15, delay: 300, xMin: -8, xMax: 1 });
+  setTimeout(() => this.disabled = false, 5000);
+});
+
+// --- SLIDE 2: z -> z² + x, then reveal number line ---
+document.getElementById('tut2-play').addEventListener('click', function() {
+  this.disabled = true;
+  document.getElementById('tut2a-result').textContent = '';
+  document.getElementById('tut2b-result').textContent = '';
+  animateIterations('tut2a', 'tut2a-result',
+    (z) => z * z + 0.5,
+    { maxSteps: 20, delay: 250, xMin: -1, xMax: 3 });
+  animateIterations('tut2b', 'tut2b-result',
+    (z) => z * z + (-0.5),
+    { maxSteps: 20, delay: 250, xMin: -1.5, xMax: 1.5 });
+  // After iterations finish, reveal the transition text, number line with points, and colour button
+  setTimeout(() => {
+    document.getElementById('tut2-transition').style.display = 'block';
+    document.getElementById('tut3a').style.display = 'block';
+    document.getElementById('tut3-play').style.display = 'flex';
+
+    // Immediately draw the number line axis, ticks, and the two test points
+    const nlCvs = document.getElementById('tut3a');
+    const nlCtx = nlCvs.getContext('2d');
+    const nlW = nlCvs.width, nlH = nlCvs.height;
+    const nlXMin = -2.5, nlXMax = 1.5, nlPad = 20;
+
+    nlCtx.clearRect(0, 0, nlW, nlH);
+    nlCtx.fillStyle = '#0a0a14';
+    nlCtx.fillRect(0, 0, nlW, nlH);
+
+    // Axis line
+    nlCtx.strokeStyle = '#444';
+    nlCtx.lineWidth = 1;
+    nlCtx.beginPath();
+    nlCtx.moveTo(nlPad, nlH / 2);
+    nlCtx.lineTo(nlW - nlPad, nlH / 2);
+    nlCtx.stroke();
+
+    // Ticks
+    nlCtx.fillStyle = '#666';
+    nlCtx.font = '10px monospace';
+    nlCtx.textAlign = 'center';
+    for (let v = Math.ceil(nlXMin); v <= Math.floor(nlXMax); v++) {
+      const tx = nlPad + (v - nlXMin) / (nlXMax - nlXMin) * (nlW - 2 * nlPad);
+      nlCtx.beginPath(); nlCtx.moveTo(tx, nlH / 2 - 4); nlCtx.lineTo(tx, nlH / 2 + 4); nlCtx.stroke();
+      nlCtx.fillText(v, tx, nlH / 2 + 16);
+    }
+
+    // Mark the two iterated points
+    [{ val: 0.5, color: '#f76e6e', label: 'x=0.5' },
+     { val: -0.5, color: '#6ef79e', label: 'x=\u22120.5' }].forEach(mp => {
+      const mx = nlPad + (mp.val - nlXMin) / (nlXMax - nlXMin) * (nlW - 2 * nlPad);
+      nlCtx.beginPath();
+      nlCtx.arc(mx, nlH / 2, 5, 0, Math.PI * 2);
+      nlCtx.fillStyle = mp.color;
+      nlCtx.fill();
+      nlCtx.font = '10px monospace';
+      nlCtx.textAlign = 'center';
+      nlCtx.fillText(mp.label, mx, nlH / 2 - 10);
+    });
+  }, 6000);
+});
+
+// --- Number line colour scan (button on slide 2) ---
+document.getElementById('tut3-play').addEventListener('click', function() {
+  this.disabled = true;
+  const cvs = document.getElementById('tut3a');
+  const c = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  const xMin = -2.5, xMax = 1.5;
+  const pad = 20;
+  let col = 0;
+  const totalCols = w - 2 * pad;
+
+  // The axis + marked points are already drawn; just scan-colour over them
+  function scanStep() {
+    if (col >= totalCols) {
+      this.disabled = false;
+      // Reveal the transition text to step 3
+      setTimeout(() => {
+        document.getElementById('tut2-outro').style.display = 'block';
+      }, 400);
+      return;
+    }
+    const x = xMin + (col / totalCols) * (xMax - xMin);
+    let z = 0;
+    let escaped = false;
+    for (let i = 0; i < 100; i++) {
+      z = z * z + x;
+      if (Math.abs(z) > 2) { escaped = true; break; }
+    }
+    c.fillStyle = escaped ? '#c44' : '#4c6' ;
+    c.fillRect(pad + col, 0, 2, h);
+    col += 2;
+    requestAnimationFrame(scanStep.bind(this));
+  }
+  scanStep.call(this);
+});
+
+// Draw the complex plane diagram (static)
+(function drawTut3b() {
+  const cvs = document.getElementById('tut3b');
+  if (!cvs) return;
+  const c = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  const pad = 30;
+  drawComplexPlane(c, w, h, -2, 2, -2, 2, pad);
+  // Draw a sample point
+  const pt = c2px(0.8, 1.2, w, h, -2, 2, -2, 2, pad);
+  c.beginPath();
+  c.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+  c.fillStyle = '#5b8def';
+  c.fill();
+  // Label
+  c.fillStyle = '#aaa';
+  c.font = '12px monospace';
+  c.textAlign = 'left';
+  c.fillText('c = 0.8 + 1.2i', pt.x + 10, pt.y + 4);
+  // Dashed lines to axes
+  c.setLineDash([3, 3]);
+  c.strokeStyle = 'rgba(91,141,239,0.3)';
+  const origin = c2px(0, 0, w, h, -2, 2, -2, 2, pad);
+  const ptX = c2px(0.8, 0, w, h, -2, 2, -2, 2, pad);
+  const ptY = c2px(0, 1.2, w, h, -2, 2, -2, 2, pad);
+  c.beginPath(); c.moveTo(pt.x, pt.y); c.lineTo(ptX.x, ptX.y); c.stroke();
+  c.beginPath(); c.moveTo(pt.x, pt.y); c.lineTo(ptY.x, ptY.y); c.stroke();
+  c.setLineDash([]);
+  // Axis labels
+  c.fillStyle = '#666';
+  c.font = '11px monospace';
+  c.textAlign = 'center';
+  c.fillText('x = 0.8', ptX.x, ptX.y + 16);
+  c.textAlign = 'right';
+  c.fillText('y = 1.2', ptY.x - 8, ptY.y + 4);
+})();
+
+// --- SLIDE 4: Map with two points → iterate → colour the map ---
+// Shared map constants
+const T4_XMIN = -2.2, T4_XMAX = 0.8, T4_YMIN = -1.05, T4_YMAX = 1.05;
+// Two test points: green one inside (clearly in main cardioid), orange one outside
+const T4_POINT_A = { r: -0.5, i: 0, color: '#4cbb7c', label: 'A' }; // inside
+const T4_POINT_B = { r: 0.4, i: 0.3, color: '#e8834a', label: 'B' }; // outside
+
+function tut4DrawMap(withMarkers) {
+  const cvs = document.getElementById('tut4map');
+  const c = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#0a0a14';
+  c.fillRect(0, 0, w, h);
+
+  // Draw faint grid + axes
+  drawComplexPlane(c, w, h, T4_XMIN, T4_XMAX, T4_YMIN, T4_YMAX, 20);
+
+  // Draw a faint outline of the Mandelbrot set so the shape is visible
+  const pad = 20;
+  const imgW = w - 2 * pad, imgH = h - 2 * pad;
+  for (let py = 0; py < imgH; py += 2) {
+    for (let px = 0; px < imgW; px += 2) {
+      const cr = T4_XMIN + px / imgW * (T4_XMAX - T4_XMIN);
+      const ci = T4_YMIN + py / imgH * (T4_YMAX - T4_YMIN);
+      let zr = 0, zi = 0, zr2 = 0, zi2 = 0, iter = 0;
+      while (zr2 + zi2 <= 4 && iter < 60) {
+        zi = 2 * zr * zi + ci;
+        zr = zr2 - zi2 + cr;
+        zr2 = zr * zr; zi2 = zi * zi;
+        iter++;
+      }
+      if (iter === 60) {
+        c.fillStyle = 'rgba(60,70,100,0.35)';
+        c.fillRect(pad + px, pad + py, 2, 2);
+      }
+    }
+  }
+
+  if (withMarkers) {
+    // Draw marker points
+    [T4_POINT_A, T4_POINT_B].forEach(pt => {
+      const p = c2px(pt.r, pt.i, w, h, T4_XMIN, T4_XMAX, T4_YMIN, T4_YMAX, pad);
+      // Glow
+      c.beginPath();
+      c.arc(p.x, p.y, 10, 0, Math.PI * 2);
+      c.fillStyle = pt.color + '30';
+      c.fill();
+      // Dot
+      c.beginPath();
+      c.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      c.fillStyle = pt.color;
+      c.fill();
+      // Label
+      c.fillStyle = pt.color;
+      c.font = 'bold 11px monospace';
+      c.textAlign = 'left';
+      c.fillText(pt.label, p.x + 9, p.y + 4);
+    });
+  }
+}
+
+// Draw the initial map when slide becomes visible
+tut4DrawMap(true);
+
+document.getElementById('tut4-play').addEventListener('click', function() {
+  this.disabled = true;
+  document.getElementById('tut4a-result').textContent = '';
+  document.getElementById('tut4b-result').textContent = '';
+
+  // Point A: c = -0.5 + 0i (stays stable — inside the set)
+  animateIterations('tut4a', 'tut4a-result',
+    (z) => ({ r: z.r * z.r - z.i * z.i + T4_POINT_A.r, i: 2 * z.r * z.i + T4_POINT_A.i }),
+    { is2D: true, maxSteps: 25, delay: 180,
+      xMin: -1.5, xMax: 1.5, iMin: -1.5, iMax: 1.5, startZ: { r: 0, i: 0 } });
+
+  // Point B: c = 0.4 + 0.3i (escapes — outside the set)
+  animateIterations('tut4b', 'tut4b-result',
+    (z) => ({ r: z.r * z.r - z.i * z.i + T4_POINT_B.r, i: 2 * z.r * z.i + T4_POINT_B.i }),
+    { is2D: true, maxSteps: 25, delay: 180,
+      xMin: -1.5, xMax: 1.5, iMin: -1.5, iMax: 1.5, startZ: { r: 0, i: 0 } });
+
+  // After iterations, update the map markers to show result colours, and reveal step 2
+  setTimeout(() => {
+    // Redraw map and colour the two test points with their result
+    const cvs = document.getElementById('tut4map');
+    const c = cvs.getContext('2d');
+    const w = cvs.width, h = cvs.height;
+    const pad = 20;
+
+    // Colour point A (stable → black)
+    const pA = c2px(T4_POINT_A.r, T4_POINT_A.i, w, h, T4_XMIN, T4_XMAX, T4_YMIN, T4_YMAX, pad);
+    c.beginPath(); c.arc(pA.x, pA.y, 6, 0, Math.PI * 2);
+    c.fillStyle = '#000'; c.fill();
+    c.strokeStyle = '#4cbb7c'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#4cbb7c'; c.font = 'bold 10px monospace'; c.textAlign = 'left';
+    c.fillText('stable → black', pA.x + 11, pA.y + 4);
+
+    // Colour point B (escaped → coloured)
+    const pB = c2px(T4_POINT_B.r, T4_POINT_B.i, w, h, T4_XMIN, T4_XMAX, T4_YMIN, T4_YMAX, pad);
+    c.beginPath(); c.arc(pB.x, pB.y, 6, 0, Math.PI * 2);
+    c.fillStyle = '#e8834a'; c.fill();
+    c.fillStyle = '#e8834a'; c.font = 'bold 10px monospace'; c.textAlign = 'left';
+    c.fillText('escaped → coloured', pB.x + 11, pB.y + 4);
+
+    // Reveal step 2 button and explanation
+    document.getElementById('tut4c-play').style.display = 'flex';
+    document.getElementById('tut4-explain').style.display = 'block';
+  }, 6000);
+});
+
+// Pixel-by-pixel Mandelbrot build on the same map canvas
+document.getElementById('tut4c-play').addEventListener('click', function() {
+  this.disabled = true;
+  const cvs = document.getElementById('tut4map');
+  const c = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  const pad = 20;
+  const imgW = w - 2 * pad, imgH = h - 2 * pad;
+  const imgData = c.createImageData(imgW, imgH);
+  const pixels = imgData.data;
+  const maxIt = 80;
+  let row = 0;
+  const rowsPerFrame = 3;
+  const pal = paletteTables[1]; // Fire palette — better contrast with black interior
+
+  // Clear the map area
+  c.fillStyle = '#0a0a14';
+  c.fillRect(pad, pad, imgW, imgH);
+
+  function buildRows() {
+    for (let r = 0; r < rowsPerFrame && row < imgH; r++, row++) {
+      for (let px = 0; px < imgW; px++) {
+        const cr = T4_XMIN + px / imgW * (T4_XMAX - T4_XMIN);
+        const ci = T4_YMIN + row / imgH * (T4_YMAX - T4_YMIN);
+        let zr = 0, zi = 0, zr2 = 0, zi2 = 0, iter = 0;
+        while (zr2 + zi2 <= 4 && iter < maxIt) {
+          zi = 2 * zr * zi + ci;
+          zr = zr2 - zi2 + cr;
+          zr2 = zr * zr; zi2 = zi * zi;
+          iter++;
+        }
+        const idx = (row * imgW + px) * 4;
+        if (iter === maxIt) {
+          pixels[idx] = pixels[idx+1] = pixels[idx+2] = 0;
+        } else {
+          const log_zn = Math.log(zr2 + zi2) / 2;
+          const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+          const smooth = iter + 1 - nu;
+          const t = (smooth % 256) / 256;
+          const ci2 = Math.floor(t * PALETTE_SIZE) % PALETTE_SIZE;
+          pixels[idx]   = pal[ci2 * 3];
+          pixels[idx+1] = pal[ci2 * 3 + 1];
+          pixels[idx+2] = pal[ci2 * 3 + 2];
+        }
+        pixels[idx+3] = 255;
+      }
+    }
+    c.putImageData(imgData, pad, pad);
+    // Scanline indicator
+    if (row < imgH) {
+      c.fillStyle = 'rgba(91,141,239,0.4)';
+      c.fillRect(pad, pad + row, imgW, 1);
+      requestAnimationFrame(buildRows);
+    } else {
+      // Redraw the two markers on top of the finished image
+      [T4_POINT_A, T4_POINT_B].forEach(pt => {
+        const p = c2px(pt.r, pt.i, w, h, T4_XMIN, T4_XMAX, T4_YMIN, T4_YMAX, pad);
+        c.beginPath(); c.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        c.strokeStyle = pt.color; c.lineWidth = 2; c.stroke();
+      });
+      this.disabled = false;
+    }
+  }
+  buildRows.call(this);
+});
+
+// --- SLIDE 5: Zoom strip showing self-similarity ---
+document.getElementById('tut5-play').addEventListener('click', function() {
+  this.disabled = true;
+  const cvs = document.getElementById('tut5');
+  const c = cvs.getContext('2d');
+  const w = cvs.width, h = cvs.height;
+  const pal = paletteTables[0];
+
+  // Show 4 zoom levels side by side
+  const regions = [
+    { xMin: -2.2, xMax: 0.8, yMin: -0.85, yMax: 0.85, label: '1×' },
+    { xMin: -0.85, xMax: -0.65, yMin: -0.35, yMax: -0.15, label: '15×' },
+    { xMin: -0.775, xMax: -0.74, yMin: -0.17, yMax: -0.135, label: '86×' },
+    { xMin: -0.7525, xMax: -0.745, yMin: -0.146, yMax: -0.1385, label: '400×' },
+  ];
+  const panelW = Math.floor((w - 12) / 4);
+  const panelH = h - 20;
+
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#0a0a14';
+  c.fillRect(0, 0, w, h);
+
+  let rIdx = 0;
+  const rowsPerFrame = 4; // scanline rows per animation frame
+
+  const revealPanel = () => {
+    if (rIdx >= regions.length) { this.disabled = false; return; }
+    const reg = regions[rIdx];
+    const offX = rIdx * (panelW + 4);
+    const maxIt = 200 + rIdx * 100;
+
+    // Pre-compute the full panel image
+    const imgData = c.createImageData(panelW, panelH);
+    const px = imgData.data;
+    for (let py = 0; py < panelH; py++) {
+      for (let ppx = 0; ppx < panelW; ppx++) {
+        const cr = reg.xMin + ppx / panelW * (reg.xMax - reg.xMin);
+        const ci = reg.yMin + py / panelH * (reg.yMax - reg.yMin);
+        let zr = 0, zi = 0, zr2 = 0, zi2 = 0, iter = 0;
+        while (zr2 + zi2 <= 4 && iter < maxIt) {
+          zi = 2 * zr * zi + ci;
+          zr = zr2 - zi2 + cr;
+          zr2 = zr * zr;
+          zi2 = zi * zi;
+          iter++;
+        }
+        const idx = (py * panelW + ppx) * 4;
+        if (iter === maxIt) {
+          px[idx] = px[idx+1] = px[idx+2] = 0;
+        } else {
+          const log_zn = Math.log(zr2 + zi2) / 2;
+          const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+          const smooth = iter + 1 - nu;
+          const t = (smooth % 256) / 256;
+          const ci2 = Math.floor(t * PALETTE_SIZE) % PALETTE_SIZE;
+          px[idx]   = pal[ci2 * 3];
+          px[idx+1] = pal[ci2 * 3 + 1];
+          px[idx+2] = pal[ci2 * 3 + 2];
+        }
+        px[idx+3] = 255;
+      }
+    }
+
+    // Progressive scanline reveal
+    let revealRow = 0;
+    const scanReveal = () => {
+      for (let r = 0; r < rowsPerFrame && revealRow < panelH; r++, revealRow++) {
+        // Copy one row from pre-computed image to a 1-row slice
+        const rowSlice = c.createImageData(panelW, 1);
+        const srcOff = revealRow * panelW * 4;
+        for (let j = 0; j < panelW * 4; j++) {
+          rowSlice.data[j] = px[srcOff + j];
+        }
+        c.putImageData(rowSlice, offX, revealRow);
+      }
+      // Scanline indicator
+      if (revealRow < panelH) {
+        c.fillStyle = 'rgba(91,141,239,0.5)';
+        c.fillRect(offX, revealRow, panelW, 1);
+        requestAnimationFrame(scanReveal);
+      } else {
+        // Panel finished — add label
+        c.fillStyle = 'rgba(0,0,0,0.55)';
+        c.fillRect(offX, panelH, panelW, 20);
+        c.fillStyle = '#aaa';
+        c.font = '11px monospace';
+        c.textAlign = 'center';
+        c.fillText(reg.label, offX + panelW / 2, panelH + 14);
+
+        // Arrow between panels
+        if (rIdx > 0) {
+          c.fillStyle = '#5b8def';
+          c.font = '16px sans-serif';
+          c.textAlign = 'center';
+          c.fillText('\u2192', offX - 2, panelH / 2 + 4);
+        }
+
+        // Draw zoom-target rectangle showing where the NEXT panel comes from
+        if (rIdx < regions.length - 1) {
+          const next = regions[rIdx + 1];
+          // Map next region's bounds into pixel coords on this panel
+          const rxMin = (next.xMin - reg.xMin) / (reg.xMax - reg.xMin) * panelW;
+          const rxMax = (next.xMax - reg.xMin) / (reg.xMax - reg.xMin) * panelW;
+          const ryMin = (next.yMin - reg.yMin) / (reg.yMax - reg.yMin) * panelH;
+          const ryMax = (next.yMax - reg.yMin) / (reg.yMax - reg.yMin) * panelH;
+          const rw = rxMax - rxMin;
+          const rh = ryMax - ryMin;
+
+          c.save();
+          c.strokeStyle = '#ffdc32';
+          c.lineWidth = 1.5;
+          c.setLineDash([4, 3]);
+          c.strokeRect(offX + rxMin, ryMin, rw, rh);
+          c.setLineDash([]);
+          c.restore();
+        }
+
+        rIdx++;
+        // Pause before starting next panel for dramatic effect
+        setTimeout(revealPanel, 600);
+      }
+    };
+    requestAnimationFrame(scanReveal);
+  };
+
+  revealPanel();
+});
+
+// --- SLIDE 6: Chaos comparison ---
+document.getElementById('tut6-play').addEventListener('click', function() {
+  this.disabled = true;
+  document.getElementById('tut6a-result').textContent = '';
+  document.getElementById('tut6b-result').textContent = '';
+
+  // Two very close points near the boundary
+  // c1 = -0.75 + 0.1i (should stay bounded - inside set)
+  animateIterations('tut6a', 'tut6a-result',
+    (z) => ({ r: z.r * z.r - z.i * z.i + (-0.75), i: 2 * z.r * z.i + 0.1 }),
+    { is2D: true, maxSteps: 40, delay: 100,
+      xMin: -1.5, xMax: 1.5, iMin: -1.5, iMax: 1.5, startZ: { r: 0, i: 0 } });
+
+  // c2 = -0.7485 + 0.1i (should escape - outside set)
+  animateIterations('tut6b', 'tut6b-result',
+    (z) => ({ r: z.r * z.r - z.i * z.i + (-0.7485), i: 2 * z.r * z.i + 0.1 }),
+    { is2D: true, maxSteps: 40, delay: 100,
+      xMin: -1.5, xMax: 1.5, iMin: -1.5, iMax: 1.5, startZ: { r: 0, i: 0 } });
+
+  setTimeout(() => this.disabled = false, 5000);
+});
+
+// --- Keyboard: I to open tutorial ---
+const origKeyHandler = document.onkeydown;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key.toLowerCase() === 'i') {
+    if (tutOverlay.classList.contains('visible')) closeTutorial();
+    else openTutorial();
+  }
+  if (e.key === 'Escape' && tutOverlay.classList.contains('visible')) {
+    closeTutorial();
+  }
+});
+
+// Close on overlay background click
+tutOverlay.addEventListener('click', (e) => {
+  if (e.target === tutOverlay) closeTutorial();
+});
+
+// =====================================================
+// Init
+// =====================================================
+function init() {
+  resizeCanvas();
+  initWorkers();
+  buildPaletteSwatches();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

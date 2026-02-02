@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mandelbrot Explorer</title>
+<title>Fractal Explorer</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -423,6 +423,28 @@
     color: #aaa;
     z-index: 20;
   }
+
+  /* Fractal type selector */
+  #fractalSelect {
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc;
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 6px;
+  }
+  #fractalSelect:focus {
+    outline: none;
+    border-color: rgba(91,141,239,0.5);
+  }
+  #fractalSelect option, #fractalSelect optgroup {
+    background: #1a1a2e;
+    color: #ccc;
+  }
 </style>
 </head>
 <body>
@@ -436,11 +458,17 @@
 
 <div id="controls">
   <button id="toggleControls" title="Toggle panel">&#9776;</button>
-  <div class="ctrl-title">Mandelbrot Explorer</div>
+  <div class="ctrl-title" id="ctrlTitle">Fractal Explorer</div>
   <!-- Hidden refs for JS compatibility -->
   <span id="infoCenter" style="display:none"></span>
   <span id="infoWidth" style="display:none"></span>
   <div class="ctrl-body">
+
+    <div class="ctrl-section">
+      <div class="ctrl-label">Fractal Type</div>
+      <select id="fractalSelect"></select>
+      <div id="fractalInfo" style="font-size:11px; color:#666; font-style:italic; line-height:1.4;"></div>
+    </div>
 
     <div class="ctrl-section">
       <div class="ctrl-row">
@@ -460,6 +488,7 @@
     </div>
 
     <div class="ctrl-section btn-row" style="border-bottom:none;">
+      <button class="ctrl-btn" id="btnMode">&#128269; Zoom</button>
       <button class="ctrl-btn" id="btnBack" disabled>&#8592; Back</button>
       <button class="ctrl-btn" id="btnReset">Reset</button>
       <button class="ctrl-btn" id="btnSave">Save Image</button>
@@ -468,7 +497,7 @@
   </div>
 </div>
 
-<div id="helpHint">Click and drag to select a region to zoom into</div>
+<div id="helpHint">Click and drag to zoom &middot; Toggle Pan mode to move around</div>
 
 <!-- ===== Tutorial Overlay ===== -->
 <div id="tutorialOverlay">
@@ -689,14 +718,78 @@ function buildPaletteTable(stops, size) {
   return table;
 }
 
+// --- Fractal Type Configurations ---
+const FRACTAL_CONFIGS = {
+  mandelbrot: {
+    label: 'Mandelbrot',
+    info: 'The classic z \u2192 z\u00B2 + c. Points where the iteration stays bounded form the iconic cardioid-and-bulbs shape.',
+    bounds: { xMin: -2.5, xMax: 1.0, yMin: -1.25, yMax: 1.25 },
+  },
+  burningShip: {
+    label: 'Burning Ship',
+    info: 'Takes absolute values before squaring: z \u2192 (|Re(z)| + i|Im(z)|)\u00B2 + c. The asymmetry creates a ship-like silhouette.',
+    bounds: { xMin: -2.5, xMax: 1.5, yMin: -2.0, yMax: 1.0 },
+  },
+  tricorn: {
+    label: 'Tricorn (Mandelbar)',
+    info: 'Uses the complex conjugate: z \u2192 \u0305z\u00B2 + c. Produces a three-cornered shape with striking anti-symmetry.',
+    bounds: { xMin: -2.5, xMax: 1.5, yMin: -1.5, yMax: 1.5 },
+  },
+  multibrot3: {
+    label: 'Multibrot (power 3)',
+    info: 'Higher-power variant z \u2192 z\u00B3 + c. Each extra power adds another lobe to the set, giving this one two-fold symmetry.',
+    bounds: { xMin: -1.6, xMax: 1.6, yMin: -1.6, yMax: 1.6 },
+  },
+  multibrot4: {
+    label: 'Multibrot (power 4)',
+    info: 'Even higher power z \u2192 z\u2074 + c. Four-fold symmetry emerges with four main bulbs around the centre.',
+    bounds: { xMin: -1.6, xMax: 1.6, yMin: -1.6, yMax: 1.6 },
+  },
+  juliaDendrite: {
+    label: 'Julia \u2014 Dendrite',
+    info: 'Julia set with c = i. Produces a tree-like dendritic structure, right at the boundary of the Mandelbrot set.',
+    bounds: { xMin: -2.0, xMax: 2.0, yMin: -1.5, yMax: 1.5 },
+    julia: true, juliaR: 0, juliaI: 1,
+  },
+  juliaSpiral: {
+    label: 'Julia \u2014 Spiral',
+    info: 'Julia set with c = \u22120.8 + 0.156i. Dramatic double spirals wind endlessly into each other.',
+    bounds: { xMin: -2.0, xMax: 2.0, yMin: -1.5, yMax: 1.5 },
+    julia: true, juliaR: -0.8, juliaI: 0.156,
+  },
+  juliaRabbit: {
+    label: 'Julia \u2014 Douady Rabbit',
+    info: 'Julia set with c = \u22120.123 + 0.745i. Named for its three-eared rabbit shape, a famous connected Julia set.',
+    bounds: { xMin: -2.0, xMax: 2.0, yMin: -1.5, yMax: 1.5 },
+    julia: true, juliaR: -0.123, juliaI: 0.745,
+  },
+  juliaStar: {
+    label: 'Julia \u2014 Starfish',
+    info: 'Julia set with c = \u22120.75. Sits right on the Mandelbrot boundary, creating delicate starfish-like tendrils.',
+    bounds: { xMin: -2.0, xMax: 2.0, yMin: -1.5, yMax: 1.5 },
+    julia: true, juliaR: -0.75, juliaI: 0,
+  },
+  juliaLightning: {
+    label: 'Julia \u2014 Lightning',
+    info: 'Julia set with c = \u22120.4 + 0.6i. Branching filaments resemble frozen lightning bolts.',
+    bounds: { xMin: -2.0, xMax: 2.0, yMin: -1.5, yMax: 1.5 },
+    julia: true, juliaR: -0.4, juliaI: 0.6,
+  },
+};
+
+function getInitialBounds() {
+  return { ...FRACTAL_CONFIGS[currentFractal].bounds };
+}
+
 // --- State ---
 let currentPalette = 0;
 let maxIter = 200;
 let autoIterEnabled = true;
+let interactionMode = 'zoom'; // 'zoom' or 'pan'
+let currentFractal = 'mandelbrot';
 
 // View bounds
-const INITIAL_BOUNDS = { xMin: -2.5, xMax: 1.0, yMin: -1.25, yMax: 1.25 };
-let bounds = { ...INITIAL_BOUNDS };
+let bounds = getInitialBounds();
 let history = [];
 let effectiveInitialWidth = null; // Set after first render's aspect correction
 
@@ -733,32 +826,91 @@ let renderGeneration = 0; // to discard stale renders
 function createWorkerCode() {
   return `
     self.onmessage = function(e) {
-      const { startRow, endRow, width, xMin, xMax, yMin, yMax, maxIter, generation } = e.data;
+      const { startRow, endRow, width, xMin, xMax, yMin, yMax, maxIter, generation,
+              fractalType, juliaR, juliaI } = e.data;
       const height = (yMax - yMin) / (xMax - xMin) * width;
       const rows = endRow - startRow;
-      // Store iteration + smooth value as Float32
       const iterData = new Float32Array(rows * width);
+      const isJulia = fractalType && fractalType.startsWith('julia');
+      const escapeR2 = 4;
+
+      // Log of the power for smooth colouring
+      var logP = Math.LN2;
+      if (fractalType === 'multibrot3') logP = Math.log(3);
+      else if (fractalType === 'multibrot4') logP = Math.log(4);
 
       for (let py = 0; py < rows; py++) {
         const y0 = yMin + (startRow + py) / height * (yMax - yMin);
         for (let px = 0; px < width; px++) {
           const x0 = xMin + px / width * (xMax - xMin);
-          let x = 0, y = 0, x2 = 0, y2 = 0;
-          let iter = 0;
-          while (x2 + y2 <= 4 && iter < maxIter) {
-            y = 2 * x * y + y0;
-            x = x2 - y2 + x0;
-            x2 = x * x;
-            y2 = y * y;
-            iter++;
+
+          // Julia: c is fixed, z0 = pixel; Mandelbrot family: c = pixel, z0 = 0
+          var cx, cy, x, y;
+          if (isJulia) {
+            cx = juliaR; cy = juliaI; x = x0; y = y0;
+          } else {
+            cx = x0; cy = y0; x = 0; y = 0;
           }
+          var x2 = x * x, y2 = y * y;
+          var iter = 0;
+
+          switch (fractalType || 'mandelbrot') {
+            case 'mandelbrot':
+            case 'juliaDendrite':
+            case 'juliaSpiral':
+            case 'juliaRabbit':
+            case 'juliaStar':
+            case 'juliaLightning':
+              while (x2 + y2 <= escapeR2 && iter < maxIter) {
+                y = 2 * x * y + cy;
+                x = x2 - y2 + cx;
+                x2 = x * x; y2 = y * y;
+                iter++;
+              }
+              break;
+            case 'burningShip':
+              while (x2 + y2 <= escapeR2 && iter < maxIter) {
+                y = 2 * Math.abs(x) * Math.abs(y) - cy;
+                x = x2 - y2 + cx;
+                x2 = x * x; y2 = y * y;
+                iter++;
+              }
+              break;
+            case 'tricorn':
+              while (x2 + y2 <= escapeR2 && iter < maxIter) {
+                y = -2 * x * y + cy;
+                x = x2 - y2 + cx;
+                x2 = x * x; y2 = y * y;
+                iter++;
+              }
+              break;
+            case 'multibrot3':
+              while (x2 + y2 <= escapeR2 && iter < maxIter) {
+                var nx3 = x * x2 - 3 * x * y2 + cx;
+                var ny3 = 3 * x2 * y - y * y2 + cy;
+                x = nx3; y = ny3;
+                x2 = x * x; y2 = y * y;
+                iter++;
+              }
+              break;
+            case 'multibrot4':
+              while (x2 + y2 <= escapeR2 && iter < maxIter) {
+                var x4 = x2 * x2, y4 = y2 * y2;
+                var nx4 = x4 - 6 * x2 * y2 + y4 + cx;
+                var ny4 = 4 * x * y * (x2 - y2) + cy;
+                x = nx4; y = ny4;
+                x2 = x * x; y2 = y * y;
+                iter++;
+              }
+              break;
+          }
+
           if (iter < maxIter) {
-            // Smooth coloring
-            const log_zn = Math.log(x2 + y2) / 2;
-            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            var log_zn = Math.log(x2 + y2) / 2;
+            var nu = Math.log(log_zn / logP) / logP;
             iterData[py * width + px] = iter + 1 - nu;
           } else {
-            iterData[py * width + px] = -1; // Interior
+            iterData[py * width + px] = -1;
           }
         }
       }
@@ -872,11 +1024,15 @@ function render(animate = false) {
       if (completed === workerCount) finishRender(imageData, gen);
     };
 
+    const fConfig = FRACTAL_CONFIGS[currentFractal];
     worker.postMessage({
       startRow, endRow, width: w,
       xMin: bounds.xMin, xMax: bounds.xMax,
       yMin: bounds.yMin, yMax: bounds.yMax,
-      maxIter, generation: gen
+      maxIter, generation: gen,
+      fractalType: currentFractal,
+      juliaR: fConfig.juliaR || 0,
+      juliaI: fConfig.juliaI || 0,
     });
   });
 }
@@ -936,7 +1092,8 @@ function updateInfo() {
   const w = bounds.xMax - bounds.xMin;
   infoWidth.textContent = w.toExponential(4);
 
-  const refWidth = effectiveInitialWidth || (INITIAL_BOUNDS.xMax - INITIAL_BOUNDS.xMin);
+  const ib = getInitialBounds();
+  const refWidth = effectiveInitialWidth || (ib.xMax - ib.xMin);
   const zoomLevel = refWidth / w;
   zoomBadge.textContent = formatZoom(zoomLevel);
 
@@ -949,6 +1106,10 @@ let dragStart = { x: 0, y: 0 };
 let dragEnd = { x: 0, y: 0 };
 let currentSelRect = null; // The computed aspect-locked rect
 
+// Pan state
+let panBoundsSnapshot = null; // bounds at start of pan drag
+let panSourceCanvas = null;   // snapshot of mainCanvas for smooth pan preview
+
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   isDragging = true;
@@ -956,25 +1117,112 @@ canvas.addEventListener('mousedown', (e) => {
   dragStart.y = e.clientY;
   dragEnd.x = e.clientX;
   dragEnd.y = e.clientY;
-  selectionRect.style.display = 'block';
-  computeSelectionRect();
+
+  if (interactionMode === 'zoom') {
+    selectionRect.style.display = 'block';
+    computeSelectionRect();
+  } else {
+    // Pan mode — snapshot canvas and bounds
+    canvas.style.cursor = 'grabbing';
+    panBoundsSnapshot = { ...bounds };
+    panSourceCanvas = document.createElement('canvas');
+    panSourceCanvas.width = canvas.width;
+    panSourceCanvas.height = canvas.height;
+    panSourceCanvas.getContext('2d').drawImage(canvas, 0, 0);
+    // Show preview canvas on top for smooth dragging
+    previewCanvas.width = canvas.width;
+    previewCanvas.height = canvas.height;
+    previewCanvas.style.width = canvas.style.width;
+    previewCanvas.style.height = canvas.style.height;
+    previewCanvas.style.display = 'block';
+    previewCanvas.style.opacity = '1';
+    previewCanvas.style.transition = '';
+    previewCtx.drawImage(panSourceCanvas, 0, 0);
+  }
 });
 
 window.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
   dragEnd.x = e.clientX;
   dragEnd.y = e.clientY;
-  computeSelectionRect();
+
+  if (interactionMode === 'zoom') {
+    computeSelectionRect();
+  } else {
+    // Pan mode — translate the preview image by the pixel offset
+    const dx = dragEnd.x - dragStart.x;
+    const dy = dragEnd.y - dragStart.y;
+    const cw = previewCanvas.width;
+    const ch = previewCanvas.height;
+    previewCtx.clearRect(0, 0, cw, ch);
+    previewCtx.fillStyle = '#000';
+    previewCtx.fillRect(0, 0, cw, ch);
+    previewCtx.drawImage(panSourceCanvas, dx, dy);
+  }
 });
 
 window.addEventListener('mouseup', (e) => {
   if (!isDragging || e.button !== 0) return;
   isDragging = false;
-  selectionRect.style.display = 'none';
 
-  if (!currentSelRect || currentSelRect.w < 10 || currentSelRect.h < 10) return;
+  if (interactionMode === 'zoom') {
+    selectionRect.style.display = 'none';
+    if (!currentSelRect || currentSelRect.w < 10 || currentSelRect.h < 10) return;
+    zoomToRect(currentSelRect);
+  } else {
+    // Pan mode — compute final offset and re-render
+    canvas.style.cursor = 'grab';
+    const dx = dragEnd.x - dragStart.x;
+    const dy = dragEnd.y - dragStart.y;
 
-  zoomToRect(currentSelRect);
+    // Skip if barely moved
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
+      previewCanvas.style.display = 'none';
+      panSourceCanvas = null;
+      return;
+    }
+
+    // Convert pixel offset to complex-plane offset
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const complexDx = -dx / cw * (panBoundsSnapshot.xMax - panBoundsSnapshot.xMin);
+    const complexDy = -dy / ch * (panBoundsSnapshot.yMax - panBoundsSnapshot.yMin);
+
+    // Push history and update bounds
+    history.push({ ...panBoundsSnapshot, maxIter });
+    bounds = {
+      xMin: panBoundsSnapshot.xMin + complexDx,
+      xMax: panBoundsSnapshot.xMax + complexDx,
+      yMin: panBoundsSnapshot.yMin + complexDy,
+      yMax: panBoundsSnapshot.yMax + complexDy,
+    };
+
+    panSourceCanvas = null;
+    panBoundsSnapshot = null;
+
+    // Render new view; fade out preview when done
+    zoomAnimating = false; // not a zoom, but reuse the render-complete hook
+    render();
+
+    // Fade out preview once render finishes
+    const checkDone = setInterval(() => {
+      if (!isRendering) {
+        clearInterval(checkDone);
+        previewCanvas.style.transition = 'opacity 0.25s ease-out';
+        previewCanvas.style.opacity = '0';
+        setTimeout(() => {
+          previewCanvas.style.display = 'none';
+          previewCanvas.style.transition = '';
+        }, 250);
+      }
+    }, 50);
+
+    // Hide help hint
+    if (helpHint.style.opacity !== '0') {
+      helpHint.style.opacity = '0';
+      setTimeout(() => helpHint.style.display = 'none', 1000);
+    }
+  }
 });
 
 function computeSelectionRect() {
@@ -1206,7 +1454,7 @@ function goBack() {
 
 function resetView() {
   history = [];
-  bounds = { ...INITIAL_BOUNDS };
+  bounds = getInitialBounds();
   effectiveInitialWidth = null;
   maxIter = 200;
   autoIterEnabled = true;
@@ -1216,10 +1464,59 @@ function resetView() {
   render();
 }
 
+// --- Switch Fractal Type ---
+function switchFractal(type) {
+  currentFractal = type;
+  history = [];
+  bounds = getInitialBounds();
+  effectiveInitialWidth = null;
+  maxIter = 200;
+  autoIterEnabled = true;
+  autoIterCheckbox.checked = true;
+  iterSlider.value = 200;
+  iterVal.textContent = '200';
+
+  // Update info blurb
+  const blurb = document.getElementById('fractalInfo');
+  if (blurb) blurb.textContent = FRACTAL_CONFIGS[type].info;
+
+  // Update titles
+  const label = FRACTAL_CONFIGS[type].label;
+  document.title = label + ' Explorer';
+  document.getElementById('ctrlTitle').textContent = label + ' Explorer';
+
+  // Keep dropdown in sync
+  const sel = document.getElementById('fractalSelect');
+  if (sel) sel.value = type;
+
+  render();
+}
+
+// --- Pan/Zoom Mode Toggle ---
+const btnMode = document.getElementById('btnMode');
+btnMode.addEventListener('click', () => {
+  if (interactionMode === 'zoom') {
+    interactionMode = 'pan';
+    btnMode.innerHTML = '&#9995; Pan';
+    btnMode.style.background = 'rgba(91,141,239,0.15)';
+    btnMode.style.borderColor = 'rgba(91,141,239,0.3)';
+    btnMode.style.color = '#7eb8f7';
+    canvas.style.cursor = 'grab';
+  } else {
+    interactionMode = 'zoom';
+    btnMode.innerHTML = '&#128269; Zoom';
+    btnMode.style.background = '';
+    btnMode.style.borderColor = '';
+    btnMode.style.color = '';
+    canvas.style.cursor = 'crosshair';
+  }
+});
+
 // --- Save Image ---
 btnSave.addEventListener('click', () => {
   const link = document.createElement('a');
-  link.download = 'mandelbrot.png';
+  const fname = FRACTAL_CONFIGS[currentFractal].label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  link.download = fname + '.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
 });
@@ -2040,10 +2337,40 @@ tutOverlay.addEventListener('click', (e) => {
 // =====================================================
 // Init
 // =====================================================
+// --- Fractal Type Selector ---
+function buildFractalSelect() {
+  const select = document.getElementById('fractalSelect');
+  const mandelGroup = document.createElement('optgroup');
+  mandelGroup.label = 'Mandelbrot Family';
+  const juliaGroup = document.createElement('optgroup');
+  juliaGroup.label = 'Julia Sets';
+
+  Object.keys(FRACTAL_CONFIGS).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = FRACTAL_CONFIGS[key].label;
+    if (FRACTAL_CONFIGS[key].julia) {
+      juliaGroup.appendChild(opt);
+    } else {
+      mandelGroup.appendChild(opt);
+    }
+  });
+
+  select.appendChild(mandelGroup);
+  select.appendChild(juliaGroup);
+  select.value = currentFractal;
+  document.getElementById('fractalInfo').textContent = FRACTAL_CONFIGS[currentFractal].info;
+
+  select.addEventListener('change', () => {
+    switchFractal(select.value);
+  });
+}
+
 function init() {
   resizeCanvas();
   initWorkers();
   buildPaletteSwatches();
+  buildFractalSelect();
   render();
 }
 

@@ -4692,7 +4692,7 @@
 
       const allX = nodes.map(n => n.x);
       const allY = nodes.map(n => n.y);
-      const minX = 0;
+      const minX = Math.min(0, ...allX);
       const maxX = Math.max(...allX) + nodes[0].width;
       const minY = Math.min(...allY);
       const maxY = Math.max(...allY) + nodes[0].height;
@@ -4817,11 +4817,13 @@
         title,
         bodyHtml: `<div class="svg-report">${svgHtml}</div>`,
         extraStyles: `
-          .report-content { padding: 0; height: calc(100vh - 52px); }
-          .svg-report { width: 100%; height: 100%; }
+          .report-content { padding: 0; height: calc(100vh - 52px); overflow: auto; }
+          .svg-report { width: 100%; height: 100%; min-height: 100%; }
           .svg-report svg { width: 100%; height: 100%; display: block; }
           @media print {
-            .report-content { height: 100vh; }
+            .report-content { height: auto; overflow: visible; }
+            .svg-report { height: auto; }
+            .svg-report svg { height: auto; }
           }
         `,
         landscape: true
@@ -5344,12 +5346,11 @@
       const edges = [];
       Object.values(unions).forEach(union => {
         const p1 = union.partner1Id, p2 = union.partner2Id;
-        const p1ok = p1 && persons[p1], p2ok = p2 && persons[p2];
+        const p1ok = p1 && persons[p1] && xPos[p1] !== undefined;
+        const p2ok = p2 && persons[p2] && xPos[p2] !== undefined;
 
-        // Partner edge
+        // Partner edge: straight line between adjacent cards (diagonal if different years)
         if (p1ok && p2ok) {
-          const lx = Math.min(xPos[p1], xPos[p2]);
-          const rx = Math.max(xPos[p1], xPos[p2]);
           const lid = xPos[p1] < xPos[p2] ? p1 : p2;
           const rid = xPos[p1] < xPos[p2] ? p2 : p1;
           edges.push({
@@ -5359,100 +5360,250 @@
           });
         }
 
-        // Parent-child edges
-        const parentIds = [p1, p2].filter(pid => pid && persons[pid]);
-        if (parentIds.length === 0) return;
-        const midParentX = parentIds.reduce((s, pid) => s + xPos[pid] + CARD_W / 2, 0) / parentIds.length;
-        const maxParentBottom = Math.max(...parentIds.map(pid => yPos[pid] + CARD_H));
+        // Parent-child edges: single diagonal from couple midpoint to each child
+        const parentIds = [p1, p2].filter(pid => pid && persons[pid] && xPos[pid] !== undefined);
+        if (parentIds.length === 0 || union.childrenIds.length === 0) return;
+
+        // Anchor at the midpoint of the partner connection line
+        const anchorX = parentIds.reduce((s, pid) => s + xPos[pid] + CARD_W / 2, 0) / parentIds.length;
+        const anchorY = parentIds.length === 2
+          ? (yPos[parentIds[0]] + yPos[parentIds[1]]) / 2 + CARD_H / 2
+          : yPos[parentIds[0]] + CARD_H;
 
         union.childrenIds.forEach(cid => {
-          if (!persons[cid]) return;
-          const cx = xPos[cid] + CARD_W / 2;
-          const cy = yPos[cid];
-          const jy = (maxParentBottom + cy) / 2;
-          // Vertical from parent midpoint down to junction
-          edges.push({ type: 'child', x1: midParentX, y1: maxParentBottom, x2: midParentX, y2: jy });
-          // Horizontal from junction to child x
-          edges.push({ type: 'child', x1: midParentX, y1: jy, x2: cx, y2: jy });
-          // Vertical down to child top
-          edges.push({ type: 'child', x1: cx, y1: jy, x2: cx, y2: cy });
+          if (!persons[cid] || xPos[cid] === undefined) return;
+          edges.push({
+            type: 'child',
+            x1: anchorX,
+            y1: anchorY,
+            x2: xPos[cid] + CARD_W / 2,
+            y2: yPos[cid]
+          });
         });
       });
       return edges;
     }
 
     function calculateTimelineLayout(persons, unions, options = {}) {
-      const CARD_W = 150, CARD_H = 90, MIN_Y_GAP = 15, YEAR_BAR_W = 80;
+      const CARD_W = 150, CARD_H = 90, PARTNER_GAP = 20, SIBLING_GAP = 30, YEAR_BAR_W = 80;
 
-      // Step 1: Get x-positions from existing layout engine
-      const stdLayout = calculateLayout({
-        persons, unions,
-        focalPersonId: options.focalPersonId,
-        optimize: true
+      // ── Phase 1: Build relationship maps ──
+      const childOfUnion = {};   // pid → unionId
+      const partnerUnions = {};  // pid → [union objects]
+
+      Object.values(unions).forEach(u => {
+        u.childrenIds.forEach(cid => {
+          if (persons[cid]) childOfUnion[cid] = u.id;
+        });
+        [u.partner1Id, u.partner2Id].forEach(pid => {
+          if (pid && persons[pid]) {
+            if (!partnerUnions[pid]) partnerUnions[pid] = [];
+            partnerUnions[pid].push(u);
+          }
+        });
       });
+      Object.values(partnerUnions).forEach(arr =>
+        arr.sort((a, b) => (a.order || 1) - (b.order || 1))
+      );
+
+      // ── Phase 2: Recursive subtree width computation (bottom-up) ──
+      function computeSubtree(pid, visited) {
+        visited.add(pid);
+        const myUnions = partnerUnions[pid] || [];
+
+        // Collect partners not yet visited
+        const partners = [];
+        myUnions.forEach(u => {
+          const partnerId = u.partner1Id === pid ? u.partner2Id : u.partner1Id;
+          if (partnerId && persons[partnerId] && !visited.has(partnerId)) {
+            visited.add(partnerId);
+            partners.push(partnerId);
+          }
+        });
+
+        // Collect children from all unions not yet visited
+        const allChildren = [];
+        myUnions.forEach(u => {
+          u.childrenIds.forEach(cid => {
+            if (persons[cid] && !visited.has(cid)) {
+              allChildren.push(cid);
+            }
+          });
+        });
+
+        // Header width: self + partners side by side
+        const numCards = 1 + partners.length;
+        const headerW = numCards * CARD_W + Math.max(0, numCards - 1) * PARTNER_GAP;
+
+        // Children: recursively compute each child's subtree
+        const childTrees = allChildren.map(cid => computeSubtree(cid, visited));
+        const childrenW = childTrees.reduce((s, t) => s + t.totalW, 0) +
+                          Math.max(0, childTrees.length - 1) * SIBLING_GAP;
+
+        const totalW = Math.max(headerW, childrenW || 0);
+
+        return { pid, partners, childTrees, headerW, childrenW, totalW };
+      }
+
+      // Start from the focal person
+      const focalId = options.focalPersonId || Object.keys(persons)[0];
+      const visited = new Set();
+      const mainTree = computeSubtree(focalId, visited);
+
+      // ── Phase 3: Top-down x-position assignment ──
       const xPos = {};
-      stdLayout.nodes.forEach(n => { xPos[n.id] = n.x; });
 
-      // Step 2: Estimate birth years
+      function assignX(tree, leftX) {
+        // Center header within total width
+        const headerLeft = leftX + (tree.totalW - tree.headerW) / 2;
+
+        xPos[tree.pid] = headerLeft;
+        let hx = headerLeft + CARD_W + PARTNER_GAP;
+        tree.partners.forEach(p => {
+          xPos[p] = hx;
+          hx += CARD_W + PARTNER_GAP;
+        });
+
+        // Center children block within total width
+        if (tree.childTrees.length > 0) {
+          const childrenLeft = leftX + (tree.totalW - tree.childrenW) / 2;
+          let cx = childrenLeft;
+          tree.childTrees.forEach(ct => {
+            assignX(ct, cx);
+            cx += ct.totalW + SIBLING_GAP;
+          });
+        }
+      }
+
+      assignX(mainTree, 0);
+
+      // ── Phase 4: Place ancestors (iterative upward expansion) ──
+      let ancestorChanged = true;
+      while (ancestorChanged) {
+        ancestorChanged = false;
+        const placedIds = Object.keys(xPos);
+        for (const pid of placedIds) {
+          const parentUnionId = childOfUnion[pid];
+          if (!parentUnionId) continue;
+          const parentUnion = unions[parentUnionId];
+          if (!parentUnion) continue;
+
+          const unplacedParents = [parentUnion.partner1Id, parentUnion.partner2Id]
+            .filter(p => p && persons[p] && xPos[p] === undefined);
+          if (unplacedParents.length === 0) continue;
+
+          // Center parent pair above this child
+          const childCenter = xPos[pid] + CARD_W / 2;
+          const parentW = unplacedParents.length * CARD_W +
+                          Math.max(0, unplacedParents.length - 1) * PARTNER_GAP;
+          const parentLeft = childCenter - parentW / 2;
+
+          unplacedParents.forEach((parentId, i) => {
+            xPos[parentId] = parentLeft + i * (CARD_W + PARTNER_GAP);
+          });
+          ancestorChanged = true;
+        }
+      }
+
+      // Handle any disconnected persons not yet placed
+      let maxPlacedX = 0;
+      Object.values(xPos).forEach(x => { if (x + CARD_W > maxPlacedX) maxPlacedX = x + CARD_W; });
+      Object.keys(persons).forEach(pid => {
+        if (xPos[pid] === undefined) {
+          xPos[pid] = maxPlacedX + SIBLING_GAP;
+          maxPlacedX = xPos[pid] + CARD_W;
+        }
+      });
+
+      // ── Phase 5: Y from birth years ──
       const yearMap = estimateBirthYears(persons, unions);
-
-      // Step 3: Compute scale
       const allYears = Object.values(yearMap).map(v => v.year);
       const minYear = Math.min(...allYears);
       const maxYear = Math.max(...allYears);
       const yearSpan = Math.max(1, maxYear - minYear);
       const numPeople = Object.keys(persons).length;
       const targetHeight = Math.max(800, numPeople * 40);
-      const pxPerYear = Math.max(15, targetHeight / yearSpan);
+      const pxPerYear = Math.max(20, targetHeight / yearSpan);
 
-      // Step 4: Map y to year
-      const rawY = {};
+      const yPos = {};
       Object.keys(persons).forEach(pid => {
-        rawY[pid] = (yearMap[pid].year - minYear) * pxPerYear;
+        yPos[pid] = (yearMap[pid].year - minYear) * pxPerYear;
       });
 
-      // Step 5: Collision sweep — push overlapping cards down
-      const sortedIds = Object.keys(persons).sort((a, b) => {
-        const dy = rawY[a] - rawY[b];
-        if (Math.abs(dy) > 0.5) return dy;
-        return (xPos[a] || 0) - (xPos[b] || 0);
+      // ── Phase 6: Collision resolution (couple-aware) ──
+      // Group union partners into placement units so couples move together
+      const placementGroups = [];
+      const inGroup = new Set();
+      Object.values(unions).forEach(u => {
+        const p1 = u.partner1Id, p2 = u.partner2Id;
+        if (p1 && p2 && persons[p1] && persons[p2] &&
+            xPos[p1] !== undefined && xPos[p2] !== undefined &&
+            !inGroup.has(p1) && !inGroup.has(p2)) {
+          const leftId = xPos[p1] <= xPos[p2] ? p1 : p2;
+          const rightId = xPos[p1] <= xPos[p2] ? p2 : p1;
+          placementGroups.push({ members: [leftId, rightId] });
+          inGroup.add(p1);
+          inGroup.add(p2);
+        }
       });
-      const finalY = {};
-      const placed = [];
-      sortedIds.forEach(pid => {
-        const x = xPos[pid] || 0;
-        let y = rawY[pid];
-        const right = x + CARD_W;
-        for (const p of placed) {
-          const xOverlap = !(right <= p.x || x >= p.right);
-          if (xOverlap && y < p.y + CARD_H + MIN_Y_GAP) {
-            y = p.y + CARD_H + MIN_Y_GAP;
+      Object.keys(persons).forEach(pid => {
+        if (!inGroup.has(pid) && xPos[pid] !== undefined) {
+          placementGroups.push({ members: [pid] });
+          inGroup.add(pid);
+        }
+      });
+
+      // Sort groups by minimum y (birth year), then minimum x
+      placementGroups.sort((a, b) => {
+        const minYa = Math.min(...a.members.map(m => yPos[m] || 0));
+        const minYb = Math.min(...b.members.map(m => yPos[m] || 0));
+        if (Math.abs(minYa - minYb) > 0.5) return minYa - minYb;
+        const minXa = Math.min(...a.members.map(m => xPos[m] || 0));
+        const minXb = Math.min(...b.members.map(m => xPos[m] || 0));
+        return minXa - minXb;
+      });
+
+      // Resolve collisions: shift entire groups to avoid overlap
+      for (let i = 0; i < placementGroups.length; i++) {
+        const gi = placementGroups[i];
+        let maxShift = 0;
+        for (let j = 0; j < i; j++) {
+          const gj = placementGroups[j];
+          for (const mi of gi.members) {
+            for (const mj of gj.members) {
+              const xOvlp = !(xPos[mi] + CARD_W + 5 <= xPos[mj] || xPos[mi] >= xPos[mj] + CARD_W + 5);
+              const yOvlp = !(yPos[mi] >= yPos[mj] + CARD_H + 10 || yPos[mi] + CARD_H + 10 <= yPos[mj]);
+              if (xOvlp && yOvlp) {
+                maxShift = Math.max(maxShift, xPos[mj] + CARD_W + SIBLING_GAP - xPos[mi]);
+              }
+            }
           }
         }
-        finalY[pid] = y;
-        placed.push({ x, y, right, bottom: y + CARD_H });
-      });
+        if (maxShift > 0) {
+          gi.members.forEach(m => { xPos[m] += maxShift; });
+        }
+      }
 
-      // Step 6: Offset x for year bar
+      // ── Phase 7: Offset all x for year bar ──
       Object.keys(xPos).forEach(pid => { xPos[pid] += YEAR_BAR_W; });
 
-      // Step 7: Build nodes
+      // Build nodes
       const nodes = Object.values(persons).map(person => ({
         id: person.id,
         data: person,
         x: xPos[person.id] || YEAR_BAR_W,
-        y: finalY[person.id] || 0,
+        y: yPos[person.id] || 0,
         width: CARD_W,
         height: CARD_H,
         birthYear: yearMap[person.id]?.year,
         estimatedYear: yearMap[person.id]?.estimated || false
       }));
 
-      // Step 8: Build edges
-      const edges = buildTimelineEdges(persons, unions, xPos, finalY, CARD_W, CARD_H);
+      // Build edges
+      const edges = buildTimelineEdges(persons, unions, xPos, yPos, CARD_W, CARD_H);
 
-      // Step 9: Year bar info
-      const allFinalY = Object.values(finalY);
+      // Year bar info
+      const allFinalY = Object.values(yPos);
       const yearBarInfo = {
         minYear, maxYear, pxPerYear,
         topY: Math.min(...allFinalY),

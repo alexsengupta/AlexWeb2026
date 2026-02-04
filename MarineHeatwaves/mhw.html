@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Marine Heatwaves</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --off-white: rgb(230, 237, 247);
+      --dark-blue: rgb(12, 53, 106);
+    }
+
+    body {
+      min-height: 100vh;
+      /* Gradient from off-white (top) to dark-blue (bottom) overlaying the image */
+      background: 
+        linear-gradient(to bottom, rgba(230, 237, 247, 0.9) 0%, rgba(230, 237, 247, 0.5) 40%, rgba(12, 53, 106, 0.7) 80%, rgba(12, 53, 106, 0.95) 100%),
+        url('MHW.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--dark-blue);
+      box-shadow: 0 4px 12px rgba(12, 53, 106, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .home-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 20px rgba(12, 53, 106, 0.4);
+      background: #1e40af;
+    }
+
+    .home-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+      transition: transform 0.3s ease;
+    }
+
+    .home-btn:hover svg {
+      transform: scale(1.1);
+    }
+
+    /* Animated Buttons */
+    .nav-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid transparent;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+
+    /* The heatwave gradient background that appears on hover */
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* Gradient from Dark Blue (Ocean) to Red (Heat) */
+      background: linear-gradient(135deg, var(--dark-blue) 0%, #1e3a8a 40%, #b91c1c 100%);
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.4s ease;
+      border-radius: 1.5rem;
+    }
+
+    .nav-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(12, 53, 106, 0.3);
+      border-color: rgba(255,255,255,0.3);
+      color: white;
+    }
+
+    .nav-card:hover::before {
+      opacity: 1;
+    }
+
+    .nav-card h2 {
+      color: var(--dark-blue);
+      transition: color 0.3s;
+    }
+
+    .nav-card:hover h2 {
+      color: white;
+    }
+
+    .icon-box {
+      background: rgba(12, 53, 106, 0.1);
+      color: var(--dark-blue);
+      transition: all 0.3s;
+    }
+
+    .nav-card:hover .icon-box {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Tooltip Styles */
+    .nav-card[data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(12, 53, 106, 0.95);
+      color: white;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      width: max-content;
+      max-width: 220px;
+      text-align: center;
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      animation: fadeIn 0.2s ease-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col">
+
+  <header class="w-full p-6 md:p-8 flex items-center justify-between z-10">
+    <a href="../index.html" class="home-btn" aria-label="Back to Home">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg>
+    </a>
+    <div class="flex-1 text-center">
+      <h1 class="text-4xl md:text-6xl font-black tracking-tight text-[#0c356a] drop-shadow-sm uppercase">
+        Marine Heatwaves
+      </h1>
+    </div>
+    <div class="w-[48px]"></div> <!-- Spacer to balance the header -->
+  </header>
+
+  <main class="flex-1 flex items-center justify-center p-4 md:p-8 z-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-6xl w-full">
+      
+      <a href="https://www.marineheatwaves.org/tracker.html" target="_blank" class="nav-card rounded-3xl p-6 flex flex-col items-center text-center group" data-tooltip="Real-time monitoring and historical data of marine heatwaves globally.">
+        <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F30D;</div>
+        <h2 class="text-lg font-bold">MHW Tracker</h2>
+      </a>
+
+      <a href="https://www.marineheatwaves.org" target="_blank" class="nav-card rounded-3xl p-6 flex flex-col items-center text-center group" data-tooltip="The official MHW working group: definitions, research, and collaboration.">
+        <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F465;</div>
+        <h2 class="text-lg font-bold">Working Group</h2>
+      </a>
+
+      <a href="all_mhw.html" class="nav-card rounded-3xl p-6 flex flex-col items-center text-center group" data-tooltip="Explore the comprehensive database of all Marine Heatwave publications.">
+        <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F4DA;</div>
+        <h2 class="text-lg font-bold">Literature Browser</h2>
+      </a>
+
+      <a href="subsurface.html" class="nav-card rounded-3xl p-6 flex flex-col items-center text-center group" data-tooltip="Specialized browser for deep, benthic, and subsurface event literature.">
+        <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl">&#x1F30A;</div>
+        <h2 class="text-lg font-bold">Subsurface MHWs</h2>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="p-6 text-center text-white/80 text-sm z-10">
+    <p>&copy; Marine Heatwaves Research Group</p>
+  </footer>
+
+</body>
+</html>

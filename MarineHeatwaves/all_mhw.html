@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Marine Heatwaves - Paper Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/papaparse@5/papaparse.min.js"></script>
+  <style>
+    :root {
+      --primary: #1e5245;
+      --primary-dark: #163d33;
+      --primary-light: #2d6b5a;
+      --accent: #c4704f;
+      --accent-light: #d4886b;
+      --secondary: #8b5a3c;
+      --secondary-light: #a87454;
+      --highlight: #d4a574;
+      --dark: #3e2723;
+      --bg-gradient-start: #f5f1ed;
+      --bg-gradient-end: #e8e3db;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      min-height: 100vh;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      box-shadow: 0 4px 12px rgba(30, 82, 69, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .home-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+    }
+
+    .home-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 24px rgba(30, 82, 69, 0.4);
+    }
+
+    .home-btn:hover::before {
+      width: 100px;
+      height: 100px;
+      top: -25px;
+      left: -25px;
+    }
+
+    .home-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.3s ease;
+    }
+
+    .home-btn:hover svg {
+      transform: scale(1.15) rotate(-5deg);
+    }
+
+    .card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid transparent;
+      background: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 50%, var(--secondary) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 16px 32px rgba(30, 82, 69, 0.2);
+      transform: translateY(-6px);
+      border-color: var(--primary-light);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .header-bg {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.06) 0%, rgba(196, 112, 79, 0.06) 100%);
+      border-bottom: 2px solid;
+      border-image: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%) 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      box-shadow: 0 6px 16px rgba(30, 82, 69, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+      box-shadow: 0 6px 16px rgba(196, 112, 79, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .chip-active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(30, 82, 69, 0.3);
+    }
+
+    .chip-inactive {
+      background: white;
+      color: #5d4e37;
+      border-color: #d4c4b0;
+    }
+
+    .chip-inactive:hover {
+      border-color: var(--primary-light);
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.05) 0%, rgba(196, 112, 79, 0.05) 100%);
+    }
+
+    .filter-box {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.04) 0%, rgba(196, 112, 79, 0.04) 100%);
+      border: 1px solid rgba(30, 82, 69, 0.15);
+    }
+
+    .active-filter-badge {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+      box-shadow: 0 2px 8px rgba(196, 112, 79, 0.3);
+    }
+
+    .year-badge {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+      color: white;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 2px 4px rgba(139, 90, 60, 0.3);
+    }
+
+    .cite-badge {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 2px 4px rgba(30, 82, 69, 0.3);
+    }
+
+    .oa-badge {
+      background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .theme-badge {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.08) 0%, rgba(196, 112, 79, 0.08) 100%);
+      color: var(--dark);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(30, 82, 69, 0.2);
+      white-space: nowrap;
+    }
+
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .line-clamp-4 {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .backdrop {
+      background: rgba(30, 82, 69, 0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .backdrop.open {
+      opacity: 1;
+    }
+
+    .modal {
+      transform: translateY(10px);
+      opacity: 0;
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+
+    .modal.open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .range-slider-container {
+      position: relative;
+      height: 40px;
+    }
+
+    .range-slider-track {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, #e8dfd0 0%, #f0e6d8 100%);
+      border-radius: 4px;
+    }
+
+    .range-slider-range {
+      position: absolute;
+      height: 8px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(30, 82, 69, 0.3);
+    }
+
+    .range-slider-input {
+      position: absolute;
+      width: 100%;
+      height: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+
+    .range-slider-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 3px solid white;
+      box-shadow: 0 3px 8px rgba(30, 82, 69, 0.5);
+    }
+
+    .range-slider-input::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 3px solid white;
+      box-shadow: 0 3px 8px rgba(30, 82, 69, 0.5);
+    }
+
+    .range-slider-input:focus {
+      outline: none;
+    }
+
+    .type-tag {
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.1) 0%, rgba(196, 112, 79, 0.1) 100%);
+      border-color: rgba(30, 82, 69, 0.25);
+      color: var(--dark);
+    }
+
+    .btn-clear-active {
+      background: linear-gradient(135deg, #c4704f 0%, #8b5a3c 100%);
+      box-shadow: 0 2px 8px rgba(196, 112, 79, 0.3);
+    }
+
+    .btn-clear-active:hover {
+      background: linear-gradient(135deg, #8b5a3c 0%, #c4704f 100%);
+      box-shadow: 0 4px 12px rgba(196, 112, 79, 0.4);
+    }
+
+    .search-input {
+      border: 2px solid rgba(30, 82, 69, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 82, 69, 0.1);
+      outline: none;
+    }
+
+    .theme-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 6px;
+    }
+
+    .theme-chip {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #d4c4b0;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      line-height: 1.3;
+    }
+
+    .theme-chip:hover {
+      border-color: var(--primary-light);
+      background: linear-gradient(135deg, rgba(30, 82, 69, 0.05) 0%, rgba(196, 112, 79, 0.05) 100%);
+    }
+
+    .theme-chip.active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(30, 82, 69, 0.3);
+    }
+
+    .theme-chip .theme-num {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.1);
+      font-weight: 700;
+      font-size: 10px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    .theme-chip.active .theme-num {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .theme-section-toggle {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .theme-section-toggle:hover {
+      color: var(--primary-dark);
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState, useCallback } = React;
+
+    const THEMES = {
+      1: "Definition & Detection",
+      2: "Surface MHWs (SST)",
+      3: "Subsurface MHWs",
+      4: "Physical Drivers",
+      5: "Climate Change",
+      6: "Extreme Events",
+      7: "Ecological Impacts",
+      8: "Coral Bleaching",
+      9: "Fisheries & Socio-economic",
+      10: "Regional Cases",
+      11: "Vulnerability & Resilience",
+      12: "Modeling & Predictability",
+      13: "Vertical Heat Content",
+      14: "Biodiversity & Range Shifts",
+      15: "Metrics & Methods",
+    };
+
+    function parseCSV(csvText) {
+      const result = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+      });
+
+      return result.data.map((row, idx) => {
+        const year = row['prism:coverDate'] ? parseInt(row['prism:coverDate'].substring(0, 4), 10) : null;
+        const authorsRaw = row['authors'] || '';
+        const authors = authorsRaw ? authorsRaw.split(';').map(a => a.trim()).filter(Boolean) : [];
+        const themesRaw = row['themes'] || '';
+        const themes = themesRaw ? themesRaw.split(',').map(t => parseInt(t.trim(), 10)).filter(t => t >= 1 && t <= 15) : [];
+        return {
+          id: idx,
+          title: row['dc:title'] || '',
+          authors: authors,
+          themes: themes,
+          journal: row['prism:publicationName'] || '',
+          date: row['prism:coverDate'] || '',
+          year: year,
+          volume: row['prism:volume'] || '',
+          issue: row['prism:issueIdentifier'] || '',
+          pages: row['prism:pageRange'] || '',
+          doi: row['prism:doi'] || '',
+          type: row['subtypeDescription'] || '',
+          typeCode: row['subtype'] || '',
+          citations: parseInt(row['citedby-count'], 10) || 0,
+          eid: row['eid'] || '',
+          pubmedId: row['pubmed-id'] || '',
+          openAccess: row['openaccess'] === '1',
+          abstract: row['abstract'] || '',
+        };
+      }).filter(p => p.title);
+    }
+
+    async function loadPapers() {
+      const files = [
+        './scopus_all_MHW_themes.csv',
+        './scopus_all_MHW_enriched.csv',
+        './scopus_all_MHW.csv',
+      ];
+      for (const file of files) {
+        try {
+          const response = await fetch(file);
+          if (!response.ok) continue;
+          const text = await response.text();
+          const papers = parseCSV(text);
+          if (papers.length > 0) {
+            console.log(`Loaded ${papers.length} papers from ${file}`);
+            return papers;
+          }
+        } catch (err) {
+          console.warn(`Could not load ${file}:`, err);
+        }
+      }
+      return [];
+    }
+
+    const normalize = (s) => (s || '').toLowerCase();
+
+    function computeFacets(papers) {
+      const journals = [...new Set(papers.map(p => p.journal).filter(Boolean))].sort();
+      const types = [...new Set(papers.map(p => p.type).filter(Boolean))].sort();
+      const authorSet = new Set();
+      papers.forEach(p => p.authors.forEach(a => { if (a) authorSet.add(a); }));
+      const authors = [...authorSet].sort();
+      const validYears = papers.map(p => p.year).filter(y => y && y >= 1900 && y <= new Date().getFullYear());
+      const minYear = validYears.length > 0 ? Math.min(...validYears) : 2000;
+      const maxYear = validYears.length > 0 ? Math.max(...validYears) : new Date().getFullYear();
+      return { journals, types, authors, minYear, maxYear };
+    }
+
+    function Chip({ label, active, onClick }) {
+      return (
+        <button
+          onClick={onClick}
+          className={"px-3 py-1 rounded-full border text-sm shadow-sm hover:shadow transition-all " +
+            (active ? "chip-active" : "chip-inactive")}>
+          {label}
+        </button>
+      );
+    }
+
+    function AbstractModal({ open, onClose, paper }) {
+      if (!paper) return null;
+
+      const ref = `${paper.journal}${paper.volume ? ', ' + paper.volume : ''}${paper.issue ? '(' + paper.issue + ')' : ''}${paper.pages ? ', ' + paper.pages : ''}`;
+
+      return (
+        <div className={"fixed inset-0 z-50 " + (open ? "" : "pointer-events-none")}>
+          <div className={"absolute inset-0 backdrop " + (open ? "open" : "")} onClick={onClose}></div>
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className={"modal max-w-3xl w-[95vw] md:w-[900px] max-h-[85vh] bg-white rounded-2xl shadow-2xl " + (open ? "open" : "")}>
+              <div className="flex items-start justify-between p-6 border-b sticky top-0 bg-white rounded-t-2xl z-10">
+                <h2 className="text-xl md:text-2xl font-semibold leading-tight pr-4">{paper.title}</h2>
+                <button onClick={onClose} className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50" aria-label="Close">&#x2715;</button>
+              </div>
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="text-xs px-2 py-1 rounded-lg year-badge">{paper.year}</span>
+                  <span className="text-xs px-2 py-1 rounded-lg type-tag border font-medium">{paper.type}</span>
+                  {paper.openAccess && <span className="oa-badge">Open Access</span>}
+                  {paper.citations > 0 && <span className="text-xs px-2 py-1 rounded-lg cite-badge">{paper.citations} citation{paper.citations !== 1 ? 's' : ''}</span>}
+                </div>
+
+                {paper.authors.length > 0 && (
+                  <p className="text-sm text-gray-800 mb-2">
+                    <span className="font-medium" style={{ color: 'var(--primary)' }}>Authors: </span>
+                    {paper.authors.join(', ')}
+                  </p>
+                )}
+
+                <p className="text-sm text-gray-700 mb-1">
+                  <span className="font-medium italic">{ref}</span>
+                </p>
+
+                {paper.doi && (
+                  <p className="text-sm text-gray-600 mb-3">
+                    DOI: <a href={`https://doi.org/${paper.doi}`} target="_blank" rel="noreferrer" className="underline hover:text-gray-900">{paper.doi}</a>
+                  </p>
+                )}
+
+                {paper.themes.length > 0 && (
+                  <div className="mb-4">
+                    <span className="text-sm font-medium" style={{ color: 'var(--primary)' }}>Themes: </span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {paper.themes.map(t => (
+                        <span key={t} className="theme-badge">{t}. {THEMES[t]}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--primary)' }}>Abstract</h3>
+                <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{paper.abstract || 'No abstract available.'}</p>
+
+                <div className="mt-6 flex items-center gap-3 flex-wrap">
+                  {paper.doi && (
+                    <a href={`https://doi.org/${paper.doi}`} target="_blank" rel="noreferrer"
+                      className="px-4 py-2 btn-primary text-white rounded-lg text-sm">
+                      View at Publisher
+                    </a>
+                  )}
+                  {paper.pubmedId && (
+                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${paper.pubmedId}/`} target="_blank" rel="noreferrer"
+                      className="px-4 py-2 btn-secondary text-white rounded-lg text-sm">
+                      PubMed
+                    </a>
+                  )}
+                  {paper.eid && (
+                    <a href={`https://www.scopus.com/record/display.uri?eid=${paper.eid}&origin=resultslist`} target="_blank" rel="noreferrer"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                      Scopus
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PaperBrowser() {
+      const [papers, setPapers] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        loadPapers()
+          .then(loaded => {
+            if (loaded.length === 0) {
+              setError('No papers found. Ensure a Scopus CSV is in the same directory.');
+            }
+            setPapers(loaded);
+          })
+          .catch(err => setError(err.message))
+          .finally(() => setLoading(false));
+      }, []);
+
+      const { journals, types, authors: allAuthors, minYear, maxYear } = useMemo(() => {
+        if (papers.length === 0) return { journals: [], types: [], authors: [], minYear: 2000, maxYear: new Date().getFullYear() };
+        return computeFacets(papers);
+      }, [papers]);
+
+      const hasThemes = useMemo(() => papers.some(p => p.themes.length > 0), [papers]);
+
+      const [query, setQuery] = useState('');
+      const [selectedAuthor, setSelectedAuthor] = useState('');
+      const [selectedJournal, setSelectedJournal] = useState('');
+      const [activeTypes, setActiveTypes] = useState([]);
+      const [activeThemes, setActiveThemes] = useState([]);
+      const [themeMode, setThemeMode] = useState('any');
+      const [yearRange, setYearRange] = useState([minYear, maxYear]);
+      const [sortBy, setSortBy] = useState('year-desc');
+      const [themesExpanded, setThemesExpanded] = useState(true);
+
+      const [modalOpen, setModalOpen] = useState(false);
+      const [selectedPaper, setSelectedPaper] = useState(null);
+
+      useEffect(() => {
+        setYearRange([minYear, maxYear]);
+      }, [minYear, maxYear]);
+
+      const toggleType = (type) => {
+        setActiveTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+      };
+
+      const toggleTheme = (themeNum) => {
+        setActiveThemes(prev => prev.includes(themeNum) ? prev.filter(t => t !== themeNum) : [...prev, themeNum]);
+      };
+
+      const themeCounts = useMemo(() => {
+        const counts = {};
+        for (let i = 1; i <= 15; i++) counts[i] = 0;
+        papers.forEach(p => p.themes.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+        return counts;
+      }, [papers]);
+
+      const filtered = useMemo(() => {
+        const q = normalize(query);
+        return papers
+          .filter(p => p.year && p.year >= yearRange[0] && p.year <= yearRange[1])
+          .filter(p => activeTypes.length === 0 || activeTypes.includes(p.type))
+          .filter(p => !selectedJournal || p.journal === selectedJournal)
+          .filter(p => !selectedAuthor || p.authors.includes(selectedAuthor))
+          .filter(p => {
+            if (activeThemes.length === 0) return true;
+            if (themeMode === 'all') {
+              return activeThemes.every(t => p.themes.includes(t));
+            }
+            return activeThemes.some(t => p.themes.includes(t));
+          })
+          .filter(p => {
+            if (!q) return true;
+            const hay = [p.title, p.journal, p.abstract, p.type, ...p.authors].join(' ').toLowerCase();
+            const tokens = q.split(/\s+/).filter(Boolean);
+            return tokens.every(t => hay.includes(t));
+          });
+      }, [papers, query, selectedAuthor, selectedJournal, activeTypes, activeThemes, themeMode, yearRange]);
+
+      const sorted = useMemo(() => {
+        const copy = [...filtered];
+        switch (sortBy) {
+          case 'year-asc': copy.sort((a, b) => a.year - b.year); break;
+          case 'title': copy.sort((a, b) => a.title.localeCompare(b.title)); break;
+          case 'citations': copy.sort((a, b) => b.citations - a.citations); break;
+          case 'year-desc':
+          default: copy.sort((a, b) => b.year - a.year);
+        }
+        return copy;
+      }, [filtered, sortBy]);
+
+      const clearAll = () => {
+        setQuery('');
+        setSelectedAuthor('');
+        setSelectedJournal('');
+        setActiveTypes([]);
+        setActiveThemes([]);
+        setYearRange([minYear, maxYear]);
+        setSortBy('year-desc');
+      };
+
+      const hasActiveFilters = query || selectedAuthor || selectedJournal || activeTypes.length > 0 ||
+        activeThemes.length > 0 || yearRange[0] !== minYear || yearRange[1] !== maxYear;
+
+      const totalCitations = useMemo(() => sorted.reduce((sum, p) => sum + p.citations, 0), [sorted]);
+
+      if (loading) {
+        return (
+          <div className="min-h-screen w-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl mb-4">&#x1F30A;</div>
+              <div className="text-lg text-gray-600">Loading papers...</div>
+            </div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div className="min-h-screen w-full flex items-center justify-center p-4">
+            <div className="max-w-2xl bg-white border border-red-200 rounded-2xl p-8 shadow-lg">
+              <div className="text-4xl mb-4">&#x26A0;&#xFE0F;</div>
+              <h2 className="text-xl font-semibold mb-4">Setup Required</h2>
+              <p className="text-gray-700 mb-4">{error}</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
+                <p className="font-medium mb-2">To get started:</p>
+                <ol className="list-decimal list-inside space-y-1 text-gray-700">
+                  <li>Place <code className="bg-white px-2 py-1 rounded">scopus_all_MHW_themes.csv</code> in this directory</li>
+                  <li>Start a server: <code className="bg-white px-2 py-1 rounded">python3 -m http.server 8000</code></li>
+                  <li>Reload this page</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen w-full text-gray-900">
+          <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/80 header-bg">
+            <div className="mx-auto max-w-7xl px-4 py-4 md:py-5 flex items-center gap-4">
+              <a href="../index.html" className="home-btn" aria-label="Home">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+              </a>
+              <div className="flex-1">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ background: 'linear-gradient(to right, #1e5245, #c4704f, #8b5a3c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  Marine Heatwaves
+                </h1>
+                <p className="text-sm font-semibold" style={{ color: '#1e5245' }}>Paper Browser</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50" aria-label="Sort results">
+                  <option value="year-desc">Sort: New &rarr; Old</option>
+                  <option value="year-asc">Sort: Old &rarr; New</option>
+                  <option value="citations">Sort: Most Cited</option>
+                  <option value="title">Sort: Title A&ndash;Z</option>
+                </select>
+                <button onClick={clearAll}
+                  className={"rounded-lg px-4 py-2 text-sm font-medium transition-all " +
+                    (hasActiveFilters ? "btn-clear-active text-white" : "bg-gray-100 text-gray-400 cursor-not-allowed")}
+                  disabled={!hasActiveFilters}>
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section className="mx-auto max-w-7xl px-4 pt-4 md:pt-6 pb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#1e5245' }}>Search</label>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search titles, abstracts, journals..."
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white search-input"
+                />
+              </div>
+
+              {/* Author Filter */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#1e5245' }}>Filter by Author</label>
+                <select
+                  value={selectedAuthor}
+                  onChange={e => setSelectedAuthor(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black">
+                  <option value="">All Authors ({allAuthors.length})</option>
+                  {allAuthors.map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Journal Dropdown */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <label className="text-sm font-semibold mb-2 block" style={{ color: '#1e5245' }}>Filter by Journal</label>
+                <select
+                  value={selectedJournal}
+                  onChange={e => setSelectedJournal(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black">
+                  <option value="">All Journals ({journals.length})</option>
+                  {journals.map(j => (
+                    <option key={j} value={j}>{j}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Year Range Slider */}
+              <div className="rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between text-sm mb-3">
+                  <span className="font-semibold" style={{ color: '#1e5245' }}>Year Range</span>
+                  <span className="font-bold" style={{ background: 'linear-gradient(to right, #1e5245, #c4704f)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{yearRange[0]} &ndash; {yearRange[1]}</span>
+                </div>
+                <div className="range-slider-container">
+                  <div className="range-slider-track"></div>
+                  <div className="range-slider-range" style={{
+                    left: `${((yearRange[0] - minYear) / (maxYear - minYear)) * 100}%`,
+                    right: `${100 - ((yearRange[1] - minYear) / (maxYear - minYear)) * 100}%`
+                  }}></div>
+                  <input type="range" min={minYear} max={maxYear} value={yearRange[0]}
+                    onChange={e => {
+                      const v = Math.max(minYear, Math.min(Number(e.target.value), yearRange[1]));
+                      setYearRange([v, yearRange[1]]);
+                    }}
+                    className="range-slider-input" style={{ zIndex: yearRange[0] > maxYear - (maxYear - minYear) / 2 ? 5 : 3 }} />
+                  <input type="range" min={minYear} max={maxYear} value={yearRange[1]}
+                    onChange={e => {
+                      const v = Math.min(maxYear, Math.max(Number(e.target.value), yearRange[0]));
+                      setYearRange([yearRange[0], v]);
+                    }}
+                    className="range-slider-input" style={{ zIndex: 4 }} />
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                  <span>{minYear}</span>
+                  <span>{maxYear}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Theme Filter */}
+            {hasThemes && (
+              <div className="mt-4 rounded-2xl filter-box px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="theme-section-toggle flex items-center gap-2" onClick={() => setThemesExpanded(!themesExpanded)}>
+                    <span className="text-sm font-bold" style={{ color: '#1e5245' }}>Filter by Theme</span>
+                    <span className="text-xs text-gray-500">{themesExpanded ? '\u25B2' : '\u25BC'}</span>
+                  </div>
+                  {activeThemes.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setThemeMode(m => m === 'any' ? 'all' : 'any')}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50">
+                        Match: {themeMode === 'any' ? 'Any theme' : 'All themes'}
+                      </button>
+                      <button onClick={() => setActiveThemes([])} className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50">
+                        Clear themes
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {themesExpanded && (
+                  <div className="theme-filter-grid">
+                    {Object.entries(THEMES).map(([num, name]) => {
+                      const n = parseInt(num);
+                      const isActive = activeThemes.includes(n);
+                      return (
+                        <button key={n} onClick={() => toggleTheme(n)}
+                          className={"theme-chip " + (isActive ? "active" : "")}>
+                          <span className="theme-num">{n}</span>
+                          {name}
+                          <span className="text-[10px] opacity-70 ml-1">({themeCounts[n]})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Active Filters Display */}
+            {hasActiveFilters && (
+              <div className="mt-4 rounded-2xl filter-box px-4 py-3 shadow-lg border-2" style={{ borderColor: '#2d6b5a' }}>
+                <div className="text-sm font-bold mb-2" style={{ color: '#1e5245' }}>Active Filters:</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {query && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Search: "{query}"</span>
+                      <button onClick={() => setQuery('')} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  )}
+                  {selectedAuthor && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Author: {selectedAuthor}</span>
+                      <button onClick={() => setSelectedAuthor('')} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  )}
+                  {selectedJournal && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Journal: {selectedJournal}</span>
+                      <button onClick={() => setSelectedJournal('')} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  )}
+                  {activeTypes.map(t => (
+                    <div key={t} className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>{t}</span>
+                      <button onClick={() => toggleType(t)} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  ))}
+                  {activeThemes.map(t => (
+                    <div key={'theme-'+t} className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Theme {t}: {THEMES[t]}</span>
+                      <button onClick={() => toggleTheme(t)} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  ))}
+                  {(yearRange[0] !== minYear || yearRange[1] !== maxYear) && (
+                    <div className="px-3 py-1 active-filter-badge text-white rounded-full text-sm flex items-center gap-2">
+                      <span>Years: {yearRange[0]}&ndash;{yearRange[1]}</span>
+                      <button onClick={() => setYearRange([minYear, maxYear])} className="hover:brightness-110 rounded-full px-1">&#x2715;</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Document Type Chips */}
+            <div className="mt-4">
+              <div className="text-sm mb-2 font-bold" style={{ color: '#1e5245' }}>Filter by Document Type:</div>
+              <div className="flex flex-wrap gap-2">
+                {types.map(t => (
+                  <Chip key={t} label={t} active={activeTypes.includes(t)} onClick={() => toggleType(t)} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <main className="mx-auto max-w-7xl px-4 pb-12">
+            <div className="flex items-center justify-between mt-4 mb-2 text-sm text-gray-600">
+              <span>Showing <span className="font-medium">{sorted.length}</span> of {papers.length} papers</span>
+              <span>{totalCitations} total citations</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {sorted.map((p) => (
+                <article key={p.id} className="card group rounded-2xl border bg-white shadow-sm transition overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-xs mt-1 px-2 py-1 rounded-lg year-badge shrink-0">{p.year}</span>
+                      {p.citations > 0 && <span className="text-xs mt-1 px-2 py-1 rounded-lg cite-badge shrink-0">{p.citations} cited</span>}
+                      {p.openAccess && <span className="oa-badge mt-1 shrink-0">OA</span>}
+                    </div>
+                    <h3 className="text-base md:text-lg font-semibold leading-snug">
+                      <button onClick={() => { setSelectedPaper(p); setModalOpen(true); }}
+                        className="text-left hover:underline decoration-2 underline-offset-2">{p.title}</button>
+                    </h3>
+                    {p.authors.length > 0 && (
+                      <p className="mt-1.5 text-sm text-gray-600">
+                        {p.authors.slice(0, 5).join(', ')}
+                        {p.authors.length > 5 && <span className="italic text-gray-400"> + {p.authors.length - 5} more</span>}
+                      </p>
+                    )}
+                    <p className="mt-1 text-sm text-gray-700">
+                      <span className="italic">{p.journal}</span>
+                      {p.volume && <span> {p.volume}</span>}
+                      {p.issue && <span>({p.issue})</span>}
+                      {p.pages && <span>, {p.pages}</span>}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="text-[11px] px-2 py-1 rounded-full type-tag border font-medium">{p.type}</span>
+                      {p.themes.slice(0, 3).map(t => (
+                        <span key={t} className="theme-badge">{t}. {THEMES[t]}</span>
+                      ))}
+                      {p.themes.length > 3 && <span className="theme-badge">+{p.themes.length - 3} more</span>}
+                    </div>
+                    {p.abstract && (
+                      <p className="mt-3 text-sm text-gray-900 line-clamp-3">{p.abstract}</p>
+                    )}
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <button onClick={() => { setSelectedPaper(p); setModalOpen(true); }}
+                          className="text-xs rounded-lg btn-primary text-white px-3 py-1.5">
+                          Abstract
+                        </button>
+                        {p.doi && (
+                          <a href={`https://doi.org/${p.doi}`} target="_blank" rel="noreferrer"
+                            className="text-xs rounded-lg border border-gray-300 px-3 py-1.5 hover:bg-gray-50">
+                            DOI
+                          </a>
+                        )}
+                      </div>
+                      {p.eid && (
+                        <a href={`https://www.scopus.com/record/display.uri?eid=${p.eid}&origin=resultslist`} target="_blank" rel="noreferrer"
+                          className="text-xs underline opacity-60 hover:opacity-100">Scopus</a>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {sorted.length === 0 && (
+              <div className="text-center py-16 text-gray-500">
+                <div className="text-4xl mb-4">&#x1F50D;</div>
+                <p className="text-lg">No papers match your filters.</p>
+                <button onClick={clearAll} className="mt-4 px-4 py-2 btn-primary text-white rounded-lg text-sm">Clear Filters</button>
+              </div>
+            )}
+          </main>
+
+          <footer className="mx-auto max-w-7xl px-4 pb-10 text-xs text-gray-500">
+            <p>Data source: Scopus export for all marine heatwave publications.</p>
+          </footer>
+
+          <AbstractModal open={modalOpen} onClose={() => setModalOpen(false)} paper={selectedPaper} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PaperBrowser />);
+  </script>
+</body>
+
+</html>

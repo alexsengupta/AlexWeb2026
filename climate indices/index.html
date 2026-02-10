@@ -79,6 +79,13 @@
             margin-top: 2px;
         }
 
+        #data-last-downloaded {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
         .section-content {
             padding: 15px; /* Reduced padding */
             display: none;
@@ -202,7 +209,8 @@
     <div class="container">
         <!-- Summary Panel -->
         <div class="summary-panel">
-            <h2 style="margin-top: 0; margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Climate Summary</h2>
+            <h2 style="margin-top: 0; margin-bottom: 5px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Climate Summary</h2>
+            <div id="data-last-downloaded"></div>
 
             <div class="summary-grid">
                 <!-- CO2 Section -->
@@ -660,6 +668,24 @@
             const last = new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
             return `${first} to ${last}`;
         }
+
+        // Show "last downloaded" date from timestamp file written by climate_dashboard.py
+        async function showLastUpdated() {
+            try {
+                const resp = await fetch('data/last_updated.json?v=' + new Date().getTime());
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const el = document.getElementById('data-last-downloaded');
+                    if (el && data.last_updated) {
+                        const d = new Date(data.last_updated + 'T00:00:00');
+                        el.textContent = 'Data last downloaded: ' + d.toLocaleDateString('en-AU', {
+                            day: 'numeric', month: 'short', year: 'numeric'
+                        });
+                    }
+                }
+            } catch (e) { /* ignore if file doesn't exist */ }
+        }
+        showLastUpdated();
 
         // Toggle ENSO traces
         function toggleENSOTrace(traceName) {

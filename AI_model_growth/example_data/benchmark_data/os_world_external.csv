@@ -58,3 +58,4 @@ Qwen2.5-VL-72B-Instruct,4.4,2024-09-19,Alibaba,China,7.8e+24,"Training dataset s
 ,3.9,,,,,,qwen2.5-vl-32b-instruct (100 steps),OS World Website,https://os-world.github.io/,,2025-07-27,
 ,3.0,,,,,,qwen2.5-vl-32b-instruct (15 steps),OS World Website,https://os-world.github.io/,,2025-07-27,
 claude-opus-4-5-20251101,66.3,2025-11-24,Anthropic,United States of America,,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,Claude Opus 4.5,Anthropic annoucement,https://www.anthropic.com/news/claude-opus-4-5,,2025-11-25,
+kimi-k2.5,63.3,2026-01-27,Moonshot,China,,,Kimi-K2.5,OS World Website,https://os-world.github.io/,,2026-02-03,

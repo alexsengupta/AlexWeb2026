@@ -155,6 +155,19 @@ function matchModelToMainData(yamlId, mainData) {
 
 // Load All Data
 async function initApp() {
+    // Show data last-downloaded date from timestamp file written by update_data.py
+    try {
+        const tsResp = await fetch('example_data/last_updated.json?v=' + new Date().getTime());
+        if (tsResp.ok) {
+            const tsData = await tsResp.json();
+            const el = document.getElementById('data-last-downloaded');
+            if (el && tsData.last_updated) {
+                const d = new Date(tsData.last_updated + 'T00:00:00');
+                el.textContent = 'Data last downloaded: ' + d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+            }
+        }
+    } catch (e) { /* ignore */ }
+
     const mainData = await d3.csv(DATA_PATH);
 
     // Load all benchmarks

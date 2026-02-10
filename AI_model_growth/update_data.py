@@ -1,7 +1,9 @@
 import os
+import json
 import urllib.request
 import zipfile
 import shutil
+from datetime import datetime
 
 # Configuration
 DATA_SOURCES = {
@@ -75,6 +77,13 @@ def download_and_update():
     # Cleanup temp directory
     print("Cleaning up temporary files...")
     shutil.rmtree(TEMP_DIR)
+
+    # Write timestamp so the dashboard can show when data was last downloaded
+    timestamp_file = os.path.join('example_data', 'last_updated.json')
+    with open(timestamp_file, 'w') as f:
+        json.dump({'last_updated': datetime.now().strftime('%Y-%m-%d')}, f)
+    print(f"Wrote download timestamp to {timestamp_file}")
+
     print("Done.")
 
 if __name__ == "__main__":

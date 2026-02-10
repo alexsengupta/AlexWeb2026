@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Family Tree Builder</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -119,7 +118,7 @@
       border: 1px solid rgba(255,255,255,0.2);
       color: white;
     }
-    .btn-header:hover { 
+    .btn-header:hover {
       background: rgba(255,255,255,0.2);
       transform: translateY(-1px);
     }
@@ -556,6 +555,213 @@
       width: 48px;
       color: #cbd5e1;
     }
+
+    /* ===== Edit People Overlay ===== */
+    .edit-people-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      z-index: 60;
+      flex-direction: column;
+    }
+    .edit-people-backdrop.active { display: flex; }
+
+    .edit-people-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      color: white;
+      flex-shrink: 0;
+    }
+    .edit-people-toolbar h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      white-space: nowrap;
+    }
+    .edit-people-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ep-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .ep-filter-bar input[type="text"] {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--input-bg);
+      color: var(--text-main);
+      min-width: 160px;
+    }
+    .ep-filter-bar input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    .ep-filter-bar select {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--input-bg);
+      color: var(--text-main);
+      cursor: pointer;
+    }
+    .ep-filter-bar label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-main);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .ep-table-wrap {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-app);
+    }
+    .ep-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 1100px;
+    }
+    .ep-table thead { position: sticky; top: 0; z-index: 2; }
+    .ep-table th {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 6px;
+      border-bottom: 2px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .ep-table th:hover { background: var(--button-hover); }
+    .ep-table th .sort-arrow {
+      font-size: 10px;
+      margin-left: 3px;
+      opacity: 0.4;
+    }
+    .ep-table th .sort-arrow.active { opacity: 1; color: var(--primary-light); }
+    .ep-table th.no-sort { cursor: default; }
+    .ep-table th.no-sort:hover { background: var(--bg-panel); }
+
+    .ep-table td {
+      padding: 4px 4px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .ep-table tbody tr { transition: background 0.1s; }
+    .ep-table tbody tr:hover { background: rgba(59, 130, 246, 0.04); }
+    .ep-table tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.015); }
+    :root.dark-mode .ep-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+    :root.dark-mode .ep-table tbody tr:hover { background: rgba(59, 130, 246, 0.08); }
+
+    .ep-table input[type="text"],
+    .ep-table input[type="date"],
+    .ep-table select {
+      width: 100%;
+      padding: 5px 6px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      background: transparent;
+      color: var(--text-main);
+      transition: border-color 0.15s, background 0.15s;
+      box-sizing: border-box;
+    }
+    .ep-table input[type="text"]:hover,
+    .ep-table input[type="date"]:hover,
+    .ep-table select:hover {
+      border-color: var(--border);
+      background: var(--input-bg);
+    }
+    .ep-table input[type="text"]:focus,
+    .ep-table input[type="date"]:focus,
+    .ep-table select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background: var(--input-bg);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+    }
+    .ep-table textarea {
+      width: 100%;
+      padding: 5px 6px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      background: transparent;
+      color: var(--text-main);
+      resize: vertical;
+      min-height: 28px;
+      max-height: 120px;
+      transition: border-color 0.15s, background 0.15s;
+      box-sizing: border-box;
+    }
+    .ep-table textarea:hover {
+      border-color: var(--border);
+      background: var(--input-bg);
+    }
+    .ep-table textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background: var(--input-bg);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+    }
+    .ep-num-link {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--primary-light);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+    .ep-num-link:hover {
+      background: rgba(59, 130, 246, 0.1);
+      text-decoration: underline;
+    }
+
+    .ep-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
   </style>
 </head>
 <body>
@@ -570,12 +776,14 @@
         <input type="file" id="file-input" accept=".json,.ged" onchange="handleFileLoad(event)" style="display:none">
         <button class="btn btn-header" onclick="saveTree()">💾 Save</button>
         <button class="btn btn-header" onclick="exportGedcom()" title="Export as GEDCOM">📤 GEDCOM</button>
+        <button class="btn btn-header" onclick="openEditPeople()" title="View and edit all people in a table">Data View</button>
         <select id="report-select" class="header-select" onchange="handleReportChange(this.value)" title="Export reports">
           <option value="">Reports</option>
-          <option value="people">A: People report (PDF)</option>
-          <option value="full">B: Full tree (vector PDF)</option>
-          <option value="blood">C: Bloodline tree (vector PDF)</option>
+          <option value="full">A: Full tree (vector PDF)</option>
+          <option value="blood">B: Bloodline tree (vector PDF)</option>
+          <option value="timeline">C: Timeline tree (vector PDF)</option>
         </select>
+        <button class="btn btn-header" onclick="downloadLocalVersion()" title="Download the local version for additional features: Autosave and Document Linking">Get Local Version</button>
         <button class="btn btn-header" onclick="openHelp()" title="Help">Help</button>
       </div>
     </header>
@@ -655,6 +863,7 @@
             <li>Use Add Parents/Partner/Child/Sibling to grow the tree.</li>
             <li>Use Move Earlier/Later to reorder siblings or partners within a family.</li>
             <li>Set a focal person to center the layout around a specific line.</li>
+            <li>Click the arrow on a connector line to collapse/expand that branch. Each union can be collapsed independently.</li>
           </ul>
         </div>
         <div class="modal-section">
@@ -670,10 +879,49 @@
           <ul class="modal-list">
             <li>Use Save/Load for JSON backups.</li>
             <li>Export GEDCOM to share with other genealogy tools.</li>
-            <li>Reports exports PDF-friendly layouts (people list, full tree, bloodline).</li>
+            <li>Data View: View and edit all people in a table, export filtered results as PDF.</li>
+            <li>Reports: Full Tree, Bloodline Tree, and Timeline export as vector PDFs.</li>
+            <li>Get Local Version: Download the local version for additional features including Autosave and Document Linking.</li>
           </ul>
         </div>
       </div>
+    </div>
+
+    <!-- Edit People Overlay -->
+    <div id="edit-people-modal" class="edit-people-backdrop">
+      <div class="edit-people-toolbar">
+        <h2>Data View</h2>
+        <div class="edit-people-toolbar-actions">
+          <button class="btn btn-header" onclick="exportFilteredPDF()">Save as PDF</button>
+          <button class="btn btn-header" onclick="closeEditPeople()">Close</button>
+        </div>
+      </div>
+      <div class="ep-filter-bar" id="ep-filter-bar">
+        <input type="text" id="ep-search" placeholder="Search names..." oninput="renderEditPeopleTable()">
+        <select id="ep-filter-surname" onchange="renderEditPeopleTable()"><option value="">All Surnames</option></select>
+        <select id="ep-filter-maiden" onchange="renderEditPeopleTable()"><option value="">All Maiden Names</option></select>
+        <select id="ep-filter-gender" onchange="renderEditPeopleTable()">
+          <option value="">All Genders</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="unknown">Unknown</option>
+        </select>
+        <select id="ep-filter-decade" onchange="renderEditPeopleTable()"><option value="">All Decades</option></select>
+        <select id="ep-filter-country" onchange="renderEditPeopleTable()"><option value="">All Countries</option></select>
+        <select id="ep-filter-living" onchange="renderEditPeopleTable()">
+          <option value="">All</option>
+          <option value="living">Living</option>
+          <option value="deceased">Deceased</option>
+        </select>
+        <label><input type="checkbox" id="ep-filter-unknown" checked onchange="renderEditPeopleTable()"> Show Unknown</label>
+      </div>
+      <div class="ep-table-wrap">
+        <table class="ep-table">
+          <thead id="ep-thead"></thead>
+          <tbody id="ep-tbody"></tbody>
+        </table>
+      </div>
+      <div class="ep-footer" id="ep-footer"></div>
     </div>
   </div>
 
@@ -686,12 +934,13 @@
       version: '2.0',
       persons: {},
       unions: {},
-      settings: { 
+      settings: {
         treeName: 'My Family Tree',
-        focalPersonId: null
+        focalPersonId: null,
+        collapsedUnionIds: []
       }
     };
-    
+
     let selectedPersonId = null;
     let zoom = 1;
     let pan = { x: 0, y: 0 };
@@ -701,7 +950,27 @@
     
     const MAX_HISTORY = 20;
     const historyStack = [];
-    
+    let lastLayoutNodes = {}; // personId -> { x, y } from last render, for visual ordering
+
+    // Data View variables
+    let epSortColumn = 'displayNum';
+    let epSortDirection = 'asc';
+
+    const EP_COLUMNS = [
+      { key: 'displayNum',      label: '#',              sortable: true,  type: 'num-link' },
+      { key: 'firstName',       label: 'First Name',     sortable: true,  type: 'text' },
+      { key: 'altName',         label: 'Alt Name',       sortable: true,  type: 'text' },
+      { key: 'surnameCurrent',  label: 'Surname',        sortable: true,  type: 'text' },
+      { key: 'surnameAtBirth',  label: 'Maiden Name',    sortable: true,  type: 'text' },
+      { key: 'gender',          label: 'Gender',         sortable: true,  type: 'gender' },
+      { key: 'dateOfBirth',     label: 'Born',           sortable: true,  type: 'date' },
+      { key: 'dateOfDeath',     label: 'Died',           sortable: true,  type: 'date' },
+      { key: 'cityOfBirth',     label: 'City',           sortable: true,  type: 'text' },
+      { key: 'countryOfBirth',  label: 'Country',        sortable: true,  type: 'text' },
+      { key: 'profession',      label: 'Profession',     sortable: true,  type: 'text' },
+      { key: 'interestingFacts', label: 'Notes',         sortable: false, type: 'textarea' }
+    ];
+
     function pushHistory() {
       const snapshot = {
         treeJson: JSON.stringify(tree),
@@ -748,6 +1017,8 @@
         profession: '',
         interestingFacts: '',
         imageData: null,
+        linkedDocuments: [],
+        documentFolder: '',
         isAdopted: false,
         isVisible: true,
         isUnknown: false,
@@ -790,7 +1061,7 @@
         version: '2.0',
         persons: {},
         unions: {},
-        settings: { treeName: 'My Family Tree', focalPersonId: null }
+        settings: { treeName: 'My Family Tree', focalPersonId: null, collapsedUnionIds: [] }
       };
       
       const person = createPerson();
@@ -920,14 +1191,22 @@
       });
       
       // Clean up unions that now have no partners and no children
+      const removedUnionIds = [];
       Object.keys(tree.unions).forEach(uid => {
         const union = tree.unions[uid];
         if (!union.partner1Id && !union.partner2Id && union.childrenIds.length === 0) {
+          removedUnionIds.push(uid);
           delete tree.unions[uid];
         }
       });
-      
+
       delete tree.persons[id];
+
+      // Clean up collapse state for removed unions
+      if (removedUnionIds.length > 0) {
+        tree.settings.collapsedUnionIds = (tree.settings.collapsedUnionIds || [])
+          .filter(uid => !removedUnionIds.includes(uid));
+      }
     }
     
     function setAsFocalPerson(id) {
@@ -953,9 +1232,10 @@
       tree.unions[union.id] = union;
       
       selectedPersonId = partner.id;
+      centerOnPerson(partner.id);
       render();
     }
-    
+
     function addChild(personId, specificUnionId = null) {
       pushHistory();
       const child = createPerson();
@@ -982,9 +1262,10 @@
       
       union.childrenIds.push(child.id);
       selectedPersonId = child.id;
+      centerOnPerson(child.id);
       render();
     }
-    
+
     function addParents(personId) {
       // Check if already has parents
       const existingParentUnion = Object.values(tree.unions).find(
@@ -1009,17 +1290,30 @@
       tree.unions[union.id] = union;
       
       selectedPersonId = parent1.id;
+      centerOnPerson(parent1.id);
       render();
     }
-    
+
+    // Find the best parent union for a person (handles cases where
+    // GEDCOM imports place a person in multiple unions as a child)
+    function findParentUnion(personId) {
+      const candidates = Object.values(tree.unions).filter(u => u.childrenIds.includes(personId));
+      if (candidates.length <= 1) return candidates[0] || null;
+      // Prefer union where both partners are real known people
+      return candidates.find(u =>
+        u.partner1Id && tree.persons[u.partner1Id] && !tree.persons[u.partner1Id].isUnknown &&
+        u.partner2Id && tree.persons[u.partner2Id] && !tree.persons[u.partner2Id].isUnknown
+      ) || candidates.find(u =>
+        (u.partner1Id && tree.persons[u.partner1Id]) || (u.partner2Id && tree.persons[u.partner2Id])
+      ) || candidates[0];
+    }
+
     function addSibling(personId) {
       pushHistory();
       const sibling = createPerson();
       tree.persons[sibling.id] = sibling;
-      
-      let parentUnion = Object.values(tree.unions).find(
-        u => u.childrenIds.includes(personId)
-      );
+
+      let parentUnion = findParentUnion(personId);
       
       if (!parentUnion) {
         // Create parents (both unknown) and add both people as children
@@ -1035,20 +1329,32 @@
       
       parentUnion.childrenIds.push(sibling.id);
       selectedPersonId = sibling.id;
+      centerOnPerson(sibling.id);
       render();
     }
     
-    function moveChildInUnion(unionId, childId, direction) {
+    function moveChildInUnion(unionId, childId, targetSibId, relation) {
       const union = tree.unions[unionId];
       if (!union) return;
       const idx = union.childrenIds.indexOf(childId);
       if (idx === -1) return;
-      const newIdx = idx + direction;
-      if (newIdx < 0 || newIdx >= union.childrenIds.length) return;
-      
+
       pushHistory();
+      // Remove child from current position
       union.childrenIds.splice(idx, 1);
-      union.childrenIds.splice(newIdx, 0, childId);
+      // Find target sibling's position (after removal)
+      const targetIdx = union.childrenIds.indexOf(targetSibId);
+      if (targetIdx === -1) {
+        // Fallback: put it back
+        union.childrenIds.splice(idx, 0, childId);
+        return;
+      }
+      // Insert before or after target
+      if (relation === 'before') {
+        union.childrenIds.splice(targetIdx, 0, childId);
+      } else {
+        union.childrenIds.splice(targetIdx + 1, 0, childId);
+      }
       render();
     }
     
@@ -1090,9 +1396,139 @@
     }
 
     // ============================================================================
+    // BRANCH COLLAPSE / EXPAND (union-based)
+    // ============================================================================
+
+    function getVisibleSubset() {
+      const collapsedUnionIds = tree.settings.collapsedUnionIds || [];
+      if (collapsedUnionIds.length === 0) {
+        return { persons: tree.persons, unions: tree.unions };
+      }
+
+      const hiddenIds = new Set();
+      const collapsedSet = new Set(collapsedUnionIds);
+
+      function hideUnionDescendants(unionId) {
+        const union = tree.unions[unionId];
+        if (!union) return;
+        union.childrenIds.forEach(childId => {
+          if (hiddenIds.has(childId)) return;
+          hiddenIds.add(childId);
+          // Hide partners of hidden children who are ONLY connected through this branch
+          const childPartnerUnions = Object.values(tree.unions).filter(
+            u => u.partner1Id === childId || u.partner2Id === childId
+          );
+          childPartnerUnions.forEach(cu => {
+            const partnerId = cu.partner1Id === childId ? cu.partner2Id : cu.partner1Id;
+            if (partnerId) {
+              const partnerOtherUnions = Object.values(tree.unions).filter(
+                u => (u.partner1Id === partnerId || u.partner2Id === partnerId) && u.id !== cu.id
+              );
+              const partnerParentUnion = Object.values(tree.unions).find(
+                u => u.childrenIds.includes(partnerId)
+              );
+              if (!partnerParentUnion && partnerOtherUnions.length === 0) {
+                hiddenIds.add(partnerId);
+              }
+            }
+            // Recursively hide this child-union's descendants too
+            hideUnionDescendants(cu.id);
+          });
+        });
+      }
+
+      collapsedUnionIds.forEach(uid => {
+        if (tree.unions[uid]) hideUnionDescendants(uid);
+      });
+
+      if (hiddenIds.size === 0) {
+        return { persons: tree.persons, unions: tree.unions };
+      }
+
+      const filteredPersons = {};
+      Object.keys(tree.persons).forEach(pid => {
+        if (!hiddenIds.has(pid)) filteredPersons[pid] = tree.persons[pid];
+      });
+
+      const filteredUnions = {};
+      Object.entries(tree.unions).forEach(([uid, union]) => {
+        const p1Visible = union.partner1Id && !hiddenIds.has(union.partner1Id);
+        const p2Visible = union.partner2Id && !hiddenIds.has(union.partner2Id);
+        const visibleChildren = union.childrenIds.filter(cid => !hiddenIds.has(cid));
+        if (p1Visible || p2Visible) {
+          filteredUnions[uid] = {
+            ...union,
+            partner1Id: p1Visible ? union.partner1Id : null,
+            partner2Id: p2Visible ? union.partner2Id : null,
+            childrenIds: visibleChildren
+          };
+        }
+      });
+
+      return { persons: filteredPersons, unions: filteredUnions };
+    }
+
+    function countHiddenInUnion(unionId) {
+      const union = tree.unions[unionId];
+      if (!union || union.childrenIds.length === 0) return 0;
+      let count = 0;
+      const visited = new Set();
+
+      function countDown(pid) {
+        const partnerUnions = Object.values(tree.unions).filter(
+          u => u.partner1Id === pid || u.partner2Id === pid
+        );
+        partnerUnions.forEach(u => {
+          u.childrenIds.forEach(childId => {
+            if (visited.has(childId)) return;
+            visited.add(childId);
+            count++;
+            countDown(childId);
+          });
+        });
+      }
+
+      union.childrenIds.forEach(childId => {
+        if (visited.has(childId)) return;
+        visited.add(childId);
+        count++;
+        countDown(childId);
+      });
+      return count;
+    }
+
+    function hasChildren(personId) {
+      return Object.values(tree.unions).some(
+        u => (u.partner1Id === personId || u.partner2Id === personId) && u.childrenIds.length > 0
+      );
+    }
+
+    function unionHasChildren(unionId) {
+      const union = tree.unions[unionId];
+      return union && union.childrenIds.length > 0;
+    }
+
+    function toggleUnionCollapse(unionId) {
+      const collapsedUnionIds = tree.settings.collapsedUnionIds || [];
+      const idx = collapsedUnionIds.indexOf(unionId);
+      pushHistory();
+      if (idx >= 0) {
+        collapsedUnionIds.splice(idx, 1);
+      } else {
+        collapsedUnionIds.push(unionId);
+      }
+      tree.settings.collapsedUnionIds = collapsedUnionIds;
+      render();
+    }
+
+    function isUnionCollapsed(unionId) {
+      return (tree.settings.collapsedUnionIds || []).includes(unionId);
+    }
+
+    // ============================================================================
     // FILE OPERATIONS
     // ============================================================================
-    
+
     async function saveTree() {
       const defaultName = (tree.settings.treeName || 'family-tree').replace(/[^a-z0-9]/gi, '_') + '.json';
       const dataStr = JSON.stringify(tree, null, 2);
@@ -1131,6 +1567,21 @@
       loaded.settings = loaded.settings || {};
       loaded.settings.treeName = loaded.settings.treeName || 'My Family Tree';
       if (!('focalPersonId' in loaded.settings)) loaded.settings.focalPersonId = null;
+
+      // Migrate old person-based collapsedIds to union-based collapsedUnionIds
+      if (Array.isArray(loaded.settings.collapsedIds) && loaded.settings.collapsedIds.length > 0) {
+        const migrated = [];
+        loaded.settings.collapsedIds.forEach(pid => {
+          Object.values(loaded.unions || {}).forEach(u => {
+            if ((u.partner1Id === pid || u.partner2Id === pid) && u.childrenIds && u.childrenIds.length > 0) {
+              if (!migrated.includes(u.id)) migrated.push(u.id);
+            }
+          });
+        });
+        loaded.settings.collapsedUnionIds = migrated;
+        delete loaded.settings.collapsedIds;
+      }
+      if (!Array.isArray(loaded.settings.collapsedUnionIds)) loaded.settings.collapsedUnionIds = [];
       
       Object.values(loaded.persons).forEach(person => {
         if (!person || typeof person !== 'object') return;
@@ -1147,6 +1598,9 @@
         if (!('profession' in person)) person.profession = '';
         if (!('interestingFacts' in person)) person.interestingFacts = person.notes || '';
         if (!('imageData' in person)) person.imageData = null;
+        if (!('linkedDocuments' in person)) person.linkedDocuments = [];
+        if (!Array.isArray(person.linkedDocuments)) person.linkedDocuments = [];
+        if (!('documentFolder' in person)) person.documentFolder = '';
         if (!('isAdopted' in person)) person.isAdopted = false;
         if (!('isVisible' in person)) person.isVisible = true;
         if (!('isUnknown' in person)) person.isUnknown = false;
@@ -1449,7 +1903,8 @@
           tree = {
             settings: {
               treeName: file.name.replace(/\.(ged|GED)$/, ''),
-              focalPersonId: null
+              focalPersonId: null,
+              collapsedUnionIds: []
             },
             persons: {},
             unions: {}
@@ -1483,6 +1938,8 @@
               countryOfBirth: birthCountry,
               profession: '',
               interestingFacts: indi.NOTE || '',
+              linkedDocuments: [],
+              documentFolder: '',
               isAdopted: (indi._ADOPTED || '').toUpperCase().startsWith('Y'),
               isVisible: !((indi._VISIBLE || '').toUpperCase().startsWith('N')),
               isUnknown: (indi.NAME || '').toLowerCase().includes('unknown'),
@@ -1659,8 +2116,8 @@
       
       const CARD_WIDTH = 150;
       const CARD_HEIGHT = 90;
-      const MIN_H_GAP = 50;   // Minimum gap between unrelated units
-      const SIBLING_GAP = 30; // Tighter gap between siblings
+      const MIN_H_GAP = 30;   // Minimum gap between unrelated units
+      const SIBLING_GAP = 15; // Tighter gap between siblings sharing a parent
       const PARTNER_GAP = 20;     // Gap between partners in same union
       const V_GAP = 140;          // Vertical gap between generations
       const UNION_BAR_DROP = 30;  // How far below cards the union bar sits
@@ -2052,15 +2509,73 @@
           transposeGeneration(gen, 'children');
         });
       }
-      
+
+      // Final pass: enforce childrenIds sibling order within consecutive blocks.
+      // Only reorders siblings that are already adjacent in the generation order,
+      // preserving the barycenter-optimized placement of non-adjacent units.
+      gensAsc.forEach(gen => {
+        const units = genOrder[gen];
+        if (!units || units.length < 2) return;
+
+        let i = 0;
+        while (i < units.length) {
+          const uid = units[i];
+          const parents = unitParents[uid] || [];
+          if (parents.length === 0) { i++; continue; }
+          // Use first parent as grouping key
+          const parentKey = parents[0];
+          // Collect consecutive siblings sharing this parent
+          const start = i;
+          const siblingBlock = [uid];
+          i++;
+          while (i < units.length) {
+            const nextParents = unitParents[units[i]] || [];
+            if (nextParents.length === 0 || !nextParents.includes(parentKey)) break;
+            siblingBlock.push(units[i]);
+            i++;
+          }
+          if (siblingBlock.length < 2) continue;
+          // Sort by childUnitOrder (which reflects childrenIds)
+          siblingBlock.sort((a, b) => {
+            const ao = childUnitOrder[a];
+            const bo = childUnitOrder[b];
+            if (ao !== undefined && bo !== undefined) return ao - bo;
+            if (ao !== undefined) return -1;
+            if (bo !== undefined) return 1;
+            return 0;
+          });
+          // Write back
+          for (let s = 0; s < siblingBlock.length; s++) {
+            units[start + s] = siblingBlock[s];
+          }
+        }
+        rebuildOrderIndex(gen);
+      });
+
+      // Build sibling adjacency lookup for tighter spacing
+      function gapBetween(uidA, uidB) {
+        const parentsA = unitParents[uidA] || [];
+        const parentsB = unitParents[uidB] || [];
+        if (parentsA.length > 0 && parentsB.length > 0) {
+          for (const pa of parentsA) {
+            if (parentsB.includes(pa)) return SIBLING_GAP;
+          }
+        }
+        return MIN_H_GAP;
+      }
+
       const unitPositions = {};
-      
+
       gensAsc.forEach(gen => {
         let x = 0;
+        let prevUid = null;
         genOrder[gen].forEach(uid => {
           const width = getUnitWidth(uid);
+          const gap = prevUid !== null ? gapBetween(prevUid, uid) : 0;
+          if (prevUid !== null) x += gap;
           unitPositions[uid] = { left: x, right: x + width };
-          x += width + MIN_H_GAP;
+          x += width;
+          prevUid = uid;
         });
       });
       
@@ -2103,35 +2618,39 @@
           });
           
           let prevRight = null;
+          let prevUid2 = null;
           units.forEach(uid => {
             const width = getUnitWidth(uid);
             let left = targetLeft[uid];
             if (prevRight !== null) {
-              left = Math.max(left, prevRight + MIN_H_GAP);
+              left = Math.max(left, prevRight + gapBetween(prevUid2, uid));
             }
             unitPositions[uid] = { left, right: left + width };
             prevRight = left + width;
+            prevUid2 = uid;
           });
-          
+
           let nextLeft = null;
+          let nextUid = null;
           for (let i = units.length - 1; i >= 0; i--) {
             const uid = units[i];
             const width = getUnitWidth(uid);
             let left = unitPositions[uid].left;
             if (nextLeft !== null) {
-              const maxLeft = nextLeft - MIN_H_GAP - width;
+              const maxLeft = nextLeft - gapBetween(uid, nextUid) - width;
               if (left > maxLeft) left = maxLeft;
             }
             unitPositions[uid] = { left, right: left + width };
             nextLeft = left;
+            nextUid = uid;
           }
         });
       }
-      
+
       // Extra pull to reduce long parent/child spans in dense trees
-      const EDGE_PULL_ITERATIONS = optimize ? 4 : 3;
-      const EDGE_PULL_STRENGTH = optimize ? 0.6 : 0.45;
-      const MAX_EDGE_PULL = CARD_WIDTH * 1.5;
+      const EDGE_PULL_ITERATIONS = optimize ? 6 : 5;
+      const EDGE_PULL_STRENGTH = optimize ? 0.75 : 0.65;
+      const MAX_EDGE_PULL = CARD_WIDTH * 2.5;
       
       for (let iter = 0; iter < EDGE_PULL_ITERATIONS; iter++) {
         gensAsc.forEach(gen => {
@@ -2179,32 +2698,84 @@
             targetLeft[uid] = desiredCenter - width / 2;
           });
           
-          let prevRight = null;
+          let prevRight3 = null;
+          let prevUid3 = null;
           units.forEach(uid => {
             const width = getUnitWidth(uid);
             let left = targetLeft[uid] ?? unitPositions[uid].left;
-            if (prevRight !== null) {
-              left = Math.max(left, prevRight + MIN_H_GAP);
+            if (prevRight3 !== null) {
+              left = Math.max(left, prevRight3 + gapBetween(prevUid3, uid));
             }
             unitPositions[uid] = { left, right: left + width };
-            prevRight = left + width;
+            prevRight3 = left + width;
+            prevUid3 = uid;
           });
-          
-          let nextLeft = null;
+
+          let nextLeft3 = null;
+          let nextUid3 = null;
           for (let i = units.length - 1; i >= 0; i--) {
             const uid = units[i];
             const width = getUnitWidth(uid);
             let left = unitPositions[uid].left;
-            if (nextLeft !== null) {
-              const maxLeft = nextLeft - MIN_H_GAP - width;
+            if (nextLeft3 !== null) {
+              const maxLeft = nextLeft3 - gapBetween(uid, nextUid3) - width;
               if (left > maxLeft) left = maxLeft;
             }
             unitPositions[uid] = { left, right: left + width };
-            nextLeft = left;
+            nextLeft3 = left;
+            nextUid3 = uid;
           }
         });
       }
-      
+
+      // Compaction pass: close excess gaps while respecting minimum spacing
+      for (let compactIter = 0; compactIter < 3; compactIter++) {
+        gensAsc.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units || units.length < 2) return;
+
+          // Forward: slide left to close gaps
+          for (let i = 1; i < units.length; i++) {
+            const prevUidC = units[i - 1];
+            const uid = units[i];
+            const minGap = gapBetween(prevUidC, uid);
+            const prevPos = unitPositions[prevUidC];
+            const currPos = unitPositions[uid];
+            if (!prevPos || !currPos) continue;
+
+            const actualGap = currPos.left - prevPos.right;
+            if (actualGap > minGap) {
+              // Check if parent/child alignment wants us to stay put
+              const parents = unitParents[uid] || [];
+              const children = unitChildren[uid] || [];
+              const neighbors = [...parents, ...children];
+              let alignTarget = null;
+              if (neighbors.length > 0) {
+                let sum = 0, cnt = 0;
+                neighbors.forEach(nid => {
+                  const nPos = unitPositions[nid];
+                  if (nPos) { sum += (nPos.left + nPos.right) / 2; cnt++; }
+                });
+                if (cnt > 0) alignTarget = sum / cnt;
+              }
+
+              const width = getUnitWidth(uid);
+              const currCenter = (currPos.left + currPos.right) / 2;
+              let newLeft = prevPos.right + minGap;
+
+              // If alignment target is to our right, don't slide all the way left
+              if (alignTarget !== null && alignTarget > newLeft + width / 2) {
+                newLeft = Math.max(newLeft, Math.min(currPos.left, alignTarget - width / 2));
+              }
+
+              if (newLeft < currPos.left) {
+                unitPositions[uid] = { left: newLeft, right: newLeft + width };
+              }
+            }
+          }
+        });
+      }
+
       // Pack disconnected components to prevent global drift
       const componentOf = {};
       const components = [];
@@ -2249,12 +2820,12 @@
         });
       }
       
-      for (let pass = 0; pass < 3; pass++) {
+      for (let pass = 0; pass < 6; pass++) {
         let anyShift = false;
         gensAsc.forEach(gen => {
           const units = genOrder[gen];
           if (!units || units.length === 0) return;
-          
+
           const compMap = new Map();
           units.forEach(uid => {
             const compId = componentOf[uid];
@@ -2268,9 +2839,9 @@
               comp.right = Math.max(comp.right, pos.right);
             }
           });
-          
+
           const comps = Array.from(compMap.values()).sort((a, b) => a.left - b.left);
-          
+
           for (let i = 1; i < comps.length; i++) {
             const prev = comps[i - 1];
             const curr = comps[i];
@@ -2284,27 +2855,159 @@
             }
           }
         });
-        
+
         if (!anyShift) break;
       }
-      
+
+      // Global cross-generation component compression
+      if (components.length > 1) {
+        // Find the global bounding box per component across all generations
+        const globalBounds = components.map(comp => {
+          let left = Infinity, right = -Infinity;
+          comp.units.forEach(uid => {
+            const pos = unitPositions[uid];
+            if (pos) {
+              left = Math.min(left, pos.left);
+              right = Math.max(right, pos.right);
+            }
+          });
+          return { id: comp.id, left, right };
+        }).filter(b => b.left < Infinity).sort((a, b) => a.left - b.left);
+
+        for (let i = 1; i < globalBounds.length; i++) {
+          const prev = globalBounds[i - 1];
+          const curr = globalBounds[i];
+          const gap = curr.left - prev.right;
+          if (gap > MIN_H_GAP) {
+            const shift = gap - MIN_H_GAP;
+            shiftComponent(curr.id, -shift);
+            curr.left -= shift;
+            curr.right -= shift;
+          }
+        }
+      }
+
+      // Final overlap detection: ensure no two adjacent units overlap
+      for (let overlapIter = 0; overlapIter < 5; overlapIter++) {
+        let anyOverlap = false;
+        gensAsc.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units || units.length < 2) return;
+          for (let i = 1; i < units.length; i++) {
+            const prevPos = unitPositions[units[i - 1]];
+            const currPos = unitPositions[units[i]];
+            if (!prevPos || !currPos) continue;
+            const minGap = gapBetween(units[i - 1], units[i]);
+            const requiredLeft = prevPos.right + minGap;
+            if (currPos.left < requiredLeft) {
+              const shift = requiredLeft - currPos.left;
+              currPos.left += shift;
+              currPos.right += shift;
+              anyOverlap = true;
+              // Cascade: push all subsequent units in this generation too
+              for (let j = i + 1; j < units.length; j++) {
+                const nextPos = unitPositions[units[j]];
+                const prevP = unitPositions[units[j - 1]];
+                if (!nextPos || !prevP) continue;
+                const reqLeft = prevP.right + gapBetween(units[j - 1], units[j]);
+                if (nextPos.left < reqLeft) {
+                  const s = reqLeft - nextPos.left;
+                  nextPos.left += s;
+                  nextPos.right += s;
+                }
+              }
+            }
+          }
+        });
+        if (!anyOverlap) break;
+      }
+
+      // Final gap-closing compaction: snug each unit against the previous
+      // one's right edge + minimum gap. Only slides units left (never right).
+      gensAsc.forEach(gen => {
+        const units = genOrder[gen];
+        if (!units || units.length < 2) return;
+        for (let i = 1; i < units.length; i++) {
+          const prevPos = unitPositions[units[i - 1]];
+          const currPos = unitPositions[units[i]];
+          if (!prevPos || !currPos) continue;
+          const minGap = gapBetween(units[i - 1], units[i]);
+          const snugLeft = prevPos.right + minGap;
+          if (currPos.left > snugLeft) {
+            currPos.left = snugLeft;
+            currPos.right = snugLeft + getUnitWidth(units[i]);
+          }
+        }
+      });
+
+      // Post-compaction alignment: nudge units toward the center of their
+      // connected parents/children, clipped against neighbours to avoid overlaps.
+      // Alternates top-down / bottom-up so alignment propagates both ways.
+      for (let alignIter = 0; alignIter < 4; alignIter++) {
+        const genList = alignIter % 2 === 0 ? gensAsc : gensDesc;
+        genList.forEach(gen => {
+          const units = genOrder[gen];
+          if (!units) return;
+          for (let i = 0; i < units.length; i++) {
+            const uid = units[i];
+            const currPos = unitPositions[uid];
+            if (!currPos) continue;
+
+            const neighbors = [...(unitChildren[uid] || []), ...(unitParents[uid] || [])];
+            if (neighbors.length === 0) continue;
+
+            let sum = 0, count = 0;
+            neighbors.forEach(nid => {
+              const nPos = unitPositions[nid];
+              if (nPos) { sum += (nPos.left + nPos.right) / 2; count++; }
+            });
+            if (count === 0) continue;
+
+            const targetCenter = sum / count;
+            const width = getUnitWidth(uid);
+            const currCenter = (currPos.left + currPos.right) / 2;
+            let newLeft = currPos.left + (targetCenter - currCenter) * 0.5;
+
+            // Clip: don't overlap previous unit
+            if (i > 0) {
+              const prevPos = unitPositions[units[i - 1]];
+              if (prevPos) newLeft = Math.max(newLeft, prevPos.right + gapBetween(units[i - 1], uid));
+            }
+            // Clip: don't overlap next unit
+            if (i < units.length - 1) {
+              const nextPos = unitPositions[units[i + 1]];
+              if (nextPos) newLeft = Math.min(newLeft, nextPos.left - gapBetween(uid, units[i + 1]) - width);
+            }
+
+            currPos.left = newLeft;
+            currPos.right = newLeft + width;
+          }
+        });
+      }
+
       const positions = {};
       const memberOwner = {};
-      
+
+      // First pass: assign positions from PRIMARY units only
       Object.keys(unitPositions).forEach(uid => {
         const members = unitMembers[uid] || [];
         if (members.length === 0) return;
-        
+
         const width = getUnitWidth(uid);
         const memberCount = members.length;
         const coupleWidth = memberCount * CARD_WIDTH + (memberCount - 1) * PARTNER_GAP;
         const left = unitPositions[uid].left;
         let x = left + (width - coupleWidth) / 2;
         const gen = unitGen[uid] ?? 0;
-        
+
         members.forEach(pid => {
-          positions[pid] = { x, y: gen * (CARD_HEIGHT + V_GAP) };
-          memberOwner[pid] = uid;
+          const primaryUid = getPrimaryUnitId(pid);
+          // Only set position if this IS the person's primary unit,
+          // or if no position has been set yet (solo units, etc.)
+          if (!positions[pid] || uid === primaryUid) {
+            positions[pid] = { x, y: gen * (CARD_HEIGHT + V_GAP) };
+            memberOwner[pid] = uid;
+          }
           x += CARD_WIDTH + PARTNER_GAP;
         });
       });
@@ -2355,7 +3058,8 @@
       }));
       
       const edges = [];
-      
+      const collapseButtons = [];
+
       // Track which unions we've drawn to avoid duplicates
       const drawnUnions = new Set();
       
@@ -2437,7 +3141,20 @@
             x2: rightCenterX, y2: unionBarY,
             ...edgeMeta
           });
-          
+
+          // Collapse button for unions with children (check original tree data)
+          const origUnion2p = tree.unions[union.id];
+          if (origUnion2p && origUnion2p.childrenIds.length > 0) {
+            const btnX = (leftCenterX + rightCenterX) / 2;
+            collapseButtons.push({
+              unionId: union.id,
+              x: btnX,
+              y: unionBarY + 4,
+              collapsed: isUnionCollapsed(union.id),
+              hiddenCount: isUnionCollapsed(union.id) ? countHiddenInUnion(union.id) : 0
+            });
+          }
+
           // Children drop from union bar center
           if (union.childrenIds.length > 0) {
             const children = union.childrenIds.map(id => ({ id, pos: positions[id] })).filter(c => c.pos);
@@ -2485,7 +3202,19 @@
           const parentPos = p1Pos || p2Pos;
           const parentId = p1Pos ? union.partner1Id : union.partner2Id;
           const parentCenterX = parentPos.x + CARD_WIDTH / 2;
-          
+
+          // Collapse button for single-parent unions with children
+          const origUnion1p = tree.unions[union.id];
+          if (origUnion1p && origUnion1p.childrenIds.length > 0) {
+            collapseButtons.push({
+              unionId: union.id,
+              x: parentCenterX,
+              y: parentPos.y + CARD_HEIGHT + UNION_BAR_DROP / 2,
+              collapsed: isUnionCollapsed(union.id),
+              hiddenCount: isUnionCollapsed(union.id) ? countHiddenInUnion(union.id) : 0
+            });
+          }
+
           if (union.childrenIds.length > 0) {
             const children = union.childrenIds.map(id => ({ id, pos: positions[id] })).filter(c => c.pos);
             if (children.length > 0) {
@@ -2526,7 +3255,7 @@
         }
       });
       
-      return { nodes, edges };
+      return { nodes, edges, collapseButtons };
     }
 
     // ============================================================================
@@ -2549,8 +3278,13 @@
     
     function renderCanvas() {
       const svg = document.getElementById('tree-canvas');
-      const { nodes, edges } = calculateLayout();
-      
+      const subset = getVisibleSubset();
+      const { nodes, edges, collapseButtons } = calculateLayout({ persons: subset.persons, unions: subset.unions });
+
+      // Cache node positions for visual-order sibling move buttons
+      lastLayoutNodes = {};
+      nodes.forEach(n => { lastLayoutNodes[n.id] = { x: n.x, y: n.y }; });
+
       const svgRect = svg.getBoundingClientRect();
       const centerX = svgRect.width / 2 + pan.x;
       const centerY = svgRect.height / 2 + pan.y;
@@ -2679,10 +3413,36 @@
         const opacity = selectedPersonId ? (isHighlighted ? 1 : 0.2) : 1;
         const width = isHighlighted ? baseWidth + 1.5 : baseWidth;
         
-        html += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}" 
+        html += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}"
                   stroke="${baseColor}" stroke-width="${width}" stroke-linecap="round" opacity="${opacity}"/>`;
       });
-      
+
+      // Draw collapse/expand chevrons on connector lines
+      (collapseButtons || []).forEach(btn => {
+        const pillW = btn.collapsed ? 44 : 24;
+        const pillH = 14;
+        const bx = btn.x - pillW / 2;
+        const by = btn.y;
+        const fillColor = btn.collapsed ? '#6366f1' : 'var(--text-muted, #64748b)';
+        const fillOpacity = btn.collapsed ? 0.9 : 0.35;
+        const textColor = btn.collapsed ? 'white' : 'var(--text-muted, #64748b)';
+        const arrow = btn.collapsed ? '\u25B2' : '\u25BC';
+        const textX = btn.collapsed ? btn.x - 10 : btn.x;
+
+        html += `
+          <g onclick="event.stopPropagation(); toggleUnionCollapse('${btn.unionId}')" style="cursor: pointer;">
+            <rect x="${bx}" y="${by}" width="${pillW}" height="${pillH}" rx="7"
+                  fill="${fillColor}" opacity="${fillOpacity}"/>
+            <text x="${textX}" y="${by + 10.5}" text-anchor="middle" font-size="9" font-weight="600"
+                  fill="${textColor}" font-family="'DM Sans', sans-serif">${arrow}</text>
+            ${btn.collapsed ? `
+              <text x="${btn.x + 8}" y="${by + 10.5}" text-anchor="middle"
+                    font-size="9" font-weight="600" fill="white"
+                    font-family="'DM Sans', sans-serif">+${btn.hiddenCount}</text>
+            ` : ''}
+          </g>`;
+      });
+
       // Draw nodes
       nodes.forEach(node => {
         const { id, data, x, y, width, height } = node;
@@ -2798,9 +3558,8 @@
                 <circle cx="${width - 12}" cy="12" r="8" fill="#059669"/>
                 <text x="${width - 12}" y="16" text-anchor="middle" font-size="10" fill="white">⌂</text>
               ` : ''}
-              
               ${familyRole && !isSelected ? `
-                <rect x="${width/2 - 28}" y="${height + 4}" width="56" height="16" rx="8" 
+                <rect x="${width/2 - 28}" y="${height + 4}" width="56" height="16" rx="8"
                       fill="${roleColors[familyRole]}" opacity="0.9"/>
                 <text x="${width/2}" y="${height + 15}" text-anchor="middle" font-size="9" font-weight="600"
                       fill="white" font-family="'DM Sans', sans-serif">
@@ -2808,7 +3567,7 @@
                 </text>
               ` : ''}
               ${isSelected ? `
-                <rect x="${width/2 - 32}" y="${height + 4}" width="64" height="16" rx="8" 
+                <rect x="${width/2 - 32}" y="${height + 4}" width="64" height="16" rx="8"
                       fill="#2563eb"/>
                 <text x="${width/2}" y="${height + 15}" text-anchor="middle" font-size="9" font-weight="600"
                       fill="white" font-family="'DM Sans', sans-serif">
@@ -2816,9 +3575,9 @@
                 </text>
               ` : ''}
             ` : ''}
-            
-            <rect width="${width}" height="${height}" rx="10" fill="transparent" 
-                  onclick="${isUnknown ? `replaceUnknown('${id}')` : `selectPerson('${id}')`}" 
+
+            <rect width="${width}" height="${height}" rx="10" fill="transparent"
+                  onclick="${isUnknown ? `replaceUnknown('${id}')` : `selectPerson('${id}')`}"
                   style="pointer-events: all;"/>
           </g>
         `;
@@ -2941,32 +3700,32 @@
           </div>
           <div class="form-group">
             <label>Date of Birth</label>
-            <input type="date" value="${person.dateOfBirth || ''}" 
-                   onblur="updatePerson('${person.id}', { dateOfBirth: this.value })">
+            <input type="text" value="${formatDateForDisplay(person.dateOfBirth)}" placeholder="DD-MM-YYYY or YYYY"
+                   onblur="updatePerson('${person.id}', { dateOfBirth: parseDateInput(this.value) })">
           </div>
           <div class="form-group">
             <label>Date of Death</label>
-            <input type="date" value="${person.dateOfDeath || ''}" 
-                   onblur="updatePerson('${person.id}', { dateOfDeath: this.value })">
+            <input type="text" value="${formatDateForDisplay(person.dateOfDeath)}" placeholder="DD-MM-YYYY or YYYY"
+                   onblur="updatePerson('${person.id}', { dateOfDeath: parseDateInput(this.value) })">
           </div>
         `;
       } else if (currentTab === 'biography') {
         return `
           <div class="form-group">
             <label>City of Birth</label>
-            <input type="text" value="${person.cityOfBirth || ''}" 
+            <input type="text" value="${person.cityOfBirth || ''}"
                    onchange="updatePerson('${person.id}', { cityOfBirth: this.value })"
                    placeholder="City">
           </div>
           <div class="form-group">
             <label>Country of Birth</label>
-            <input type="text" value="${person.countryOfBirth || ''}" 
+            <input type="text" value="${person.countryOfBirth || ''}"
                    onchange="updatePerson('${person.id}', { countryOfBirth: this.value })"
                    placeholder="Country">
           </div>
           <div class="form-group">
             <label>Profession</label>
-            <input type="text" value="${person.profession || ''}" 
+            <input type="text" value="${person.profession || ''}"
                    onchange="updatePerson('${person.id}', { profession: this.value })"
                    placeholder="Occupation">
           </div>
@@ -3006,7 +3765,7 @@
       const isFocal = person.id === tree.settings.focalPersonId;
       
       // Get relationships
-      const parentUnion = Object.values(tree.unions).find(u => u.childrenIds.includes(person.id));
+      const parentUnion = findParentUnion(person.id);
       const partnerUnions = Object.values(tree.unions).filter(
         u => u.partner1Id === person.id || u.partner2Id === person.id
       );
@@ -3053,12 +3812,38 @@
         html += '<div class="action-section"><div class="action-section-title">Order</div>';
         
         if (hasSiblingOrder) {
-          const idx = parentUnion.childrenIds.indexOf(person.id);
-          if (idx > 0) {
-            html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', -1)">Move Earlier in Siblings</button>`;
-          }
-          if (idx < parentUnion.childrenIds.length - 1) {
-            html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', 1)">Move Later in Siblings</button>`;
+          const myPos = lastLayoutNodes[person.id];
+          if (myPos) {
+            // Use visual x-positions to determine left/right neighbours
+            const sibsWithPos = parentUnion.childrenIds
+              .filter(id => id !== person.id && lastLayoutNodes[id])
+              .map(id => ({ id, x: lastLayoutNodes[id].x }));
+            const leftSibs = sibsWithPos.filter(s => s.x < myPos.x).sort((a, b) => b.x - a.x);
+            const rightSibs = sibsWithPos.filter(s => s.x > myPos.x).sort((a, b) => a.x - b.x);
+
+            if (leftSibs.length > 0) {
+              const neighbor = leftSibs[0];
+              const swapLabel = tree.persons[neighbor.id] ? getPersonLabel(tree.persons[neighbor.id]) : 'sibling';
+              html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', '${neighbor.id}', 'before')">&larr; Move before ${swapLabel}</button>`;
+            }
+            if (rightSibs.length > 0) {
+              const neighbor = rightSibs[0];
+              const swapLabel = tree.persons[neighbor.id] ? getPersonLabel(tree.persons[neighbor.id]) : 'sibling';
+              html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', '${neighbor.id}', 'after')">Move after ${swapLabel} &rarr;</button>`;
+            }
+          } else {
+            // Fallback: no layout info yet, use array order
+            const idx = parentUnion.childrenIds.indexOf(person.id);
+            if (idx > 0) {
+              const targetId = parentUnion.childrenIds[idx - 1];
+              const swapLabel = tree.persons[targetId] ? getPersonLabel(tree.persons[targetId]) : 'sibling';
+              html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', '${targetId}', 'before')">&larr; Move before ${swapLabel}</button>`;
+            }
+            if (idx < parentUnion.childrenIds.length - 1) {
+              const targetId = parentUnion.childrenIds[idx + 1];
+              const swapLabel = tree.persons[targetId] ? getPersonLabel(tree.persons[targetId]) : 'sibling';
+              html += `<button class="btn btn-secondary" onclick="moveChildInUnion('${parentUnion.id}', '${person.id}', '${targetId}', 'after')">Move after ${swapLabel} &rarr;</button>`;
+            }
           }
         }
         
@@ -3081,13 +3866,30 @@
         html += '</div>';
       }
       
+      // Branch collapse (per-union)
+      const unionsWithChildren = partnerUnions.filter(u => u.childrenIds.length > 0);
+      if (unionsWithChildren.length > 0) {
+        html += '<div class="action-section"><div class="action-section-title">Branch</div>';
+        unionsWithChildren.forEach(union => {
+          const collapsed = isUnionCollapsed(union.id);
+          const hiddenCount = collapsed ? countHiddenInUnion(union.id) : 0;
+          const partnerId = union.partner1Id === person.id ? union.partner2Id : union.partner1Id;
+          const partnerLabel = partnerId && tree.persons[partnerId] ? getPersonLabel(tree.persons[partnerId]) : null;
+          const label = partnerLabel
+            ? (collapsed ? `Expand children with ${partnerLabel} (${hiddenCount} hidden)` : `Collapse children with ${partnerLabel}`)
+            : (collapsed ? `Expand children (${hiddenCount} hidden)` : `Collapse children`);
+          html += `<button class="btn btn-secondary" onclick="toggleUnionCollapse('${union.id}')">${label}</button>`;
+        });
+        html += '</div>';
+      }
+
       // Other Actions
       html += '<div class="action-section"><div class="action-section-title">Other</div>';
-      
+
       if (!isFocal) {
         html += `<button class="btn btn-secondary" onclick="setAsFocalPerson('${person.id}')">Set as Focal Person</button>`;
       }
-      
+
       if (!isFocal) {
         html += `<button class="btn btn-danger" onclick="deletePerson('${person.id}')">Delete Person</button>`;
       }
@@ -3118,6 +3920,119 @@
       if (!dateStr) return '';
       const match = String(dateStr).match(/^(\d{4})/);
       return match ? match[1] : '';
+    }
+
+    // Estimate birth years for all persons. Known years are seeded from dateOfBirth;
+    // missing years are iteratively inferred from parents (+25), children (-25), partners.
+    function estimateBirthYears(persons, unions) {
+      const GAP = 25;
+      const MAX_ITER = 10;
+      const yearMap = {};
+
+      // Seed known years
+      Object.values(persons).forEach(p => {
+        const y = getYearFromDate(p.dateOfBirth);
+        if (y) yearMap[p.id] = { year: parseInt(y, 10), estimated: false };
+      });
+
+      // Build relationship lookups
+      const childToParentUnion = {};
+      const personToPartnerUnions = {};
+      Object.values(unions).forEach(u => {
+        u.childrenIds.forEach(cid => {
+          if (persons[cid]) childToParentUnion[cid] = u;
+        });
+        [u.partner1Id, u.partner2Id].filter(pid => pid && persons[pid]).forEach(pid => {
+          if (!personToPartnerUnions[pid]) personToPartnerUnions[pid] = [];
+          personToPartnerUnions[pid].push(u);
+        });
+      });
+
+      // Iterative resolution
+      for (let iter = 0; iter < MAX_ITER; iter++) {
+        let changed = false;
+        Object.values(persons).forEach(p => {
+          if (yearMap[p.id]) return;
+
+          // From parents
+          const pu = childToParentUnion[p.id];
+          if (pu) {
+            const py = [pu.partner1Id, pu.partner2Id]
+              .filter(Boolean).map(pid => yearMap[pid]?.year).filter(y => y !== undefined);
+            if (py.length > 0) {
+              yearMap[p.id] = { year: Math.round(py.reduce((a, b) => a + b, 0) / py.length + GAP), estimated: true };
+              changed = true; return;
+            }
+          }
+
+          // From children
+          const pUnions = personToPartnerUnions[p.id] || [];
+          const cy = [];
+          pUnions.forEach(u => u.childrenIds.forEach(cid => {
+            if (yearMap[cid]) cy.push(yearMap[cid].year);
+          }));
+          if (cy.length > 0) {
+            yearMap[p.id] = { year: Math.round(cy.reduce((a, b) => a + b, 0) / cy.length - GAP), estimated: true };
+            changed = true; return;
+          }
+
+          // From partner
+          for (const u of pUnions) {
+            const partnerId = u.partner1Id === p.id ? u.partner2Id : u.partner1Id;
+            if (partnerId && yearMap[partnerId]) {
+              yearMap[p.id] = { year: yearMap[partnerId].year, estimated: true };
+              changed = true; return;
+            }
+          }
+        });
+        if (!changed) break;
+      }
+
+      // Fallback: median of resolved years, or 1950
+      const allYears = Object.values(yearMap).map(v => v.year);
+      const fallback = allYears.length > 0
+        ? allYears.sort((a, b) => a - b)[Math.floor(allYears.length / 2)]
+        : 1950;
+      Object.values(persons).forEach(p => {
+        if (!yearMap[p.id]) yearMap[p.id] = { year: fallback, estimated: true };
+      });
+
+      return yearMap;
+    }
+
+    // Convert internal YYYY-MM-DD to display DD-MM-YYYY (passes through YYYY-only)
+    function formatDateForDisplay(dateStr) {
+      if (!dateStr) return '';
+      const s = String(dateStr);
+      const full = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (full) return `${full[3]}-${full[2]}-${full[1]}`;
+      return s; // already YYYY or other format, pass through
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Convert user input DD-MM-YYYY back to internal YYYY-MM-DD (accepts YYYY alone too)
+    function parseDateInput(input) {
+      if (!input) return '';
+      const s = input.trim();
+      // Already YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      // DD-MM-YYYY
+      const dmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+      if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+      // DD/MM/YYYY
+      const dmy2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (dmy2) return `${dmy2[3]}-${dmy2[2].padStart(2,'0')}-${dmy2[1].padStart(2,'0')}`;
+      // YYYY alone
+      if (/^\d{4}$/.test(s)) return s;
+      return s; // unrecognised, store as-is
     }
     
     // Get the display number for a person
@@ -3164,6 +4079,18 @@
     // ZOOM & PAN
     // ============================================================================
     
+    function centerOnPerson(personId) {
+      if (!personId || !tree.persons[personId]) return;
+      const subset = getVisibleSubset();
+      const { nodes } = calculateLayout({ persons: subset.persons, unions: subset.unions });
+      const node = nodes.find(n => n.id === personId);
+      if (!node) return;
+      pan = {
+        x: -(node.x + node.width / 2) * zoom,
+        y: -(node.y + node.height / 2) * zoom
+      };
+    }
+
     function zoomIn() {
       zoom = Math.min(zoom + 0.15, 2);
       renderCanvas();
@@ -3176,7 +4103,8 @@
     
     function zoomToExtents() {
       const svg = document.getElementById('tree-canvas');
-      const { nodes } = calculateLayout();
+      const subset = getVisibleSubset();
+      const { nodes } = calculateLayout({ persons: subset.persons, unions: subset.unions });
       
       if (!nodes.length) return;
       
@@ -3202,15 +4130,15 @@
       
       renderCanvas();
     }
-    
+
     function handleReportChange(value) {
       if (!value) return;
-      if (value === 'people') {
-        openPeopleReport();
-      } else if (value === 'full') {
+      if (value === 'full') {
         openVectorTreeReport({ mode: 'full' });
       } else if (value === 'blood') {
         openVectorTreeReport({ mode: 'blood' });
+      } else if (value === 'timeline') {
+        openTimelineReport();
       }
       const select = document.getElementById('report-select');
       if (select) select.value = '';
@@ -3326,7 +4254,7 @@
 
               <circle cx="12" cy="12" r="10" fill="${isUnknown ? '#cbd5e1' : colors.accent}" opacity="0.9"/>
               <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600"
-                    font-family="'DM Sans', sans-serif">${personNum}</text>
+                    font-family="DM Sans, Segoe UI, sans-serif">${personNum}</text>
 
               ${isUnknown ? `
                 <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
@@ -3341,22 +4269,22 @@
               `}
 
               <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600"
-                    fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="'DM Sans', sans-serif">
+                    fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="DM Sans, Segoe UI, sans-serif">
                 ${isUnknown ? 'Unknown' : (displayName.length > 12 ? displayName.substring(0, 11) + '…' : displayName)}
               </text>
               ${!isUnknown && displaySurname ? `
                 <text x="${width/2}" y="80" text-anchor="middle" font-size="10"
-                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">
                   ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '…' : displaySurname}
                 </text>
               ` : ''}
               ${birthYear ? `
                 <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
-                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${birthYear}</text>
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${birthYear}</text>
               ` : ''}
               ${deathYear ? `
                 <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
-                      fill="${themeColors.textMuted}" font-family="'DM Sans', sans-serif">${deathYear}</text>
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${deathYear}</text>
               ` : ''}
             ` : ''}
           </g>
@@ -3366,6 +4294,8 @@
       svgHtml += '</svg>';
       return { svgHtml, viewBox };
     }
+
+    // Timeline functions removed for web version - use local version for Timeline reports
 
     function openReportWindow({ title, bodyHtml, extraStyles, landscape }) {
       const win = window.open('', '_blank');
@@ -3383,11 +4313,10 @@
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1"/>
             <title>${title}</title>
-            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
             <style>
               :root { color-scheme: light; }
               html, body { margin: 0; padding: 0; height: 100%; }
-              body { font-family: "DM Sans", sans-serif; background: #f8fafc; color: #0f172a; }
+              body { font-family: "DM Sans", "Segoe UI", sans-serif; background: #f8fafc; color: #0f172a; }
               .report-toolbar {
                 display: flex;
                 align-items: center;
@@ -3433,82 +4362,8 @@
       win.document.close();
     }
 
-    function openPeopleReport() {
-      const people = Object.values(tree.persons);
-      if (people.length === 0) {
-        alert('No people to report.');
-        return;
-      }
-
-      people.sort((a, b) => (a.displayNum || 0) - (b.displayNum || 0));
-
-      const rowsHtml = people.map(person => {
-        const displayName = person.isUnknown ? 'Unknown' : getPreferredName(person);
-        const surname = person.surnameCurrent || person.surnameAtBirth || '';
-        const fullName = [displayName, surname].filter(Boolean).join(' ');
-        const birthPlace = [person.cityOfBirth, person.countryOfBirth].filter(Boolean).join(', ');
-        const birthLine = [person.dateOfBirth, birthPlace].filter(Boolean).join(' • ');
-        const deathLine = person.dateOfDeath || '';
-        const genderLabel = person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : 'Unknown';
-
-        return `
-          <section class="person-row">
-            <div class="person-info">
-              <div class="person-title">#${person.displayNum || '?'} ${fullName || 'Unnamed'}</div>
-              <div class="person-meta">${genderLabel}</div>
-              ${birthLine ? `<div class="person-line"><span>Born:</span> ${birthLine}</div>` : ''}
-              ${deathLine ? `<div class="person-line"><span>Died:</span> ${deathLine}</div>` : ''}
-              ${person.profession ? `<div class="person-line"><span>Profession:</span> ${person.profession}</div>` : ''}
-              ${person.interestingFacts ? `<div class="person-notes">${person.interestingFacts}</div>` : ''}
-            </div>
-            <div class="person-photo">
-              ${person.imageData ? `<img src="${person.imageData}" alt="Photo of ${fullName || 'person'}">` : '<div class="photo-placeholder">No photo</div>'}
-            </div>
-          </section>
-        `;
-      }).join('');
-
-      openReportWindow({
-        title: `${tree.settings.treeName || 'Family Tree'} - People Report`,
-        bodyHtml: `<div class="people-report">${rowsHtml}</div>`,
-        extraStyles: `
-          .people-report { display: grid; gap: 16px; }
-          .person-row {
-            display: grid;
-            grid-template-columns: 1fr 140px;
-            gap: 16px;
-            align-items: center;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
-            page-break-inside: avoid;
-          }
-          .person-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-          .person-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 8px; }
-          .person-line { font-size: 13px; margin-bottom: 6px; }
-          .person-line span { color: #475569; font-weight: 600; margin-right: 6px; }
-          .person-notes { font-size: 12.5px; line-height: 1.5; color: #334155; margin-top: 6px; white-space: pre-wrap; }
-          .person-photo {
-            width: 120px;
-            height: 120px;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8fafc;
-          }
-          .person-photo img { width: 100%; height: 100%; object-fit: cover; }
-          .photo-placeholder { font-size: 11px; color: #94a3b8; text-align: center; padding: 8px; }
-          @media print {
-            .person-row { border: 1px solid #cbd5f5; }
-            .people-report { gap: 12px; }
-          }
-        `
-      });
-    }
+    // Data View functions removed for web version - use local version for Data View
+    // Timeline functions removed for web version - use local version for Timeline reports
 
     function getBloodlineIds(rootId) {
       if (!rootId || !tree.persons[rootId]) return new Set();
@@ -3624,16 +4479,777 @@
     function visualizeOptimizedLayout() {
       openVectorTreeReport({ mode: 'full' });
     }
-    
+
+    function downloadLocalVersion() {
+      window.open('FamilyTreeBuilder_local.html', '_blank');
+    }
+
+    // ========================================================================
+    // DATA VIEW (Edit People Table)
+    // ========================================================================
+
+    function openEditPeople() {
+      const people = Object.values(tree.persons);
+      if (people.length === 0) {
+        alert('No people to edit.');
+        return;
+      }
+      buildFilterDropdowns();
+      renderEditPeopleTable();
+      document.getElementById('edit-people-modal').classList.add('active');
+    }
+
+    function closeEditPeople() {
+      document.getElementById('edit-people-modal').classList.remove('active');
+      render();
+    }
+
+    function buildFilterDropdowns() {
+      const persons = Object.values(tree.persons).filter(p => !p.isUnknown);
+
+      // Surnames
+      const surnames = [...new Set(persons.map(p => (p.surnameCurrent || '').trim()).filter(Boolean))].sort();
+      const surnameSelect = document.getElementById('ep-filter-surname');
+      const prevSurname = surnameSelect.value;
+      surnameSelect.innerHTML = '<option value="">All Surnames</option>' +
+        surnames.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      surnameSelect.value = prevSurname;
+
+      // Maiden names
+      const maidens = [...new Set(persons.map(p => (p.surnameAtBirth || '').trim()).filter(Boolean))].sort();
+      const maidenSelect = document.getElementById('ep-filter-maiden');
+      const prevMaiden = maidenSelect.value;
+      maidenSelect.innerHTML = '<option value="">All Maiden Names</option>' +
+        maidens.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      maidenSelect.value = prevMaiden;
+
+      // Decades
+      const decades = new Set();
+      persons.forEach(p => {
+        const year = getYearFromDate(p.dateOfBirth);
+        if (year) decades.add(Math.floor(parseInt(year, 10) / 10) * 10);
+      });
+      const sortedDecades = [...decades].sort((a, b) => a - b);
+      const decadeSelect = document.getElementById('ep-filter-decade');
+      const prevDecade = decadeSelect.value;
+      decadeSelect.innerHTML = '<option value="">All Decades</option>' +
+        sortedDecades.map(d => `<option value="${d}">${d}s</option>`).join('');
+      decadeSelect.value = prevDecade;
+
+      // Countries
+      const countries = [...new Set(persons.map(p => (p.countryOfBirth || '').trim()).filter(Boolean))].sort();
+      const countrySelect = document.getElementById('ep-filter-country');
+      const prevCountry = countrySelect.value;
+      countrySelect.innerHTML = '<option value="">All Countries</option>' +
+        countries.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      countrySelect.value = prevCountry;
+    }
+
+    function getFilteredPeople() {
+      const search = (document.getElementById('ep-search')?.value || '').toLowerCase().trim();
+      const surname = document.getElementById('ep-filter-surname')?.value || '';
+      const maiden = document.getElementById('ep-filter-maiden')?.value || '';
+      const gender = document.getElementById('ep-filter-gender')?.value || '';
+      const decade = document.getElementById('ep-filter-decade')?.value || '';
+      const country = document.getElementById('ep-filter-country')?.value || '';
+      const living = document.getElementById('ep-filter-living')?.value || '';
+      const showUnknown = document.getElementById('ep-filter-unknown')?.checked ?? true;
+
+      let people = Object.values(tree.persons);
+
+      if (!showUnknown) {
+        people = people.filter(p => !p.isUnknown);
+      }
+
+      if (search) {
+        people = people.filter(p => {
+          const hay = [p.firstName, p.altName, p.surnameCurrent, p.surnameAtBirth]
+            .map(s => (s || '').toLowerCase()).join(' ');
+          return hay.includes(search);
+        });
+      }
+
+      if (surname) {
+        people = people.filter(p => (p.surnameCurrent || '').trim() === surname);
+      }
+      if (maiden) {
+        people = people.filter(p => (p.surnameAtBirth || '').trim() === maiden);
+      }
+      if (gender) {
+        people = people.filter(p => p.gender === gender);
+      }
+      if (decade) {
+        const d = parseInt(decade, 10);
+        people = people.filter(p => {
+          const year = parseInt(getYearFromDate(p.dateOfBirth), 10);
+          return year && year >= d && year < d + 10;
+        });
+      }
+      if (country) {
+        people = people.filter(p => (p.countryOfBirth || '').trim() === country);
+      }
+      if (living === 'living') {
+        people = people.filter(p => !p.dateOfDeath);
+      } else if (living === 'deceased') {
+        people = people.filter(p => !!p.dateOfDeath);
+      }
+
+      return people;
+    }
+
+    function sortPeople(people) {
+      const col = epSortColumn;
+      const dir = epSortDirection === 'asc' ? 1 : -1;
+
+      return [...people].sort((a, b) => {
+        let va = a[col];
+        let vb = b[col];
+
+        if (col === 'displayNum') {
+          return ((va || 0) - (vb || 0)) * dir;
+        }
+        if (col === 'dateOfBirth' || col === 'dateOfDeath') {
+          va = va || '';
+          vb = vb || '';
+          if (!va && !vb) return 0;
+          if (!va) return 1;
+          if (!vb) return -1;
+          return va.localeCompare(vb) * dir;
+        }
+        // String comparison
+        va = (va || '').toString().toLowerCase();
+        vb = (vb || '').toString().toLowerCase();
+        if (!va && !vb) return 0;
+        if (!va) return 1;
+        if (!vb) return -1;
+        return va.localeCompare(vb) * dir;
+      });
+    }
+
+    function handleEpSort(colKey) {
+      if (epSortColumn === colKey) {
+        epSortDirection = epSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        epSortColumn = colKey;
+        epSortDirection = 'asc';
+      }
+      renderEditPeopleTable();
+    }
+
+    function renderEditPeopleTable() {
+      const allPeople = Object.values(tree.persons);
+      const filtered = getFilteredPeople();
+      const sorted = sortPeople(filtered);
+
+      // Render thead
+      const thead = document.getElementById('ep-thead');
+      thead.innerHTML = '<tr>' + EP_COLUMNS.map(col => {
+        if (!col.sortable) {
+          return `<th class="no-sort">${col.label}</th>`;
+        }
+        const isActive = epSortColumn === col.key;
+        const arrow = isActive
+          ? (epSortDirection === 'asc' ? '\u25B2' : '\u25BC')
+          : '\u25B2';
+        const cls = isActive ? 'sort-arrow active' : 'sort-arrow';
+        return `<th onclick="handleEpSort('${col.key}')">${col.label} <span class="${cls}">${arrow}</span></th>`;
+      }).join('') + '</tr>';
+
+      // Render tbody
+      const tbody = document.getElementById('ep-tbody');
+      if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${EP_COLUMNS.length}" style="text-align:center;padding:24px;color:var(--text-muted);">No people match the current filters.</td></tr>`;
+      } else {
+        tbody.innerHTML = sorted.map(person => {
+          const pid = person.id;
+          return '<tr>' + EP_COLUMNS.map(col => {
+            const val = person[col.key];
+            if (col.type === 'num-link') {
+              return `<td><span class="ep-num-link" onclick="navigateToPersonFromEdit('${pid}')" title="Go to person on tree">${val || '?'}</span></td>`;
+            }
+            if (col.type === 'gender') {
+              return `<td><select onchange="updatePersonFromTable('${pid}', '${col.key}', this.value)">
+                <option value="unknown" ${val === 'unknown' ? 'selected' : ''}>Unknown</option>
+                <option value="female" ${val === 'female' ? 'selected' : ''}>Female</option>
+                <option value="male" ${val === 'male' ? 'selected' : ''}>Male</option>
+              </select></td>`;
+            }
+            if (col.type === 'date') {
+              return `<td><input type="text" value="${formatDateForDisplay(val)}" placeholder="DD-MM-YYYY" onchange="updatePersonFromTable('${pid}', '${col.key}', parseDateInput(this.value))"></td>`;
+            }
+            if (col.type === 'textarea') {
+              return `<td><textarea onchange="updatePersonFromTable('${pid}', '${col.key}', this.value)">${escapeHtml(val || '')}</textarea></td>`;
+            }
+            // Default text input
+            return `<td><input type="text" value="${escapeHtml(val || '')}" onchange="updatePersonFromTable('${pid}', '${col.key}', this.value)"></td>`;
+          }).join('') + '</tr>';
+        }).join('');
+      }
+
+      // Footer
+      document.getElementById('ep-footer').textContent =
+        `Showing ${sorted.length} of ${allPeople.length} people`;
+    }
+
+    function updatePersonFromTable(personId, field, value) {
+      if (!tree.persons[personId]) return;
+      const prev = tree.persons[personId][field];
+      if (prev === value) return;
+
+      pushHistory();
+      tree.persons[personId][field] = value;
+
+      // If updating names on an unknown person, mark as known
+      if ((field === 'firstName' && value && value !== 'Unknown') ||
+          (field === 'altName' && value && value.trim())) {
+        tree.persons[personId].isUnknown = false;
+      }
+
+      // Refresh filter dropdowns in case new surnames/countries were typed
+      buildFilterDropdowns();
+    }
+
+    function navigateToPersonFromEdit(personId) {
+      closeEditPeople();
+      selectedPersonId = personId;
+      currentTab = 'personal';
+      render();
+    }
+
+    function exportFilteredPDF() {
+      const filtered = getFilteredPeople();
+      const sorted = sortPeople(filtered);
+
+      if (sorted.length === 0) {
+        alert('No people to export with current filters.');
+        return;
+      }
+
+      const rowsHtml = sorted.map(person => {
+        const displayName = person.isUnknown ? 'Unknown' : getPreferredName(person);
+        const surname = person.surnameCurrent || person.surnameAtBirth || '';
+        const fullName = [displayName, surname].filter(Boolean).join(' ');
+        const birthPlace = [person.cityOfBirth, person.countryOfBirth].filter(Boolean).join(', ');
+        const birthLine = [formatDateForDisplay(person.dateOfBirth), birthPlace].filter(Boolean).join(' \u2022 ');
+        const deathLine = formatDateForDisplay(person.dateOfDeath);
+        const genderLabel = person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : 'Unknown';
+
+        return `
+          <section class="person-row">
+            <div class="person-info">
+              <div class="person-title">#${person.displayNum || '?'} ${escapeHtml(fullName || 'Unnamed')}</div>
+              <div class="person-meta">${genderLabel}</div>
+              ${birthLine ? `<div class="person-line"><span>Born:</span> ${escapeHtml(birthLine)}</div>` : ''}
+              ${deathLine ? `<div class="person-line"><span>Died:</span> ${escapeHtml(deathLine)}</div>` : ''}
+              ${person.profession ? `<div class="person-line"><span>Profession:</span> ${escapeHtml(person.profession)}</div>` : ''}
+              ${person.interestingFacts ? `<div class="person-notes">${escapeHtml(person.interestingFacts)}</div>` : ''}
+            </div>
+            <div class="person-photo">
+              ${person.imageData ? `<img src="${person.imageData}" alt="Photo">` : '<div class="photo-placeholder">No photo</div>'}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      openReportWindow({
+        title: `${tree.settings.treeName || 'Family Tree'} - People Report (${sorted.length} of ${Object.keys(tree.persons).length})`,
+        bodyHtml: `<div class="people-report">${rowsHtml}</div>`,
+        extraStyles: `
+          .people-report { display: grid; gap: 16px; }
+          .person-row {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            page-break-inside: avoid;
+          }
+          .person-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+          .person-meta { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 8px; }
+          .person-line { font-size: 13px; margin-bottom: 6px; }
+          .person-line span { color: #475569; font-weight: 600; margin-right: 6px; }
+          .person-notes { font-size: 12.5px; line-height: 1.5; color: #334155; margin-top: 6px; white-space: pre-wrap; }
+          .person-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+          }
+          .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+          .photo-placeholder { font-size: 11px; color: #94a3b8; text-align: center; padding: 8px; }
+          @media print {
+            .person-row { border: 1px solid #cbd5f5; }
+            .people-report { gap: 12px; }
+          }
+        `
+      });
+    }
+
+    // ========================================================================
+    // TIMELINE TREE REPORT
+    // ========================================================================
+
+    function buildYearBar(info, viewTop, viewBottom, viewRight, themeColors) {
+      const { minYear, maxYear, pxPerYear, barX } = info;
+      let svg = '';
+      // Vertical axis line
+      svg += `<line x1="${barX}" y1="${viewTop}" x2="${barX}" y2="${viewBottom}"
+                    stroke="${themeColors.textMuted}" stroke-width="1" opacity="0.3"/>`;
+      const startDecade = Math.floor(minYear / 10) * 10;
+      const endDecade = Math.ceil(maxYear / 10) * 10 + 10;
+      for (let year = startDecade; year <= endDecade; year += 5) {
+        const y = (year - minYear) * pxPerYear;
+        const isDecade = year % 10 === 0;
+        // Tick mark
+        svg += `<line x1="${barX - (isDecade ? 8 : 4)}" y1="${y}" x2="${barX}" y2="${y}"
+                      stroke="${themeColors.textMuted}" stroke-width="${isDecade ? 1.5 : 0.75}" opacity="0.6"/>`;
+        // Horizontal grid line across chart
+        svg += `<line x1="${barX}" y1="${y}" x2="${viewRight}" y2="${y}"
+                      stroke="${themeColors.gridLine}" stroke-width="0.5" opacity="${isDecade ? 0.35 : 0.15}"
+                      ${isDecade ? '' : 'stroke-dasharray="6 4"'}/>`;
+        // Year label
+        if (isDecade || pxPerYear * 5 > 40) {
+          svg += `<text x="${barX - 12}" y="${y + 4}" text-anchor="end" font-size="${isDecade ? 11 : 9}"
+                        fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif"
+                        font-weight="${isDecade ? 600 : 400}" opacity="${isDecade ? 0.8 : 0.5}">${year}</text>`;
+        }
+      }
+      return svg;
+    }
+
+    function buildTimelineSvg(nodes, edges, yearBarInfo, yearMap, options = {}) {
+      const themeColors = options.themeColors || getThemeColors();
+      const edgeColors = options.edgeColors || getEdgeColors();
+      const padding = 120;
+
+      const allX = nodes.map(n => n.x);
+      const allY = nodes.map(n => n.y);
+      const minX = Math.min(0, ...allX);
+      const maxX = Math.max(...allX) + nodes[0].width;
+      const minY = Math.min(...allY);
+      const maxY = Math.max(...allY) + nodes[0].height;
+      const viewBox = `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`;
+
+      let svgHtml = `
+        <svg viewBox="${viewBox}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+            </filter>
+          </defs>
+          <rect x="${minX - padding}" y="${minY - padding}" width="${maxX - minX + padding * 2}" height="${maxY - minY + padding * 2}" fill="${themeColors.cardBg}"/>
+      `;
+
+      // Year bar
+      svgHtml += buildYearBar(yearBarInfo, minY - padding, maxY + padding, maxX + padding, themeColors);
+
+      // Edges
+      edges.forEach(edge => {
+        const color = edge.type === 'partner' ? edgeColors.partner : edgeColors.child;
+        const w = edge.type === 'partner' ? 2.5 : 1.5;
+        const op = edge.type === 'partner' ? 0.8 : 0.55;
+        svgHtml += `<line x1="${edge.x1}" y1="${edge.y1}" x2="${edge.x2}" y2="${edge.y2}"
+                    stroke="${color}" stroke-width="${w}" stroke-linecap="round" opacity="${op}"/>`;
+      });
+
+      // Cards
+      nodes.forEach(node => {
+        const { data, x, y, width, height } = node;
+        const isUnknown = data.isUnknown;
+        const isVisible = data.isVisible !== false;
+        const personNum = data.displayNum || '?';
+        const displayName = isUnknown ? '?' : getPreferredName(data);
+        const displaySurname = data.surnameCurrent || data.surnameAtBirth || '';
+        const showDetails = isVisible;
+        const groupOpacity = showDetails ? 1 : 0.25;
+        const birthYear = node.estimatedYear
+          ? `~${node.birthYear}`
+          : (getYearFromDate(data.dateOfBirth) || '');
+        const deathYear = getYearFromDate(data.dateOfDeath);
+        const yearY = 38, yearLeftX = 26, yearRightX = width - 26;
+        const avatarSize = 44, avatarRadius = 22, avatarY = 14;
+        const avatarCenterY = avatarY + avatarRadius;
+
+        let colors;
+        if (!isVisible) {
+          colors = { bg: themeColors.cardBg, border: themeColors.unknownBorder, accent: themeColors.unknownBorder };
+        } else if (isUnknown) {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#64748b' };
+        } else if (data.gender === 'male') {
+          colors = { bg: themeColors.male, border: themeColors.maleBorder, accent: '#1d4ed8' };
+        } else if (data.gender === 'female') {
+          colors = { bg: themeColors.female, border: themeColors.femaleBorder, accent: '#be185d' };
+        } else {
+          colors = { bg: themeColors.unknownBg, border: themeColors.unknownBorder, accent: '#475569' };
+        }
+        const strokeStyle = isUnknown && isVisible ? 'stroke-dasharray="6 4"' : '';
+
+        svgHtml += `
+          <g transform="translate(${x}, ${y})" opacity="${groupOpacity}">
+            <rect width="${width}" height="${height}" rx="10"
+                  fill="${colors.bg}" stroke="${colors.border}" stroke-width="1.5"
+                  ${strokeStyle} filter="url(#card-shadow)"/>
+            ${showDetails ? `
+              <rect width="${width}" height="6" rx="10" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+              <rect x="0" y="3" width="${width}" height="6" fill="${colors.accent}" ${isUnknown ? 'opacity="0.5"' : ''}/>
+              <circle cx="12" cy="12" r="10" fill="${isUnknown ? '#cbd5e1' : colors.accent}" opacity="0.9"/>
+              <text x="12" y="16" text-anchor="middle" font-size="10" fill="white" font-weight="600"
+                    font-family="DM Sans, Segoe UI, sans-serif">${personNum}</text>
+              ${isUnknown ? `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.2"/>
+                <text x="${width/2}" y="${avatarCenterY + 6}" text-anchor="middle" font-size="20" fill="${colors.border}" font-weight="bold">?</text>
+              ` : data.imageData ? `
+                <image x="${width/2 - avatarRadius}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${data.imageData}"
+                  clip-path="circle(${avatarRadius}px at ${avatarRadius}px ${avatarRadius}px)" preserveAspectRatio="xMidYMid slice"/>
+              ` : `
+                <circle cx="${width/2}" cy="${avatarCenterY}" r="20" fill="${colors.border}" opacity="0.3"/>
+                <circle cx="${width/2}" cy="${avatarCenterY - 6}" r="7" fill="${colors.border}" opacity="0.4"/>
+                <ellipse cx="${width/2}" cy="${avatarCenterY + 9}" rx="12" ry="7" fill="${colors.border}" opacity="0.4"/>
+              `}
+              <text x="${width/2}" y="64" text-anchor="middle" font-size="12" font-weight="600"
+                    fill="${isUnknown ? themeColors.unknownBorder : themeColors.textMain}" font-family="DM Sans, Segoe UI, sans-serif">
+                ${isUnknown ? 'Unknown' : (displayName.length > 12 ? displayName.substring(0, 11) + '\u2026' : displayName)}
+              </text>
+              ${!isUnknown && displaySurname ? `
+                <text x="${width/2}" y="80" text-anchor="middle" font-size="10"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">
+                  ${displaySurname.length > 14 ? displaySurname.substring(0, 13) + '\u2026' : displaySurname}
+                </text>
+              ` : ''}
+              ${birthYear ? `
+                <text x="${yearLeftX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${birthYear}</text>
+              ` : ''}
+              ${deathYear ? `
+                <text x="${yearRightX}" y="${yearY}" text-anchor="middle" font-size="12"
+                      fill="${themeColors.textMuted}" font-family="DM Sans, Segoe UI, sans-serif">${deathYear}</text>
+              ` : ''}
+            ` : ''}
+          </g>
+        `;
+      });
+
+      svgHtml += '</svg>';
+      return { svgHtml, viewBox };
+    }
+
+    function openTimelineReport() {
+      const subset = getVisibleSubset();
+      if (Object.keys(subset.persons).length === 0) {
+        alert('No people to export.');
+        return;
+      }
+      const { nodes, edges, yearBarInfo, yearMap } = calculateTimelineLayout(
+        subset.persons, subset.unions,
+        { focalPersonId: tree.settings.focalPersonId }
+      );
+      const { svgHtml } = buildTimelineSvg(nodes, edges, yearBarInfo, yearMap);
+      const title = `${tree.settings.treeName || 'Family Tree'} - Timeline`;
+      openReportWindow({
+        title,
+        bodyHtml: `<div class="svg-report">${svgHtml}</div>`,
+        extraStyles: `
+          .report-content { padding: 0; height: calc(100vh - 52px); overflow: auto; }
+          .svg-report { width: 100%; height: 100%; min-height: 100%; }
+          .svg-report svg { width: 100%; height: 100%; display: block; }
+          @media print {
+            .report-content { height: auto; overflow: visible; }
+            .svg-report { height: auto; }
+            .svg-report svg { height: auto; }
+          }
+        `,
+        landscape: true
+      });
+    }
+
+    function buildTimelineEdges(persons, unions, xPos, yPos, CARD_W, CARD_H) {
+      const edges = [];
+      Object.values(unions).forEach(union => {
+        const p1 = union.partner1Id, p2 = union.partner2Id;
+        const p1ok = p1 && persons[p1] && xPos[p1] !== undefined;
+        const p2ok = p2 && persons[p2] && xPos[p2] !== undefined;
+
+        // Partner edge: straight line between adjacent cards (diagonal if different years)
+        if (p1ok && p2ok) {
+          const lid = xPos[p1] < xPos[p2] ? p1 : p2;
+          const rid = xPos[p1] < xPos[p2] ? p2 : p1;
+          edges.push({
+            type: 'partner',
+            x1: xPos[lid] + CARD_W, y1: yPos[lid] + CARD_H / 2,
+            x2: xPos[rid],          y2: yPos[rid] + CARD_H / 2
+          });
+        }
+
+        // Parent-child edges: single diagonal from couple midpoint to each child
+        const parentIds = [p1, p2].filter(pid => pid && persons[pid] && xPos[pid] !== undefined);
+        if (parentIds.length === 0 || union.childrenIds.length === 0) return;
+
+        // Anchor at the midpoint of the partner connection line
+        const anchorX = parentIds.reduce((s, pid) => s + xPos[pid] + CARD_W / 2, 0) / parentIds.length;
+        const anchorY = parentIds.length === 2
+          ? (yPos[parentIds[0]] + yPos[parentIds[1]]) / 2 + CARD_H / 2
+          : yPos[parentIds[0]] + CARD_H;
+
+        union.childrenIds.forEach(cid => {
+          if (!persons[cid] || xPos[cid] === undefined) return;
+          edges.push({
+            type: 'child',
+            x1: anchorX,
+            y1: anchorY,
+            x2: xPos[cid] + CARD_W / 2,
+            y2: yPos[cid]
+          });
+        });
+      });
+      return edges;
+    }
+
+    function calculateTimelineLayout(persons, unions, options = {}) {
+      const CARD_W = 150, CARD_H = 90, PARTNER_GAP = 20, SIBLING_GAP = 30, YEAR_BAR_W = 80;
+
+      // ── Phase 1: Build relationship maps ──
+      const childOfUnion = {};   // pid → unionId
+      const partnerUnions = {};  // pid → [union objects]
+
+      Object.values(unions).forEach(u => {
+        u.childrenIds.forEach(cid => {
+          if (persons[cid]) childOfUnion[cid] = u.id;
+        });
+        [u.partner1Id, u.partner2Id].forEach(pid => {
+          if (pid && persons[pid]) {
+            if (!partnerUnions[pid]) partnerUnions[pid] = [];
+            partnerUnions[pid].push(u);
+          }
+        });
+      });
+      Object.values(partnerUnions).forEach(arr =>
+        arr.sort((a, b) => (a.order || 1) - (b.order || 1))
+      );
+
+      // ── Phase 2: Recursive subtree width computation (bottom-up) ──
+      function computeSubtree(pid, visited) {
+        visited.add(pid);
+        const myUnions = partnerUnions[pid] || [];
+
+        // Collect partners not yet visited
+        const partners = [];
+        myUnions.forEach(u => {
+          const partnerId = u.partner1Id === pid ? u.partner2Id : u.partner1Id;
+          if (partnerId && persons[partnerId] && !visited.has(partnerId)) {
+            visited.add(partnerId);
+            partners.push(partnerId);
+          }
+        });
+
+        // Collect children from all unions not yet visited
+        const allChildren = [];
+        myUnions.forEach(u => {
+          u.childrenIds.forEach(cid => {
+            if (persons[cid] && !visited.has(cid)) {
+              allChildren.push(cid);
+            }
+          });
+        });
+
+        // Header width: self + partners side by side
+        const numCards = 1 + partners.length;
+        const headerW = numCards * CARD_W + Math.max(0, numCards - 1) * PARTNER_GAP;
+
+        // Children: recursively compute each child's subtree
+        const childTrees = allChildren.map(cid => computeSubtree(cid, visited));
+        const childrenW = childTrees.reduce((s, t) => s + t.totalW, 0) +
+                          Math.max(0, childTrees.length - 1) * SIBLING_GAP;
+
+        const totalW = Math.max(headerW, childrenW || 0);
+
+        return { pid, partners, childTrees, headerW, childrenW, totalW };
+      }
+
+      // Start from the focal person
+      const focalId = options.focalPersonId || Object.keys(persons)[0];
+      const visited = new Set();
+      const mainTree = computeSubtree(focalId, visited);
+
+      // ── Phase 3: Top-down x-position assignment ──
+      const xPos = {};
+
+      function assignX(tree, leftX) {
+        // Center header within total width
+        const headerLeft = leftX + (tree.totalW - tree.headerW) / 2;
+
+        xPos[tree.pid] = headerLeft;
+        let hx = headerLeft + CARD_W + PARTNER_GAP;
+        tree.partners.forEach(p => {
+          xPos[p] = hx;
+          hx += CARD_W + PARTNER_GAP;
+        });
+
+        // Center children block within total width
+        if (tree.childTrees.length > 0) {
+          const childrenLeft = leftX + (tree.totalW - tree.childrenW) / 2;
+          let cx = childrenLeft;
+          tree.childTrees.forEach(ct => {
+            assignX(ct, cx);
+            cx += ct.totalW + SIBLING_GAP;
+          });
+        }
+      }
+
+      assignX(mainTree, 0);
+
+      // ── Phase 4: Place ancestors (iterative upward expansion) ──
+      let ancestorChanged = true;
+      while (ancestorChanged) {
+        ancestorChanged = false;
+        const placedIds = Object.keys(xPos);
+        for (const pid of placedIds) {
+          const parentUnionId = childOfUnion[pid];
+          if (!parentUnionId) continue;
+          const parentUnion = unions[parentUnionId];
+          if (!parentUnion) continue;
+
+          const unplacedParents = [parentUnion.partner1Id, parentUnion.partner2Id]
+            .filter(p => p && persons[p] && xPos[p] === undefined);
+          if (unplacedParents.length === 0) continue;
+
+          // Center parent pair above this child
+          const childCenter = xPos[pid] + CARD_W / 2;
+          const parentW = unplacedParents.length * CARD_W +
+                          Math.max(0, unplacedParents.length - 1) * PARTNER_GAP;
+          const parentLeft = childCenter - parentW / 2;
+
+          unplacedParents.forEach((parentId, i) => {
+            xPos[parentId] = parentLeft + i * (CARD_W + PARTNER_GAP);
+          });
+          ancestorChanged = true;
+        }
+      }
+
+      // Handle any disconnected persons not yet placed
+      let maxPlacedX = 0;
+      Object.values(xPos).forEach(x => { if (x + CARD_W > maxPlacedX) maxPlacedX = x + CARD_W; });
+      Object.keys(persons).forEach(pid => {
+        if (xPos[pid] === undefined) {
+          xPos[pid] = maxPlacedX + SIBLING_GAP;
+          maxPlacedX = xPos[pid] + CARD_W;
+        }
+      });
+
+      // ── Phase 5: Y from birth years ──
+      const yearMap = estimateBirthYears(persons, unions);
+      const allYears = Object.values(yearMap).map(v => v.year);
+      const minYear = Math.min(...allYears);
+      const maxYear = Math.max(...allYears);
+      const yearSpan = Math.max(1, maxYear - minYear);
+      const numPeople = Object.keys(persons).length;
+      const targetHeight = Math.max(800, numPeople * 40);
+      const pxPerYear = Math.max(20, targetHeight / yearSpan);
+
+      const yPos = {};
+      Object.keys(persons).forEach(pid => {
+        yPos[pid] = (yearMap[pid].year - minYear) * pxPerYear;
+      });
+
+      // ── Phase 6: Collision resolution (couple-aware) ──
+      // Group union partners into placement units so couples move together
+      const placementGroups = [];
+      const inGroup = new Set();
+      Object.values(unions).forEach(u => {
+        const p1 = u.partner1Id, p2 = u.partner2Id;
+        if (p1 && p2 && persons[p1] && persons[p2] &&
+            xPos[p1] !== undefined && xPos[p2] !== undefined &&
+            !inGroup.has(p1) && !inGroup.has(p2)) {
+          const leftId = xPos[p1] <= xPos[p2] ? p1 : p2;
+          const rightId = xPos[p1] <= xPos[p2] ? p2 : p1;
+          placementGroups.push({ members: [leftId, rightId] });
+          inGroup.add(p1);
+          inGroup.add(p2);
+        }
+      });
+      Object.keys(persons).forEach(pid => {
+        if (!inGroup.has(pid) && xPos[pid] !== undefined) {
+          placementGroups.push({ members: [pid] });
+          inGroup.add(pid);
+        }
+      });
+
+      // Sort groups by minimum y (birth year), then minimum x
+      placementGroups.sort((a, b) => {
+        const minYa = Math.min(...a.members.map(m => yPos[m] || 0));
+        const minYb = Math.min(...b.members.map(m => yPos[m] || 0));
+        if (Math.abs(minYa - minYb) > 0.5) return minYa - minYb;
+        const minXa = Math.min(...a.members.map(m => xPos[m] || 0));
+        const minXb = Math.min(...b.members.map(m => xPos[m] || 0));
+        return minXa - minXb;
+      });
+
+      // Resolve collisions: shift entire groups to avoid overlap
+      for (let i = 0; i < placementGroups.length; i++) {
+        const gi = placementGroups[i];
+        let maxShift = 0;
+        for (let j = 0; j < i; j++) {
+          const gj = placementGroups[j];
+          for (const mi of gi.members) {
+            for (const mj of gj.members) {
+              const xOvlp = !(xPos[mi] + CARD_W + 5 <= xPos[mj] || xPos[mi] >= xPos[mj] + CARD_W + 5);
+              const yOvlp = !(yPos[mi] >= yPos[mj] + CARD_H + 10 || yPos[mi] + CARD_H + 10 <= yPos[mj]);
+              if (xOvlp && yOvlp) {
+                maxShift = Math.max(maxShift, xPos[mj] + CARD_W + SIBLING_GAP - xPos[mi]);
+              }
+            }
+          }
+        }
+        if (maxShift > 0) {
+          gi.members.forEach(m => { xPos[m] += maxShift; });
+        }
+      }
+
+      // ── Phase 7: Offset all x for year bar ──
+      Object.keys(xPos).forEach(pid => { xPos[pid] += YEAR_BAR_W; });
+
+      // Build nodes
+      const nodes = Object.values(persons).map(person => ({
+        id: person.id,
+        data: person,
+        x: xPos[person.id] || YEAR_BAR_W,
+        y: yPos[person.id] || 0,
+        width: CARD_W,
+        height: CARD_H,
+        birthYear: yearMap[person.id]?.year,
+        estimatedYear: yearMap[person.id]?.estimated || false
+      }));
+
+      // Build edges
+      const edges = buildTimelineEdges(persons, unions, xPos, yPos, CARD_W, CARD_H);
+
+      // Year bar info
+      const allFinalY = Object.values(yPos);
+      const yearBarInfo = {
+        minYear, maxYear, pxPerYear,
+        topY: Math.min(...allFinalY),
+        bottomY: Math.max(...allFinalY) + CARD_H,
+        barX: YEAR_BAR_W - 10
+      };
+
+      return { nodes, edges, yearBarInfo, yearMap };
+    }
+
     function toggleDarkMode() {
       document.documentElement.classList.toggle('dark-mode');
       const isDark = document.documentElement.classList.contains('dark-mode');
       document.getElementById('dark-mode-btn').textContent = isDark ? '☀️' : '🌙';
       localStorage.setItem('darkMode', isDark ? 'true' : 'false');
-      renderCanvas(); // Re-render to update SVG colors
+      renderCanvas();
     }
-    
-    // Initialize dark mode from localStorage
+
     function initDarkMode() {
       const savedMode = localStorage.getItem('darkMode');
       if (savedMode === 'true') {
@@ -3641,13 +5257,13 @@
         document.getElementById('dark-mode-btn').textContent = '☀️';
       }
     }
-    
+
     document.addEventListener('DOMContentLoaded', () => {
       initDarkMode();
-      
+
       const svg = document.getElementById('tree-canvas');
       let dragStartPos = null;
-      
+
       svg.addEventListener('mousedown', (e) => {
         if (e.target.classList.contains('canvas-bg') || e.target.tagName === 'svg') {
           isDragging = true;
@@ -3694,7 +5310,14 @@
       });
       
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeHelp();
+        if (e.key === 'Escape') {
+          const epModal = document.getElementById('edit-people-modal');
+          if (epModal && epModal.classList.contains('active')) {
+            closeEditPeople();
+          } else {
+            closeHelp();
+          }
+        }
       });
       
       render();

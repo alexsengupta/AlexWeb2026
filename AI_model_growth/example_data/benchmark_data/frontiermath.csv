@@ -1,4 +1,13 @@
 Model version,mean_score,Best score (across scorers),Release date,Organization,Country,Training compute (FLOP),Training compute notes,stderr,Log viewer,Logs,Started at,id
+claude-opus-4-6_64K,0.39655172413793105,0.39655172413793105,2026-02-05,Anthropic,United States of America,,,0.028775377199008325,,https://epoch-benchmarks-staging-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/QSNvJqsvYdNbb85DyL9AXn.eval,2026-02-06T15:39:35.993Z,QSNvJqsvYdNbb85DyL9AXn
+claude-opus-4-6_32K,0.4,0.4,2026-02-05,Anthropic,United States of America,,,0.028817526385684453,,https://epoch-benchmarks-staging-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/b2iuVcuCPEau2ryhBsjhS9.eval,2026-02-06T12:46:04.911Z,b2iuVcuCPEau2ryhBsjhS9
+claude-opus-4-6,0.38275862068965516,0.38275862068965516,2026-02-05,Anthropic,United States of America,,,0.02859177289764447,,https://epoch-benchmarks-staging-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/nFxCq7MqCfKjhxKr7hT9qr.eval,2026-02-05T18:49:51.181Z,nFxCq7MqCfKjhxKr7hT9qr
+fireworks/kimi-k2p5,0.279,0.279,2026-01-27,Moonshot,China,,,0.026,,,2026-02-03T10:31:18.169Z,manual_kimi-k2.5_fmprivate_frankenstein
+zai-org/GLM-4.7,0.024390243902439025,0.024390243902439025,2025-12-22,Z.ai (Zhipu AI),China,4.42e+24,"Training tokens not disclosed.
+
+Presuming this is a post-training update from GLM-4.5 (23T tokens) with minor additional compute, training compute is at least:
+
+6 FLOP/parameter/token * 32B active parameters * 23T tokens = 4.42e24 FLOP",0.009121434048862995,,https://epoch-benchmarks-staging-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/GJNr6pF9QUonmhqw5dXWpd.eval,2026-01-30T03:56:27.987Z,GJNr6pF9QUonmhqw5dXWpd
 fireworks/deepseek-v3p2,0.221,0.221,2025-12-01,DeepSeek,China,,,0.041,,,2025-12-22T16:13:27.305Z,manual_deepseek-v3.2_frontiermath_tiers_13_private_frankenstein_run_incomplete
 gemini-2.5-flash,0.04844290657439446,0.04844290657439446,2025-06-17,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,,0.012651332738454618,,https://epoch-benchmarks-production-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/bTbDNLFqsUogG3fejZEAZc.eval,2025-12-18T18:23:15.700Z,bTbDNLFqsUogG3fejZEAZc
 gemini-3-flash-preview,0.356401384083045,0.356401384083045,2025-12-17,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,,0.028221558784583784,,https://epoch-benchmarks-production-private.s3.us-east-2.amazonaws.com/inspect_ai_logs/R7dSNsq2ciVRVHB7nir69v.eval,2025-12-17T22:40:29.699Z,R7dSNsq2ciVRVHB7nir69v

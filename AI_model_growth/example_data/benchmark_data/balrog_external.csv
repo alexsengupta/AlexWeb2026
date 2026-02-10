@@ -6,15 +6,7 @@ grok-4-0709,0.436,2025-07-09,xAI,United States of America,5.0000000000001e+26,"W
 The geometric mean is (rounded to one sig fig): 5e26
 ",0.022,0.76,0.06,0.573,0.039,0.629,0.079,0.458,0.045,0.175,0.06,0.018,0.008,2024-07-23,https://github.com/balrog-ai/experiments/tree/main/submissions/LLM/20250713_naive_grok-4,Balrog Leaderboard,https://balrogai.com/,,recj1cynwUw30DZ24
 gemini-2.5-pro-exp-03-25,0.433,2025-03-25,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,0.023,0.8,0.057,0.55,0.06,0.492,0.082,0.567,0.045,0.175,0.06,0.017,0.002,2025-04-25,https://github.com/balrog-ai/experiments/tree/main/submissions/LLM/20250425_naive_Gemini-2.5-Pro-Exp-03-25,Balrog Leaderboard,https://balrogai.com/,,recSOJ5L6wiyC21mt
-DeepSeek-R1,0.349,2025-01-20,DeepSeek,China,4.020010000000001e+24,"Estimates by Ege Erdil in Gradient Updates:
-https://epoch.ai/gradient-updates/what-went-into-training-deepseek-r1
-""A dataset size of 14.8 trillion tokens is reasonable and in line with other models of this scale. Assuming that’s valid, the pretraining of this model would have required 6 * (37 billion) * (14.8 trillion) = 3e24 FLOP. If we assume DeepSeek’s training cluster consists of H800s with the PCIe form factor, then each should be capable of 1.5e15 FP8 per second, and the implied model FLOP utilization (MFU) of DeepSeek v3’s 55 day training run ends up being around 23%.""
-
-6 FLOP/token/param * 14.8T tokens * 37B active params = 3.29e24 FLOP (pretraining)
-1.2e23 FLOP (post-training)
-6.1e23 FLOP (fine-tuning)
-
-Total compute: 3.29e24 + 1.2e23 + 6.1e23 = 4.02e24",0.021,0.74,0.062,0.364,0.038,0.218,0.061,0.508,0.046,0.25,0.068,0.014,0.005,2025-04-10,,Balrog Leaderboard,https://balrogai.com/,,recHSLh1tcRzi8OcW
+DeepSeek-R1,0.349,2025-01-20,DeepSeek,China,3.5e+24,"3.29e24 + 1.8e23 = 3.47e24, round to 3.5e24 due to lack of sigfigs",0.021,0.74,0.062,0.364,0.038,0.218,0.061,0.508,0.046,0.25,0.068,0.014,0.005,2025-04-10,,Balrog Leaderboard,https://balrogai.com/,,recHSLh1tcRzi8OcW
 gemini-2.5-flash,0.335,2025-06-17,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,,0.022,0.68,0.066,0.4,0.048,0.296,0.072,0.5,0.046,0.125,0.052,0.008,0.004,2025-07-22,,Balrog Leaderboard,https://balrogai.com/,,recUkPodDLc0rmUT6
 gpt-5-2025-08-07_minimal,0.328,2025-08-07,OpenAI,United States of America,6.6e+25,"Likely around 6e25 [CI: 2e25 to 2e26] FLOP. See document below for details
 

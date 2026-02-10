@@ -1,4 +1,5 @@
 Model version,Score,Release date,Organization,Country,Training compute (FLOP),Training compute notes,Name,Source,Source link,Notes,id
+claude-opus-4-6_120K,0.94,2026-02-05,Anthropic,United States of America,,,"Claude Opus 4.6 (High, 120k thinking)",ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recZTnD93GgPevLI2
 gpt-5.2-2025-12-11_xhigh,0.862,2025-12-11,OpenAI,United States of America,,,GPT-5.2 (X-High),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recgxHD7jV9nk6VyZ
 claude-opus-4-5-20251101_64K,0.8,2025-11-24,Anthropic,United States of America,,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,Claude Opus 4.5 (64k thinking),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recXBzrtTETaQuvxw
 gpt-5.2-2025-12-11_high,0.787,2025-12-11,OpenAI,United States of America,,,GPT-5.2 (High),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recG0lrSvCvamnnBm
@@ -63,20 +64,12 @@ Total compute: 3.29e24 + 1.2e23 + 6.1e23 = 4.02e24",Deepseek R1 (05/28),ARC Priz
 o1-preview-2024-09-12,0.18,2024-09-12,OpenAI,United States of America,,,o1-preview,ARC Prize Leaderboard,https://arcprize.org/leaderboard,,reclttZQlaXCYpTDb
 grok-3-mini-beta_low,0.165,2025-04-09,xAI,United States of America,,,Grok 3 Mini (Low),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recUL8yDJO8uotk8q
 gemini-2.5-flash-preview-05-20_1K,0.16,2025-05-20,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,,Gemini 2.5 Flash (Preview) (Thinking 1K),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recxGd7FrJeq7ZyUy
-DeepSeek-R1,0.158,2025-01-20,DeepSeek,China,4.020010000000001e+24,"Estimates by Ege Erdil in Gradient Updates:
-https://epoch.ai/gradient-updates/what-went-into-training-deepseek-r1
-""A dataset size of 14.8 trillion tokens is reasonable and in line with other models of this scale. Assuming that’s valid, the pretraining of this model would have required 6 * (37 billion) * (14.8 trillion) = 3e24 FLOP. If we assume DeepSeek’s training cluster consists of H800s with the PCIe form factor, then each should be capable of 1.5e15 FP8 per second, and the implied model FLOP utilization (MFU) of DeepSeek v3’s 55 day training run ends up being around 23%.""
-
-6 FLOP/token/param * 14.8T tokens * 37B active params = 3.29e24 FLOP (pretraining)
-1.2e23 FLOP (post-training)
-6.1e23 FLOP (fine-tuning)
-
-Total compute: 3.29e24 + 1.2e23 + 6.1e23 = 4.02e24",Deepseek R1,ARC Prize Leaderboard,https://arcprize.org/leaderboard,,rec9Em7ivae72BNBO
+DeepSeek-R1,0.158,2025-01-20,DeepSeek,China,3.5e+24,"3.29e24 + 1.8e23 = 3.47e24, round to 3.5e24 due to lack of sigfigs",Deepseek R1,ARC Prize Leaderboard,https://arcprize.org/leaderboard,,rec9Em7ivae72BNBO
 o3-mini-2025-01-31_low,0.145,2025-01-31,OpenAI,United States of America,,"We can’t make a precise estimate, but seems unlikely to exceed 10^25 FLOP. We think active parameter count is 10-30B. This would require >55T tokens to reach 10^25 FLOP at the large size, i.e. well beyond 10x overtraining relative to Chinchilla.",o3-mini (Low),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recoKTXJX6Wtyzmyn
 o1-mini-2024-09-12_medium,0.14,2024-09-12,OpenAI,United States of America,,"We can’t make a precise estimate, but seems unlikely to exceed 10^25 FLOP. We think active parameter count is 10-30B. This would require >55T tokens to reach 10^25 FLOP at the large size, i.e. well beyond 10x overtraining relative to Chinchilla.",o1-mini,ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recjBMo8w3uRVYaQN
 claude-3-7-sonnet-20250219,0.136,2025-02-24,Anthropic,United States of America,3.35e+25,https://docs.google.com/spreadsheets/d/10bhwdVrfHI8tysVIz62ZxtvQ30L-HojYvmU18_b-WIM/edit?gid=0#gid=0,Claude 3.7,ARC Prize Leaderboard,https://arcprize.org/leaderboard,,recDy7yrZGrBGUAKD
 claude-3-7-sonnet-20250219_1K,0.116,2025-02-24,Anthropic,United States of America,3.35e+25,https://docs.google.com/spreadsheets/d/10bhwdVrfHI8tysVIz62ZxtvQ30L-HojYvmU18_b-WIM/edit?gid=0#gid=0,Claude 3.7 (1K),ARC Prize Leaderboard,https://arcprize.org/leaderboard,,rec96fPyndWwzLTzI
-gpt-4.5-preview-2025-02-27,0.103,2025-02-27,OpenAI,United States of America,3.8e+26,"Analysis of GPT-4.5's training cluster yields a median estimate of 187M H100-hours of training. The utilization assumptions we used for the Grok 3 estimate (probably worth revisiting) were 20 to 40% under the H100 FP8 spec of 2000 teraflop/s. This leads to an estimate of 2.7e26 to 5.4e26 FLOP, or a geomean of 3.8e26
+gpt-4.5-preview-2025-02-27,0.103,2025-02-27,OpenAI,United States of America,3.8e+26,"Analysis of GPT-4.5's training cluster yields a median estimate of 187M H100-hours of training. The utilization assumptions we used for the Grok 3 estimate (maybe worth revisiting) were 20 to 40% under the H100 FP8 spec of 2000 teraflop/s. This leads to an estimate of 2.7e26 to 5.4e26 FLOP, or a geomean of 3.8e26
 
 Alternatively, using a plausible range of 20 to 50% utilization, given the possibility of FP8 training, yields a median estimate of ~2e25 FLOP. See notebook below for details.
 

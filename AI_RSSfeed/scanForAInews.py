@@ -985,6 +985,12 @@ def main():
     # Generate archive index for web display
     generate_archive_index()
 
+    # Write timestamp so the dashboard can show when data was last downloaded
+    import json as _json
+    ts_path = os.path.join(OUTPUT_DIR, "last_updated.json")
+    with open(ts_path, "w", encoding="utf-8") as f:
+        _json.dump({"last_updated": datetime.now().strftime("%Y-%m-%d")}, f)
+
     print(f"\nUsage: prompt={total_usage['prompt_tokens']}, "
           f"completion={total_usage['completion_tokens']}, "
           f"cost=${total_cost:.4f}")

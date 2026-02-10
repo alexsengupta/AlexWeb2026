@@ -177,5 +177,17 @@
     <p>&copy; Marine Heatwaves Research Group</p>
   </footer>
 
+  <script>
+    // Progressive enhancement: Try to load the latest tracker map.
+    // If it exists (downloaded via fetch_map.py), use it as the background.
+    // Otherwise, the CSS default (MHW.jpg) remains.
+    const bgImage = new Image();
+    bgImage.src = 'MHW_tracker_map.png';
+    bgImage.onload = function() {
+      document.body.style.backgroundImage = `
+        linear-gradient(to bottom, rgba(230, 237, 247, 0.9) 0%, rgba(230, 237, 247, 0.5) 40%, rgba(12, 53, 106, 0.7) 80%, rgba(12, 53, 106, 0.95) 100%),
+        url('MHW_tracker_map.png')`;
+    };
+  </script>
 </body>
 </html>

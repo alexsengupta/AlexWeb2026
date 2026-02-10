@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Slop - Article Summaries & Critiques</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #f5f0e8;
+      --bg-card: #fff;
+      --text: #1a1a1a;
+      --text-secondary: #555;
+      --text-muted: #888;
+      --accent: #c0392b;
+      --accent-hover: #a93226;
+      --border: #e0d8cc;
+      --border-light: #ece6da;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.7;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .site-name {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+
+    .site-name:hover {
+      color: var(--accent);
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-link {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .header-link:hover {
+      color: var(--text);
+    }
+
+    .home-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .home-icon:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .home-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Main content */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero / title area */
+    .hero {
+      padding: 60px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2.4rem, 5vw, 3.2rem);
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .hero .subtitle {
+      font-style: italic;
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Post cards in list view */
+    .post-card {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .post-card:hover {
+      opacity: 0.75;
+    }
+
+    .post-card:last-child {
+      border-bottom: none;
+    }
+
+    .post-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 300;
+    }
+
+    .post-meta .source {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .post-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .post-description {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 32px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: var(--text);
+    }
+
+    .back-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Rendered markdown */
+    .prose h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .prose h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .prose h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .prose p {
+      margin-bottom: 1.2rem;
+      line-height: 1.8;
+      color: var(--text);
+      font-weight: 300;
+    }
+
+    .prose ul, .prose ol {
+      margin-bottom: 1.2rem;
+      padding-left: 1.5rem;
+    }
+
+    .prose li {
+      margin-bottom: 0.5rem;
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    .prose blockquote {
+      border-left: 3px solid var(--border);
+      padding: 0.5rem 1.25rem;
+      margin: 1.5rem 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .prose a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-decoration-color: rgba(192, 57, 43, 0.3);
+      text-underline-offset: 3px;
+      transition: text-decoration-color 0.2s;
+    }
+
+    .prose a:hover {
+      text-decoration-color: var(--accent);
+    }
+
+    .prose strong {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .prose em {
+      font-style: italic;
+    }
+
+    .prose code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.88em;
+      font-family: 'SFMono-Regular', Menlo, monospace;
+    }
+
+    .prose pre {
+      background: #2d2d2d;
+      color: #e0e0e0;
+      padding: 1.25rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .prose hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    /* Giscus */
+    .giscus-container {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Fade */
+    .fade-in {
+      animation: fadeIn 0.35s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none !important; }
+
+    /* About dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      padding: 36px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      transform: translateY(10px);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .modal p {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    .modal-close {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    /* Footer */
+    footer {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { font-size: 16px; }
+      .hero { padding: 40px 0 28px; }
+      .hero h1 { font-size: 2rem; }
+      .post-title { font-size: 1.3rem; }
+      .post-card { padding: 24px 0; }
+      .prose h1 { font-size: 1.8rem; }
+      .modal { padding: 28px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="site-name" id="site-name-link">AI Slop</a>
+    <div class="header-nav">
+      <a href="javascript:void(0)" class="header-link" id="about-btn">About this Blog</a>
+      <a href="../index.html" class="home-icon" title="Home">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- About Modal -->
+  <div class="modal-overlay" id="about-modal">
+    <div class="modal">
+      <h2>About this Blog</h2>
+      <p>The AI Slop blog provides links and summaries for AI-related articles that I found thought provoking. It's also a means to see the quality (and evolving quality) of so called AI Slop. The main post is generated by Claude.ai &mdash; the first part should be a summary of the original article and the second part Claude's critique of the article. Feel free to add your thoughts after the post.</p>
+      <button class="modal-close" id="about-close">Close</button>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- Hero (list view only) -->
+    <div id="hero" class="hero">
+      <h1>AI Slop</h1>
+      <p class="subtitle">Summaries & critiques of AI articles</p>
+    </div>
+
+    <!-- List View -->
+    <div id="list-view" class="fade-in">
+      <div id="posts-grid">
+        <!-- Posts rendered here by JS -->
+      </div>
+      <p id="no-posts" class="hidden" style="text-align:center; color:var(--text-muted); padding:48px 0;">No posts yet.</p>
+    </div>
+
+    <!-- Post View -->
+    <div id="post-view" class="hidden fade-in">
+      <a href="#" class="back-link" id="back-btn">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+        </svg>
+        All posts
+      </a>
+      <div id="post-meta-line" class="post-meta" style="margin-bottom: 24px;"></div>
+      <article>
+        <div id="post-content" class="prose"></div>
+      </article>
+      <div id="giscus-container" class="giscus-container"></div>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>Summaries and critiques generated by Claude. Original articles linked within each post.</p>
+  </footer>
+
+  <script>
+    const listView = document.getElementById('list-view');
+    const postView = document.getElementById('post-view');
+    const postsGrid = document.getElementById('posts-grid');
+    const postContent = document.getElementById('post-content');
+    const giscusContainer = document.getElementById('giscus-container');
+    const noPostsMsg = document.getElementById('no-posts');
+    const hero = document.getElementById('hero');
+    const postMetaLine = document.getElementById('post-meta-line');
+    const aboutModal = document.getElementById('about-modal');
+    const baseTitle = 'AI Slop';
+
+    let posts = [];
+
+    // About modal
+    document.getElementById('about-btn').addEventListener('click', () => {
+      aboutModal.classList.add('active');
+    });
+    document.getElementById('about-close').addEventListener('click', () => {
+      aboutModal.classList.remove('active');
+    });
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) aboutModal.classList.remove('active');
+    });
+
+    // Site name link goes back to list
+    document.getElementById('site-name-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.hash = '';
+    });
+
+    // Format date
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Format date short (month + year only)
+    function formatDateShort(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long' });
+    }
+
+    // Render post list
+    function renderList() {
+      if (posts.length === 0) {
+        noPostsMsg.classList.remove('hidden');
+        postsGrid.classList.add('hidden');
+        return;
+      }
+      noPostsMsg.classList.add('hidden');
+      postsGrid.classList.remove('hidden');
+
+      postsGrid.innerHTML = posts.map(post => `
+        <div class="post-card" onclick="navigateToPost('${post.slug}')">
+          <div class="post-meta">
+            <span class="source">${post.source}</span> &middot; ${formatDateShort(post.date)}
+          </div>
+          <h2 class="post-title">${post.title}</h2>
+          <p class="post-description">${post.description}</p>
+        </div>
+      `).join('');
+    }
+
+    // Navigate to post
+    function navigateToPost(slug) {
+      window.location.hash = `post=${slug}`;
+    }
+
+    // Show post
+    async function showPost(slug) {
+      const post = posts.find(p => p.slug === slug);
+      if (!post) {
+        showList();
+        return;
+      }
+
+      try {
+        const res = await fetch(`markdowns/${slug}.md`);
+        if (!res.ok) throw new Error('Post not found');
+        const md = await res.text();
+
+        // Update page title for Giscus mapping
+        document.title = post.title;
+        postMetaLine.innerHTML = `<span class="source">${post.source}</span> &middot; ${formatDate(post.date)}`;
+
+        // Render markdown
+        postContent.innerHTML = marked.parse(md);
+
+        // Hide hero, show post view
+        hero.classList.add('hidden');
+        listView.classList.add('hidden');
+        postView.classList.remove('hidden');
+        postView.classList.add('fade-in');
+
+        // Inject Giscus
+        loadGiscus();
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('Failed to load post:', err);
+        showList();
+      }
+    }
+
+    // Show list
+    function showList() {
+      document.title = baseTitle + ' \u2014 Article Summaries & Critiques';
+
+      postView.classList.add('hidden');
+      hero.classList.remove('hidden');
+      listView.classList.remove('hidden');
+      listView.classList.add('fade-in');
+
+      // Clear Giscus
+      giscusContainer.innerHTML = '';
+    }
+
+    // Load Giscus comments
+    function loadGiscus() {
+      giscusContainer.innerHTML = '';
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', 'alexsengupta/alex_web_comments');
+      script.setAttribute('data-repo-id', 'R_kgDORMeIzw');
+      script.setAttribute('data-category', 'Announcements');
+      script.setAttribute('data-category-id', 'DIC_kwDORMeIz84C2G45');
+      script.setAttribute('data-mapping', 'title');
+      script.setAttribute('data-strict', '0');
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-input-position', 'bottom');
+      script.setAttribute('data-theme', 'light');
+      script.setAttribute('data-lang', 'en');
+      script.setAttribute('data-loading', 'lazy');
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      giscusContainer.appendChild(script);
+    }
+
+    // Hash routing
+    function handleRoute() {
+      const hash = window.location.hash;
+      if (hash.startsWith('#post=')) {
+        const slug = hash.replace('#post=', '');
+        showPost(slug);
+      } else {
+        showList();
+      }
+    }
+
+    // Init
+    async function init() {
+      try {
+        const res = await fetch('posts.json');
+        posts = await res.json();
+        renderList();
+        handleRoute();
+      } catch (err) {
+        console.error('Failed to load posts:', err);
+        noPostsMsg.classList.remove('hidden');
+        noPostsMsg.textContent = 'Failed to load posts.';
+      }
+    }
+
+    window.addEventListener('hashchange', handleRoute);
+    init();
+  </script>
+
+</body>
+
+</html>

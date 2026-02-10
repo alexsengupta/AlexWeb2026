@@ -21,7 +21,10 @@ gemini-2.5-pro-preview-06-05,79.1,2025-06-05,Google DeepMind,"United States of A
 ,78.2,,,,,,100.0,architect,0.078,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,Model version deliberately omitted because it's a mix of o3 (high) & gpt-4.1,recFWD297UQP8MRYi
 gemini-2.5-pro-preview-05-06,76.9,2025-05-06,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,97.3,diff-fenced,0.17,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recQXuPMHsN1f1pXT
 o3-2025-04-16_medium,76.9,2025-04-16,OpenAI,United States of America,,,93.8,diff,0.061,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,rec6DP0rm1WZjXNb1
-DeepSeek-V3.2-Exp_thinking,74.2,2025-09-29,DeepSeek,China,3.8035594e+24,3.594058e+24 FLOP [base model] + 2.095014e+23 FLOP = 3.8035594e+24 FLOP,92.4,diff,0.0058,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recdHPvT3QOnVioE2
+DeepSeek-V3.2-Exp_thinking,74.2,2025-09-29,DeepSeek,China,4.18e+24,"3.594058e+24 FLOP [base model] + 2.095014e+23 FLOP = 3.8035594e+24 FLOP. 
+
+Then, ""this framework allocates a
+post-training computational budget exceeding 10% of the pre-training cost"", so 4.18e24",92.4,diff,0.0058,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recdHPvT3QOnVioE2
 gemini-2.5-pro-exp-03-25,72.9,2025-03-25,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,97.3,diff-fenced,,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recQlPsg6RDQbmeuu
 o4-mini-2025-04-16_high,72.0,2025-04-16,OpenAI,United States of America,,"We can’t make a precise estimate, but seems unlikely to exceed 10^25 FLOP. We think active parameter count is 10-30B. This would require >55T tokens to reach 10^25 FLOP at the large size, i.e. well beyond 10x overtraining relative to Chinchilla.",90.7,diff,0.087,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recl9fv7t1P1NNdYa
 claude-opus-4-20250514_32K,72.0,2025-05-22,Anthropic,United States of America,,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,97.3,diff,0.29,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recardEOKRehXXmpU
@@ -35,7 +38,10 @@ https://epoch.ai/gradient-updates/what-went-into-training-deepseek-r1
 
 Total compute: 3.29e24 + 1.2e23 + 6.1e23 = 4.02e24",94.6,diff,0.021,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recRvk7ngoGy8aCj2
 claude-opus-4-20250514,70.7,2025-05-22,Anthropic,United States of America,,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,98.7,diff,0.31,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recRkLNIObleDWFSd
-DeepSeek-V3.2-Exp,70.2,2025-09-29,DeepSeek,China,3.8035594e+24,3.594058e+24 FLOP [base model] + 2.095014e+23 FLOP = 3.8035594e+24 FLOP,98.2,diff,0.0039,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recGIpKLux7lz5yX2
+DeepSeek-V3.2-Exp,70.2,2025-09-29,DeepSeek,China,4.18e+24,"3.594058e+24 FLOP [base model] + 2.095014e+23 FLOP = 3.8035594e+24 FLOP. 
+
+Then, ""this framework allocates a
+post-training computational budget exceeding 10% of the pre-training cost"", so 4.18e24",98.2,diff,0.0039,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recGIpKLux7lz5yX2
 claude-3-7-sonnet-20250219_32K,64.9,2025-02-24,Anthropic,United States of America,3.35e+25,https://docs.google.com/spreadsheets/d/10bhwdVrfHI8tysVIz62ZxtvQ30L-HojYvmU18_b-WIM/edit?gid=0#gid=0,97.8,diff,0.16,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recyIxXTFMw9aOxsg
 ,64.0,,,,,,100.0,architect,0.059,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,Model version deliberately omitted because it's a mix of DeepSeek R1 & claude-3-5-sonnet-20241022,recy59pxtemikU4JV
 o1-2024-12-17_high,61.7,2024-12-17,OpenAI,United States of America,,,91.5,diff,0.83,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recsBapERP76dJ1KO
@@ -45,15 +51,7 @@ o3-mini-2025-01-31_high,60.4,2025-01-31,OpenAI,United States of America,,"We can
 Qwen3-235B-A22B,59.6,2025-04-29,Alibaba,China,4.752e+24,6 FLOP / parameter / token * 22*10^9 active parameters * 36000000000000 tokens = 4.752e+24 FLOP,92.9,diff,,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/,"no cost data
 ",recPTyOmNpRhK82Et
 Kimi-K2-Instruct,59.1,2025-07-12,Moonshot,China,2.976e+24,6 FLOP / parameter / token * 32 * 10^9 activated parameters * 15.5 * 10^12 tokens = 2.976e+24 FLOP,92.9,diff,0.0055,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recYmlS1cYM8gEefH
-DeepSeek-R1,56.9,2025-01-20,DeepSeek,China,4.020010000000001e+24,"Estimates by Ege Erdil in Gradient Updates:
-https://epoch.ai/gradient-updates/what-went-into-training-deepseek-r1
-""A dataset size of 14.8 trillion tokens is reasonable and in line with other models of this scale. Assuming that’s valid, the pretraining of this model would have required 6 * (37 billion) * (14.8 trillion) = 3e24 FLOP. If we assume DeepSeek’s training cluster consists of H800s with the PCIe form factor, then each should be capable of 1.5e15 FP8 per second, and the implied model FLOP utilization (MFU) of DeepSeek v3’s 55 day training run ends up being around 23%.""
-
-6 FLOP/token/param * 14.8T tokens * 37B active params = 3.29e24 FLOP (pretraining)
-1.2e23 FLOP (post-training)
-6.1e23 FLOP (fine-tuning)
-
-Total compute: 3.29e24 + 1.2e23 + 6.1e23 = 4.02e24",96.9,diff,0.024,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recAxfwG5ZWZpmiDr
+DeepSeek-R1,56.9,2025-01-20,DeepSeek,China,3.5e+24,"3.29e24 + 1.8e23 = 3.47e24, round to 3.5e24 due to lack of sigfigs",96.9,diff,0.024,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recAxfwG5ZWZpmiDr
 claude-sonnet-4-20250514,56.4,2025-05-22,Anthropic,United States of America,,Flagship model from a leading developer in mid-2025; very likely it used >1e25 FLOP.,98.2,diff,0.07,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recPP5f3NBfwjlXKY
 DeepSeek-V3-0324,55.1,2025-03-24,DeepSeek,China,3.4078e+24,"""At an economical cost of only 2.664M H800 GPU hours, we complete the pre-training of DeepSeek-V3 on 14.8T tokens, producing the currently strongest open-source base model. The subsequent training stages after pre-training require only 0.1M GPU hours.""
 
@@ -91,7 +89,7 @@ Suggests a MFU of 0.2244 in pre-training. If we assume MFU was the same in post-
 Total: 3.2856e24 + 1.222e23 = 3.4078e24 FLOP",98.7,diff,0.001511111111,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recDTQzmlxzC9g2Xv
 gemini-2.5-flash-preview-04-17,47.1,2025-04-17,Google DeepMind,"United States of America,United Kingdom of Great Britain and Northern Ireland",,,85.3,diff,0.008222222222,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recnt3fyqCYRO97Xc
 chatgpt-4o-03-27-2025,45.3,2025-03-27,OpenAI,United States of America,,Training compute estimated to be 3.8e25 FLOP from benchmark scores. https://colab.research.google.com/drive/1r3pUMhB7Kh0Gls9eG-v_XefWrye9fVQR?usp=sharing,64.4,diff,0.088,Aider LLM Leaderboards,https://aider.chat/docs/leaderboards/#polyglot-leaderboard,,recLUsXEZABVVkGMZ
-gpt-4.5-preview-2025-02-27,44.9,2025-02-27,OpenAI,United States of America,3.8e+26,"Analysis of GPT-4.5's training cluster yields a median estimate of 187M H100-hours of training. The utilization assumptions we used for the Grok 3 estimate (probably worth revisiting) were 20 to 40% under the H100 FP8 spec of 2000 teraflop/s. This leads to an estimate of 2.7e26 to 5.4e26 FLOP, or a geomean of 3.8e26
+gpt-4.5-preview-2025-02-27,44.9,2025-02-27,OpenAI,United States of America,3.8e+26,"Analysis of GPT-4.5's training cluster yields a median estimate of 187M H100-hours of training. The utilization assumptions we used for the Grok 3 estimate (maybe worth revisiting) were 20 to 40% under the H100 FP8 spec of 2000 teraflop/s. This leads to an estimate of 2.7e26 to 5.4e26 FLOP, or a geomean of 3.8e26
 
 Alternatively, using a plausible range of 20 to 50% utilization, given the possibility of FP8 training, yields a median estimate of ~2e25 FLOP. See notebook below for details.
 

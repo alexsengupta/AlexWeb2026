@@ -114,6 +114,41 @@
             box-shadow: 0 4px 12px rgba(78, 205, 196, 0.2);
         }
 
+        /* Nav button tooltips */
+        .nav-btn[data-tooltip] {
+            position: relative;
+        }
+
+        .nav-btn[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 12px;
+            background: rgba(44, 62, 80, 0.7);
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.72rem;
+            font-weight: 300;
+            font-style: italic;
+            line-height: 1.4;
+            border-radius: 6px;
+            width: max-content;
+            max-width: 220px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transition-delay: 0s;
+            z-index: 10000;
+        }
+
+        .nav-btn[data-tooltip]:hover::after {
+            opacity: 1;
+            transition-delay: 1s;
+        }
+
         /* Main container - no longer centered vertically */
         .container {
             min-height: 100vh;
@@ -178,7 +213,7 @@
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             animation: fadeInUp 0.8s ease-out backwards;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             display: flex;
@@ -211,32 +246,12 @@
             }
         }
 
-        /* Glow effect */
-        .nav-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 150px;
-            height: 150px;
-            background: var(--glow-color);
-            border-radius: 50%;
-            filter: blur(50px);
-            opacity: 0;
-            transform: translate(-50%, -50%);
-            transition: opacity 0.4s ease;
-            z-index: -1;
-        }
-
-        .nav-button:hover::before {
-            opacity: 0.15;
-        }
-
         .nav-button:hover {
             transform: translateY(-4px) scale(1.05);
             background: rgba(255, 255, 255, 0.6);
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1),
-                        0 0 30px var(--glow-color-alpha);
+                        inset 0 0 60px var(--glow-color-alpha);
+            z-index: 10;
         }
 
         .nav-button:active {
@@ -265,26 +280,39 @@
             transform: scale(1.1) rotate(5deg);
         }
 
-        /* Button tooltip */
-        .nav-button-tooltip {
-            position: fixed;
-            background: rgba(44, 62, 80, 0.95);
-            color: white;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            max-width: 300px;
-            pointer-events: none;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transform: translate(-9999px, -9999px);
+        /* Grid button tooltips (CSS-based, matching top nav style) */
+        .nav-button[data-tooltip] {
+            position: relative;
         }
 
-        .nav-button-tooltip.visible {
+        .nav-button[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 12px;
+            background: rgba(44, 62, 80, 0.7);
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.72rem;
+            font-weight: 300;
+            font-style: italic;
+            line-height: 1.4;
+            border-radius: 6px;
+            width: max-content;
+            max-width: 220px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transition-delay: 0s;
+            z-index: 10000;
+        }
+
+        .nav-button[data-tooltip]:hover::after {
             opacity: 1;
+            transition-delay: 1s;
         }
 
         /* Publications section - extends downward with background */
@@ -748,14 +776,17 @@
     <!-- Top Navigation with About Me on right -->
     <div class="top-nav">
         <div class="nav-left">
-            <button class="nav-btn" onclick="openCard('climate')">
+            <button class="nav-btn" onclick="openCard('climate')" data-tooltip="Real-time dashboard of global climate indices including ENSO, IOD, and SAM">
                 🌍 Climate Indices
             </button>
-            <button class="nav-btn" onclick="openCard('ai')">
+            <button class="nav-btn" onclick="openCard('ai')" data-tooltip="Latest AI and AGI news articles and podcast summaries, updated automatically">
                 🤖 AI News
             </button>
-            <button class="nav-btn" onclick="openCard('aiscaling')">
+            <button class="nav-btn" onclick="openCard('aiscaling')" data-tooltip="Interactive charts tracking AI model growth, benchmarks, and compute scaling">
                 📈 AI Scaling
+            </button>
+            <button class="nav-btn" onclick="window.location.href='AI_SLOP/index.html'" data-tooltip="AI-generated summaries and critiques of thought-provoking AI articles">
+                📝 AI Slop
             </button>
         </div>
         <div style="display: flex; gap: 1rem;">
@@ -877,8 +908,6 @@
     <!-- Publication tooltip -->
     <div class="pub-tooltip" id="pubTooltip"></div>
 
-    <!-- Nav button tooltip -->
-    <div class="nav-button-tooltip" id="navButtonTooltip"></div>
 
     <script>
         // ===== PARTICLE ANIMATION =====
@@ -1144,45 +1173,6 @@
 
         loadPublications();
 
-        // ===== NAV BUTTON TOOLTIPS =====
-        const navButtonTooltip = document.getElementById('navButtonTooltip');
-
-        function showNavButtonTooltip(text, x, y) {
-            if (!text) return;
-            navButtonTooltip.textContent = text;
-            navButtonTooltip.classList.add('visible');
-            positionNavButtonTooltip(x, y);
-        }
-
-        function hideNavButtonTooltip() {
-            navButtonTooltip.classList.remove('visible');
-            navButtonTooltip.style.transform = 'translate(-9999px, -9999px)';
-        }
-
-        function positionNavButtonTooltip(x, y) {
-            const offsetX = 20;
-            const offsetY = 20;
-            const minX = 12;
-            const minY = 12;
-            const maxX = window.innerWidth - navButtonTooltip.offsetWidth - 24;
-            const maxY = window.innerHeight - navButtonTooltip.offsetHeight - 24;
-            const nextX = Math.min(Math.max(minX, x + offsetX), maxX);
-            const nextY = Math.min(Math.max(minY, y + offsetY), maxY);
-            navButtonTooltip.style.transform = `translate(${nextX}px, ${nextY}px)`;
-        }
-
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            const tooltipText = btn.dataset.tooltip;
-            btn.addEventListener('pointerenter', (e) => {
-                showNavButtonTooltip(tooltipText, e.clientX, e.clientY);
-            });
-            btn.addEventListener('pointermove', (e) => {
-                positionNavButtonTooltip(e.clientX, e.clientY);
-            });
-            btn.addEventListener('pointerleave', () => {
-                hideNavButtonTooltip();
-            });
-        });
 
         // ===== AI NEWS FUNCTIONALITY =====
         function parseAINewsMarkdown(markdown) {
@@ -1296,8 +1286,20 @@
                 const response = await fetch('AI_RSSfeed/ai_news_outputs/ai_news_latest.md?v=' + new Date().getTime());
                 if (!response.ok) throw new Error('Failed to load AI news');
 
+                let lastDownloadedHtml = '';
+                try {
+                    const tsResp = await fetch('AI_RSSfeed/ai_news_outputs/last_updated.json?v=' + new Date().getTime());
+                    if (tsResp.ok) {
+                        const tsData = await tsResp.json();
+                        if (tsData.last_updated) {
+                            const d = new Date(tsData.last_updated + 'T00:00:00');
+                            lastDownloadedHtml = `<div style="font-size: 0.85em; color: #7f8c8d; font-style: italic; margin-bottom: 16px;">Data last downloaded: ${d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</div>`;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
                 const markdown = await response.text();
-                let html = parseAINewsMarkdown(markdown);
+                let html = lastDownloadedHtml + parseAINewsMarkdown(markdown);
 
                 // Load archives
                 try {

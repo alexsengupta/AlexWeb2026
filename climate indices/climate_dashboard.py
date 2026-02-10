@@ -596,6 +596,13 @@ if __name__ == "__main__":
             print(f"  • {item['name']}")
             print(f"    File: {item['filename']} - Reason: {item['reason']}")
 
+    # Write timestamp so the dashboard can show when data was last downloaded
+    if results['success']:
+        timestamp_file = os.path.join(OUTPUT_DIR, 'last_updated.json')
+        with open(timestamp_file, 'w') as f:
+            json.dump({'last_updated': datetime.now().strftime('%Y-%m-%d')}, f)
+        print(f"\nWrote download timestamp to {timestamp_file}")
+
     print(f"\nCompleted at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
 

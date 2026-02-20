@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>An Experiment in AI-Collaborative Science Writing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0e;
+    --surface: #141416;
+    --surface2: #1a1a1d;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e0d0;
+    --text-dim: rgba(232,224,208,0.5);
+    --text-ghost: rgba(232,224,208,0.07);
+    --accent: #c9a84c;
+    --accent2: #7eb5a6;
+    --accent3: #c97050;
+    --glow: rgba(201,168,76,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS BACKGROUND ── */
+  #canvas-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5rem 0 4rem;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.3s forwards;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    max-width: 750px;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.5s forwards;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    margin-top: 2rem;
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    font-weight: 300;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.7s forwards;
+  }
+
+  .hero-meta {
+    margin-top: 3rem;
+    display: flex;
+    gap: 3rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    opacity: 0;
+    animation: fadeUp 0.9s 0.9s forwards;
+  }
+
+  .hero-meta span { display: flex; flex-direction: column; gap: 0.3rem; }
+  .hero-meta strong { color: var(--text); font-weight: 400; font-size: 0.9rem; }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    opacity: 0;
+    animation: fadeUp 1s 1.5s forwards;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    animation: scrollPulse 2s 2s infinite;
+  }
+
+  /* ── SECTION HEADERS ── */
+  section { padding: 5rem 0; }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 400;
+    line-height: 1.25;
+    margin-bottom: 2rem;
+  }
+
+  /* ── NARRATIVE ── */
+  .narrative {
+    max-width: 680px;
+  }
+
+  .narrative p {
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: var(--text-dim);
+    margin-bottom: 1.3rem;
+  }
+
+  .narrative p strong {
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .pullquote {
+    border-left: 2px solid var(--accent);
+    padding: 1rem 1.5rem;
+    margin: 2.5rem 0;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--text);
+    background: rgba(201,168,76,0.04);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .divider::after {
+    content: '◆';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--accent);
+    font-size: 0.6rem;
+    background: var(--bg);
+    padding: 0 0.5rem;
+  }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow-section { padding: 4rem 0 6rem; }
+
+  .flow-diagram {
+    margin-top: 3rem;
+    position: relative;
+  }
+
+  /* Vertical spine */
+  .flow-spine {
+    position: absolute;
+    left: 32px;
+    top: 30px;
+    bottom: 30px;
+    width: 1px;
+    background: linear-gradient(to bottom,
+      transparent,
+      var(--accent) 10%,
+      var(--accent2) 50%,
+      var(--accent3) 90%,
+      transparent
+    );
+    opacity: 0.4;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 0;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child) {
+    margin-bottom: 0;
+  }
+
+  .step-node {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-node-inner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    border: 1px solid;
+    transition: all 0.3s ease;
+  }
+
+  .step-connector {
+    position: absolute;
+    left: 32px;
+    top: 64px;
+    width: 1px;
+    height: calc(100% - 64px + 2rem);
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .flow-step:last-child .step-connector { display: none; }
+
+  .step-body {
+    padding: 0.5rem 0 3rem;
+    flex: 1;
+  }
+
+  .step-phase {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .step-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    font-weight: 400;
+    margin-bottom: 0.6rem;
+  }
+
+  .step-desc {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    max-width: 560px;
+    line-height: 1.65;
+  }
+
+  .step-agent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .agent-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  /* Step color themes */
+  .step-1 .step-node-inner { border-color: var(--accent); color: var(--accent); }
+  .step-1 .step-phase { color: var(--accent); }
+  .step-1 .step-agent { background: rgba(201,168,76,0.08); color: var(--accent); border: 1px solid rgba(201,168,76,0.2); }
+  .step-1 .agent-dot { background: var(--accent); }
+
+  .step-2 .step-node-inner { border-color: var(--accent2); color: var(--accent2); }
+  .step-2 .step-phase { color: var(--accent2); }
+  .step-2 .step-agent { background: rgba(126,181,166,0.08); color: var(--accent2); border: 1px solid rgba(126,181,166,0.2); }
+  .step-2 .agent-dot { background: var(--accent2); }
+
+  .step-3 .step-node-inner { border-color: var(--accent); color: var(--accent); }
+  .step-3 .step-phase { color: var(--accent); }
+  .step-3 .step-agent { background: rgba(201,168,76,0.08); color: var(--accent); border: 1px solid rgba(201,168,76,0.2); }
+  .step-3 .agent-dot { background: var(--accent); }
+
+  .step-4 .step-node-inner { border-color: var(--accent3); color: var(--accent3); }
+  .step-4 .step-phase { color: var(--accent3); }
+  .step-4 .step-agent { background: rgba(201,112,80,0.08); color: var(--accent3); border: 1px solid rgba(201,112,80,0.2); }
+  .step-4 .agent-dot { background: var(--accent3); }
+
+  .step-5 .step-node-inner { border-color: var(--accent2); color: var(--accent2); }
+  .step-5 .step-phase { color: var(--accent2); }
+  .step-5 .step-agent { background: rgba(126,181,166,0.08); color: var(--accent2); border: 1px solid rgba(126,181,166,0.2); }
+  .step-5 .agent-dot { background: var(--accent2); }
+
+  .step-6 .step-node-inner { border-color: var(--accent3); color: var(--accent3); }
+  .step-6 .step-phase { color: var(--accent3); }
+  .step-6 .step-agent { background: rgba(201,112,80,0.08); color: var(--accent3); border: 1px solid rgba(201,112,80,0.2); }
+  .step-6 .agent-dot { background: var(--accent3); }
+
+  .step-7 .step-node-inner { 
+    border-color: var(--accent); 
+    color: var(--accent);
+    background: rgba(201,168,76,0.1);
+    box-shadow: 0 0 20px rgba(201,168,76,0.2);
+  }
+  .step-7 .step-phase { color: var(--accent); }
+  .step-7 .step-agent { background: rgba(201,168,76,0.08); color: var(--accent); border: 1px solid rgba(201,168,76,0.2); }
+  .step-7 .agent-dot { background: var(--accent); }
+
+  /* Hover animation on steps */
+  .flow-step:hover .step-node-inner {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--glow);
+  }
+
+  /* ── TIME TAG ── */
+  .time-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-top: 2rem;
+    background: rgba(201,168,76,0.03);
+  }
+
+  /* ── PAPER PREVIEW ── */
+  .paper-section { padding: 4rem 0 6rem; }
+
+  .paper-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 2.5rem;
+    transition: box-shadow 0.3s;
+  }
+
+  .paper-card:hover {
+    box-shadow: 0 0 40px rgba(201,168,76,0.06);
+  }
+
+  .paper-header {
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .paper-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 1rem;
+  }
+
+  .paper-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+  }
+
+  .paper-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+  }
+
+  .paper-authors {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .paper-body {
+    padding: 2rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .paper-body { grid-template-columns: 1fr; }
+  }
+
+  .paper-abstract {
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.7;
+    grid-column: 1 / -1;
+  }
+
+  .paper-abstract strong {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .key-concept {
+    padding: 1.2rem 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+  }
+
+  .key-concept-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  .key-concept p {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  .paper-footer {
+    padding: 1.5rem 2.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .paper-stats {
+    display: flex;
+    gap: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .paper-stats span strong { color: var(--text); }
+
+  .btn-read {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1.4rem;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    border-radius: 2px;
+  }
+
+  .btn-read:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(10,10,11,0.92);
+    backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 880px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .modal-header h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body {
+    overflow-y: auto;
+    padding: 2rem;
+    flex: 1;
+  }
+
+  /* ── MANUSCRIPT VIEWER ── */
+  .manuscript-content {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--text);
+  }
+
+  .ms-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .ms-authors {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 2rem;
+  }
+
+  .ms-section {
+    margin-bottom: 2rem;
+  }
+
+  .ms-h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--accent);
+    margin-bottom: 0.8rem;
+    margin-top: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+
+  .ms-h3 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .ms-p {
+    margin-bottom: 1rem;
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+
+  .ms-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .ms-table th {
+    background: var(--surface2);
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ms-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    font-weight: 300;
+    font-size: 0.9rem;
+  }
+
+  .ms-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .ms-blockquote {
+    border-left: 2px solid var(--accent);
+    padding: 0.8rem 1.2rem;
+    margin: 1.5rem 0;
+    background: rgba(201,168,76,0.04);
+    font-style: italic;
+    color: var(--text);
+    font-size: 1.05rem;
+  }
+
+  /* ── REFLECTION ── */
+  .reflection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .reflection-grid { grid-template-columns: 1fr; }
+  }
+
+  .reflection-card {
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface);
+    transition: border-color 0.3s;
+  }
+
+  .reflection-card:hover { border-color: rgba(201,168,76,0.3); }
+
+  .reflection-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .reflection-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 400;
+    margin-bottom: 0.6rem;
+  }
+
+  .reflection-card p {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 3rem 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .footer-brand {
+    color: var(--accent);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; height: 30px; }
+    50% { opacity: 1; height: 50px; }
+  }
+
+  @keyframes nodeGlow {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 12px var(--glow); }
+  }
+
+  /* Intersection observer reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+<div class="container">
+  <section class="hero">
+    <p class="hero-eyebrow">An Experiment in Collaborative Science Writing</p>
+    <h1>When AI Writes the Paper — <em>and the Human Writes the Questions</em></h1>
+    <p class="hero-sub">
+      A 4-hour experiment producing a graduate-level methodology guide on 
+      statistical modelling in environmental science, co-authored with ChatGPT, 
+      Claude, and Gemini.
+    </p>
+    <div class="hero-meta">
+      <span>
+        <strong>Alex Sen Gupta</strong>
+        UNSW Centre for Marine Science and Innovation
+      </span>
+      <span>
+        <strong>4 hours</strong>
+        Total production time
+      </span>
+      <span>
+        <strong>3 AI models</strong>
+        ChatGPT · Claude · Gemini
+      </span>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════ NARRATIVE ══════════════════════════════ -->
+  <section>
+    <div class="narrative reveal">
+      <p class="section-label">The Premise</p>
+      <h2 class="section-title">What happens when a domain expert outside their expertise uses AI to write a publishable paper?</h2>
+      <p>
+        I'm a physical oceanographer. I know marine heatwaves, Antarctic oceanography, climate variability. 
+        What I <strong>don't</strong> have is deep expertise in statistical modelling methodology. 
+        Yet I kept noticing the same conceptual errors in the literature — models described as 
+        explaining mechanisms when they could only demonstrate associations, predictions made without 
+        any out-of-sample validation.
+      </p>
+      <p>
+        Good papers on this exist — Shmueli (2010), Tredennick et al. (2021) — but they're scattered, 
+        often highly mathematical, and rarely accessible to a PhD student without a statistics background. 
+        <strong>The gap was pedagogical, not empirical.</strong>
+      </p>
+      <p>
+        So I tried something: use AI not as a writing assistant, but as a thinking partner — 
+        to do the deep literature review, generate structure, draft content, 
+        and receive peer review from other AI systems. My role was to be the 
+        <strong>critical scientific editor</strong>, not the writer.
+      </p>
+      <div class="pullquote">
+        "The collaboration, where I was a minor contributor, resulted in what I think would be a 
+        really useful addition to the literature. The whole process took 4 hours."
+      </div>
+      <p>
+        Whether this paper would pass peer review, I genuinely don't know — 
+        I'd be too embarrassed to find out. But as a demonstration of what 
+        AI-assisted scholarship <em>could</em> look like, it raises real questions 
+        about authorship, expertise, and the future of academic writing.
+      </p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════ FLOW ══════════════════════════════ -->
+  <section class="flow-section">
+    <p class="section-label reveal">The Process</p>
+    <h2 class="section-title reveal">A seven-step collaborative workflow</h2>
+    <p class="reveal" style="color:var(--text-dim);font-size:1rem;max-width:600px;margin-bottom:1rem;font-weight:300;">
+      Each step had a distinct purpose. The human's job was to direct, interrogate, 
+      and judge — not to write.
+    </p>
+
+    <div class="flow-diagram">
+      <div class="flow-spine"></div>
+
+      <!-- Step 1 -->
+      <div class="flow-step step-1 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">01</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Research Phase</p>
+          <h3 class="step-title">Deep Literature Review</h3>
+          <p class="step-desc">
+            Mini literature reviews on several aspects of statistical modelling in environmental 
+            science — inference vs prediction, validation, confounding, variable selection, 
+            the construct–measurement gap.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            ChatGPT (research synthesis)
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="flow-step step-2 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">02</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Architecture Phase</p>
+          <h3 class="step-title">Structure Generation & Review</h3>
+          <p class="step-desc">
+            ChatGPT generated an outline covering description, association, prediction, and 
+            mechanistic understanding. I reviewed and modified the structure — reordering sections, 
+            requesting concrete numerical examples and figures, specifying the target audience.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            ChatGPT + Human review
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="flow-step step-3 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">03</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Drafting Phase</p>
+          <h3 class="step-title">First Complete Draft</h3>
+          <p class="step-desc">
+            Full first draft produced from the agreed structure. Human review involved 
+            asking for clarification on technical points, requesting specific worked examples 
+            (the coral bleaching and fish growth illustrations), and modifying the structure further.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            ChatGPT (primary author)
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="flow-step step-4 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">04</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Multi-Model Peer Review</p>
+          <h3 class="step-title">External AI Review — Claude</h3>
+          <p class="step-desc">
+            The first draft was sent to Claude (Anthropic) for independent peer review. 
+            Critique focused on logical consistency, missing nuances, and whether the 
+            non-mathematical framing was pedagogically sound.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            Claude (Anthropic) — Reviewer
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="flow-step step-5 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">05</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Multi-Model Peer Review</p>
+          <h3 class="step-title">External AI Review — Gemini</h3>
+          <p class="step-desc">
+            Gemini (Google) conducted a second independent review, adding further critique 
+            of framing, examples, and completeness. Having two independent reviewers from 
+            different model families mirrors genuine peer review practice.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            Gemini (Google) — Reviewer
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="flow-step step-6 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">06</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Revision Phase</p>
+          <h3 class="step-title">Synthesis & Second Draft</h3>
+          <p class="step-desc">
+            Reviewer comments were synthesised and fed back to ChatGPT, which produced 
+            a revised draft addressing the critiques. The human judged which reviewer 
+            comments to accept, reject, or modify.
+          </p>
+          <span class="step-agent">
+            <span class="agent-dot"></span>
+            ChatGPT + Human editorial judgment
+          </span>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="flow-step step-7 reveal">
+        <div class="step-node">
+          <div class="step-node-inner">07</div>
+        </div>
+        <div class="step-body">
+          <p class="step-phase">Finalisation</p>
+          <h3 class="step-title">Human Editorial Pass → Final Manuscript</h3>
+          <p class="step-desc">
+            Final editing, polishing, and quality judgement by the human author. 
+            The result: a 13-page methodology paper with worked examples, figures, 
+            a decision checklist, and a glossary — targeted at PhD students with 
+            limited statistical background.
+          </p>
+          <div class="time-tag">
+            ⏱ Total elapsed time: ~4 hours &nbsp;|&nbsp; 13 pages &nbsp;|&nbsp; 3 AI collaborators
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════ PAPER ══════════════════════════════ -->
+  <section class="paper-section">
+    <p class="section-label reveal">The Output</p>
+    <h2 class="section-title reveal">The manuscript</h2>
+
+    <div class="paper-card reveal">
+      <div class="paper-header">
+        <p class="paper-badge">Preprint · Unpublished</p>
+        <h3 class="paper-title">When Models Explain, When They Predict, and When They Do Neither</h3>
+        <p class="paper-authors">Claude.ai · ChatGPT · Gemini · Alex Sen Gupta (UNSW)</p>
+      </div>
+      <div class="paper-body">
+        <p class="paper-abstract">
+          A guide to conceptual clarity in environmental statistical modelling. The paper argues that 
+          <strong>most problems in environmental modelling are not technical — they are conceptual</strong>, 
+          arising at the interpretation stage rather than the analysis stage. It provides a systematic 
+          framework for distinguishing description, association, prediction, and mechanistic explanation, 
+          with worked examples from coral bleaching and fish growth ecology.
+        </p>
+        <div class="key-concept">
+          <p class="key-concept-label">Core Argument</p>
+          <p>A regression model cannot, by itself, establish causation. Statistical explanation — 
+          accounting for variance — is categorically different from mechanistic understanding. 
+          Language should scale with evidence.</p>
+        </div>
+        <div class="key-concept">
+          <p class="key-concept-label">Target Audience</p>
+          <p>PhD students and early-career researchers in environmental science with limited 
+          mathematical background. Prioritises conceptual clarity over technical depth.</p>
+        </div>
+        <div class="key-concept">
+          <p class="key-concept-label">Key Practical Tool</p>
+          <p>"Without validation: <em>X is associated with Y.</em> With validation: <em>X can predict Y.</em> 
+          With mechanistic evidence: <em>X influences Y via Z.</em>" — the language–evidence ladder.</p>
+        </div>
+        <div class="key-concept">
+          <p class="key-concept-label">Novel Contribution</p>
+          <p>Synthesises dispersed, highly mathematical literature (Shmueli 2010, Tredennick 2021, 
+          Breiman 2001) into an accessible, example-driven guide with decision checklists.</p>
+        </div>
+      </div>
+      <div class="paper-footer">
+        <div class="paper-stats">
+          <span><strong>13</strong><br>pages</span>
+          <span><strong>4</strong><br>sections</span>
+          <span><strong>7</strong><br>key references</span>
+          <span><strong>2</strong><br>figures</span>
+        </div>
+        <a class="btn-read" href="interpreting_statistical_models.pdf" target="_blank">
+          ▸ Read Manuscript (PDF)
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="reveal">
+    <span class="footer-brand">An AI Collaboration Experiment · UNSW CMSI</span>
+    <span>Alex Sen Gupta · ChatGPT · Claude · Gemini · 2025</span>
+    <span style="color:var(--text-ghost)">This webpage was itself generated by Claude</span>
+  </footer>
+</div>
+
+
+<script>
+// ── CANVAS BACKGROUND: scrolling manuscript text ──
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+
+const TEXT_PASSAGES = [
+  "The biggest source of confusion in environmental modelling is not model choice — it is unclear purpose.",
+  "Statistical models are now central to environmental science. We use them to relate",
+  "climate variability to ecological change, to estimate risks such as coral bleaching",
+  "A model can explain 90% of observed variation and still be wrong about mechanism.",
+  "Models explain data. Explaining nature requires additional evidence.",
+  "Prediction means performance on new data. Good historical fit does not imply predictive skill.",
+  "Language should scale with evidence. Stronger claims require stronger support.",
+  "Without validation: 'X is associated with Y in the observed data'",
+  "With successful validation: 'X can predict Y under similar conditions'",
+  "With independent mechanistic evidence: 'X influences Y via mechanism Z'",
+  "A regression coefficient is not a mechanism. It is a number that summarises an association.",
+  "Validation tests robustness and generalisability — not causation.",
+  "Inference and prediction are different tasks with different standards and different measures of success.",
+  "Variable selection identifies useful predictors, not mechanisms.",
+  "The garden of forking paths: accumulation of small, reasonable decisions that inflate false discovery.",
+  "Statistical explanation is not mechanistic explanation. R² measures fit, not truth.",
+  "Pseudoreplication: treating non-independent observations as independent samples.",
+  "Overfitting occurs when models are too flexible for the available data.",
+  "A model built to describe patterns should not be discussed as though it predicts the future.",
+  "Most modelling problems arise at the interpretation stage.",
+  "What am I trying to learn, and what kind of evidence would that require?",
+  "Confounding: an unmeasured variable influences both predictor and response.",
+  "Train/test split: a validation approach in which data are divided into training and test sets.",
+  "The construct–measurement gap: models relate measurements, not theoretical constructs.",
+  "For inference, variables should be selected before analysis, based on a conceptual model.",
+];
+
+let columns = [];
+const FONT_SIZE = 13;
+const CHAR_WIDTH = 7.5;
+const LINE_HEIGHT = 22;
+let animFrame;
+
+function initCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  
+  const numCols = Math.floor(canvas.width / 280);
+  columns = [];
+  
+  for (let i = 0; i < numCols; i++) {
+    columns.push({
+      x: (i / numCols) * canvas.width + 20,
+      y: Math.random() * canvas.height,
+      text: TEXT_PASSAGES[Math.floor(Math.random() * TEXT_PASSAGES.length)],
+      charIndex: Math.floor(Math.random() * 60),
+      speed: 0.18 + Math.random() * 0.12,
+      opacity: 0.03 + Math.random() * 0.05,
+      maxWidth: 240,
+    });
+  }
+}
+
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  const scrollY = window.scrollY;
+  
+  columns.forEach(col => {
+    const charsToDraw = Math.floor(col.charIndex);
+    const fullText = col.text;
+    
+    ctx.font = `300 ${FONT_SIZE}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = `rgba(232, 224, 208, ${col.opacity})`;
+    
+    // Word-wrap render
+    const words = fullText.substring(0, charsToDraw).split(' ');
+    let line = '';
+    let lineY = col.y - scrollY * 0.05;
+    
+    words.forEach(word => {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > col.maxWidth) {
+        ctx.fillText(line, col.x, lineY);
+        line = word;
+        lineY += LINE_HEIGHT;
+      } else {
+        line = test;
+      }
+    });
+    ctx.fillText(line, col.x, lineY);
+    
+    // Advance typing
+    col.charIndex += col.speed;
+    if (col.charIndex >= fullText.length + 30) {
+      col.y = col.y + lineY - col.y + 60;
+      col.charIndex = 0;
+      col.text = TEXT_PASSAGES[Math.floor(Math.random() * TEXT_PASSAGES.length)];
+      
+      // Reset if out of screen
+      if (col.y > canvas.height + 200) {
+        col.y = -50;
+      }
+    }
+  });
+  
+  animFrame = requestAnimationFrame(drawCanvas);
+}
+
+initCanvas();
+drawCanvas();
+window.addEventListener('resize', () => { initCanvas(); });
+
+// ── INTERSECTION OBSERVER ──
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+revealEls.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

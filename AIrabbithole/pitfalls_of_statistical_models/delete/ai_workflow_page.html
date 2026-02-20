@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI-Assisted Paper Writing — Workflow</title>
+  <style>
+    :root{
+      --bg:#070b12;
+      --panel: rgba(10,16,28,.78);
+      --panel2: rgba(12,20,36,.70);
+      --text:#e9eefc;
+      --muted: rgba(233,238,252,.72);
+      --teal:#1dd6c6;
+      --blue:#4c8dff;
+      --green:#35d07f;
+      --amber:#f6c35a;
+      --stroke: rgba(255,255,255,.14);
+      --shadow: 0 18px 50px rgba(0,0,0,.55);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(76,141,255,.22), transparent 60%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(29,214,198,.18), transparent 55%),
+                  radial-gradient(800px 600px at 50% 100%, rgba(53,208,127,.10), transparent 55%),
+                  var(--bg);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* Manuscript background layer (from the attached PDF page image). */
+    .manuscript-bg{
+      position:fixed;
+      inset:0;
+      background-image:url("manuscript_page1.png");
+      background-size:cover;
+      background-position:center;
+      opacity:.09;
+      filter: blur(1px) contrast(1.05);
+      transform: scale(1.03);
+      pointer-events:none;
+    }
+    .manuscript-vignette{
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(900px 500px at 50% 35%, rgba(7,11,18,.10), rgba(7,11,18,.88) 62%, rgba(7,11,18,.95) 100%),
+        linear-gradient(180deg, rgba(7,11,18,.55), rgba(7,11,18,.90));
+      pointer-events:none;
+    }
+
+    .wrap{
+      position:relative;
+      max-width:1100px;
+      margin:0 auto;
+      padding:48px 20px 64px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:22px;
+    }
+    .kicker{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding:8px 12px;
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      background: rgba(8,14,24,.55);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      width:fit-content;
+      color: var(--muted);
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,.15) 40%, transparent 65%),
+                  linear-gradient(90deg, var(--teal), var(--blue));
+      box-shadow: 0 0 16px rgba(29,214,198,.55);
+    }
+
+    h1{
+      margin:14px 0 10px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height:1.12;
+      letter-spacing:-.02em;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      max-width:72ch;
+      line-height:1.55;
+      font-size: 15.5px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+      margin-top:22px;
+    }
+
+    .card{
+      background: var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+    }
+    .card .hd{
+      padding:16px 18px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .card .hd strong{
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .badge{
+      font-size:12px;
+      color: rgba(233,238,252,.78);
+      border: 1px solid rgba(255,255,255,.14);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,.15);
+    }
+    .card .bd{ padding:16px 18px 18px; }
+
+    .story p{ margin:0 0 10px; color:var(--muted); line-height:1.6; }
+    .story p:last-child{ margin-bottom:0; }
+
+    .bullets{
+      margin:12px 0 0;
+      padding:0;
+      list-style:none;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .bullets li{
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      background: rgba(10,16,28,.40);
+      color: rgba(233,238,252,.80);
+      line-height:1.45;
+    }
+    .bullets li b{ color:var(--text); }
+
+    .note{
+      margin-top:12px;
+      font-size:13px;
+      color: rgba(233,238,252,.68);
+    }
+
+    /* SVG container */
+    .svg-wrap{
+      padding:14px 14px 16px;
+      background: radial-gradient(900px 450px at 50% 0%, rgba(29,214,198,.12), transparent 60%);
+    }
+
+    footer{
+      margin-top:16px;
+      color: rgba(233,238,252,.55);
+      font-size:12.5px;
+      line-height:1.5;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      header{ flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="manuscript-bg" aria-hidden="true"></div>
+  <div class="manuscript-vignette" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="kicker"><span class="dot"></span> AI-assisted writing experiment</div>
+        <h1>From “mini literature review” to publication‑ready draft</h1>
+        <p class="sub">
+          A rapid workflow for producing a PhD‑level, low‑math guide on best practices and pitfalls in statistical modelling—using AI tools for research, drafting, and structured review, with human judgement at each decision point.
+        </p>
+      </div>
+      <div class="kicker" style="margin-top:6px;">
+        <span style="opacity:.85">Total time:</span> <strong style="color:var(--text);">~4 hours</strong>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="hd">
+          <strong>Workflow (glow diagram)</strong>
+          <span class="badge">AI ↔ Human review loops</span>
+        </div>
+        <div class="svg-wrap">
+          <!-- Diagram: SVG so it scales cleanly on the web -->
+          <svg viewBox="0 0 980 690" width="100%" height="auto" role="img" aria-label="AI-assisted scientific writing workflow diagram">
+            <defs>
+              <filter id="glowTeal" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feColorMatrix in="blur" type="matrix"
+                  values="1 0 0 0 0
+                          0 1 0 0 0.8
+                          0 0 1 0 0.8
+                          0 0 0 1 0" result="col"/>
+                <feMerge>
+                  <feMergeNode in="col"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+
+              <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feColorMatrix in="blur" type="matrix"
+                  values="0.7 0 0 0 0.2
+                          0 0.9 0 0 0.4
+                          0 0 1 0 0.9
+                          0 0 0 1 0" result="col"/>
+                <feMerge>
+                  <feMergeNode in="col"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+
+              <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".55"/>
+              </filter>
+
+              <linearGradient id="gradTeal" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#13cdbf" stop-opacity=".95"/>
+                <stop offset="1" stop-color="#2a7fff" stop-opacity=".95"/>
+              </linearGradient>
+
+              <linearGradient id="gradHuman" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#1f2f4f" stop-opacity=".98"/>
+                <stop offset="1" stop-color="#19263f" stop-opacity=".98"/>
+              </linearGradient>
+
+              <linearGradient id="gradDone" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#2ac46f" stop-opacity=".96"/>
+                <stop offset="1" stop-color="#19a95c" stop-opacity=".96"/>
+              </linearGradient>
+
+              <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+                <path d="M0,0 L12,6 L0,12 Z" fill="rgba(233,238,252,.72)"/>
+              </marker>
+
+              <style>
+                .box { rx:16; ry:16; filter:url(#softShadow); }
+                .t { font: 600 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill:#eef3ff; }
+                .s { font: 500 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: rgba(238,243,255,.78); }
+                .mini { font: 600 12px ui-sans-serif, system-ui; fill: rgba(238,243,255,.75); letter-spacing:.3px; }
+                .line { stroke: rgba(233,238,252,.60); stroke-width:2.2; fill:none; marker-end:url(#arrow); }
+                .dashed { stroke-dasharray: 6 6; opacity:.9; }
+              </style>
+            </defs>
+
+            <!-- Title strip -->
+            <rect x="18" y="18" width="944" height="62" rx="18" fill="rgba(10,16,28,.62)" stroke="rgba(255,255,255,.12)"/>
+            <text x="38" y="58" class="t" filter="url(#glowBlue)">AI‑Powered Scientific Writing Workflow</text>
+
+            <!-- Left vertical flow -->
+            <!-- Step 1 -->
+            <rect class="box" x="40" y="110" width="560" height="66" fill="url(#gradTeal)" filter="url(#glowTeal)"/>
+            <text x="66" y="140" class="t">1. AI deep research</text>
+            <text x="66" y="160" class="s">Mini literature reviews on key aspects of statistical models</text>
+            <text x="516" y="150" class="mini">AI</text>
+
+            <!-- Step 2 -->
+            <rect class="box" x="40" y="200" width="560" height="66" fill="url(#gradTeal)" filter="url(#glowTeal)"/>
+            <text x="66" y="230" class="t">2. AI generates paper structure</text>
+            <text x="66" y="250" class="s">Sections, narrative arc, and learning objectives</text>
+            <text x="516" y="240" class="mini">AI</text>
+
+            <!-- Step 3 -->
+            <rect class="box" x="40" y="290" width="560" height="66" fill="url(#gradHuman)" filter="url(#glowBlue)"/>
+            <text x="66" y="320" class="t">3. Human review & edit structure</text>
+            <text x="66" y="340" class="s">Adjust scope, order, and tone for PhD‑level readers</text>
+            <text x="516" y="330" class="mini">HUMAN</text>
+
+            <!-- Step 4 -->
+            <rect class="box" x="40" y="380" width="560" height="66" fill="url(#gradTeal)" filter="url(#glowTeal)"/>
+            <text x="66" y="410" class="t">4. AI writes first full draft</text>
+            <text x="66" y="430" class="s">End‑to‑end manuscript draft from the outline</text>
+            <text x="516" y="420" class="mini">AI</text>
+
+            <!-- Step 5 -->
+            <rect class="box" x="40" y="470" width="560" height="66" fill="url(#gradHuman)" filter="url(#glowBlue)"/>
+            <text x="66" y="500" class="t">5. Detailed human review</text>
+            <text x="66" y="520" class="s">Clarifications, suggested figures, concrete numeric examples</text>
+            <text x="516" y="510" class="mini">HUMAN</text>
+
+            <!-- Step 6 -->
+            <rect class="box" x="40" y="560" width="560" height="66" fill="url(#gradTeal)" filter="url(#glowTeal)"/>
+            <text x="66" y="590" class="t">6. AI revises manuscript</text>
+            <text x="66" y="610" class="s">Integrate feedback; improve coherence, pedagogy, and flow</text>
+            <text x="516" y="600" class="mini">AI</text>
+
+            <!-- Step 7: Output -->
+            <rect class="box" x="40" y="648" width="560" height="66" fill="url(#gradDone)" filter="url(#glowTeal)"/>
+            <text x="66" y="678" class="t">Publication‑ready paper</text>
+            <text x="66" y="698" class="s">Final human polish applied to the final AI draft</text>
+
+            <!-- Arrows down the left -->
+            <path class="line" d="M320 176 L320 196"/>
+            <path class="line" d="M320 266 L320 286"/>
+            <path class="line" d="M320 356 L320 376"/>
+            <path class="line" d="M320 446 L320 466"/>
+            <path class="line" d="M320 536 L320 556"/>
+            <path class="line" d="M320 626 L320 644"/>
+
+            <!-- Right-side: multi-AI review loop -->
+            <rect x="640" y="330" width="300" height="280" rx="18" fill="rgba(10,16,28,.62)" stroke="rgba(255,255,255,.12)" filter="url(#softShadow)"/>
+            <text x="664" y="366" class="t" filter="url(#glowBlue)">Cross‑model review</text>
+            <text x="664" y="388" class="s">Second‑pass critique for clarity & accuracy</text>
+
+            <!-- Chips -->
+            <rect x="664" y="416" width="252" height="52" rx="14" fill="rgba(76,141,255,.12)" stroke="rgba(76,141,255,.35)"/>
+            <text x="682" y="447" class="t" style="font-size:16px;">Claude</text>
+            <text x="772" y="447" class="s">reasoning / critique</text>
+
+            <rect x="664" y="478" width="252" height="52" rx="14" fill="rgba(29,214,198,.10)" stroke="rgba(29,214,198,.34)"/>
+            <text x="682" y="509" class="t" style="font-size:16px;">Gemini</text>
+            <text x="772" y="509" class="s">fact‑check / gaps</text>
+
+            <rect x="664" y="540" width="252" height="52" rx="14" fill="rgba(246,195,90,.10)" stroke="rgba(246,195,90,.35)"/>
+            <text x="682" y="571" class="t" style="font-size:16px;">ChatGPT</text>
+            <text x="782" y="571" class="s">rewrite / synthesis</text>
+
+            <!-- Loop arrows -->
+            <path class="line dashed" d="M600 593 C650 593 620 610 640 610" />
+            <path class="line dashed" d="M640 470 C615 470 610 500 600 500" />
+            <text x="612" y="485" class="mini" style="opacity:.75;">send for review</text>
+            <text x="612" y="578" class="mini" style="opacity:.75;">feedback back</text>
+
+            <!-- Step 8/9 (annotated within loop) -->
+            <text x="664" y="616" class="s" style="opacity:.9">→ Feed critiques into final AI draft</text>
+          </svg>
+        </div>
+      </section>
+
+      <aside class="card story">
+        <div class="hd">
+          <strong>Process description</strong>
+          <span class="badge">What you did</span>
+        </div>
+        <div class="bd">
+          <p>
+            You set out to write a publishable, PhD‑level guide (low math) on best practices and pitfalls in statistical modelling,
+            aimed at readers who find the existing literature scattered and overly technical.
+          </p>
+          <p>
+            With limited domain expertise in this specific topic, you used AI to rapidly assemble background and structure,
+            then relied on careful human review to keep the manuscript accurate, coherent, and example‑driven.
+          </p>
+
+          <ul class="bullets">
+            <li><b>Deep research:</b> mini literature reviews on multiple modelling subtopics.</li>
+            <li><b>Structure:</b> AI proposes an outline; you refine scope + ordering.</li>
+            <li><b>Drafting:</b> AI writes; you do a detailed pass (clarify, add examples/figures, reorganise).</li>
+            <li><b>Cross‑model critique:</b> Claude + Gemini provide a second set of reviews.</li>
+            <li><b>Finalisation:</b> AI synthesises; you do final editorial polish.</li>
+          </ul>
+
+          <div class="note">
+            Outcome: a surprisingly strong, student‑friendly manuscript produced through an “AI + human judgement” loop in ~4 hours.
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      Background manuscript texture is taken from the first page of your attached PDF (“When Models Explain, When They Predict, and When They Do Neither”). Replace <code>manuscript_page1.png</code> with any page/texture you prefer.
+    </footer>
+  </div>
+</body>
+</html>

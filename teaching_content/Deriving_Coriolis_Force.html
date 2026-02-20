@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deriving the Coriolis Force</title>
+<style>
+  :root { --bg:#fafaf8; --text:#1a1a1a; --accent:#2256a0; --accent-light:#e8eff8; --border:#d0d0c8; --highlight:#c05030; --step-bg:#f4f1ec; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Georgia','Times New Roman',serif; background:var(--bg); color:var(--text); line-height:1.75; max-width:780px; margin:0 auto; padding:3rem 2rem 5rem; }
+  h1 { font-size:2rem; font-weight:700; margin-bottom:0.3rem; color:var(--accent); letter-spacing:-0.02em; }
+  .subtitle { font-size:1.05rem; color:#666; margin-bottom:2.5rem; font-style:italic; }
+  h2 { font-size:1.3rem; font-weight:700; margin-top:2.5rem; margin-bottom:0.8rem; color:var(--accent); border-bottom:2px solid var(--border); padding-bottom:0.3rem; }
+  p { margin-bottom:1rem; }
+  .step-box { background:var(--step-bg); border-left:4px solid var(--accent); padding:1.2rem 1.5rem; margin:1.2rem 0; border-radius:0 6px 6px 0; }
+  .step-box .label { font-weight:700; color:var(--accent); font-size:0.9rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.4rem; }
+  .eq { text-align:center; margin:1.2rem 0; font-size:1.15rem; font-style:italic; color:var(--text); }
+  .eq.highlight { background:var(--accent-light); border:2px solid var(--accent); border-radius:8px; padding:0.8rem 1rem; font-size:1.2rem; }
+  .eq .tag { float:right; font-size:0.85rem; color:#888; font-style:normal; }
+  .vector { font-weight:bold; font-style:normal; }
+  .note { background:#fff8e8; border:1px solid #e8d8a0; border-radius:6px; padding:1rem 1.2rem; margin:1.2rem 0; font-size:0.95rem; }
+  .note::before { content:"💡 "; }
+  .figure-container { text-align:center; margin:2rem 0; }
+  .figure-container svg { max-width:100%; }
+  .fig-caption { font-size:0.88rem; color:#666; margin-top:0.5rem; font-style:italic; max-width:640px; margin-left:auto; margin-right:auto; }
+  .term-coriolis { color:#c05030; font-weight:bold; }
+  .term-centrifugal { color:#2a8a2a; font-weight:bold; }
+  .summary-table { width:100%; border-collapse:collapse; margin:1rem 0; }
+  .summary-table td,.summary-table th { padding:0.6rem 1rem; border:1px solid var(--border); text-align:left; }
+  .summary-table th { background:var(--accent); color:white; font-size:0.9rem; }
+  .summary-table tr:nth-child(even) { background:#f5f5f0; }
+  sub,sup { font-size:0.75em; }
+  .cross { font-size:1.1em; }
+  details { background:#f0ece4; border:1px solid #d8d0c0; border-radius:6px; margin:1.2rem 0; overflow:hidden; }
+  details summary { padding:0.8rem 1.2rem; cursor:pointer; font-weight:700; color:var(--accent); font-size:0.95rem; user-select:none; list-style:none; display:flex; align-items:center; gap:0.5rem; }
+  details summary::-webkit-details-marker { display:none; }
+  details summary::before { content:"▶"; font-size:0.7rem; transition:transform 0.2s; display:inline-block; color:var(--accent); }
+  details[open] summary::before { transform:rotate(90deg); }
+  details summary:hover { background:#e8e0d4; }
+  .accordion-body { padding:0 1.2rem 1.2rem; border-top:1px solid #d8d0c0; font-size:0.95rem; line-height:1.7; }
+  .accordion-body p { margin-bottom:0.8rem; }
+  .accordion-body .eq { font-size:1.05rem; margin:0.8rem 0; }
+  .fig-controls { display:flex; justify-content:center; gap:0.8rem; margin-top:0.5rem; }
+  .fig-controls button { background:var(--accent); color:white; border:none; border-radius:4px; padding:0.3rem 0.9rem; font-family:Georgia,serif; font-size:0.85rem; cursor:pointer; }
+  .fig-controls button:hover { opacity:0.85; }
+  .side-by-side { display:flex; gap:1rem; margin:1.2rem 0; align-items:stretch; }
+  .side-by-side .col { flex:1; background:var(--step-bg); border-radius:6px; padding:1rem 1.2rem; }
+  .side-by-side .col h4 { color:var(--accent); font-size:0.9rem; margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.04em; }
+  .side-by-side .col .eq { font-size:1rem; margin:0.6rem 0; }
+  .equals-col { display:flex; align-items:center; justify-content:center; font-size:2rem; color:var(--accent); font-weight:bold; padding:0 0.3rem; }
+  @media(max-width:600px){ .side-by-side{flex-direction:column;} .equals-col{transform:rotate(90deg);padding:0.5rem 0;} }
+</style>
+</head>
+<body>
+
+<h1>Deriving the Coriolis Force</h1>
+<p class="subtitle">A step-by-step derivation for the mathematically cautious</p>
+
+<h2>The Big Idea</h2>
+<p>
+  Imagine an object — a ball, a parcel of air, a missile — moving through space. Described from a <em>stationary</em> viewpoint (an "inertial frame"), Newton's laws work perfectly: the object accelerates according to the forces on it, and that's that.
+</p>
+<p>
+  But now imagine you are standing on a merry-go-round — or, more relevantly, on the surface of the spinning Earth. You're rotating, but the object isn't (or not in the same way). From <em>your</em> perspective, the object appears to follow a curved path, even when no sideways force is acting on it. It looks as though something is pushing it off course.
+</p>
+<p>
+  The goal of this derivation is to answer a precise mathematical question: <strong>if we know how an object accelerates in a stationary frame, what does its acceleration look like when described from a rotating frame?</strong> The answer will contain an extra term — the <em>Coriolis acceleration</em> — that explains the apparent deflection.
+</p>
+
+<!-- ================================================================== -->
+<!-- FIGURE 1: Animated superimposed frames -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg id="fig1svg" width="420" height="340" viewBox="0 0 420 340">
+    <defs>
+      <marker id="aBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2256a0"/></marker>
+      <marker id="aRed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#c05030"/></marker>
+    </defs>
+    <g transform="translate(210,170)">
+      <line x1="0" y1="0" x2="130" y2="0" stroke="#2256a0" stroke-width="2.5" marker-end="url(#aBlue)"/>
+      <line x1="0" y1="0" x2="0" y2="-130" stroke="#2256a0" stroke-width="2.5" marker-end="url(#aBlue)"/>
+      <text x="136" y="5" fill="#2256a0" font-size="18" font-weight="bold" font-family="Georgia" font-style="italic">X</text>
+      <text x="6" y="-134" fill="#2256a0" font-size="18" font-weight="bold" font-family="Georgia" font-style="italic">Y</text>
+      <text x="110" y="22" fill="#2256a0" font-size="11" font-family="Georgia">(fixed)</text>
+      <g id="fig1rot">
+        <line x1="0" y1="0" x2="120" y2="0" stroke="#c05030" stroke-width="2.5" marker-end="url(#aRed)"/>
+        <line x1="0" y1="0" x2="0" y2="-120" stroke="#c05030" stroke-width="2.5" marker-end="url(#aRed)"/>
+        <text x="126" y="5" fill="#c05030" font-size="18" font-weight="bold" font-family="Georgia" font-style="italic">x</text>
+        <text x="6" y="-124" fill="#c05030" font-size="18" font-weight="bold" font-family="Georgia" font-style="italic">y</text>
+      </g>
+      <path id="fig1arc" d="" fill="rgba(200,180,160,0.15)" stroke="#888" stroke-width="1.8"/>
+      <text id="fig1theta" x="0" y="0" font-size="14" font-family="Georgia" fill="#888" font-style="italic"></text>
+      <circle cx="0" cy="0" r="12" fill="white" stroke="#333" stroke-width="2"/>
+      <circle cx="0" cy="0" r="3" fill="#333"/>
+      <text x="16" y="-2" font-size="13" font-family="Georgia" font-weight="bold" fill="#333">Ω (out of page)</text>
+    </g>
+    <g transform="translate(30,312)">
+      <line x1="0" y1="0" x2="25" y2="0" stroke="#2256a0" stroke-width="2.5"/>
+      <text x="30" y="4" font-size="12" font-family="Georgia" fill="#333">Inertial frame (fixed)</text>
+      <line x1="195" y1="0" x2="220" y2="0" stroke="#c05030" stroke-width="2.5"/>
+      <text x="225" y="4" font-size="12" font-family="Georgia" fill="#333">Rotating frame (spinning)</text>
+    </g>
+  </svg>
+  <div class="fig-controls">
+    <button id="fig1Btn" onclick="fig1Toggle()">⏸ Pause</button>
+    <button onclick="fig1Reset()">↺ Reset</button>
+  </div>
+  <div class="fig-caption">Figure 1. Both frames share the same origin. The blue (X, Y) axes are fixed; the red (x, y) axes rotate counter-clockwise at angular velocity Ω. The angle between them, θ = Ωt, grows steadily with time.</div>
+</div>
+<script>
+(function(){
+  var r=document.getElementById('fig1rot'),a=document.getElementById('fig1arc'),
+      l=document.getElementById('fig1theta'),b=document.getElementById('fig1Btn'),
+      P=20000,go=true,t0=null,pa=0;
+  function arc(d){var R=55,rd=d*Math.PI/180,ex=R*Math.cos(rd),ey=-R*Math.sin(rd);
+    if(d<1)return'';return'M '+R+',0A'+R+','+R+' 0 '+(d>180?1:0)+',0 '+ex.toFixed(1)+','+ey.toFixed(1)+' L0,0Z';}
+  function upd(ts){if(!t0)t0=ts;var d=((ts-t0)/P*360+pa)%360;
+    r.setAttribute('transform','rotate('+(-d)+')');a.setAttribute('d',arc(d));
+    var mr=d/2*Math.PI/180;l.setAttribute('x',(70*Math.cos(mr)).toFixed(0));
+    l.setAttribute('y',(-70*Math.sin(mr)).toFixed(0));l.textContent='θ='+d.toFixed(0)+'°';
+    if(go)requestAnimationFrame(upd);}
+  requestAnimationFrame(upd);
+  window.fig1Toggle=function(){if(go){go=false;var m=r.getAttribute('transform').match(/rotate\(([-\d.]+)\)/);
+    pa=m?-parseFloat(m[1]):0;t0=null;b.textContent='▶ Play';}
+    else{go=true;t0=null;b.textContent='⏸ Pause';requestAnimationFrame(upd);}};
+  window.fig1Reset=function(){go=true;t0=null;pa=0;b.textContent='⏸ Pause';requestAnimationFrame(upd);};
+})();
+</script>
+
+
+<h2>Step 1: Set Up the Problem</h2>
+<p>Consider two reference frames sharing the same origin (Figure 1):</p>
+<div class="step-box">
+  <div class="label">Definitions</div>
+  <p>
+    <span class="vector">Capital letters</span> (X, Y) = coordinates in the <strong>inertial</strong> (stationary) frame<br>
+    <span class="vector">Lowercase letters</span> (x, y) = coordinates in the <strong>rotating</strong> frame<br>
+    <strong>Ω</strong> = angular velocity of the rotating frame (radians per second)<br>
+    <strong>r</strong> = position vector of some object
+  </p>
+</div>
+<p>
+  The red axes spin counter-clockwise (the mathematically positive direction) at rate Ω relative to the fixed blue axes. At time <em>t</em>, they have turned through angle θ = Ωt. Both observers describe the <em>same</em> object using their own axes.
+</p>
+
+<div class="step-box">
+  <div class="label">Ω is a vector</div>
+  <p>
+    Angular velocity isn't just a number — it's a <strong>vector</strong> that points along the <strong>axis of rotation</strong>. For counter-clockwise rotation in the x–y plane, <strong>Ω</strong> points <em>out of the page</em> (along the z-axis), determined by the right-hand rule: curl the fingers of your right hand in the direction of rotation, and your thumb points along <strong>Ω</strong>. On Earth, <strong>Ω</strong> points from the South Pole to the North Pole.
+  </p>
+</div>
+
+
+<h2>Step 2: How Basis Vectors Change in Time</h2>
+<p>This is the crux of the whole derivation, so we'll take it slowly.</p>
+
+<details>
+  <summary>First: what is a basis vector?</summary>
+  <div class="accordion-body">
+    <p>A <strong>basis vector</strong> is a unit-length arrow defining a direction for a coordinate axis — a ruler of length 1. For the inertial frame: <strong>Ê<sub>X</sub></strong>, <strong>Ê<sub>Y</sub></strong> (capital, fixed). For the rotating frame: <strong>ê<sub>x</sub></strong>, <strong>ê<sub>y</sub></strong> (lowercase, spinning). The "hat" means "unit length".</p>
+    <p>To describe position <strong>r</strong>, you decompose it along the basis vectors:</p>
+    <div class="eq">
+      <strong>r</strong> = 3 Ê<sub>X</sub> + 2 Ê<sub>Y</sub> &nbsp;(inertial) &nbsp;&nbsp; or &nbsp;&nbsp; <strong>r</strong> = 3.4 ê<sub>x</sub> + 1.2 ê<sub>y</sub> &nbsp;(rotating)
+    </div>
+    <p>The same physical point gets different numbers in different frames.</p>
+  </div>
+</details>
+
+<p>
+  The inertial basis vectors <strong>Ê<sub>X</sub></strong>, <strong>Ê<sub>Y</sub></strong> never change. But the rotating basis vectors <strong>ê<sub>x</sub></strong>, <strong>ê<sub>y</sub></strong> — the red arrows spinning in Figure 1 — are themselves moving. When we compute rates of change in the rotating frame, we must account for the fact that the <em>rulers are spinning</em>.
+</p>
+<p>Figure 2 makes this tangible. Point P is stationary — it never moves. The left panel shows the inertial observer's view (fixed axes, basis vectors rotating). The right panel shows what the rotating observer sees: their own axes are "fixed" (because they're spinning with them), so instead P appears to orbit in the opposite direction.</p>
+
+<!-- ================================================================== -->
+<!-- FIGURE 2: Dual-panel animation — inertial vs rotating view -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg id="fig2svg" width="640" height="310" viewBox="0 0 640 310">
+    <defs>
+      <marker id="a2Bl" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#2256a0"/></marker>
+      <marker id="a2Rd" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#c05030"/></marker>
+      <marker id="a2Bk" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#333"/></marker>
+    </defs>
+    <!-- LEFT: Inertial observer -->
+    <g transform="translate(160,165)">
+      <text x="-130" y="-140" font-size="13" font-family="Georgia" font-weight="bold" fill="#2256a0">Inertial observer's view</text>
+      <!-- Fixed blue axes -->
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#2256a0" stroke-width="2" marker-end="url(#a2Bl)"/>
+      <line x1="0" y1="0" x2="0" y2="-100" stroke="#2256a0" stroke-width="2" marker-end="url(#a2Bl)"/>
+      <text x="105" y="4" fill="#2256a0" font-size="13" font-weight="bold">Ê<tspan font-size="9" baseline-shift="sub">X</tspan></text>
+      <text x="4" y="-103" fill="#2256a0" font-size="13" font-weight="bold">Ê<tspan font-size="9" baseline-shift="sub">Y</tspan></text>
+      <!-- Rotating red ê vectors -->
+      <g id="fig2Lrot">
+        <line x1="0" y1="0" x2="90" y2="0" stroke="#c05030" stroke-width="2" marker-end="url(#a2Rd)"/>
+        <line x1="0" y1="0" x2="0" y2="-90" stroke="#c05030" stroke-width="2" marker-end="url(#a2Rd)"/>
+        <text x="95" y="4" fill="#c05030" font-size="13" font-weight="bold">ê<tspan font-size="9" baseline-shift="sub">x</tspan></text>
+        <text x="4" y="-93" fill="#c05030" font-size="13" font-weight="bold">ê<tspan font-size="9" baseline-shift="sub">y</tspan></text>
+      </g>
+      <!-- P fixed -->
+      <circle cx="85" cy="-60" r="5" fill="#333"/>
+      <text x="93" y="-58" font-size="13" font-weight="bold" fill="#333">P</text>
+      <line x1="0" y1="0" x2="85" y2="-60" stroke="#333" stroke-width="1.8" marker-end="url(#a2Bk)"/>
+      <text x="32" y="-38" font-size="13" font-weight="bold" fill="#333">r</text>
+      <circle cx="0" cy="0" r="3" fill="#888"/>
+      <text x="-30" y="120" font-size="12" fill="#666" font-family="Georgia">P is stationary. Axes ê spin.</text>
+    </g>
+    <!-- RIGHT: Rotating observer -->
+    <g transform="translate(480,165)">
+      <text x="-130" y="-140" font-size="13" font-family="Georgia" font-weight="bold" fill="#c05030">Rotating observer's view</text>
+      <!-- Fixed red axes (my frame) -->
+      <line x1="0" y1="0" x2="90" y2="0" stroke="#c05030" stroke-width="2" marker-end="url(#a2Rd)"/>
+      <line x1="0" y1="0" x2="0" y2="-90" stroke="#c05030" stroke-width="2" marker-end="url(#a2Rd)"/>
+      <text x="95" y="4" fill="#c05030" font-size="13" font-weight="bold">ê<tspan font-size="9" baseline-shift="sub">x</tspan></text>
+      <text x="4" y="-93" fill="#c05030" font-size="13" font-weight="bold">ê<tspan font-size="9" baseline-shift="sub">y</tspan></text>
+      <!-- P appears to move (JS) -->
+      <circle id="fig2Rp" cx="85" cy="-60" r="5" fill="#333"/>
+      <text id="fig2Rl" x="93" y="-58" font-size="13" font-weight="bold" fill="#333">P</text>
+      <line id="fig2Rr" x1="0" y1="0" x2="85" y2="-60" stroke="#333" stroke-width="1.8" marker-end="url(#a2Bk)"/>
+      <!-- Trail -->
+      <path id="fig2trail" d="" fill="none" stroke="#333" stroke-width="1" opacity="0.3"/>
+      <circle cx="0" cy="0" r="3" fill="#888"/>
+      <text x="-30" y="120" font-size="12" fill="#666" font-family="Georgia">Axes are "fixed". P orbits!</text>
+    </g>
+    <!-- Divider -->
+    <line x1="320" y1="15" x2="320" y2="290" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>
+    <!-- θ readout -->
+    <text id="fig2th" x="280" y="300" font-size="13" font-family="Georgia" fill="#888" font-style="italic" text-anchor="middle"></text>
+  </svg>
+  <div class="fig-controls">
+    <button id="fig2Btn" onclick="fig2Toggle()">⏸ Pause</button>
+    <button onclick="fig2Reset()">↺ Reset</button>
+  </div>
+  <div class="fig-caption">Figure 2. The <em>same</em> stationary point P, seen from two perspectives. Left: the inertial observer sees P staying put while the red basis vectors rotate. Right: the rotating observer sees their own axes as fixed, so P appears to orbit clockwise. Neither observer is "wrong" — they just use different coordinate systems.</div>
+</div>
+
+<script>
+(function(){
+  var Lr=document.getElementById('fig2Lrot'),
+      Rp=document.getElementById('fig2Rp'),Rl=document.getElementById('fig2Rl'),
+      Rr=document.getElementById('fig2Rr'),trail=document.getElementById('fig2trail'),
+      th=document.getElementById('fig2th'),btn=document.getElementById('fig2Btn'),
+      Px=85,Py=60,P=20000,go=true,t0=null,pa=0,pts=[];
+  function upd(ts){if(!t0)t0=ts;var d=((ts-t0)/P*360+pa)%360,r=d*Math.PI/180;
+    // Left panel: rotate red axes CCW
+    Lr.setAttribute('transform','rotate('+(-d)+')');
+    // Right panel: P orbits CW (appears at angle -d from its inertial position)
+    var rpx=Px*Math.cos(r)+Py*Math.sin(r), rpy=-(-Px*Math.sin(r)+Py*Math.cos(r));
+    // In SVG coords of right panel: P appears at (rpx, rpy) where rpy needs sign flip
+    var sx=Px*Math.cos(r)+Py*Math.sin(r), sy=Px*Math.sin(r)-Py*Math.cos(r);
+    Rp.setAttribute('cx',sx.toFixed(1));Rp.setAttribute('cy',sy.toFixed(1));
+    Rl.setAttribute('x',(sx+8).toFixed(1));Rl.setAttribute('y',(sy-5).toFixed(1));
+    Rr.setAttribute('x2',sx.toFixed(1));Rr.setAttribute('y2',sy.toFixed(1));
+    // Trail
+    if(pts.length===0||Math.abs(d-pts[pts.length-1])>2){pts.push(d);
+      var td='M';for(var i=0;i<pts.length;i++){var rr=pts[i]*Math.PI/180;
+        var tx=Px*Math.cos(rr)+Py*Math.sin(rr),ty=Px*Math.sin(rr)-Py*Math.cos(rr);
+        td+=(i?'L':'')+(tx.toFixed(1))+','+(ty.toFixed(1));}trail.setAttribute('d',td);}
+    th.textContent='θ = '+d.toFixed(0)+'°';
+    if(go)requestAnimationFrame(upd);}
+  requestAnimationFrame(upd);
+  window.fig2Toggle=function(){if(go){go=false;var m=Lr.getAttribute('transform').match(/rotate\(([-\d.]+)\)/);
+    pa=m?-parseFloat(m[1]):0;t0=null;btn.textContent='▶ Play';}
+    else{go=true;t0=null;btn.textContent='⏸ Pause';requestAnimationFrame(upd);}};
+  window.fig2Reset=function(){go=true;t0=null;pa=0;pts=[];trail.setAttribute('d','');btn.textContent='⏸ Pause';requestAnimationFrame(upd);};
+})();
+</script>
+
+<div class="note">
+  Key insight: in the rotating frame, even a stationary object has changing coordinates, because the rulers are rotating beneath it. Any derivative computed in the rotating frame <em>misses</em> this ruler-spinning contribution — we need to add it back in.
+</div>
+
+<p>Now let's quantify exactly how fast a basis vector changes. At any instant, <strong>ê<sub>x</sub></strong> points in some direction. A tiny time δt later, the frame has rotated through δθ = Ω δt, and ê<sub>x</sub> points slightly differently. We can describe this change using the rotation angle — treated as a vector.</p>
+
+<p>Just as <strong>Ω</strong> is a vector pointing along the rotation axis, the angle of rotation <strong>θ</strong> = θ <strong>k̂</strong> is also a vector along that axis (where <strong>k̂</strong> points out of the page). A small rotation δ<strong>θ</strong> acting on any vector <strong>ê</strong> produces a change:</p>
+
+<div class="eq">
+  δ<strong>ê</strong> = δ<strong>θ</strong> <span class="cross">×</span> <strong>ê</strong>
+</div>
+
+<p>This is a fundamental property of infinitesimal rotations: a small rotation by angle δθ about an axis <strong>k̂</strong> moves the tip of a unit vector by an amount δθ, in a direction perpendicular to both the axis and the vector — exactly what the cross product delivers.</p>
+
+<details>
+  <summary>Sanity check: try it for ê<sub>x</sub> = (1, 0, 0)</summary>
+  <div class="accordion-body">
+    <p>Suppose we rotate ê<sub>x</sub> = (1, 0, 0) by a small angle δθ about the z-axis, so δ<strong>θ</strong> = (0, 0, δθ). Geometrically, the tip moves from (1, 0, 0) to approximately (1, δθ, 0) — a tiny nudge in the y-direction.</p>
+    <p>Now compute the cross product:</p>
+    <div class="eq" style="font-size:1rem;">δ<strong>θ</strong> × ê<sub>x</sub> = (0, 0, δθ) × (1, 0, 0) = (0·0 − δθ·0, &nbsp;δθ·1 − 0·0, &nbsp;0·0 − 0·1) = (0, δθ, 0)</div>
+    <p>It gives δê = (0, δθ, 0) — a change of magnitude δθ pointing in the y-direction. Matches the geometry exactly. ✓</p>
+  </div>
+</details>
+
+<!-- ================================================================== -->
+<!-- FIGURE 3: δê = δθ × ê geometry -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg width="520" height="310" viewBox="0 0 520 310">
+    <defs>
+      <marker id="a3Rd" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#c05030"/></marker>
+      <marker id="a3Gn" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2a8a2a"/></marker>
+      <marker id="a3Gh" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#c05030" opacity="0.35"/></marker>
+    </defs>
+    <g transform="translate(130,200)">
+      <path d="M 140,0 A 140,140 0 0,0 115,-79" fill="none" stroke="#e0e0d8" stroke-width="1.5"/>
+      <line x1="0" y1="0" x2="140" y2="0" stroke="#c05030" stroke-width="3" marker-end="url(#a3Rd)"/>
+      <text x="148" y="6" fill="#c05030" font-size="16" font-weight="bold" font-family="Georgia">ê<tspan font-size="11" baseline-shift="sub">x</tspan>(t)</text>
+      <!-- cos25=0.906, sin25=0.423 -->
+      <line x1="0" y1="0" x2="126.8" y2="-59.2" stroke="#c05030" stroke-width="2.5" opacity="0.4" marker-end="url(#a3Gh)"/>
+      <text x="130" y="-64" fill="#c05030" font-size="14" opacity="0.6">ê<tspan font-size="10" baseline-shift="sub">x</tspan>(t+δt)</text>
+      <line x1="140" y1="0" x2="126.8" y2="-59.2" stroke="#2a8a2a" stroke-width="3" marker-end="url(#a3Gn)"/>
+      <text x="144" y="-28" fill="#2a8a2a" font-size="16" font-weight="bold">δê</text>
+      <rect x="129" y="-12" width="12" height="12" fill="none" stroke="#888" stroke-width="1.2"/>
+      <path d="M 70,0 A 70,70 0 0,0 63.4,-29.6" fill="none" stroke="#888" stroke-width="2"/>
+      <text x="74" y="-14" fill="#888" font-size="16" font-style="italic">δθ</text>
+      <!-- Ω / δθ as vector out of page -->
+      <circle cx="-50" cy="-70" r="15" fill="white" stroke="#333" stroke-width="2"/>
+      <circle cx="-50" cy="-70" r="3.5" fill="#333"/>
+      <text x="-30" y="-66" font-size="13" font-weight="bold" fill="#333">δθ, Ω</text>
+      <text x="-82" y="-48" fill="#888" font-size="10">(axis of rotation,</text>
+      <text x="-75" y="-36" fill="#888" font-size="10">out of page)</text>
+      <circle cx="0" cy="0" r="4" fill="#333"/>
+    </g>
+    <g transform="translate(310,28)">
+      <text font-size="14" font-family="Georgia" fill="#333" font-weight="bold">Why the cross product?</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="25">δ<tspan font-weight="bold">θ</tspan> points along the rotation axis</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="45"><tspan font-weight="bold">ê</tspan> lies in the rotation plane</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="65">→ they are perpendicular (α = 90°)</text>
+      <text font-size="13" font-family="Georgia" fill="#333" font-weight="bold" y="95">Magnitude:</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="115">|δθ × ê| = |δθ| · |ê| · sin 90°</text>
+      <text font-size="14" font-family="Georgia" fill="#2a8a2a" font-weight="bold" y="135">= δθ · 1 · 1 = δθ  ✓</text>
+      <text font-size="13" font-family="Georgia" fill="#333" font-weight="bold" y="165">Direction:</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="185">Right-hand rule: fingers along δθ</text>
+      <text font-size="13" font-family="Georgia" fill="#666" y="205">(out of page), curl toward ê →</text>
+      <text font-size="14" font-family="Georgia" fill="#2a8a2a" font-weight="bold" y="225">⊥ to ê, in rotation sense  ✓</text>
+    </g>
+  </svg>
+  <div class="fig-caption">Figure 3. The change δ<strong>ê</strong> = δ<strong>θ</strong> × <strong>ê</strong>. Because δ<strong>θ</strong> points along the rotation axis (out of page) and <strong>ê</strong> lies in the plane, the cross product gives a vector perpendicular to ê with magnitude δθ — exactly matching the geometry.</div>
+</div>
+
+<p>Now we simply divide by δt:</p>
+
+<div class="eq">
+  (d<strong>ê</strong>/dt)<sub>inertial</sub> = (d<strong>θ</strong>/dt) <span class="cross">×</span> <strong>ê</strong> = <strong>Ω</strong> <span class="cross">×</span> <strong>ê</strong>
+  <span class="tag">(1)</span>
+</div>
+
+<p>since d<strong>θ</strong>/dt = <strong>Ω</strong> by definition. The subscript "inertial" matters: this is the rate of change of ê as seen from the <em>fixed</em> frame. In the rotating frame, the basis vectors are constant by definition — they <em>are</em> the axes — so (d<strong>ê</strong>/dt)<sub>rotating</sub> = 0. Equation (1) holds for any basis vector of the rotating frame.</p>
+
+<details>
+  <summary>More on the cross product: component form and key properties</summary>
+  <div class="accordion-body">
+    <p>The cross product <strong>A</strong> × <strong>B</strong> produces a vector perpendicular to both inputs.</p>
+    <p><strong>Direction:</strong> Right-hand rule. <strong>Magnitude:</strong> |<strong>A</strong> × <strong>B</strong>| = |<strong>A</strong>||<strong>B</strong>| sin α.</p>
+    <p>Components: <strong>A</strong> × <strong>B</strong> = (A<sub>y</sub>B<sub>z</sub>−A<sub>z</sub>B<sub>y</sub>, A<sub>z</sub>B<sub>x</sub>−A<sub>x</sub>B<sub>z</sub>, A<sub>x</sub>B<sub>y</sub>−A<sub>y</sub>B<sub>x</sub>)</p>
+    <p>Key: <strong>anti-commutative</strong> (A×B = −B×A) and <strong>linear</strong> (distributes, scalars factor out).</p>
+  </div>
+</details>
+
+<details>
+  <summary>Verify Equation (1) with trigonometry</summary>
+  <div class="accordion-body">
+    <p>We can check by expressing ê<sub>x</sub> in the fixed frame and differentiating directly. At time t, the rotating x-axis has turned through θ = Ωt:</p>
+
+    <!-- Unit circle figure showing ê_x = (cos θ, sin θ) -->
+    <div style="text-align:center;margin:1rem 0;">
+      <svg width="260" height="240" viewBox="0 0 260 240">
+        <defs>
+          <marker id="avRd" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#c05030"/></marker>
+          <marker id="avBl" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2256a0"/></marker>
+        </defs>
+        <g transform="translate(115,140)">
+          <!-- Unit circle -->
+          <circle cx="0" cy="0" r="90" fill="none" stroke="#ddd" stroke-width="1.5"/>
+          <!-- Fixed axes -->
+          <line x1="-100" y1="0" x2="100" y2="0" stroke="#2256a0" stroke-width="1" opacity="0.3"/>
+          <line x1="0" y1="100" x2="0" y2="-100" stroke="#2256a0" stroke-width="1" opacity="0.3"/>
+          <text x="103" y="4" fill="#2256a0" font-size="12" font-weight="bold">X</text>
+          <text x="4" y="-98" fill="#2256a0" font-size="12" font-weight="bold">Y</text>
+          <!-- ê_x at angle ~35°: cos35=0.819, sin35=0.574 → (73.7, -51.6) -->
+          <line x1="0" y1="0" x2="73.7" y2="-51.6" stroke="#c05030" stroke-width="2.5" marker-end="url(#avRd)"/>
+          <text x="78" y="-52" fill="#c05030" font-size="13" font-weight="bold">ê<tspan font-size="9" baseline-shift="sub">x</tspan></text>
+          <!-- Projections -->
+          <line x1="73.7" y1="0" x2="73.7" y2="-51.6" stroke="#2256a0" stroke-width="1.2" stroke-dasharray="4,3"/>
+          <line x1="0" y1="-51.6" x2="73.7" y2="-51.6" stroke="#2256a0" stroke-width="1.2" stroke-dasharray="4,3"/>
+          <!-- Labels -->
+          <text x="30" y="16" fill="#2256a0" font-size="12">cos θ</text>
+          <text x="-42" y="-22" fill="#2256a0" font-size="12">sin θ</text>
+          <!-- Angle arc -->
+          <path d="M 40,0 A 40,40 0 0,0 32.8,-22.9" fill="none" stroke="#888" stroke-width="1.5"/>
+          <text x="42" y="-8" fill="#888" font-size="13" font-style="italic">θ</text>
+          <circle cx="0" cy="0" r="3" fill="#333"/>
+        </g>
+      </svg>
+      <div style="font-size:0.85rem;color:#666;font-style:italic;">ê<sub>x</sub> is a unit vector at angle θ from the X-axis, so its X- and Y-components are cos θ and sin θ.</div>
+    </div>
+
+    <p>So in the fixed frame: <strong>ê<sub>x</sub></strong>(t) = (cos Ωt, sin Ωt, 0). Now we compute the time derivative two different ways and compare:</p>
+
+    <div class="side-by-side">
+      <div class="col">
+        <h4>Direct differentiation</h4>
+        <div class="eq" style="text-align:left;font-size:0.95rem;">
+          d<strong>ê<sub>x</sub></strong>/dt<br>
+          = d/dt (cos Ωt, sin Ωt, 0)<br>
+          = (<strong>−Ω sin Ωt</strong>, <strong>Ω cos Ωt</strong>, 0)
+        </div>
+      </div>
+      <div class="equals-col">=</div>
+      <div class="col">
+        <h4>Cross product Ω × ê<sub>x</sub></h4>
+        <div class="eq" style="text-align:left;font-size:0.95rem;">
+          (0, 0, Ω) × (cos Ωt, sin Ωt, 0)<br>
+          = (0·0 − Ω·sin Ωt,<br>
+          &nbsp;&nbsp; Ω·cos Ωt − 0·0,<br>
+          &nbsp;&nbsp; 0·sin Ωt − 0·cos Ωt)<br>
+          = (<strong>−Ω sin Ωt</strong>, <strong>Ω cos Ωt</strong>, 0)
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;">Identical. ∎ &nbsp;Same works for ê<sub>y</sub>(t) = (−sin Ωt, cos Ωt, 0).</p>
+  </div>
+</details>
+
+
+<h2>Step 3: The "Rotating Frame Derivative" Operator</h2>
+
+<p>Now consider any vector <strong>A</strong> expressed in the rotating frame:</p>
+<div class="eq">
+  <strong>A</strong> = A<sub>x</sub> <strong>ê<sub>x</sub></strong> + A<sub>y</sub> <strong>ê<sub>y</sub></strong> + A<sub>z</sub> <strong>ê<sub>z</sub></strong>
+</div>
+<p>When we take the time derivative as seen from the <em>inertial</em> frame, we must use the product rule on each term, because <em>both</em> the components (A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub>) <em>and</em> the basis vectors (ê<sub>x</sub>, ê<sub>y</sub>, ê<sub>z</sub>) can change with time:</p>
+<div class="eq">
+  (d<strong>A</strong>/dt)<sub>inertial</sub> = <span style="color:#c05030">(dA<sub>x</sub>/dt) ê<sub>x</sub> + A<sub>x</sub> (dê<sub>x</sub>/dt)</span> + <span style="color:#2a8a2a">(dA<sub>y</sub>/dt) ê<sub>y</sub> + A<sub>y</sub> (dê<sub>y</sub>/dt)</span> + <span style="color:#2256a0">(dA<sub>z</sub>/dt) ê<sub>z</sub> + A<sub>z</sub> (dê<sub>z</sub>/dt)</span>
+</div>
+<p style="font-size:0.92rem;color:#666;text-align:center;margin-top:-0.6rem;">(each component contributes two terms via the product rule: one from the changing component, one from the changing basis vector)</p>
+
+<details>
+  <summary>Reminder: the product rule</summary>
+  <div class="accordion-body">
+    <p>d/dt [f(t)·g(t)] = (df/dt)·g + f·(dg/dt). Applied here:</p>
+    <div class="eq">d/dt [A<sub>x</sub> ê<sub>x</sub>] = (dA<sub>x</sub>/dt) ê<sub>x</sub> + A<sub>x</sub> (dê<sub>x</sub>/dt)</div>
+    <p>First piece: change in the component. Second piece: change in the basis vector (the axis spinning). In a fixed frame the second term vanishes because dê/dt = 0.</p>
+  </div>
+</details>
+
+<p>Now we can group these six terms into two sets. Collect all the "changing component" terms together, and all the "changing basis vector" terms together:</p>
+
+<div class="eq">
+  (d<strong>A</strong>/dt)<sub>inertial</sub> = <span style="border-bottom:2px solid #c05030">[(dA<sub>x</sub>/dt) ê<sub>x</sub> + (dA<sub>y</sub>/dt) ê<sub>y</sub> + (dA<sub>z</sub>/dt) ê<sub>z</sub>]</span> + <span style="border-bottom:2px solid #2256a0">[A<sub>x</sub> (dê<sub>x</sub>/dt) + A<sub>y</sub> (dê<sub>y</sub>/dt) + A<sub>z</sub> (dê<sub>z</sub>/dt)]</span>
+</div>
+
+<p>The <span style="color:#c05030">first bracket</span> is the rate of change as measured by the rotating observer — who treats ê<sub>x</sub>, ê<sub>y</sub>, ê<sub>z</sub> as fixed and only sees the components changing. This is (d<strong>A</strong>/dt)<sub>rotating</sub>.</p>
+
+<p>The <span style="color:#2256a0">second bracket</span> accounts for the spinning of the basis vectors. Using Equation (1) to replace each dê/dt with <strong>Ω</strong> × ê, it becomes A<sub>x</sub>(<strong>Ω</strong> × ê<sub>x</sub>) + A<sub>y</sub>(<strong>Ω</strong> × ê<sub>y</sub>) + A<sub>z</sub>(<strong>Ω</strong> × ê<sub>z</sub>). Since the cross product is linear, we can factor out <strong>Ω</strong> × to get <strong>Ω</strong> × (A<sub>x</sub>ê<sub>x</sub> + A<sub>y</sub>ê<sub>y</sub> + A<sub>z</sub>ê<sub>z</sub>) = <strong>Ω</strong> × <strong>A</strong>.</p>
+
+<p>Putting both pieces together, we arrive at the general vector identity:</p>
+
+<div class="step-box">
+  <div class="label">The Key Identity</div>
+  <div class="eq" style="margin-bottom:0">
+    (d<strong>A</strong>/dt)<sub>inertial</sub> = (d<strong>A</strong>/dt)<sub>rotating</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>A</strong>
+    <span class="tag">(2)</span>
+  </div>
+</div>
+<p>"The rate of change seen from the stationary frame equals the rate of change seen from the rotating frame, <em>plus</em> a correction <strong>Ω × A</strong> for the rotation." The "rotating derivative" (d/dt)<sub>rotating</sub> isn't a different kind of calculus — it's simply the time derivative computed by someone who holds the rotating basis vectors fixed and only differentiates the components.</p>
+
+<details>
+  <summary>Show the full algebra for Equation (2)</summary>
+  <div class="accordion-body">
+    <p>Apply the product rule to each of the three terms in <strong>A</strong> = A<sub>x</sub>ê<sub>x</sub> + A<sub>y</sub>ê<sub>y</sub> + A<sub>z</sub>ê<sub>z</sub>:</p>
+    <div class="eq" style="font-size:1rem;">
+      d/dt [A<sub>x</sub> ê<sub>x</sub>] = (dA<sub>x</sub>/dt) ê<sub>x</sub> + A<sub>x</sub> (dê<sub>x</sub>/dt)<br>
+      d/dt [A<sub>y</sub> ê<sub>y</sub>] = (dA<sub>y</sub>/dt) ê<sub>y</sub> + A<sub>y</sub> (dê<sub>y</sub>/dt)<br>
+      d/dt [A<sub>z</sub> ê<sub>z</sub>] = (dA<sub>z</sub>/dt) ê<sub>z</sub> + A<sub>z</sub> (dê<sub>z</sub>/dt)
+    </div>
+    <p>Sum all three lines and group:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      (d<strong>A</strong>/dt)<sub>inertial</sub> = <span style="color:#c05030">[(dA<sub>x</sub>/dt) ê<sub>x</sub> + (dA<sub>y</sub>/dt) ê<sub>y</sub> + (dA<sub>z</sub>/dt) ê<sub>z</sub>]</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <span style="color:#2256a0">[A<sub>x</sub> (dê<sub>x</sub>/dt) + A<sub>y</sub> (dê<sub>y</sub>/dt) + A<sub>z</sub> (dê<sub>z</sub>/dt)]</span>
+    </div>
+    <p><span style="color:#c05030">First bracket</span> = (d<strong>A</strong>/dt)<sub>rotating</sub> — the derivative as seen by someone riding with the frame who treats the basis vectors as constant.</p>
+    <p><span style="color:#2256a0">Second bracket</span>: substitute Eq (1), dê<sub>i</sub>/dt = <strong>Ω</strong> × ê<sub>i</sub>:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      A<sub>x</sub>(<strong>Ω</strong> × ê<sub>x</sub>) + A<sub>y</sub>(<strong>Ω</strong> × ê<sub>y</sub>) + A<sub>z</sub>(<strong>Ω</strong> × ê<sub>z</sub>)
+    </div>
+    <p>The cross product is linear (it distributes over addition), so we can factor:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      = <strong>Ω</strong> × (A<sub>x</sub> ê<sub>x</sub> + A<sub>y</sub> ê<sub>y</sub> + A<sub>z</sub> ê<sub>z</sub>) = <strong>Ω</strong> × <strong>A</strong>
+    </div>
+    <p>Putting both brackets together: (d<strong>A</strong>/dt)<sub>inertial</sub> = (d<strong>A</strong>/dt)<sub>rotating</sub> + <strong>Ω</strong> × <strong>A</strong>. ∎</p>
+  </div>
+</details>
+
+<div class="note">Equation (2) is completely general — it works for <em>any</em> vector <strong>A</strong>, provided the two frames share the same origin and differ only by rotation. (If the origin also translates, there's an additional term.) We will now apply it twice: once to get velocity, and once to get acceleration.</div>
+
+
+<h2>Step 4: Apply It to Position → Get Velocity</h2>
+<p>Equation (2) works for <em>any</em> vector <strong>A</strong>. If we choose <strong>A</strong> to be the position vector <strong>r</strong>, then d<strong>A</strong>/dt is just velocity. Writing <strong>v</strong><sub>I</sub> for the inertial velocity and <strong>v</strong><sub>R</sub> for the rotating-frame velocity, Equation (2) immediately gives:</p>
+<div class="eq"><strong>v</strong><sub>I</sub> = <strong>v</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>r</strong><span class="tag">(3)</span></div>
+<p>This tells us the inertial velocity equals the rotating-frame velocity plus the "dragging" contribution <strong>Ω</strong> × <strong>r</strong> from the frame's rotation.</p>
+
+
+<h2>Step 5: Apply It Again to Velocity → Get Acceleration</h2>
+
+<p>What we ultimately want are <em>accelerations</em>, because Newton's second law (<strong>F</strong> = m<strong>a</strong>) connects forces to acceleration. So we need to differentiate Equation (3) with respect to time, as seen from the inertial frame:</p>
+
+<div class="eq">
+  <strong>a</strong><sub>I</sub> = (d<strong>v</strong><sub>I</sub>/dt)<sub>inertial</sub> = (d/dt)<sub>inertial</sub> [<strong>v</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>r</strong>]
+</div>
+
+<p>We take each of these two terms separately.</p>
+
+<p><strong>First term: (d/dt)<sub>inertial</sub> of v<sub>R</sub></strong></p>
+
+<p><strong>v</strong><sub>R</sub> is a vector, so we apply our key identity Equation (2) to it — just as we applied it to <strong>r</strong> in Step 4. With <strong>A</strong> = <strong>v</strong><sub>R</sub>, the inertial derivative of velocity is just acceleration, so:</p>
+
+<div class="eq">(d<strong>v</strong><sub>R</sub>/dt)<sub>inertial</sub> = (d<strong>v</strong><sub>R</sub>/dt)<sub>rotating</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub> = <strong>a</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub></div>
+
+<p>where <strong>a</strong><sub>R</sub> is the acceleration as measured in the rotating frame.</p>
+
+<p><strong>Second term: (d/dt)<sub>inertial</sub> of (Ω × r)</strong></p>
+
+<p>This requires more care. We use the product rule for cross products:</p>
+
+<div class="eq">(d/dt)<sub>inertial</sub> (<strong>Ω</strong> <span class="cross">×</span> <strong>r</strong>) = (d<strong>Ω</strong>/dt) <span class="cross">×</span> <strong>r</strong> + <strong>Ω</strong> <span class="cross">×</span> (d<strong>r</strong>/dt)<sub>inertial</sub></div>
+
+<p>The first piece vanishes because we assume <strong>Ω</strong> is constant (Earth's rotation rate doesn't change on the timescales we care about). So we're left with:</p>
+
+<div class="eq">= <strong>Ω</strong> <span class="cross">×</span> (d<strong>r</strong>/dt)<sub>inertial</sub></div>
+
+<p>Now, (d<strong>r</strong>/dt)<sub>inertial</sub> is just <strong>v</strong><sub>I</sub>, which we already expressed in Equation (3): <strong>v</strong><sub>I</sub> = <strong>v</strong><sub>R</sub> + <strong>Ω</strong> × <strong>r</strong>. Substituting:</p>
+
+<div class="eq">= <strong>Ω</strong> <span class="cross">×</span> (<strong>v</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>r</strong>)</div>
+
+<p>Distribute the cross product:</p>
+
+<div class="eq">= <strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> (<strong>Ω</strong> <span class="cross">×</span> <strong>r</strong>)</div>
+
+<p><strong>Combine both terms:</strong></p>
+
+<div class="eq">
+  <strong>a</strong><sub>I</sub> = [<strong>a</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub>] + [<strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub> + <strong>Ω</strong> <span class="cross">×</span> (<strong>Ω</strong> <span class="cross">×</span> <strong>r</strong>)]
+</div>
+
+<p style="font-size:0.92rem;color:#666;text-align:center;margin-top:-0.6rem;">first term&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;second term</p>
+
+<p>Notice that <strong>Ω × v<sub>R</sub></strong> appears <em>twice</em> — once from each term. Collecting:</p>
+
+<div class="eq highlight">
+  <strong>a</strong><sub>I</sub> = <strong>a</strong><sub>R</sub> + <span class="term-coriolis">2<strong>Ω</strong> × <strong>v</strong><sub>R</sub></span> + <span class="term-centrifugal"><strong>Ω</strong> × (<strong>Ω</strong> × <strong>r</strong>)</span>
+  <span class="tag">(4)</span>
+</div>
+
+<details>
+  <summary>Where does the factor of 2 come from?</summary>
+  <div class="accordion-body">
+    <p>The "2" arises because <strong>Ω × v<sub>R</sub></strong> appears from <em>two independent sources</em>:</p>
+    <p><strong>Source 1 (from the first term):</strong> When we apply Equation (2) to <strong>v</strong><sub>R</sub>, the correction for spinning basis vectors gives <strong>Ω</strong> × <strong>v</strong><sub>R</sub>. Physically: the rulers are spinning under the velocity vector.</p>
+    <p><strong>Source 2 (from the second term):</strong> When we differentiate the <strong>Ω</strong> × <strong>r</strong> term and substitute <strong>v</strong><sub>I</sub> = <strong>v</strong><sub>R</sub> + <strong>Ω</strong> × <strong>r</strong>, the <strong>v</strong><sub>R</sub> piece gives another <strong>Ω</strong> × <strong>v</strong><sub>R</sub>. Physically: the "frame-dragging" velocity itself is changing as <strong>r</strong> changes.</p>
+    <p>An equivalent way to see it — think of Eq (2) as an <em>operator</em>: (d/dt)<sub>I</sub> = (d/dt)<sub>R</sub> + <strong>Ω</strong>×. Applying it twice to <strong>r</strong>:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      <strong>a</strong><sub>I</sub> = [(d/dt)<sub>R</sub> + <strong>Ω</strong>×] [(d/dt)<sub>R</sub> + <strong>Ω</strong>×] <strong>r</strong>
+    </div>
+    <p>Expanding like (A+B)(A+B) = A² + AB + BA + B²:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      = (d/dt)<sub>R</sub>² <strong>r</strong> + (d/dt)<sub>R</sub>(<strong>Ω</strong>×<strong>r</strong>) + <strong>Ω</strong>×(d/dt)<sub>R</sub><strong>r</strong> + <strong>Ω</strong>×(<strong>Ω</strong>×<strong>r</strong>)
+    </div>
+    <p>The two middle terms each produce one <strong>Ω</strong> × <strong>v</strong><sub>R</sub>, giving 2<strong>Ω</strong> × <strong>v</strong><sub>R</sub>. The "2" is literally two applications of <strong>Ω</strong>× hitting <strong>v</strong><sub>R</sub> once each.</p>
+  </div>
+</details>
+
+
+<h2>Step 6: Rearrange for the Rotating Frame</h2>
+<p>Newton's second law <strong>F</strong> = m<strong>a</strong><sub>I</sub> holds in the inertial frame. Substituting Eq (4) and rearranging:</p>
+<div class="eq">
+  m<strong>a</strong><sub>R</sub> = <strong>F</strong> − <span class="term-coriolis">2m<strong>Ω</strong> × <strong>v</strong><sub>R</sub></span> − <span class="term-centrifugal">m<strong>Ω</strong> × (<strong>Ω</strong> × <strong>r</strong>)</span>
+</div>
+<p>From the rotating observer's perspective, there appear to be extra forces:</p>
+
+<table class="summary-table">
+  <tr><th>Term</th><th>Name</th><th>What it does</th></tr>
+  <tr><td><span class="term-coriolis">−2mΩ × v<sub>R</sub></span></td><td>Coriolis force</td><td>Deflects moving objects sideways (⊥ to velocity)</td></tr>
+  <tr><td><span class="term-centrifugal">−mΩ × (Ω × r)</span></td><td>Centrifugal force</td><td>Pushes outward from the rotation axis</td></tr>
+</table>
+
+<details>
+  <summary>Why does Ω × (Ω × r) point "outward"?</summary>
+  <div class="accordion-body">
+    <p>The double cross product can be simplified using the vector triple product identity:</p>
+    <div class="eq" style="font-size:1rem;"><strong>Ω</strong> × (<strong>Ω</strong> × <strong>r</strong>) = <strong>Ω</strong>(<strong>Ω</strong> · <strong>r</strong>) − Ω² <strong>r</strong></div>
+    <p>The first term points along the rotation axis; the second points toward the origin. Together, the component <em>perpendicular</em> to the rotation axis gives an acceleration of magnitude Ω² r<sub>⊥</sub> directed <em>inward</em> (toward the axis). Hence the centrifugal force −m<strong>Ω</strong> × (<strong>Ω</strong> × <strong>r</strong>) points <em>outward</em>, away from the axis, with magnitude mΩ² r<sub>⊥</sub>.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Why do we often ignore the centrifugal term?</summary>
+  <div class="accordion-body">
+    <p>In geophysics, the centrifugal force is absorbed into "effective gravity". True gravity points toward the centre of the Earth; centrifugal force points outward. Their sum defines the effective <strong>g</strong> we measure with a plumb line. This is why Earth is an oblate spheroid. Once we redefine gravity this way, the centrifugal term disappears and only the Coriolis force remains.</p>
+  </div>
+</details>
+
+
+<h2>Step 7: The Coriolis Force Itself</h2>
+<div class="eq highlight">
+  <strong>F</strong><sub>Cor</sub> = −2m <strong>Ω</strong> <span class="cross">×</span> <strong>v</strong><sub>R</sub>
+  <span class="tag">(5)</span>
+</div>
+
+<div class="note" style="background:#fff0ee;border-color:#e0b0a0;">
+  <strong>Quick direction check (NH):</strong> Looking down onto the North Pole, <strong>Ω</strong> points out of the page. If <strong>v</strong> points east (right), then <strong>Ω</strong> × <strong>v</strong> points north (up the page) by the right-hand rule. So −2m(<strong>Ω</strong> × <strong>v</strong>) points <em>south</em> — which is to the <em>right</em> of eastward motion. ✓
+</div>
+
+<div class="step-box">
+  <div class="label">Properties</div>
+  <p>
+    <strong>1. Acts only on moving objects.</strong> If v<sub>R</sub> = 0, F<sub>Cor</sub> = 0.<br><br>
+    <strong>2. Perpendicular to velocity.</strong> The cross product gives a 90° deflection — it changes direction, not speed.<br><br>
+    <strong>3. Northern Hemisphere: deflection to the right. Southern: to the left.</strong><br><br>
+    <strong>4. Scales with speed.</strong> Faster objects experience stronger deflection.
+  </p>
+</div>
+
+<h2>See It in Action</h2>
+<p>The animation below shows an object moving back and forth in a straight line in the inertial frame (left). The right panel shows the <em>same</em> object as seen from the rotating frame — the path curves, because the Coriolis effect is deflecting it sideways.</p>
+
+<!-- ================================================================== -->
+<!-- ANIMATED: Straight line in inertial → curved in rotating -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg id="fig4svg" width="640" height="310" viewBox="0 0 640 310">
+    <defs>
+      <marker id="a4Bl" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#2256a0"/></marker>
+      <marker id="a4Rd" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#c05030"/></marker>
+      <marker id="a4RdG" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#c05030" opacity="0.2"/></marker>
+    </defs>
+    <!-- LEFT: Inertial frame -->
+    <g transform="translate(160,160)">
+      <text x="-130" y="-140" font-size="13" font-family="Georgia" font-weight="bold" fill="#2256a0">Inertial frame</text>
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#2256a0" stroke-width="1.5" marker-end="url(#a4Bl)"/>
+      <line x1="0" y1="0" x2="0" y2="-100" stroke="#2256a0" stroke-width="1.5" marker-end="url(#a4Bl)"/>
+      <text x="105" y="4" fill="#2256a0" font-size="12" font-weight="bold">X</text>
+      <text x="4" y="-103" fill="#2256a0" font-size="12" font-weight="bold">Y</text>
+      <!-- Translucent rotating axes -->
+      <g id="fig4Lrot" opacity="0.2">
+        <line x1="0" y1="0" x2="90" y2="0" stroke="#c05030" stroke-width="1.5" marker-end="url(#a4RdG)"/>
+        <line x1="0" y1="0" x2="0" y2="-90" stroke="#c05030" stroke-width="1.5" marker-end="url(#a4RdG)"/>
+        <text x="94" y="4" fill="#c05030" font-size="10" font-weight="bold">x</text>
+        <text x="4" y="-93" fill="#c05030" font-size="10" font-weight="bold">y</text>
+      </g>
+      <path id="fig4Ltrail" d="" fill="none" stroke="#c05030" stroke-width="1.5" opacity="0.4"/>
+      <circle id="fig4Lp" cx="0" cy="0" r="6" fill="#c05030"/>
+      <text x="-50" y="125" font-size="12" fill="#666" font-family="Georgia">Object moves in a straight line</text>
+      <circle cx="0" cy="0" r="3" fill="#888"/>
+    </g>
+    <!-- RIGHT: Rotating frame -->
+    <g transform="translate(480,160)">
+      <text x="-130" y="-140" font-size="13" font-family="Georgia" font-weight="bold" fill="#c05030">Rotating frame</text>
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#c05030" stroke-width="1.5" marker-end="url(#a4Rd)"/>
+      <line x1="0" y1="0" x2="0" y2="-100" stroke="#c05030" stroke-width="1.5" marker-end="url(#a4Rd)"/>
+      <text x="105" y="4" fill="#c05030" font-size="12" font-weight="bold">x</text>
+      <text x="4" y="-103" fill="#c05030" font-size="12" font-weight="bold">y</text>
+      <path id="fig4Rtrail" d="" fill="none" stroke="#c05030" stroke-width="1.5" opacity="0.4"/>
+      <circle id="fig4Rp" cx="0" cy="0" r="6" fill="#c05030"/>
+      <text x="-50" y="125" font-size="12" fill="#666" font-family="Georgia">Same object — path curves!</text>
+      <circle cx="0" cy="0" r="3" fill="#888"/>
+    </g>
+    <line x1="320" y1="10" x2="320" y2="290" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>
+  </svg>
+  <div class="fig-controls">
+    <button id="fig4Btn" onclick="fig4Toggle()">⏸ Pause</button>
+    <button onclick="fig4Reset()">↺ Reset</button>
+  </div>
+  <div class="fig-caption">Figure 4. An object oscillating along a straight line in the inertial frame (left) traces a curved path when viewed from the rotating frame (right). The curvature is the Coriolis effect in action.</div>
+</div>
+
+<script>
+(function(){
+  var Lp=document.getElementById('fig4Lp'),Lt=document.getElementById('fig4Ltrail'),
+      Rp=document.getElementById('fig4Rp'),Rt=document.getElementById('fig4Rtrail'),
+      Lr=document.getElementById('fig4Lrot'),
+      btn=document.getElementById('fig4Btn'),
+      P=12000, go=true, t0=null, pa=0, lpts=[], rpts=[];
+  // Object oscillates along Y-axis in inertial frame: X=0, Y=80*sin(2πt/T_osc)
+  var Tosc=6000, amp=80;
+  function upd(ts){if(!t0)t0=ts;var el=ts-t0+pa*P/360;
+    var ang=(el/P*360)%360, rad=ang*Math.PI/180;
+    // Rotate ghost axes on left panel
+    Lr.setAttribute('transform','rotate('+(-ang)+')');
+    // Inertial position: oscillate along a line at 30° from X-axis
+    var phase=el/Tosc*2*Math.PI;
+    var ix=amp*Math.cos(phase)*Math.cos(30*Math.PI/180);
+    var iy=amp*Math.cos(phase)*Math.sin(30*Math.PI/180);
+    // SVG coords (y-flip)
+    Lp.setAttribute('cx',ix.toFixed(1));Lp.setAttribute('cy',(-iy).toFixed(1));
+    // Rotating frame coords
+    var rx=ix*Math.cos(rad)+iy*Math.sin(rad), ry=-ix*Math.sin(rad)+iy*Math.cos(rad);
+    Rp.setAttribute('cx',rx.toFixed(1));Rp.setAttribute('cy',(-ry).toFixed(1));
+    // Trails
+    lpts.push(ix.toFixed(1)+','+(-iy).toFixed(1));
+    rpts.push(rx.toFixed(1)+','+(-ry).toFixed(1));
+    if(lpts.length>600){lpts.shift();rpts.shift();}
+    Lt.setAttribute('d','M'+lpts.join('L'));
+    Rt.setAttribute('d','M'+rpts.join('L'));
+    if(go)requestAnimationFrame(upd);}
+  requestAnimationFrame(upd);
+  window.fig4Toggle=function(){if(go){go=false;btn.textContent='▶ Play';}
+    else{go=true;btn.textContent='⏸ Pause';requestAnimationFrame(upd);}};
+  window.fig4Reset=function(){go=true;t0=null;pa=0;lpts=[];rpts=[];
+    Lt.setAttribute('d','');Rt.setAttribute('d','');Lr.setAttribute('transform','rotate(0)');btn.textContent='⏸ Pause';requestAnimationFrame(upd);};
+})();
+</script>
+
+
+<!-- ================================================================== -->
+<!-- NH vs SH deflection -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg width="560" height="300" viewBox="0 0 560 300">
+    <defs>
+      <marker id="a5Bl" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2256a0"/></marker>
+      <marker id="a5Rd" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#c05030"/></marker>
+      <marker id="a5Gy" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#888"/></marker>
+    </defs>
+    <g transform="translate(145,130)">
+      <circle cx="0" cy="0" r="90" fill="#e8f0e8" fill-opacity="0.3" stroke="#aab8aa" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="14" fill="white" stroke="#333" stroke-width="2"/>
+      <circle cx="0" cy="0" r="4" fill="#333"/>
+      <text x="18" y="-4" font-size="14" font-weight="bold" fill="#333">Ω</text>
+      <text x="18" y="12" font-size="10" fill="#888">(out of page)</text>
+      <line x1="-65" y1="-40" x2="25" y2="-40" stroke="#2256a0" stroke-width="3" marker-end="url(#a5Bl)"/>
+      <text x="32" y="-36" fill="#2256a0" font-size="16" font-weight="bold">v</text>
+      <line x1="-20" y1="-36" x2="-20" y2="30" stroke="#c05030" stroke-width="3" marker-end="url(#a5Rd)"/>
+      <text x="-12" y="46" fill="#c05030" font-size="14" font-weight="bold">F<tspan font-size="10" baseline-shift="sub">Cor</tspan></text>
+      <rect x="-30" y="-40" width="10" height="10" fill="none" stroke="#888" stroke-width="1"/>
+      <path d="M -65,-40 C -30,-40 10,-30 30,10" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a5Gy)"/>
+      <text x="-70" y="85" font-size="15" font-weight="bold" fill="#333">Northern Hemisphere</text>
+      <text x="-45" y="103" font-size="12" fill="#888">(looking down onto North Pole)</text>
+      <text x="-45" y="120" font-size="12" fill="#c05030">→ deflection to the right</text>
+    </g>
+    <g transform="translate(415,130)">
+      <circle cx="0" cy="0" r="90" fill="#e8e8f0" fill-opacity="0.3" stroke="#aab0b8" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="14" fill="white" stroke="#333" stroke-width="2"/>
+      <line x1="-7" y1="-7" x2="7" y2="7" stroke="#333" stroke-width="2.5"/>
+      <line x1="7" y1="-7" x2="-7" y2="7" stroke="#333" stroke-width="2.5"/>
+      <text x="18" y="-4" font-size="14" font-weight="bold" fill="#333">Ω</text>
+      <text x="18" y="12" font-size="10" fill="#888">(into page)</text>
+      <line x1="-65" y1="-40" x2="25" y2="-40" stroke="#2256a0" stroke-width="3" marker-end="url(#a5Bl)"/>
+      <text x="32" y="-36" fill="#2256a0" font-size="16" font-weight="bold">v</text>
+      <line x1="-20" y1="-44" x2="-20" y2="-105" stroke="#c05030" stroke-width="3" marker-end="url(#a5Rd)"/>
+      <text x="-12" y="-110" fill="#c05030" font-size="14" font-weight="bold">F<tspan font-size="10" baseline-shift="sub">Cor</tspan></text>
+      <rect x="-30" y="-50" width="10" height="10" fill="none" stroke="#888" stroke-width="1"/>
+      <path d="M -65,-40 C -30,-40 10,-50 30,-95" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a5Gy)"/>
+      <text x="-70" y="85" font-size="15" font-weight="bold" fill="#333">Southern Hemisphere</text>
+      <text x="-50" y="103" font-size="12" fill="#888">(looking down onto South Pole)</text>
+      <text x="-40" y="120" font-size="12" fill="#c05030">→ deflection to the left</text>
+    </g>
+  </svg>
+  <div class="fig-caption">Figure 5. Top-down views of each hemisphere. Ω points out of the page in the NH and into the page in the SH. The Coriolis force deflects rightward (NH) and leftward (SH).</div>
+</div>
+
+
+<h2>Step 8: On a Spherical Earth — the Coriolis Parameter</h2>
+<p>On Earth, <strong>Ω</strong> points from South Pole to North Pole. At latitude φ, only the <em>vertical component</em> Ω sin φ matters for horizontal motions.</p>
+
+<!-- Ω decomposition figure -->
+<div class="figure-container">
+  <svg width="380" height="340" viewBox="0 0 380 340">
+    <defs>
+      <marker id="a6Bk" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#333"/></marker>
+      <marker id="a6Rd" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#c05030"/></marker>
+      <marker id="a6Gn" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,9 3,0 6" fill="#2a8a2a"/></marker>
+    </defs>
+    <g transform="translate(190,185)">
+      <ellipse cx="0" cy="0" rx="120" ry="130" fill="#e8eff8" fill-opacity="0.25" stroke="#aab8c8" stroke-width="1.5"/>
+      <ellipse cx="0" cy="0" rx="120" ry="30" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="0" y1="145" x2="0" y2="-145" stroke="#999" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="5" y="-140" font-size="11" fill="#999">N</text>
+      <text x="5" y="150" font-size="11" fill="#999">S</text>
+      <line x1="0" y1="50" x2="0" y2="-120" stroke="#333" stroke-width="2.5" marker-end="url(#a6Bk)"/>
+      <text x="8" y="-115" font-size="16" font-weight="bold" fill="#333">Ω</text>
+      <circle cx="85" cy="-75" r="5" fill="#c05030"/>
+      <line x1="85" y1="-75" x2="145" y2="-128" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="85" y1="-75" x2="126" y2="-111" stroke="#c05030" stroke-width="2.5" marker-end="url(#a6Rd)"/>
+      <text x="130" y="-108" fill="#c05030" font-size="13" font-weight="bold">Ω sin φ</text>
+      <line x1="85" y1="-75" x2="108" y2="-49" stroke="#2a8a2a" stroke-width="2" marker-end="url(#a6Gn)"/>
+      <text x="112" y="-44" fill="#2a8a2a" font-size="13" font-weight="bold">Ω cos φ</text>
+      <line x1="85" y1="-75" x2="85" y2="-155" stroke="#333" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#a6Bk)"/>
+      <text x="90" y="-148" fill="#333" font-size="12">Ω (local copy)</text>
+      <path d="M 100,0 A 40,40 0 0,0 92,-30" fill="none" stroke="#888" stroke-width="1.5"/>
+      <text x="100" y="-10" fill="#888" font-size="14" font-style="italic">φ</text>
+      <line x1="0" y1="0" x2="85" y2="-75" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="105" y="-25" fill="#888" font-size="10">surface</text>
+    </g>
+  </svg>
+  <div class="fig-caption">Figure 6. Decomposing Ω at latitude φ. The vertical component Ω sin φ (red) drives horizontal deflection. The horizontal component Ω cos φ (green) only matters for vertical motions.</div>
+</div>
+
+<p>We define the <strong>Coriolis parameter</strong>:</p>
+<div class="eq highlight">
+  <em>f</em> = 2Ω sin φ
+  <span class="tag">(6)</span>
+</div>
+<p>where Ω = 7.292 × 10<sup>−5</sup> rad/s. The horizontal Coriolis acceleration simplifies to:</p>
+<div class="eq"><strong>a</strong><sub>Cor</sub> = −<em>f</em> <strong>k̂</strong> <span class="cross">×</span> <strong>U</strong></div>
+<p>where <strong>U</strong> = (u, v) is the horizontal velocity (u eastward, v northward). We use <strong>U</strong> rather than <strong>v</strong> here to avoid confusion with the northward component v.</p>
+
+<details>
+  <summary>Derive the simplified form a<sub>Cor</sub> = −f k̂ × U</summary>
+  <div class="accordion-body">
+    <p>At latitude φ, decompose <strong>Ω</strong> into local components (see Figure 6), using <strong>î</strong> = east, <strong>ĵ</strong> = north, <strong>k̂</strong> = local vertical (upward):</p>
+    <div class="eq"><strong>Ω</strong> = Ω cos φ <strong>ĵ</strong> + Ω sin φ <strong>k̂</strong></div>
+    <p>For horizontal velocity <strong>U</strong> = u<strong>î</strong> + v<strong>ĵ</strong>, the full cross product is:</p>
+    <div class="eq" style="font-size:1rem;"><strong>Ω</strong> × <strong>U</strong> = (Ω cos φ <strong>ĵ</strong> + Ω sin φ <strong>k̂</strong>) × (u<strong>î</strong> + v<strong>ĵ</strong>)</div>
+    <p>Expand the four cross products using <strong>î</strong> × <strong>ĵ</strong> = <strong>k̂</strong>, <strong>ĵ</strong> × <strong>k̂</strong> = <strong>î</strong>, <strong>k̂</strong> × <strong>î</strong> = <strong>ĵ</strong>:</p>
+    <div class="eq" style="font-size:0.95rem;">
+      = Ω cos φ · u (<strong>ĵ</strong> × <strong>î</strong>) + Ω cos φ · v (<strong>ĵ</strong> × <strong>ĵ</strong>) + Ω sin φ · u (<strong>k̂</strong> × <strong>î</strong>) + Ω sin φ · v (<strong>k̂</strong> × <strong>ĵ</strong>)
+    </div>
+    <div class="eq" style="font-size:0.95rem;">
+      = <span style="color:#2a8a2a">−Ω cos φ · u <strong>k̂</strong></span> + 0 + <span style="color:#c05030">Ω sin φ · u <strong>ĵ</strong></span> <span style="color:#c05030">− Ω sin φ · v <strong>î</strong></span>
+    </div>
+    <p>The <span style="color:#2a8a2a">green term</span> is vertical — it doesn't deflect horizontally, so we drop it when considering only horizontal motions. The <span style="color:#c05030">red terms</span> are horizontal:</p>
+    <div class="eq">(<strong>Ω</strong> × <strong>U</strong>)<sub>horiz</sub> = Ω sin φ (u <strong>ĵ</strong> − v <strong>î</strong>) = Ω sin φ (<strong>k̂</strong> × <strong>U</strong>)</div>
+    <p>Therefore:</p>
+    <div class="eq"><strong>a</strong><sub>Cor,horiz</sub> = −2(<strong>Ω</strong> × <strong>U</strong>)<sub>horiz</sub> = −2Ω sin φ (<strong>k̂</strong> × <strong>U</strong>) = −f(<strong>k̂</strong> × <strong>U</strong>) &nbsp;∎</div>
+  </div>
+</details>
+
+<!-- ================================================================== -->
+<!-- FIGURE 7: f vs latitude — PROPERLY PLOTTED, lat on y-axis -->
+<!-- ================================================================== -->
+<div class="figure-container">
+  <svg id="fig7svg" width="420" height="380" viewBox="0 0 420 380">
+  </svg>
+  <div class="fig-caption">Figure 7. The Coriolis parameter <em>f</em> = 2Ω sin φ plotted with latitude on the vertical axis. It is zero at the Equator, positive in the NH (deflection right), and negative in the SH (deflection left). At ±30° latitude, f = ±Ω.</div>
+</div>
+
+<script>
+// ===== Figure 7: f vs latitude, properly computed =====
+(function(){
+  var svg=document.getElementById('fig7svg');
+  var W=420,H=380,ml=90,mr=40,mt=30,mb=50;
+  var pw=W-ml-mr, ph=H-mt-mb;
+  // f ranges from -2Ω to +2Ω on x-axis
+  // latitude ranges from -90 to +90 on y-axis
+  var omega=7.292e-5;
+  var fmax=2*omega;
+  // Scale functions
+  function fx(f){return ml+pw/2+f/fmax*pw/2;}
+  function fy(lat){return mt+ph/2-lat/90*ph/2;}
+
+  var g='<g>';
+  // Grid and axes
+  g+='<line x1="'+ml+'" y1="'+(mt+ph/2)+'" x2="'+(ml+pw)+'" y2="'+(mt+ph/2)+'" stroke="#ddd" stroke-width="1"/>';
+  g+='<line x1="'+fx(0)+'" y1="'+mt+'" x2="'+fx(0)+'" y2="'+(mt+ph)+'" stroke="#ddd" stroke-width="1"/>';
+  // Axes with arrows
+  g+='<line x1="'+(ml-5)+'" y1="'+(mt+ph/2)+'" x2="'+(ml+pw+10)+'" y2="'+(mt+ph/2)+'" stroke="#333" stroke-width="1.5"/>';
+  g+='<polygon points="'+(ml+pw+10)+','+(mt+ph/2)+' '+(ml+pw+4)+','+(mt+ph/2-4)+' '+(ml+pw+4)+','+(mt+ph/2+4)+'" fill="#333"/>';
+  g+='<line x1="'+fx(0)+'" y1="'+(mt+ph+5)+'" x2="'+fx(0)+'" y2="'+(mt-10)+'" stroke="#333" stroke-width="1.5"/>';
+  g+='<polygon points="'+fx(0)+','+(mt-10)+' '+(fx(0)-4)+','+(mt-4)+' '+(fx(0)+4)+','+(mt-4)+'" fill="#333"/>';
+  // Axis labels
+  g+='<text x="'+(ml+pw+8)+'" y="'+(mt+ph/2+22)+'" font-size="14" font-family="Georgia" fill="#333" font-style="italic">f (s⁻¹)</text>';
+  g+='<text x="'+(fx(0)+10)+'" y="'+(mt-5)+'" font-size="14" font-family="Georgia" fill="#333" font-style="italic">φ</text>';
+
+  // Latitude ticks: -90, -60, -30, 0, 30, 60, 90
+  [-90,-60,-30,0,30,60,90].forEach(function(lat){
+    var y=fy(lat);
+    g+='<line x1="'+(fx(0)-4)+'" y1="'+y+'" x2="'+(fx(0)+4)+'" y2="'+y+'" stroke="#333" stroke-width="1"/>';
+    g+='<text x="'+(fx(0)-12)+'" y="'+(y+4)+'" font-size="11" font-family="Georgia" fill="#666" text-anchor="end">'+lat+'°</text>';
+  });
+
+  // f ticks
+  var fticks=[{v:-fmax,l:'-2Ω'},{v:-omega,l:'-Ω'},{v:0,l:'0'},{v:omega,l:'Ω'},{v:fmax,l:'2Ω'}];
+  fticks.forEach(function(t){
+    var x=fx(t.v);
+    g+='<line x1="'+x+'" y1="'+(mt+ph/2-4)+'" x2="'+x+'" y2="'+(mt+ph/2+4)+'" stroke="#333" stroke-width="1"/>';
+    g+='<text x="'+x+'" y="'+(mt+ph/2+20)+'" font-size="11" font-family="Georgia" fill="#666" text-anchor="middle">'+t.l+'</text>';
+  });
+
+  // Plot f = 2Ω sin(φ) : compute points
+  var path='M';
+  for(var lat=-90;lat<=90;lat+=1){
+    var f=2*omega*Math.sin(lat*Math.PI/180);
+    var x=fx(f), y=fy(lat);
+    path+=(lat===-90?'':' L ')+x.toFixed(1)+','+y.toFixed(1);
+  }
+  g+='<path d="'+path+'" fill="none" stroke="#c05030" stroke-width="3"/>';
+
+  // Shading labels
+  g+='<rect x="'+(fx(omega*0.3))+'" y="'+(fy(70))+'" width="80" height="18" rx="3" fill="#c05030" opacity="0.1"/>';
+  g+='<text x="'+(fx(omega*0.3)+5)+'" y="'+(fy(70)+13)+'" font-size="12" font-family="Georgia" fill="#c05030" font-weight="bold">f > 0 (NH)</text>';
+  g+='<rect x="'+(fx(-omega*1.5))+'" y="'+(fy(-30))+'" width="80" height="18" rx="3" fill="#2256a0" opacity="0.1"/>';
+  g+='<text x="'+(fx(-omega*1.5)+5)+'" y="'+(fy(-30)+13)+'" font-size="12" font-family="Georgia" fill="#2256a0" font-weight="bold">f < 0 (SH)</text>';
+
+  // Equator label
+  g+='<text x="'+(fx(0)+12)+'" y="'+(fy(0)+4)+'" font-size="11" font-family="Georgia" fill="#888">Equator</text>';
+
+  g+='</g>';
+  svg.innerHTML=g;
+})();
+</script>
+
+
+<h2>Summary of the Derivation</h2>
+<div class="step-box">
+  <div class="label">The Logic Chain</div>
+  <p>
+    <strong>1.</strong> Rotation is described by a vector <strong>θ</strong> along the rotation axis; infinitesimal rotations give δ<strong>ê</strong> = δ<strong>θ</strong> × <strong>ê</strong><br><br>
+    <strong>2.</strong> Dividing by δt: d<strong>ê</strong>/dt = <strong>Ω</strong> × <strong>ê</strong><br><br>
+    <strong>3.</strong> This gives the general identity: (d/dt)<sub>inertial</sub> = (d/dt)<sub>rotating</sub> + <strong>Ω</strong> ×<br><br>
+    <strong>4.</strong> Apply once to <strong>r</strong> → relates inertial and rotating velocities<br><br>
+    <strong>5.</strong> Apply again to <strong>v</strong> → two <strong>Ω × v</strong><sub>R</sub> terms combine → factor of 2<br><br>
+    <strong>6.</strong> Rearranging Newton's law: <strong>F</strong><sub>Cor</sub> = −2m<strong>Ω</strong> × <strong>v</strong><sub>R</sub><br><br>
+    <strong>7.</strong> On a sphere at latitude φ, simplifies using <em>f</em> = 2Ω sin φ
+  </p>
+</div>
+
+<p style="margin-top:2rem; color:#666; font-size:0.9rem; border-top:1px solid #ddd; padding-top:1rem;">
+  The Coriolis force is not a "real" force — no physical interaction produces it. It is an artefact of describing motion from a rotating reference frame. But for anyone standing on the spinning Earth, it is as real as it gets: it steers ocean currents, shapes weather systems, and deflects every object that dares to move across the surface of our rotating planet.
+</p>
+
+</body>
+</html>

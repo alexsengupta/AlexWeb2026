@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barotropic Instability Explorer</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #0b1220;
+  --panel-2: #111827;
+  --border: #1f2937;
+  --border-2: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #22d3ee;
+  --accent-2: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+header {
+  height: 56px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+}
+.logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px; color: #0f172a;
+  flex-shrink: 0;
+}
+.header-title {
+  flex: 1; min-width: 0;
+}
+.header-title h1 {
+  font-size: 16px; font-weight: 700; line-height: 1.2;
+}
+.header-title .subtitle {
+  font-size: 11px; color: var(--muted); font-weight: 400;
+}
+.header-actions {
+  display: flex; gap: 8px; align-items: center;
+}
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.btn:hover:not(:disabled) {
+  background: var(--panel-2);
+  color: var(--text);
+  border-color: var(--muted);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.btn-icon {
+  width: 32px; height: 32px;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+/* Main layout */
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.left-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 10px;
+}
+.right-pane {
+  width: 340px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Canvas containers */
+.canvas-container {
+  background: var(--panel);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+#channel-container {
+  flex: 1.2;
+  min-height: 0;
+}
+.plots-row {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+.plot-container {
+  flex: 1;
+  min-width: 0;
+}
+.canvas-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Legend overlay */
+.legend-overlay {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(11, 18, 32, 0.88);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.legend-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.legend-bar {
+  height: 10px;
+  border-radius: 4px;
+  margin: 4px 0;
+  width: 140px;
+  background: linear-gradient(90deg,
+    rgb(49,54,149), rgb(69,117,180), rgb(171,217,233),
+    rgb(244,244,244), rgb(253,174,97), rgb(215,48,39), rgb(165,0,38));
+}
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+/* Right pane controls */
+.panel-section {
+  margin-bottom: 18px;
+}
+.panel-section h2 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.control-group {
+  margin-bottom: 14px;
+}
+.control-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.control-value {
+  color: var(--accent);
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-2);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+}
+input[type="range"]:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+input[type="range"]:disabled::-webkit-slider-thumb {
+  background: var(--muted);
+}
+
+/* Profile buttons */
+.profile-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.profile-btn {
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.profile-btn:hover:not(:disabled) {
+  border-color: var(--muted);
+  color: var(--text);
+}
+.profile-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.profile-btn.active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Checkbox */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.checkbox-group input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px; height: 16px;
+  cursor: pointer;
+}
+.checkbox-group label {
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* Instability indicator */
+.instability-indicator {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+  transition: all 0.25s;
+}
+.instability-indicator.stable {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+.instability-indicator.unstable {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+.instability-sub {
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Simulation buttons */
+.sim-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.sim-buttons .btn {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  padding: 8px 6px;
+}
+.btn-run {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.btn-run:hover:not(:disabled) {
+  background: rgba(34, 211, 238, 0.22);
+}
+
+/* Display mode toggle */
+.display-toggle {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+}
+.toggle-btn {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toggle-btn:not(:last-child) {
+  border-right: 1px solid var(--border-2);
+}
+.toggle-btn.active {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--accent);
+  font-weight: 600;
+}
+.toggle-btn:hover:not(.active) {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+/* Diagnostics readout */
+.diag-box {
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--panel-2);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.diag-row {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.diag-row:last-child { margin-bottom: 0; }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open {
+  display: flex;
+}
+.modal {
+  background: var(--panel-2);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  max-width: 560px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.modal h2 {
+  font-size: 18px;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+.modal h3 {
+  font-size: 14px;
+  margin: 14px 0 6px;
+  color: var(--accent);
+}
+.modal p, .modal li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.modal ul {
+  padding-left: 18px;
+  margin-bottom: 8px;
+}
+.modal code {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.modal-close:hover {
+  color: var(--text);
+}
+.eq {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(34, 211, 238, 0.06);
+  padding: 8px 14px;
+  border-radius: 6px;
+  margin: 8px 0;
+  display: block;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  main {
+    flex-direction: column;
+  }
+  .right-pane {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 40vh;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">BI</div>
+    <div class="header-title">
+      <h1>Barotropic Instability Explorer</h1>
+      <div class="subtitle">Channel Flow on a &beta;-Plane</div>
+    </div>
+    <div class="header-actions">
+      <a href="../../app_playground.html" class="btn">Playground</a>
+      <a href="../../index.html" class="btn">Home</a>
+      <button class="btn btn-icon" id="help-btn" title="Help">?</button>
+      <button class="btn btn-icon" id="info-btn" title="Physics Info">i</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="left-pane">
+      <div class="canvas-container" id="channel-container">
+        <canvas id="channel-canvas"></canvas>
+        <div class="legend-overlay">
+          <div class="legend-title" id="legend-title">Zonal Velocity U(y)</div>
+          <div class="legend-bar"></div>
+          <div class="legend-labels">
+            <span id="legend-min"></span>
+            <span>0</span>
+            <span id="legend-max"></span>
+          </div>
+        </div>
+      </div>
+      <div class="plots-row">
+        <div class="canvas-container plot-container" id="profile-container">
+          <canvas id="profile-canvas"></canvas>
+        </div>
+        <div class="canvas-container plot-container" id="pv-container">
+          <canvas id="pv-canvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <aside class="right-pane">
+      <div class="panel-section">
+        <h2>Flow Configuration</h2>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Profile Type</span>
+          </div>
+          <div class="profile-buttons">
+            <button class="profile-btn active" data-profile="bickley">Bickley Jet</button>
+            <button class="profile-btn" data-profile="gaussian">Gaussian Jet</button>
+            <button class="profile-btn" data-profile="cosine">Cosine Jet</button>
+            <button class="profile-btn" data-profile="linear">Linear Shear</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Jet Speed U&#8320;</span>
+            <span class="control-value" id="U0-val">20.0 m/s</span>
+          </div>
+          <input type="range" id="U0" min="0" max="50" step="0.5" value="20">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Jet Width</span>
+            <span class="control-value" id="jetWidth-val">15% of L</span>
+          </div>
+          <input type="range" id="jetWidth" min="2" max="40" step="1" value="15">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Jet Position</span>
+            <span class="control-value" id="jetPosition-val">50% of L</span>
+          </div>
+          <input type="range" id="jetPosition" min="10" max="90" step="1" value="50">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>&beta; (planetary vorticity gradient)</span>
+            <span class="control-value" id="beta-val">1.5e-11</span>
+          </div>
+          <input type="range" id="beta" min="-50" max="50" step="1" value="15">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="showVectors" checked>
+        <label for="showVectors">Show velocity arrows</label>
+      </div>
+
+      <div id="instability-box" class="instability-indicator stable">
+        &#10003; Rayleigh-Kuo condition NOT met
+        <div class="instability-sub">Flow is stable</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Simulation controls -->
+      <div class="panel-section" id="sim-section">
+        <h2>Simulation</h2>
+
+        <div class="sim-buttons">
+          <button class="btn btn-run" id="btn-run">&#9654; Run</button>
+          <button class="btn" id="btn-pause" disabled>&#10074;&#10074; Pause</button>
+          <button class="btn" id="btn-reset" disabled>&#8634; Reset</button>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><span>Channel Display</span></div>
+          <div class="display-toggle">
+            <button class="toggle-btn active" id="toggle-vorticity" data-mode="vorticity">Vorticity &zeta;</button>
+            <button class="toggle-btn" id="toggle-velocity" data-mode="velocity">Velocity U</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Perturbation Amplitude</span>
+            <span class="control-value" id="pertAmp-val">10&#8315;&#179;</span>
+          </div>
+          <input type="range" id="pertAmp" min="-5" max="-1" step="0.5" value="-3">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Speed (steps/frame)</span>
+            <span class="control-value" id="spf-val">10</span>
+          </div>
+          <input type="range" id="stepsPerFrame" min="1" max="50" step="1" value="10">
+        </div>
+
+        <div class="diag-box" id="diag-box" style="display:none;">
+          <div class="diag-row">
+            <span>Time:</span>
+            <span class="control-value" id="sim-time">0.0 days</span>
+          </div>
+          <div class="diag-row">
+            <span>Step:</span>
+            <span class="control-value" id="sim-step">0</span>
+          </div>
+          <div class="diag-row">
+            <span>Eddy KE / Total KE:</span>
+            <span class="control-value" id="sim-eke">0.0%</span>
+          </div>
+          <div class="diag-row">
+            <span>Max |v|:</span>
+            <span class="control-value" id="sim-maxv">0.0 m/s</span>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size: 11px; color: var(--muted); line-height: 1.5;">
+        Adjust the jet profile and &beta; to explore the <strong>Rayleigh-Kuo necessary condition</strong>
+        for barotropic instability, then click <strong>Run</strong> to evolve the flow.
+      </p>
+    </aside>
+  </main>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('help-modal')">&times;</button>
+    <h2>How to Use</h2>
+    <h3>Panels</h3>
+    <ul>
+      <li><strong>Channel View</strong> (top): Shows the x-y channel coloured by zonal velocity U(y), or by vorticity &zeta; during simulation. White arrows show the flow direction.</li>
+      <li><strong>Velocity Profile</strong> (bottom-left): Line plot of U(y) vs y. During simulation, shows the evolving zonal-mean flow (orange) vs the initial profile (cyan).</li>
+      <li><strong>PV Gradient</strong> (bottom-right): Plot of &beta; &minus; U&#8243;(y). Red shading marks where q<sub>y</sub> &lt; 0.</li>
+    </ul>
+    <h3>Controls</h3>
+    <ul>
+      <li><strong>Profile Type</strong>: Bickley (sech&sup2;), Gaussian, cosine, or linear shear.</li>
+      <li><strong>U&#8320;</strong>: Maximum jet speed.</li>
+      <li><strong>Jet Width / Position</strong>: Shape of the jet.</li>
+      <li><strong>&beta;</strong>: Planetary vorticity gradient. Set to 0 for an f-plane.</li>
+    </ul>
+    <h3>Running Simulations</h3>
+    <ul>
+      <li>Click <strong>Run</strong> to integrate the barotropic vorticity equation forward in time.</li>
+      <li>The channel switches to showing the full 2D vorticity field.</li>
+      <li>Watch for meanders and eddy formation &mdash; that is barotropic instability.</li>
+      <li><strong>Eddy KE / Total KE</strong> growing indicates energy transfer from the mean to eddies.</li>
+      <li><strong>Perturbation Amplitude</strong>: Controls the initial noise added to seed instability.</li>
+      <li><strong>Speed</strong>: Number of time steps per animation frame.</li>
+    </ul>
+    <h3>Suggested Experiments</h3>
+    <ul>
+      <li>Default Bickley jet &mdash; run it, watch meanders grow.</li>
+      <li>Linear shear &mdash; run it, confirm it stays stable.</li>
+      <li>Increase &beta; until the Bickley jet stabilises, then run to verify.</li>
+      <li>Try &beta; = 0 &mdash; does the jet still go unstable?</li>
+      <li>Narrow vs wide jet &mdash; how does width affect growth rate?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Info Modal -->
+<div class="modal-overlay" id="info-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('info-modal')">&times;</button>
+    <h2>Physics Background</h2>
+    <h3>The Barotropic Vorticity Equation</h3>
+    <p>The non-divergent barotropic vorticity equation on a &beta;-plane is:</p>
+    <code class="eq">&part;&zeta;/&part;t + J(&psi;, &zeta; + &beta;y) = &nu;&nabla;&#8308;&zeta;</code>
+    <p>where &zeta; = &nabla;&sup2;&psi; is relative vorticity, &psi; is the streamfunction, and &nu;&nabla;&#8308;&zeta; is hyperdiffusion for numerical stability.</p>
+
+    <h3>Basic State</h3>
+    <p>We consider a zonal flow U(y) in a channel with rigid walls at y = 0 and y = L, periodic in x. The velocity is purely zonal: <code>u = U(y), v = 0</code>.</p>
+
+    <h3>Rayleigh-Kuo Necessary Condition</h3>
+    <p>Linearising about U(y) and seeking wave solutions &psi;' ~ &phi;(y) e<sup>ik(x-ct)</sup> gives the Rayleigh-Kuo equation:</p>
+    <code class="eq">(U - c)(&phi;'' - k&sup2;&phi;) + (&beta; - U'')&phi; = 0</code>
+    <p>A <strong>necessary condition</strong> for instability (Im(c) &gt; 0) is that the meridional PV gradient:</p>
+    <code class="eq">q<sub>y</sub> = &beta; - U''(y)</code>
+    <p>must <strong>change sign</strong> somewhere within the domain.</p>
+
+    <h3>Numerical Method</h3>
+    <p>The simulation uses:</p>
+    <ul>
+      <li><strong>Arakawa Jacobian</strong> for advection (conserves energy and enstrophy)</li>
+      <li><strong>Spectral Poisson solver</strong> (FFT in x, tridiagonal in y)</li>
+      <li><strong>Adams-Bashforth 3</strong> time stepping</li>
+      <li><strong>Hyperdiffusion</strong> (&nu;&nabla;&#8308;) for small-scale dissipation</li>
+      <li>Grid: 256&times;128, periodic in x, rigid walls in y (free-slip)</li>
+    </ul>
+
+    <h3>Velocity Profiles</h3>
+    <ul>
+      <li><strong>Bickley jet</strong>: U = U&#8320; sech&sup2;((y - y&#8320;)/L<sub>jet</sub>)</li>
+      <li><strong>Gaussian</strong>: U = U&#8320; exp(-(y - y&#8320;)&sup2; / 2&sigma;&sup2;)</li>
+      <li><strong>Cosine</strong>: U = U&#8320; cos&sup2;(&pi;(y - y&#8320;) / 2L<sub>jet</sub>) for |y - y&#8320;| &lt; L<sub>jet</sub></li>
+      <li><strong>Linear</strong>: U = U&#8320;(y/L - 0.5) &mdash; uniform shear, U'' = 0</li>
+    </ul>
+
+    <h3>Physical Interpretation</h3>
+    <p>Barotropic instability extracts kinetic energy from the mean shear flow to grow wave perturbations. It is relevant to atmospheric jets, ocean western boundary currents, and planetary atmospheres.</p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Constants — Diagnostic grid
+// ============================================================
+const NY = 200;
+const L = 1000e3; // 1000 km in metres
+const dy = L / NY;
+
+// Diverging colormap: blue - white - red
+const CMAP = [
+  [49, 54, 149],
+  [69, 117, 180],
+  [116, 173, 209],
+  [171, 217, 233],
+  [224, 243, 248],
+  [254, 254, 254],
+  [254, 224, 182],
+  [253, 174, 97],
+  [244, 109, 67],
+  [215, 48, 39],
+  [165, 0, 38],
+];
+
+// ============================================================
+// Constants — Simulation grid
+// ============================================================
+const SNX = 256;
+const SNY = 128;
+const SLx = 4 * L;          // 4000 km
+const SLy = L;               // 1000 km
+const Sdx = SLx / SNX;       // cell spacing in x (periodic)
+const Sdy = SLy / (SNY - 1); // node spacing in y (walls at j=0 and j=SNY-1)
+
+// ============================================================
+// State — Diagnostic
+// ============================================================
+const params = {
+  profileType: 'bickley',
+  U0: 20,
+  jetWidth: 0.15,
+  jetPosition: 0.5,
+  beta: 1.5e-11,
+  showVectors: true,
+};
+
+const yArr = new Float64Array(NY);
+const UArr = new Float64Array(NY);
+const UppArr = new Float64Array(NY);
+const qyArr = new Float64Array(NY);
+
+// ============================================================
+// State — Simulation
+// ============================================================
+function make2D(nx, ny) {
+  const arr = new Array(nx);
+  for (let i = 0; i < nx; i++) arr[i] = new Float64Array(ny);
+  return arr;
+}
+
+const sim = {
+  running: false,
+  step: 0,
+  time: 0,
+  dt: 0,
+  nu: 0,
+  animId: null,
+  stepsPerFrame: 10,
+  pertAmp: 1e-3,
+  initialZetaMax: 1,
+  displayMode: 'vorticity', // 'vorticity' or 'velocity'
+};
+
+// 2D fields (allocated once)
+let sZeta = make2D(SNX, SNY);
+let sPsi  = make2D(SNX, SNY);
+let sU    = make2D(SNX, SNY);
+let sV    = make2D(SNX, SNY);
+let sJac  = make2D(SNX, SNY);
+// Tendency history for AB3
+let sFn0 = make2D(SNX, SNY);
+let sFn1 = make2D(SNX, SNY);
+let sFn2 = make2D(SNX, SNY);
+
+// Spectral workspace
+const sHatRe = make2D(SNX, SNY);
+const sHatIm = make2D(SNX, SNY);
+const pHatRe = make2D(SNX, SNY);
+const pHatIm = make2D(SNX, SNY);
+
+// FFT scratch (x-direction)
+const fftRe = new Float64Array(SNX);
+const fftIm = new Float64Array(SNX);
+// FFT scratch (y-direction, for hyperdiffusion)
+const fftReY = new Float64Array(SNY);
+const fftImY = new Float64Array(SNY);
+
+// Precomputed y-wavenumbers for hyperdiffusion
+const kyArr = new Float64Array(SNY);
+const ky2Arr = new Float64Array(SNY);
+for (let n = 0; n < SNY; n++) {
+  const kn = n <= SNY / 2 ? n : n - SNY;
+  kyArr[n] = 2 * Math.PI * kn / SLy;
+  ky2Arr[n] = kyArr[n] * kyArr[n];
+}
+
+// Tridiagonal scratch
+const triC = new Float64Array(SNY);
+const triD = new Float64Array(SNY);
+
+// Precomputed wavenumbers
+const kxArr = new Float64Array(SNX);
+const kx2Arr = new Float64Array(SNX);
+for (let m = 0; m < SNX; m++) {
+  const km = m <= SNX / 2 ? m : m - SNX;
+  kxArr[m] = 2 * Math.PI * km / SLx;
+  kx2Arr[m] = kxArr[m] * kxArr[m];
+}
+
+// Off-screen canvas for 2D rendering
+let simCanvas = null;
+let simCtx = null;
+let simImageData = null;
+
+// Store initial U profile for overlay during sim
+let simU0 = new Float64Array(SNY);
+
+// ============================================================
+// FFT — Radix-2 Cooley-Tukey (in-place)
+// ============================================================
+function fft(re, im, dir) {
+  const N = re.length;
+  // Bit-reversal
+  for (let i = 1, j = 0; i < N; i++) {
+    let bit = N >> 1;
+    while (j & bit) { j ^= bit; bit >>= 1; }
+    j ^= bit;
+    if (i < j) {
+      let t = re[i]; re[i] = re[j]; re[j] = t;
+      t = im[i]; im[i] = im[j]; im[j] = t;
+    }
+  }
+  // Butterfly
+  for (let len = 2; len <= N; len <<= 1) {
+    const ang = dir * 2 * Math.PI / len;
+    const wR = Math.cos(ang), wI = Math.sin(ang);
+    for (let i = 0; i < N; i += len) {
+      let cR = 1, cI = 0;
+      const half = len >> 1;
+      for (let k = 0; k < half; k++) {
+        const j1 = i + k, j2 = i + k + half;
+        const tR = re[j2] * cR - im[j2] * cI;
+        const tI = re[j2] * cI + im[j2] * cR;
+        re[j2] = re[j1] - tR;
+        im[j2] = im[j1] - tI;
+        re[j1] += tR;
+        im[j1] += tI;
+        const tmp = cR * wR - cI * wI;
+        cI = cR * wI + cI * wR;
+        cR = tmp;
+      }
+    }
+  }
+  if (dir === -1) {
+    for (let i = 0; i < N; i++) { re[i] /= N; im[i] /= N; }
+  }
+}
+
+// ============================================================
+// Tridiagonal solver (Thomas algorithm)
+// ============================================================
+function tridiagSolve(a, b, c, d, x, n) {
+  // Uses triC, triD as scratch. a,b,c can be scalars or arrays.
+  triC[0] = c / b;
+  triD[0] = d[0] / b;
+  for (let i = 1; i < n; i++) {
+    const m = a / (b - a * triC[i - 1]);
+    triC[i] = c / (b - a * triC[i - 1]);
+    triD[i] = (d[i] - a * triD[i - 1]) / (b - a * triC[i - 1]);
+  }
+  x[n - 1] = triD[n - 1];
+  for (let i = n - 2; i >= 0; i--) {
+    x[i] = triD[i] - triC[i] * x[i + 1];
+  }
+}
+
+// ============================================================
+// Poisson solver: ∇²ψ = ζ
+// ============================================================
+function poissonSolve() {
+  const invDy2 = 1 / (Sdy * Sdy);
+
+  // Forward FFT each row
+  for (let j = 0; j < SNY; j++) {
+    for (let i = 0; i < SNX; i++) {
+      fftRe[i] = sZeta[i][j];
+      fftIm[i] = 0;
+    }
+    fft(fftRe, fftIm, 1);
+    for (let i = 0; i < SNX; i++) {
+      sHatRe[i][j] = fftRe[i];
+      sHatIm[i][j] = fftIm[i];
+    }
+  }
+
+  // For each wavenumber, solve tridiagonal system for interior points
+  const nInt = SNY - 2;
+  const dRe = new Float64Array(nInt);
+  const dIm = new Float64Array(nInt);
+  const xRe = new Float64Array(nInt);
+  const xIm = new Float64Array(nInt);
+
+  for (let m = 0; m < SNX; m++) {
+    const diagVal = -2 * invDy2 - kx2Arr[m];
+
+    // If k=0 and diagonal would be singular (it's not since walls pin psi=0)
+    // Set boundary psi_hat = 0
+    pHatRe[m][0] = 0; pHatIm[m][0] = 0;
+    pHatRe[m][SNY - 1] = 0; pHatIm[m][SNY - 1] = 0;
+
+    // Build RHS for interior j=1..SNY-2
+    for (let k = 0; k < nInt; k++) {
+      dRe[k] = sHatRe[m][k + 1];
+      dIm[k] = sHatIm[m][k + 1];
+    }
+
+    // Solve real part
+    tridiagSolve(invDy2, diagVal, invDy2, dRe, xRe, nInt);
+    // Solve imaginary part
+    tridiagSolve(invDy2, diagVal, invDy2, dIm, xIm, nInt);
+
+    for (let k = 0; k < nInt; k++) {
+      pHatRe[m][k + 1] = xRe[k];
+      pHatIm[m][k + 1] = xIm[k];
+    }
+  }
+
+  // Inverse FFT each row to get psi
+  for (let j = 0; j < SNY; j++) {
+    for (let i = 0; i < SNX; i++) {
+      fftRe[i] = pHatRe[i][j];
+      fftIm[i] = pHatIm[i][j];
+    }
+    fft(fftRe, fftIm, -1);
+    for (let i = 0; i < SNX; i++) {
+      sPsi[i][j] = fftRe[i];
+    }
+  }
+}
+
+// ============================================================
+// Compute velocities from streamfunction
+// ============================================================
+function computeVelocities() {
+  for (let i = 0; i < SNX; i++) {
+    const ip = (i + 1) % SNX;
+    const im = (i - 1 + SNX) % SNX;
+    for (let j = 1; j < SNY - 1; j++) {
+      sU[i][j] = -(sPsi[i][j + 1] - sPsi[i][j - 1]) / (2 * Sdy);
+      sV[i][j] = (sPsi[ip][j] - sPsi[im][j]) / (2 * Sdx);
+    }
+    // Walls
+    sU[i][0] = -(sPsi[i][1] - 0) / Sdy;
+    sU[i][SNY - 1] = -(0 - sPsi[i][SNY - 2]) / Sdy;
+    sV[i][0] = 0;
+    sV[i][SNY - 1] = 0;
+  }
+}
+
+// ============================================================
+// Arakawa Jacobian: J(psi, zeta)
+// ============================================================
+function arakawaJacobian() {
+  const c = 1 / (12 * Sdx * Sdy);
+  for (let j = 1; j < SNY - 1; j++) {
+    const jp = j + 1, jm = j - 1;
+    for (let i = 0; i < SNX; i++) {
+      const ip = (i + 1) % SNX;
+      const im = (i - 1 + SNX) % SNX;
+
+      const p = sPsi, z = sZeta;
+
+      sJac[i][j] = c * (
+        // J++ terms
+          (p[ip][j] - p[im][j]) * (z[i][jp] - z[i][jm])
+        - (p[i][jp] - p[i][jm]) * (z[ip][j] - z[im][j])
+        // J+x terms
+        + p[ip][j] * (z[ip][jp] - z[ip][jm])
+        - p[im][j] * (z[im][jp] - z[im][jm])
+        - p[i][jp] * (z[ip][jp] - z[im][jp])
+        + p[i][jm] * (z[ip][jm] - z[im][jm])
+        // Jx+ terms
+        + p[ip][jp] * (z[i][jp] - z[ip][j])
+        - p[im][jm] * (z[im][j] - z[i][jm])
+        - p[im][jp] * (z[i][jp] - z[im][j])
+        + p[ip][jm] * (z[ip][j] - z[i][jm])
+      );
+    }
+  }
+}
+
+// ============================================================
+// Compute RHS tendency: F = -J(psi, zeta) - beta*v
+// ============================================================
+function computeRHS(dest) {
+  poissonSolve();
+  computeVelocities();
+  arakawaJacobian();
+
+  const beta = params.beta;
+  for (let i = 0; i < SNX; i++) {
+    dest[i][0] = 0;
+    dest[i][SNY - 1] = 0;
+    for (let j = 1; j < SNY - 1; j++) {
+      dest[i][j] = -sJac[i][j] - beta * sV[i][j];
+    }
+  }
+}
+
+// ============================================================
+// Hyperdiffusion — spectral damping in x AND y
+// ============================================================
+function applyHyperdiffusion() {
+  const nu = sim.nu;
+  const dt = sim.dt;
+
+  // 1) Damping in x: FFT each row, apply exp(-ν kx⁴ dt), inverse FFT
+  for (let j = 1; j < SNY - 1; j++) {
+    for (let i = 0; i < SNX; i++) {
+      fftRe[i] = sZeta[i][j];
+      fftIm[i] = 0;
+    }
+    fft(fftRe, fftIm, 1);
+    for (let m = 0; m < SNX; m++) {
+      const damp = Math.exp(-nu * kx2Arr[m] * kx2Arr[m] * dt);
+      fftRe[m] *= damp;
+      fftIm[m] *= damp;
+    }
+    fft(fftRe, fftIm, -1);
+    for (let i = 0; i < SNX; i++) {
+      sZeta[i][j] = fftRe[i];
+    }
+  }
+
+  // 2) Damping in y: FFT each column, apply exp(-ν ky⁴ dt), inverse FFT
+  //    We treat the y-direction as periodic for the FFT, with ζ=0 at walls
+  for (let i = 0; i < SNX; i++) {
+    for (let j = 0; j < SNY; j++) {
+      fftReY[j] = sZeta[i][j];
+      fftImY[j] = 0;
+    }
+    fft(fftReY, fftImY, 1);
+    for (let n = 0; n < SNY; n++) {
+      const damp = Math.exp(-nu * ky2Arr[n] * ky2Arr[n] * dt);
+      fftReY[n] *= damp;
+      fftImY[n] *= damp;
+    }
+    fft(fftReY, fftImY, -1);
+    for (let j = 1; j < SNY - 1; j++) {
+      sZeta[i][j] = fftReY[j];
+    }
+    // Enforce wall BCs
+    sZeta[i][0] = 0;
+    sZeta[i][SNY - 1] = 0;
+  }
+}
+
+// ============================================================
+// Time stepping — Adams-Bashforth 3
+// ============================================================
+function advanceTimestep() {
+  computeRHS(sFn0);
+  const dt = sim.dt;
+
+  if (sim.step === 0) {
+    // Forward Euler
+    for (let i = 0; i < SNX; i++)
+      for (let j = 1; j < SNY - 1; j++)
+        sZeta[i][j] += dt * sFn0[i][j];
+  } else if (sim.step === 1) {
+    // AB2
+    for (let i = 0; i < SNX; i++)
+      for (let j = 1; j < SNY - 1; j++)
+        sZeta[i][j] += dt * (1.5 * sFn0[i][j] - 0.5 * sFn1[i][j]);
+  } else {
+    // AB3
+    for (let i = 0; i < SNX; i++)
+      for (let j = 1; j < SNY - 1; j++)
+        sZeta[i][j] += dt * ((23/12) * sFn0[i][j] - (16/12) * sFn1[i][j] + (5/12) * sFn2[i][j]);
+  }
+
+  // Enforce BCs
+  for (let i = 0; i < SNX; i++) {
+    sZeta[i][0] = 0;
+    sZeta[i][SNY - 1] = 0;
+  }
+
+  // Apply hyperdiffusion every timestep to suppress grid-scale noise
+  applyHyperdiffusion();
+
+  // Rotate tendency history
+  const tmp = sFn2;
+  sFn2 = sFn1;
+  sFn1 = sFn0;
+  sFn0 = tmp;
+
+  sim.step++;
+  sim.time += dt;
+}
+
+// ============================================================
+// Initialize simulation
+// ============================================================
+function profileAtY(y) {
+  const { U0, jetWidth, jetPosition, profileType } = params;
+  const y0 = jetPosition * L;
+  const Ljet = jetWidth * L;
+  const sigma = Ljet / 2;
+  switch (profileType) {
+    case 'bickley':
+      return U0 / Math.pow(Math.cosh((y - y0) / Ljet), 2);
+    case 'gaussian':
+      return U0 * Math.exp(-((y - y0) ** 2) / (2 * sigma ** 2));
+    case 'cosine':
+      return Math.abs(y - y0) < Ljet
+        ? U0 * Math.pow(Math.cos(Math.PI * (y - y0) / (2 * Ljet)), 2) : 0;
+    case 'linear':
+      return U0 * (y / L - 0.5);
+  }
+}
+
+function initializeSimulation() {
+  // -------------------------------------------------------
+  // Grid convention (node-centred):
+  //   j=0        → south wall  (y=0),   ψ=0 (Dirichlet)
+  //   j=1..SNY-2 → interior    (y=j*Sdy)
+  //   j=SNY-1    → north wall  (y=L),   ψ=0 (Dirichlet)
+  //   Sdy = L / (SNY - 1)
+  // -------------------------------------------------------
+
+  // Compute U on node grid
+  const Usim = new Float64Array(SNY);
+  for (let j = 0; j < SNY; j++) {
+    const y = j * Sdy;
+    Usim[j] = profileAtY(y);
+  }
+  // Walls: free-slip means U can be nonzero, but we need ψ=0 at both walls.
+  // So we adjust U by subtracting a linear shear so that ∫₀ᴸ U dy = 0
+  // (which ensures ψ(L) = ψ(0) = 0).
+  let integral = 0;
+  for (let j = 0; j < SNY - 1; j++) {
+    integral += 0.5 * (Usim[j] + Usim[j + 1]) * Sdy;
+  }
+  const Ucorr = integral / SLy;  // uniform correction
+  for (let j = 0; j < SNY; j++) {
+    Usim[j] -= Ucorr;
+    simU0[j] = Usim[j];
+  }
+
+  // Build mean streamfunction: ψ̄(y) = -∫₀ʸ U dy'  with ψ̄(0)=0
+  const psiMean = new Float64Array(SNY);
+  psiMean[0] = 0;
+  for (let j = 1; j < SNY; j++) {
+    psiMean[j] = psiMean[j - 1] - 0.5 * (Usim[j - 1] + Usim[j]) * Sdy;
+  }
+  // psiMean[SNY-1] should be ≈0 by construction
+
+  // Random phases for perturbation
+  const phases = [];
+  for (let m = 1; m <= 4; m++) phases.push(Math.random() * 2 * Math.PI);
+
+  const eps = sim.pertAmp * params.U0 / SLy;
+
+  // Initialise ψ = ψ̄ + perturbation
+  for (let i = 0; i < SNX; i++) {
+    const x = i * Sdx;
+    for (let j = 0; j < SNY; j++) {
+      const y = j * Sdy;
+      let pertPsi = 0;
+      for (let m = 1; m <= 4; m++) {
+        const kx = 2 * Math.PI * m / SLx;
+        pertPsi += Math.sin(kx * x + phases[m - 1]) * Math.sin(Math.PI * y / SLy);
+      }
+      sPsi[i][j] = psiMean[j] + eps * SLy * pertPsi;
+    }
+  }
+
+  // Enforce ψ=0 at walls
+  for (let i = 0; i < SNX; i++) {
+    sPsi[i][0] = 0;
+    sPsi[i][SNY - 1] = 0;
+  }
+
+  // Compute ζ = ∇²ψ using the node grid spacing
+  const invDx2 = 1 / (Sdx * Sdx);
+  const invDy2_n = 1 / (Sdy * Sdy);
+  for (let i = 0; i < SNX; i++) {
+    const ip = (i + 1) % SNX;
+    const im = (i - 1 + SNX) % SNX;
+    for (let j = 1; j < SNY - 1; j++) {
+      sZeta[i][j] = (sPsi[ip][j] - 2 * sPsi[i][j] + sPsi[im][j]) * invDx2
+                   + (sPsi[i][j + 1] - 2 * sPsi[i][j] + sPsi[i][j - 1]) * invDy2_n;
+    }
+    sZeta[i][0] = 0;
+    sZeta[i][SNY - 1] = 0;
+  }
+
+  // Zero out velocity and tendency fields
+  for (let i = 0; i < SNX; i++) {
+    for (let j = 0; j < SNY; j++) {
+      sU[i][j] = 0;
+      sV[i][j] = 0;
+      sFn0[i][j] = 0;
+      sFn1[i][j] = 0;
+      sFn2[i][j] = 0;
+    }
+  }
+
+  // Do an initial Poisson solve + velocity compute so the first frame is correct
+  poissonSolve();
+  computeVelocities();
+
+  // Record initial max vorticity for blow-up detection
+  let zm = 0;
+  for (let i = 0; i < SNX; i++)
+    for (let j = 0; j < SNY; j++)
+      if (Math.abs(sZeta[i][j]) > zm) zm = Math.abs(sZeta[i][j]);
+  sim.initialZetaMax = zm || 1e-10;
+
+  // Compute timestep (CFL = 0.1 for stability)
+  const Umax = Math.max(params.U0, 1);
+  const minD = Math.min(Sdx, Sdy);
+  sim.dt = 0.10 * minD / Umax;
+
+  // Also limit by Rossby wave speed
+  const kmin = 2 * Math.PI / SLx;
+  if (params.beta > 0) {
+    const cR = params.beta / (kmin * kmin);
+    sim.dt = Math.min(sim.dt, 0.10 * minD / Math.max(cR, 1));
+  }
+
+  // Hyperdiffusion coefficient (applied in both x and y)
+  const kmax = Math.PI / minD;
+  sim.nu = 1.0 / (kmax * kmax * kmax * kmax * 20 * sim.dt);
+
+  // Setup off-screen canvas
+  if (!simCanvas) {
+    simCanvas = document.createElement('canvas');
+    simCanvas.width = SNX;
+    simCanvas.height = SNY;
+    simCtx = simCanvas.getContext('2d');
+    simImageData = simCtx.createImageData(SNX, SNY);
+  }
+}
+
+// ============================================================
+// Diagnostics
+// ============================================================
+function computeZonalMeanU() {
+  const Umean = new Float64Array(SNY);
+  for (let j = 0; j < SNY; j++) {
+    let sum = 0;
+    for (let i = 0; i < SNX; i++) sum += sU[i][j];
+    Umean[j] = sum / SNX;
+  }
+  return Umean;
+}
+
+function updateDiagnostics() {
+  const days = sim.time / 86400;
+  document.getElementById('sim-time').textContent = days.toFixed(2) + ' days';
+  document.getElementById('sim-step').textContent = sim.step;
+
+  const Umean = computeZonalMeanU();
+  let totalKE = 0, eddyKE = 0, maxV = 0;
+  for (let i = 0; i < SNX; i++) {
+    for (let j = 1; j < SNY - 1; j++) {
+      totalKE += sU[i][j] * sU[i][j] + sV[i][j] * sV[i][j];
+      const uP = sU[i][j] - Umean[j];
+      eddyKE += uP * uP + sV[i][j] * sV[i][j];
+      if (Math.abs(sV[i][j]) > maxV) maxV = Math.abs(sV[i][j]);
+    }
+  }
+  const pct = totalKE > 0 ? (eddyKE / totalKE * 100) : 0;
+  document.getElementById('sim-eke').textContent = pct.toFixed(1) + '%';
+  document.getElementById('sim-maxv').textContent = maxV.toFixed(2) + ' m/s';
+}
+
+// ============================================================
+// Diagnostic physics (unchanged)
+// ============================================================
+function computeProfile() {
+  const { U0, jetWidth, jetPosition, profileType } = params;
+  const y0 = jetPosition * L;
+  const Ljet = jetWidth * L;
+  const sigma = Ljet / 2;
+
+  for (let j = 0; j < NY; j++) {
+    yArr[j] = (j + 0.5) * dy;
+    const y = yArr[j];
+    switch (profileType) {
+      case 'bickley':
+        UArr[j] = U0 / Math.pow(Math.cosh((y - y0) / Ljet), 2);
+        break;
+      case 'gaussian':
+        UArr[j] = U0 * Math.exp(-((y - y0) ** 2) / (2 * sigma ** 2));
+        break;
+      case 'cosine':
+        UArr[j] = Math.abs(y - y0) < Ljet
+          ? U0 * Math.pow(Math.cos(Math.PI * (y - y0) / (2 * Ljet)), 2) : 0;
+        break;
+      case 'linear':
+        UArr[j] = U0 * (y / L - 0.5);
+        break;
+    }
+  }
+  computeUpp();
+  computePVGradient();
+}
+
+function computeUpp() {
+  for (let j = 1; j < NY - 1; j++)
+    UppArr[j] = (UArr[j + 1] - 2 * UArr[j] + UArr[j - 1]) / (dy * dy);
+  UppArr[0] = (UArr[1] - 2 * UArr[0] + 0) / (dy * dy);
+  UppArr[NY - 1] = (0 - 2 * UArr[NY - 1] + UArr[NY - 2]) / (dy * dy);
+}
+
+function computePVGradient() {
+  let hasP = false, hasN = false;
+  for (let j = 0; j < NY; j++) {
+    qyArr[j] = params.beta - UppArr[j];
+    if (qyArr[j] > 1e-30) hasP = true;
+    if (qyArr[j] < -1e-30) hasN = true;
+  }
+  updateInstabilityIndicator(hasP && hasN);
+}
+
+// ============================================================
+// Color utilities
+// ============================================================
+function divergingColor(value, vmin, vmax) {
+  let norm = (value - vmin) / (vmax - vmin);
+  norm = Math.max(0, Math.min(1, norm));
+  const idx = norm * (CMAP.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.min(CMAP.length - 1, lo + 1);
+  const t = idx - lo;
+  return [
+    Math.round(CMAP[lo][0] + (CMAP[hi][0] - CMAP[lo][0]) * t),
+    Math.round(CMAP[lo][1] + (CMAP[hi][1] - CMAP[lo][1]) * t),
+    Math.round(CMAP[lo][2] + (CMAP[hi][2] - CMAP[lo][2]) * t),
+  ];
+}
+
+// ============================================================
+// Canvas sizing
+// ============================================================
+const canvasMap = [
+  ['channel-canvas', 'channel-container'],
+  ['profile-canvas', 'profile-container'],
+  ['pv-canvas', 'pv-container'],
+];
+
+function resizeAllCanvases() {
+  const dpr = window.devicePixelRatio || 1;
+  canvasMap.forEach(([cid, pid]) => {
+    const canvas = document.getElementById(cid);
+    const container = document.getElementById(pid);
+    const rect = container.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  });
+}
+
+function logicalSize(canvasId) {
+  const c = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  return { w: c.width / dpr, h: c.height / dpr };
+}
+
+// ============================================================
+// Drawing: Static channel view (diagnostic mode)
+// ============================================================
+function drawChannel() {
+  const canvas = document.getElementById('channel-canvas');
+  const ctx = canvas.getContext('2d');
+  const { w: W, h: H } = logicalSize('channel-canvas');
+
+  const ml = 55, mr = 20, mt = 32, mb = 36;
+  const dw = W - ml - mr;
+  const dh = H - mt - mb;
+
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  if (dw <= 0 || dh <= 0) return;
+
+  let uMax = 0;
+  for (let j = 0; j < NY; j++)
+    if (Math.abs(UArr[j]) > uMax) uMax = Math.abs(UArr[j]);
+  if (uMax === 0) uMax = 1;
+
+  const rowH = dh / NY;
+  for (let j = 0; j < NY; j++) {
+    const py = mt + dh - (j + 1) * rowH;
+    const [r, g, b] = divergingColor(UArr[j], -uMax, uMax);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(ml, py, dw, rowH + 0.5);
+  }
+
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.strokeRect(ml, mt, dw, dh);
+
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Wall (y = L)', ml + dw / 2, mt - 4);
+  ctx.fillText('Wall (y = 0)', ml + dw / 2, mt + dh + 12);
+  ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif';
+  ctx.fillText('x (periodic)', ml + dw / 2, mt + dh + 28);
+
+  ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+  for (let i = 0; i <= 4; i++) {
+    const frac = i / 4;
+    ctx.fillText((frac * L / 1000).toFixed(0) + ' km', ml - 5, mt + dh - frac * dh + 3);
+  }
+
+  ctx.save(); ctx.translate(12, mt + dh / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif';
+  ctx.fillText('y', 0, 0); ctx.restore();
+
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Channel Flow', ml, mt - 16);
+
+  if (params.showVectors) drawVelocityArrows(ctx, ml, mt, dw, dh, uMax);
+
+  document.getElementById('legend-title').textContent = 'Zonal Velocity U(y)';
+  document.getElementById('legend-min').textContent = (-uMax).toFixed(1);
+  document.getElementById('legend-max').textContent = '+' + uMax.toFixed(1);
+}
+
+function drawVelocityArrows(ctx, ml, mt, dw, dh, uMax) {
+  const nX = 10, nY = 14;
+  const maxLen = dw / (nX * 1.8);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1.2;
+  for (let iy = 0; iy < nY; iy++) {
+    const yFrac = (iy + 0.5) / nY;
+    const py = mt + dh - yFrac * dh;
+    const jIdx = Math.min(NY - 1, Math.floor(yFrac * NY));
+    const arrowLen = (UArr[jIdx] / uMax) * maxLen;
+    if (Math.abs(arrowLen) < 2) continue;
+    for (let ix = 0; ix < nX; ix++) {
+      const px = ml + (ix + 0.5) / nX * dw;
+      ctx.beginPath(); ctx.moveTo(px - arrowLen / 2, py); ctx.lineTo(px + arrowLen / 2, py); ctx.stroke();
+      const dir = Math.sign(arrowLen), hs = 4;
+      ctx.beginPath(); ctx.moveTo(px + arrowLen / 2, py);
+      ctx.lineTo(px + arrowLen / 2 - dir * hs, py - hs * 0.5);
+      ctx.lineTo(px + arrowLen / 2 - dir * hs, py + hs * 0.5);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// ============================================================
+// Drawing: 2D simulation channel view
+// ============================================================
+function drawChannel2D() {
+  const canvas = document.getElementById('channel-canvas');
+  const ctx = canvas.getContext('2d');
+  const { w: W, h: H } = logicalSize('channel-canvas');
+
+  const ml = 55, mr = 20, mt = 32, mb = 36;
+  const dw = W - ml - mr;
+  const dh = H - mt - mb;
+
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  if (dw <= 0 || dh <= 0) return;
+
+  const showVelocity = sim.displayMode === 'velocity';
+
+  // Choose the field and find symmetric range
+  let fieldMax = 0;
+  if (showVelocity) {
+    for (let i = 0; i < SNX; i++)
+      for (let j = 0; j < SNY; j++)
+        if (Math.abs(sU[i][j]) > fieldMax) fieldMax = Math.abs(sU[i][j]);
+  } else {
+    for (let i = 0; i < SNX; i++)
+      for (let j = 0; j < SNY; j++)
+        if (Math.abs(sZeta[i][j]) > fieldMax) fieldMax = Math.abs(sZeta[i][j]);
+  }
+  if (fieldMax === 0) fieldMax = 1;
+
+  // Render to off-screen canvas
+  const data = simImageData.data;
+  for (let j = 0; j < SNY; j++) {
+    const jFlip = SNY - 1 - j;
+    for (let i = 0; i < SNX; i++) {
+      const idx = (jFlip * SNX + i) * 4;
+      const val = showVelocity ? sU[i][j] : sZeta[i][j];
+      const [r, g, b] = divergingColor(val, -fieldMax, fieldMax);
+      data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = 255;
+    }
+  }
+  simCtx.putImageData(simImageData, 0, 0);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(simCanvas, 0, 0, SNX, SNY, ml, mt, dw, dh);
+
+  // Velocity arrows overlay (only in velocity mode with arrows enabled)
+  if (showVelocity && params.showVectors) {
+    drawSimVelocityArrows(ctx, ml, mt, dw, dh);
+  }
+
+  // Border
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.strokeRect(ml, mt, dw, dh);
+
+  // Wall labels
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Wall (y = L)', ml + dw / 2, mt - 4);
+  ctx.fillText('Wall (y = 0)', ml + dw / 2, mt + dh + 12);
+  ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif';
+  ctx.fillText('x (periodic)', ml + dw / 2, mt + dh + 28);
+
+  // Y ticks
+  ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+  for (let i = 0; i <= 4; i++) {
+    const frac = i / 4;
+    ctx.fillText((frac * L / 1000).toFixed(0) + ' km', ml - 5, mt + dh - frac * dh + 3);
+  }
+
+  ctx.save(); ctx.translate(12, mt + dh / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif';
+  ctx.fillText('y', 0, 0); ctx.restore();
+
+  // Title with time
+  const days = sim.time / 86400;
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+  if (showVelocity) {
+    ctx.fillText('Zonal Velocity U(x,y)  \u2014  Day ' + days.toFixed(1), ml, mt - 16);
+    document.getElementById('legend-title').textContent = 'Zonal Velocity U (m/s)';
+    document.getElementById('legend-min').textContent = (-fieldMax).toFixed(1);
+    document.getElementById('legend-max').textContent = '+' + fieldMax.toFixed(1);
+  } else {
+    ctx.fillText('Vorticity \u03B6(x,y)  \u2014  Day ' + days.toFixed(1), ml, mt - 16);
+    document.getElementById('legend-title').textContent = 'Vorticity \u03B6 (s\u207B\u00B9)';
+    document.getElementById('legend-min').textContent = (-fieldMax).toExponential(1);
+    document.getElementById('legend-max').textContent = '+' + fieldMax.toExponential(1);
+  }
+}
+
+// Draw velocity arrows during simulation using actual u,v fields
+function drawSimVelocityArrows(ctx, ml, mt, dw, dh) {
+  const nX = 16, nY = 10;
+  const stepI = Math.max(1, Math.floor(SNX / nX));
+  const stepJ = Math.max(1, Math.floor(SNY / nY));
+
+  // Find max speed for scaling
+  let maxSpd = 0;
+  for (let i = 0; i < SNX; i += stepI)
+    for (let j = 1; j < SNY - 1; j += stepJ) {
+      const spd = Math.sqrt(sU[i][j] * sU[i][j] + sV[i][j] * sV[i][j]);
+      if (spd > maxSpd) maxSpd = spd;
+    }
+  if (maxSpd === 0) return;
+
+  const maxLen = Math.min(dw / nX, dh / nY) * 0.7;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+
+  for (let ii = 0; ii < nX; ii++) {
+    const i = Math.min(SNX - 1, Math.floor((ii + 0.5) * SNX / nX));
+    for (let jj = 0; jj < nY; jj++) {
+      const j = Math.max(1, Math.min(SNY - 2, Math.floor((jj + 0.5) * SNY / nY)));
+      const u = sU[i][j], v = sV[i][j];
+      const spd = Math.sqrt(u * u + v * v);
+      if (spd < maxSpd * 0.02) continue;
+
+      const px = ml + (i + 0.5) / SNX * dw;
+      const py = mt + (1 - (j + 0.5) / SNY) * dh;
+      const scale = maxLen / maxSpd;
+      const dx = u * scale;
+      const dy = -v * scale; // v positive → upward → negative screen y
+
+      ctx.beginPath();
+      ctx.moveTo(px - dx / 2, py - dy / 2);
+      ctx.lineTo(px + dx / 2, py + dy / 2);
+      ctx.stroke();
+
+      // Arrowhead
+      const ang = Math.atan2(dy, dx);
+      const hs = 3;
+      ctx.beginPath();
+      ctx.moveTo(px + dx / 2, py + dy / 2);
+      ctx.lineTo(px + dx / 2 - hs * Math.cos(ang - 0.4), py + dy / 2 - hs * Math.sin(ang - 0.4));
+      ctx.lineTo(px + dx / 2 - hs * Math.cos(ang + 0.4), py + dy / 2 - hs * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// ============================================================
+// Drawing: Profile plot (with zonal-mean overlay during sim)
+// ============================================================
+function drawProfile(zonalMeanU) {
+  const canvas = document.getElementById('profile-canvas');
+  const ctx = canvas.getContext('2d');
+  const { w: W, h: H } = logicalSize('profile-canvas');
+
+  const ml = 48, mr = 14, mt = 28, mb = 36;
+  const dw = W - ml - mr;
+  const dh = H - mt - mb;
+
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  if (dw <= 0 || dh <= 0) return;
+
+  // Determine U range from diagnostic profile
+  let uMin = Infinity, uMax = -Infinity;
+  for (let j = 0; j < NY; j++) {
+    if (UArr[j] < uMin) uMin = UArr[j];
+    if (UArr[j] > uMax) uMax = UArr[j];
+  }
+  // Also include zonal mean range if running
+  if (zonalMeanU) {
+    for (let j = 0; j < SNY; j++) {
+      if (zonalMeanU[j] < uMin) uMin = zonalMeanU[j];
+      if (zonalMeanU[j] > uMax) uMax = zonalMeanU[j];
+    }
+  }
+  const pad = (uMax - uMin) * 0.12 || 1;
+  uMin -= pad; uMax += pad;
+
+  drawGrid(ctx, ml, mt, dw, dh, uMin, uMax, 0, L);
+
+  // Zero line
+  if (uMin < 0 && uMax > 0) {
+    const zx = ml + (0 - uMin) / (uMax - uMin) * dw;
+    ctx.strokeStyle = 'rgba(148,163,184,0.3)'; ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(zx, mt); ctx.lineTo(zx, mt + dh); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Initial profile (always shown, cyan)
+  ctx.strokeStyle = sim.running ? 'rgba(34,211,238,0.35)' : '#22d3ee';
+  ctx.lineWidth = sim.running ? 1.5 : 2.5;
+  ctx.beginPath();
+  for (let j = 0; j < NY; j++) {
+    const px = ml + (UArr[j] - uMin) / (uMax - uMin) * dw;
+    const py = mt + (1 - yArr[j] / L) * dh;
+    if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Zonal-mean U during simulation (orange)
+  if (zonalMeanU) {
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let j = 0; j < SNY; j++) {
+      const y = j * Sdy;
+      const px = ml + (zonalMeanU[j] - uMin) / (uMax - uMin) * dw;
+      const py = mt + (1 - y / SLy) * dh;
+      if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('U (m/s)', ml + dw / 2, mt + dh + 30);
+  ctx.save(); ctx.translate(10, mt + dh / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('y (km)', 0, 0); ctx.restore();
+
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(zonalMeanU ? 'Zonal-Mean U(y)' : 'Velocity Profile U(y)', ml + dw / 2, mt - 10);
+
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.strokeRect(ml, mt, dw, dh);
+}
+
+// ============================================================
+// Drawing: PV gradient plot
+// ============================================================
+function drawPVGradient() {
+  const canvas = document.getElementById('pv-canvas');
+  const ctx = canvas.getContext('2d');
+  const { w: W, h: H } = logicalSize('pv-canvas');
+
+  const ml = 48, mr = 14, mt = 28, mb = 36;
+  const dw = W - ml - mr;
+  const dh = H - mt - mb;
+
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  if (dw <= 0 || dh <= 0) return;
+
+  let qMin = Infinity, qMax = -Infinity;
+  for (let j = 0; j < NY; j++) {
+    if (qyArr[j] < qMin) qMin = qyArr[j];
+    if (qyArr[j] > qMax) qMax = qyArr[j];
+  }
+  const pad = (qMax - qMin) * 0.12 || 1e-14;
+  qMin -= pad; qMax += pad;
+
+  const rowH = dh / NY;
+  for (let j = 0; j < NY; j++) {
+    if (qyArr[j] < 0) {
+      const py = mt + (1 - (j + 0.5) / NY) * dh - rowH / 2;
+      ctx.fillStyle = 'rgba(239,68,68,0.12)';
+      ctx.fillRect(ml, py, dw, rowH + 0.5);
+    }
+  }
+
+  drawGrid(ctx, ml, mt, dw, dh, qMin, qMax, 0, L);
+
+  if (qMin < 0 && qMax > 0) {
+    const zx = ml + (0 - qMin) / (qMax - qMin) * dw;
+    ctx.strokeStyle = 'rgba(245,158,11,0.7)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath(); ctx.moveTo(zx, mt); ctx.lineTo(zx, mt + dh); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('q_y = 0', zx + 3, mt + 10);
+  }
+
+  ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let j = 0; j < NY; j++) {
+    const px = ml + (qyArr[j] - qMin) / (qMax - qMin) * dw;
+    const py = mt + (1 - yArr[j] / L) * dh;
+    if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#cbd5e1'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('\u03B2 \u2212 U\u2033(y)', ml + dw / 2, mt + dh + 30);
+  ctx.save(); ctx.translate(10, mt + dh / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('y (km)', 0, 0); ctx.restore();
+
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('PV Gradient q\u2099 = \u03B2 \u2212 U\u2033', ml + dw / 2, mt - 10);
+
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.strokeRect(ml, mt, dw, dh);
+}
+
+// ============================================================
+// Shared grid drawing
+// ============================================================
+function drawGrid(ctx, ml, mt, dw, dh, xMin, xMax, yMin, yMax) {
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const frac = i / 4;
+    const yVal = yMin + (yMax - yMin) * frac;
+    const py = mt + (1 - frac) * dh;
+    ctx.strokeStyle = 'rgba(148,163,184,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ml, py); ctx.lineTo(ml + dw, py); ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText((yVal / 1000).toFixed(0), ml - 5, py + 3);
+  }
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 4; i++) {
+    const frac = i / 4;
+    const xVal = xMin + (xMax - xMin) * frac;
+    const px = ml + frac * dw;
+    ctx.strokeStyle = 'rgba(148,163,184,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, mt); ctx.lineTo(px, mt + dh); ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    const absX = Math.abs(xVal);
+    let label;
+    if (absX === 0) label = '0';
+    else if (absX < 0.01 || absX >= 1e4) label = xVal.toExponential(1);
+    else label = xVal.toFixed(1);
+    ctx.fillText(label, px, mt + dh + 14);
+  }
+}
+
+// ============================================================
+// UI helpers
+// ============================================================
+function syncUI() {
+  document.getElementById('U0-val').textContent = params.U0.toFixed(1) + ' m/s';
+  document.getElementById('jetWidth-val').textContent = Math.round(params.jetWidth * 100) + '% of L';
+  document.getElementById('jetPosition-val').textContent = Math.round(params.jetPosition * 100) + '% of L';
+  document.getElementById('beta-val').textContent = params.beta.toExponential(1);
+
+  document.getElementById('U0').value = params.U0;
+  document.getElementById('jetWidth').value = params.jetWidth * 100;
+  document.getElementById('jetPosition').value = params.jetPosition * 100;
+  document.getElementById('beta').value = params.beta / 1e-12;
+  document.getElementById('showVectors').checked = params.showVectors;
+
+  document.querySelectorAll('.profile-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.profile === params.profileType);
+  });
+}
+
+function updateInstabilityIndicator(isUnstable) {
+  const box = document.getElementById('instability-box');
+  if (isUnstable) {
+    box.className = 'instability-indicator unstable';
+    box.innerHTML = '\u26A0 Rayleigh-Kuo condition <strong>MET</strong>' +
+      '<div class="instability-sub">\u03B2 \u2212 U\u2033(y) changes sign \u2192 instability possible</div>';
+  } else {
+    box.className = 'instability-indicator stable';
+    box.innerHTML = '\u2713 Rayleigh-Kuo condition <strong>NOT</strong> met' +
+      '<div class="instability-sub">\u03B2 \u2212 U\u2033(y) does not change sign \u2192 stable</div>';
+  }
+}
+
+function disableFlowControls(disabled) {
+  ['U0', 'jetWidth', 'jetPosition', 'beta'].forEach(id => {
+    document.getElementById(id).disabled = disabled;
+  });
+  document.querySelectorAll('.profile-btn[data-profile]').forEach(b => {
+    b.disabled = disabled;
+  });
+}
+
+// ============================================================
+// Simulation control
+// ============================================================
+function startSimulation() {
+  sim.running = true;
+  sim.step = 0;
+  sim.time = 0;
+  sim.pertAmp = Math.pow(10, parseFloat(document.getElementById('pertAmp').value));
+  sim.stepsPerFrame = parseInt(document.getElementById('stepsPerFrame').value);
+
+  initializeSimulation();
+  disableFlowControls(true);
+  document.getElementById('diag-box').style.display = '';
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-pause').disabled = false;
+  document.getElementById('btn-reset').disabled = false;
+
+  sim.animId = requestAnimationFrame(animationLoop);
+}
+
+function pauseSimulation() {
+  sim.running = false;
+  if (sim.animId) { cancelAnimationFrame(sim.animId); sim.animId = null; }
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-run').innerHTML = '&#9654; Resume';
+  document.getElementById('btn-pause').disabled = true;
+}
+
+function resumeSimulation() {
+  sim.running = true;
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-pause').disabled = false;
+  sim.animId = requestAnimationFrame(animationLoop);
+}
+
+function resetSimulation() {
+  sim.running = false;
+  if (sim.animId) { cancelAnimationFrame(sim.animId); sim.animId = null; }
+  sim.step = 0;
+  sim.time = 0;
+  sim.displayMode = 'vorticity';
+  disableFlowControls(false);
+  document.getElementById('diag-box').style.display = 'none';
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-run').innerHTML = '&#9654; Run';
+  document.getElementById('btn-pause').disabled = true;
+  document.getElementById('btn-reset').disabled = true;
+
+  // Reset display toggle UI
+  document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === 'vorticity');
+  });
+
+  // Restore diagnostic view
+  update();
+}
+
+function animationLoop() {
+  if (!sim.running) return;
+
+  sim.stepsPerFrame = parseInt(document.getElementById('stepsPerFrame').value);
+
+  for (let s = 0; s < sim.stepsPerFrame; s++) {
+    advanceTimestep();
+  }
+
+  // Blow-up detection
+  let zetaMax = 0;
+  for (let i = 0; i < SNX; i++)
+    for (let j = 0; j < SNY; j++)
+      if (Math.abs(sZeta[i][j]) > zetaMax) zetaMax = Math.abs(sZeta[i][j]);
+
+  if (zetaMax > 200 * sim.initialZetaMax || !isFinite(zetaMax)) {
+    pauseSimulation();
+    const box = document.getElementById('instability-box');
+    box.className = 'instability-indicator unstable';
+    box.innerHTML = '\u26A0 <strong>Numerical blow-up detected</strong>' +
+      '<div class="instability-sub">Simulation paused. Try increasing diffusion or reducing speed. Click Reset to start over.</div>';
+    return;
+  }
+
+  // Render
+  drawChannel2D();
+  const Umean = computeZonalMeanU();
+  drawProfile(Umean);
+  updateDiagnostics();
+
+  sim.animId = requestAnimationFrame(animationLoop);
+}
+
+// ============================================================
+// Controls wiring
+// ============================================================
+function attachInputHandlers() {
+  document.getElementById('U0').addEventListener('input', (e) => {
+    params.U0 = parseFloat(e.target.value);
+    document.getElementById('U0-val').textContent = params.U0.toFixed(1) + ' m/s';
+    update();
+  });
+
+  document.getElementById('jetWidth').addEventListener('input', (e) => {
+    params.jetWidth = parseFloat(e.target.value) / 100;
+    document.getElementById('jetWidth-val').textContent = Math.round(params.jetWidth * 100) + '% of L';
+    update();
+  });
+
+  document.getElementById('jetPosition').addEventListener('input', (e) => {
+    params.jetPosition = parseFloat(e.target.value) / 100;
+    document.getElementById('jetPosition-val').textContent = Math.round(params.jetPosition * 100) + '% of L';
+    update();
+  });
+
+  document.getElementById('beta').addEventListener('input', (e) => {
+    params.beta = parseFloat(e.target.value) * 1e-12;
+    document.getElementById('beta-val').textContent = params.beta.toExponential(1);
+    update();
+  });
+
+  document.getElementById('showVectors').addEventListener('change', (e) => {
+    params.showVectors = e.target.checked;
+    if (!sim.running) update();
+  });
+
+  document.querySelectorAll('.profile-btn[data-profile]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      params.profileType = btn.dataset.profile;
+      document.querySelectorAll('.profile-btn[data-profile]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      update();
+    });
+  });
+
+  // Simulation controls
+  document.getElementById('btn-run').addEventListener('click', () => {
+    if (!sim.running && sim.step === 0) startSimulation();
+    else if (!sim.running) resumeSimulation();
+  });
+  document.getElementById('btn-pause').addEventListener('click', pauseSimulation);
+  document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+
+  document.getElementById('pertAmp').addEventListener('input', (e) => {
+    const exp = parseFloat(e.target.value);
+    const superscripts = {'-5': '\u2075', '-4': '\u2074', '-3': '\u00B3', '-2': '\u00B2', '-1': '\u00B9',
+      '-4.5': '\u2074\u00B7\u2075', '-3.5': '\u00B3\u00B7\u2075', '-2.5': '\u00B2\u00B7\u2075', '-1.5': '\u00B9\u00B7\u2075'};
+    document.getElementById('pertAmp-val').textContent = '10\u207B' + (superscripts[String(-exp)] || String(-exp));
+  });
+
+  document.getElementById('stepsPerFrame').addEventListener('input', (e) => {
+    document.getElementById('spf-val').textContent = e.target.value;
+  });
+
+  // Display mode toggle (velocity / vorticity)
+  document.querySelectorAll('.toggle-btn[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sim.displayMode = btn.dataset.mode;
+      document.querySelectorAll('.toggle-btn[data-mode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Re-render if simulation is paused but has run
+      if (!sim.running && sim.step > 0) {
+        drawChannel2D();
+      }
+    });
+  });
+}
+
+// ============================================================
+// Modals
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.getElementById('help-btn').addEventListener('click', () => openModal('help-modal'));
+document.getElementById('info-btn').addEventListener('click', () => openModal('info-modal'));
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// ============================================================
+// Main update & init
+// ============================================================
+function update() {
+  computeProfile();
+  drawChannel();
+  drawProfile(null);
+  drawPVGradient();
+}
+
+function init() {
+  resizeAllCanvases();
+  syncUI();
+  update();
+  attachInputHandlers();
+}
+
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => {
+    resizeAllCanvases();
+    if (sim.running || sim.step > 0) {
+      drawChannel2D();
+      drawProfile(computeZonalMeanU());
+    } else {
+      drawChannel();
+      drawProfile(null);
+    }
+    drawPVGradient();
+  });
+  canvasMap.forEach(([, pid]) => ro.observe(document.getElementById(pid)));
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

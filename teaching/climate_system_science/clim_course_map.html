@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Climate Program — Course Map</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+         background: #e8eaf0; color: #222; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  .tile {
+    transition: transform 0.15s ease, box-shadow 0.2s ease,
+                opacity 0.25s ease, filter 0.25s ease,
+                background 0.2s ease, border-color 0.2s ease;
+  }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.14) !important; }
+  .tile.is-selected { transform: translateY(-1px) scale(1.02); }
+  @keyframes slideIn     { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .side-panel { animation: slideIn 0.22s ease; }
+  .stream-group { transition: opacity 0.28s ease, filter 0.28s ease; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } 50% { box-shadow: 0 0 0 5px rgba(243,156,18,0.35); } }
+  .tile.is-selected { animation: pulse 0.6s ease; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ① DISCIPLINE COLOURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DISC_COLORS = {
+  MATH: '#3a7bd5', PHYS: '#8e44ad', CLIM: '#16a085',
+  GEOS: '#c0550a', BEES: '#219a52', CVEN: '#c0392b',
+  MSCI: '#1a6fa3', CHEM: '#7d6608',
+};
+function discColor(code) {
+  return DISC_COLORS[code.replace(/\d.*$/, '')] || '#7f8c8d';
+}
+function discBg(code, alpha = 0.12) {
+  const hex = discColor(code);
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ② CO-BADGED COURSES
+   A "/" in the PPTX connecting courses from DIFFERENT disciplines means the
+   same single enrolment appears under two course codes (e.g. a student taking
+   CLIM2001 gets both "CLIM2001" and "PHYS2801" on their transcript).
+   This is DIFFERENT from an alt-group where a student picks ONE course.
+
+   Co-badged: CLIM2001/PHYS2801, CLIM3001/CLIM6001, MSCI3001/MSCI5004
+   Alt-groups: MATH1131/MATH1141, PHYS1121/PHYS1131 (pick one based on level)
+   ═══════════════════════════════════════════════════════════════════════════ */
+const COBADGED = {
+  'CLIM2001': 'PHYS2801',   // Fundamentals of Atmospheric Science
+  'CLIM3001': 'CLIM6001',   // Climate Systems Science (UG / PG badge)
+  'MSCI3001': 'MSCI5004',   // Physical Oceanography (UG / PG badge)
+};
+const COBADGED_REV = Object.fromEntries(Object.entries(COBADGED).map(([k,v])=>[v,k]));
+function toPrimary(code) { return COBADGED_REV[code] || code; }
+function cbSecondary(primary) { return COBADGED[primary]; }
+function isCobadgedSlot(codes) {
+  return codes.length === 2 && COBADGED[codes[0]] === codes[1];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ③ PROGRAM STRUCTURE — loaded at runtime from per-program markdown files.
+   To correct course codes: edit bsc_structure.md or advsci_structure.md,
+   then refresh the browser. No Python step needed (requires http server).
+
+   Markdown notation:
+     - A            single required course
+     - A | B        alt-group: student picks ONE (standard vs higher)
+     - A | B | C    3-way alt-group
+     - A / B        co-badged: same enrolment, two codes on transcript
+     Multiple bullets in a stage = all required, each rendered as its own tile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PROGRAM_FILES = ['bsc_structure.md', 'advsci_structure.md'];
+
+/* ── Bullet-line → slot array ────────────────────────────────────────────── */
+function parseSlot(line) {
+  const body = line.replace(/^-\s*/,'').replace(/#.*$/,'').trim();
+  if (!body) return null;
+  const sep = body.includes('/') ? '/' : body.includes('|') ? '|' : null;
+  const codes = (sep ? body.split(sep) : [body])
+    .map(s => s.trim())
+    .filter(c => /^[A-Z]{4}\d{4}$/.test(c));
+  return codes.length ? codes : null;
+}
+
+/* ── Stream name → short ID ─────────────────────────────────────────────── */
+const STREAM_ABBR = {
+  meteorology:'met', modelling:'mod', civil:'civ', gis:'gis', government:'gov'
+};
+function streamId(name) {
+  const l = name.toLowerCase();
+  for (const [k,v] of Object.entries(STREAM_ABBR)) if (l.includes(k)) return v;
+  return l.replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+}
+
+/* ── Full markdown parser ────────────────────────────────────────────────── */
+function parseProgramMd(text) {
+  const prog = { id:null, label:'', subtitle:'', stages:[], stageCores:{}, streams:[] };
+  let mode=null, stageId=null, stream=null;
+  for (const raw of text.split('\n')) {
+    const ln = raw.trim();
+    if (!ln || ln.startsWith('|') || ln==='---' || ln.startsWith('<!--') || ln.startsWith('>')) continue;
+    let m;
+    if ((m=ln.match(/^#\s+(.+)/)) && !prog.label)        { prog.label=m[1].trim(); continue; }
+    if ((m=ln.match(/\*\*Internal ID:\*\*\s+`(.+?)`/)))  { prog.id=m[1]; continue; }
+    if ((m=ln.match(/\*\*Subtitle:\*\*\s+(.+)/)))         { prog.subtitle=m[1].trim(); continue; }
+    if ((m=ln.match(/^##\s+Stage\s+(\d+)\s*(?:Core)?\s*[—–-]?\s*(.*)/i))) {
+      const sid=`s${m[1]}`, sub=(m[2]||'').trim(), hon=/honour/i.test(ln);
+      if (!prog.stages.find(s=>s.id===sid))
+        prog.stages.push({ id:sid, label:`Stage ${m[1]}`, sub, honours:hon });
+      if (!prog.stageCores[sid]) prog.stageCores[sid] = hon ? '__HONOURS__' : [];
+      mode='core'; stageId=sid; stream=null; continue;
+    }
+    if (/^##\s+Stream Electives/.test(ln)) { mode='electives'; stageId=null; stream=null; continue; }
+    if ((m=ln.match(/^###\s+Stream:\s*(.+)/)) && mode==='electives') {
+      const sname=m[1].trim(), sid=streamId(sname);
+      stream = prog.streams.find(s=>s.id===sid);
+      if (!stream) { stream={id:sid, label:sname, color:'#888888'}; prog.streams.push(stream); }
+      stageId=null; continue;
+    }
+    if ((m=ln.match(/\*\*Color:\*\*\s+`(#[0-9a-fA-F]{3,6})`/)) && stream)  { stream.color=m[1]; continue; }
+    if ((m=ln.match(/\*\*Stage\s+(\d+)\s+electives:\*\*/)) && stream) {
+      stageId=`s${m[1]}`; if (!stream[stageId]) stream[stageId]=[]; continue;
+    }
+    if (ln.startsWith('- ')) {
+      const slot=parseSlot(ln); if (!slot) continue;
+      if (mode==='core' && stageId)                          { const b=prog.stageCores[stageId]; if (Array.isArray(b)) b.push(slot); }
+      else if (mode==='electives' && stream && stageId)      { const b=stream[stageId];          if (Array.isArray(b)) b.push(slot); }
+    }
+  }
+  return prog;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⑤ HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+function parseCodes(text, prereqParsed) {
+  if (prereqParsed) {
+    try {
+      const p = typeof prereqParsed === 'string' ? JSON.parse(prereqParsed) : prereqParsed;
+      if (p && Array.isArray(p.all_codes) && p.all_codes.length > 0) return p.all_codes;
+    } catch(e) {}
+  }
+  if (!text) return [];
+  return [...new Set(text.match(/\b[A-Z]{4}\d{4}\b/g) || [])];
+}
+
+function buildPrereqMap(data) {
+  const m = {};
+  for (const [code, info] of Object.entries(data))
+    m[code] = parseCodes(info.enrolment_rules || '', info.prereq_parsed);
+  return m;
+}
+
+function buildDependentMap(prereqMap) {
+  const m = {};
+  for (const [code, prereqs] of Object.entries(prereqMap))
+    for (const p of prereqs) { if (!m[p]) m[p] = []; m[p].push(code); }
+  return m;
+}
+
+function collectAllPrereqs(code, prereqMap, visited = new Set()) {
+  if (visited.has(code)) return visited;
+  visited.add(code);
+  for (const p of (prereqMap[code] || [])) collectAllPrereqs(p, prereqMap, visited);
+  return visited;
+}
+
+function parseTerms(str) {
+  return (str || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+}
+function shortTerm(t) {
+  return t.replace(/Semester\s*/i,'S').replace(/Term\s*/i,'T').replace(/\s+/g,'');
+}
+const TERM_PALETTE = { T1:'#219a52', S1:'#219a52', T2:'#2471a3', S2:'#2471a3', T3:'#ca6f1e' };
+function termColor(s) { return TERM_PALETTE[s] || '#7f8c8d'; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⑥ SHARED VISUAL-STATE CALCULATOR
+   ═══════════════════════════════════════════════════════════════════════════ */
+function tileVisuals({ isSelected, isPrereq, isDependent, streamFaded, contextDim, code }) {
+  const color = discColor(code);
+  const subtle = discBg(code, 0.09);   // gentle discipline tint for normal state
+  if (isSelected)   return { bg:discBg(code,0.20), bc:color,      bw:3, op:1, fl:'none',
+    bs:`0 0 0 2px ${color}, 0 3px 12px rgba(0,0,0,0.15)` };
+  if (isPrereq)     return { bg:'#d5f5e3',          bc:'#1e8449',  bw:2, op:1, fl:'none',
+    bs:'0 0 0 1.5px #1e8449, 0 2px 8px rgba(30,132,73,0.15)' };
+  if (isDependent)  return { bg:'#d6eaf8',          bc:'#1a5276',  bw:2, op:1, fl:'none',
+    bs:'0 0 0 1.5px #1a5276, 0 2px 8px rgba(26,82,118,0.15)' };
+  if (streamFaded)  return { bg:'#f8f8f8',          bc:'#e0e0e0',  bw:1, op:0.22, fl:'grayscale(80%)', bs:'none' };
+  if (contextDim)   return { bg:subtle,             bc:color,      bw:2, op:0.45, fl:'none', bs:'none' };
+  return              { bg:subtle,             bc:color,      bw:2, op:1, fl:'none',
+    bs:'0 1px 3px rgba(0,0,0,0.07)' };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⑦ COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function TermBadge({ term }) {
+  const s = shortTerm(term);
+  return (
+    <span style={{ background:termColor(s), color:'#fff', borderRadius:3,
+      padding:'1px 5px', fontSize:10, fontWeight:700, marginRight:3 }}>
+      {s}
+    </span>
+  );
+}
+
+function StateBadge({ label, color }) {
+  return (
+    <div style={{ position:'absolute', top:4, right:6, fontSize:8,
+      fontWeight:900, color, letterSpacing:'0.5px' }}>
+      {label}
+    </div>
+  );
+}
+
+/* ── Standard tile (single course, or one item in an alt-group) ──────────── */
+function CourseTile({ code, info={}, isSelected, isPrereq, isDependent,
+  streamFaded, contextDim, isAlt, altIdx, altTotal, onClick, onMouseEnter, onMouseLeave }) {
+  const color = discColor(code);
+  const terms = parseTerms(info.offering_terms);
+  const { bg, bc, bw, op, fl, bs } = tileVisuals({
+    isSelected, isPrereq, isDependent, streamFaded, contextDim, code });
+  const radius = !isAlt ? 8 : altIdx === 0 ? '8px 8px 0 0'
+    : altIdx === altTotal-1 ? '0 0 8px 8px' : 0;
+
+  return (
+    <div className={`tile${isSelected?' is-selected':''}`}
+      onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
+      style={{ position:'relative', background:bg, borderLeft:`${bw}px solid ${bc}`,
+        borderRadius:radius, boxShadow:bs, opacity:op, filter:fl,
+        padding:'6px 8px', marginBottom:isAlt&&altIdx<altTotal-1?1:0,
+        cursor:'pointer', userSelect:'none', minWidth:120, maxWidth:164 }}>
+      <span style={{ fontWeight:800, fontSize:11, color, letterSpacing:'0.4px' }}>{code}</span>
+      <div style={{ fontSize:10, color:'#444', lineHeight:1.3, margin:'2px 0 3px',
+        overflow:'hidden', display:'-webkit-box',
+        WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
+        {info.title || <span style={{ color:'#ccc', fontStyle:'italic' }}>—</span>}
+      </div>
+      <div>{terms.map(t => <TermBadge key={t} term={t}/>)}</div>
+      {isSelected  && <StateBadge label="SELECTED" color={color}/>}
+      {isPrereq    && <StateBadge label="PREREQ"   color="#1e8449"/>}
+      {isDependent && <StateBadge label="UNLOCKS"  color="#1a5276"/>}
+      {isAlt && altIdx < altTotal-1 && (
+        <div style={{ position:'absolute', bottom:-9, left:'50%', transform:'translateX(-50%)',
+          fontSize:9, color:'#aaa', background:bg, padding:'0 4px',
+          zIndex:2, pointerEvents:'none' }}>or</div>
+      )}
+    </div>
+  );
+}
+
+/* ── Co-badged tile (one enrolment shown under two course codes) ─────────── */
+function CobadgedTile({ primary, secondary, info={}, isSelected, isPrereq,
+  isDependent, streamFaded, contextDim, onClick, onMouseEnter, onMouseLeave }) {
+  const c1 = discColor(primary), c2 = discColor(secondary);
+  const terms = parseTerms(info.offering_terms);
+  const { bg, bc, bw, op, fl, bs } = tileVisuals({
+    isSelected, isPrereq, isDependent, streamFaded, contextDim, code:primary });
+  return (
+    <div className={`tile${isSelected?' is-selected':''}`}
+      onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
+      style={{ position:'relative', background:bg, borderLeft:`${bw}px solid ${bc}`,
+        borderRadius:8, boxShadow:bs, opacity:op, filter:fl,
+        padding:'6px 8px', cursor:'pointer', userSelect:'none', minWidth:120, maxWidth:164 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:3, marginBottom:1 }}>
+        <span style={{ fontWeight:800, fontSize:11, color:c1, letterSpacing:'0.4px' }}>{primary}</span>
+        <span style={{ fontSize:9, color:'#bbb', margin:'0 1px' }}>/</span>
+        <span style={{ fontWeight:700, fontSize:10, color:c2, letterSpacing:'0.3px' }}>{secondary}</span>
+      </div>
+      <div style={{ fontSize:10, color:'#444', lineHeight:1.3, margin:'2px 0 2px',
+        overflow:'hidden', display:'-webkit-box',
+        WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>
+        {info.title || <span style={{ color:'#ccc', fontStyle:'italic' }}>—</span>}
+      </div>
+      <div style={{ fontSize:8, color:'#aaa', fontStyle:'italic', marginBottom:3 }}>co-badged</div>
+      <div>{terms.map(t => <TermBadge key={t} term={t}/>)}</div>
+      {isSelected  && <StateBadge label="SELECTED" color={c1}/>}
+      {isPrereq    && <StateBadge label="PREREQ"   color="#1e8449"/>}
+      {isDependent && <StateBadge label="UNLOCKS"  color="#1a5276"/>}
+    </div>
+  );
+}
+
+/* ── Tile slot: dispatches to CobadgedTile or alt-group of CourseTiles ──── */
+function TileSlot({ codes, courseData, selected, prereqSet, dependentSet,
+  streamFaded, contextDimAll, onClick, onMouseEnter, onMouseLeave }) {
+
+  if (isCobadgedSlot(codes)) {
+    const [p, s] = codes;
+    const info = courseData[p] || courseData[s] || {};
+    const isSel = selected===p || selected===s;
+    const isPre = prereqSet.has(p) || prereqSet.has(s);
+    const isDep = dependentSet.has(p) || dependentSet.has(s);
+    const cDim  = contextDimAll && !isPre && !isDep && !isSel;
+    return (
+      <div style={{ marginBottom:8 }}>
+        <CobadgedTile primary={p} secondary={s} info={info}
+          isSelected={isSel} isPrereq={isPre} isDependent={isDep}
+          streamFaded={streamFaded(p)} contextDim={cDim}
+          onClick={e=>onClick(p,e)} onMouseEnter={()=>onMouseEnter(p)}
+          onMouseLeave={onMouseLeave}/>
+      </div>
+    );
+  }
+
+  // Alt-group or single tile
+  return (
+    <div style={{ display:'flex', flexDirection:'column', marginBottom:codes.length>1?10:8 }}>
+      {codes.map((code,i) => (
+        <CourseTile key={code} code={code} info={courseData[code]||{}}
+          isSelected={selected===code} isPrereq={prereqSet.has(code)}
+          isDependent={dependentSet.has(code)} streamFaded={streamFaded(code)}
+          contextDim={contextDimAll && !prereqSet.has(code) && !dependentSet.has(code) && selected!==code}
+          isAlt={codes.length>1} altIdx={i} altTotal={codes.length}
+          onClick={e=>onClick(code,e)} onMouseEnter={()=>onMouseEnter(code)}
+          onMouseLeave={onMouseLeave}/>
+      ))}
+    </div>
+  );
+}
+
+/* ── Stage Row ────────────────────────────────────────────────────────────── */
+const STAGE_COLORS = ['#1f3a5f','#1a4a35','#4a1f5f','#3d2b00'];
+
+function StageRow({ stageIdx, stage, program, courseData, selected,
+  prereqSet, dependentSet, activeStream, onClick, onMouseEnter, onMouseLeave }) {
+  const { id, honours } = stage;
+  const coreGroups = Array.isArray(program.stageCores[id]) ? program.stageCores[id] : [];
+  const allCoreCodes = coreGroups.flat();
+  const contextDimAll = !!selected;
+
+  function streamFaded(code) {
+    if (!activeStream) return false;
+    if (allCoreCodes.includes(code)) return false;
+    const activeCodes = (program.streams.find(s=>s.id===activeStream)?.[id]||[]).flat();
+    return !activeCodes.includes(code);
+  }
+
+  const slotProps = { courseData, selected, prereqSet, dependentSet,
+    streamFaded, contextDimAll, onClick, onMouseEnter, onMouseLeave };
+  const streamsWithElectives = program.streams.filter(s=>(s[id]||[]).length>0);
+  const hasElectives = streamsWithElectives.length > 0;
+
+  // ── UoC summary for stage header ─────────────────────────────────────────
+  const coreUoC = coreGroups.length * 6;
+  let electiveUoCLabel = null;
+  if (!honours && hasElectives) {
+    if (activeStream) {
+      const str = program.streams.find(s => s.id === activeStream);
+      const cnt = str ? (str[id] || []).length : 0;
+      if (cnt > 0) electiveUoCLabel = `${cnt * 6} UoC`;
+    } else {
+      const counts = streamsWithElectives.map(s => (s[id] || []).length);
+      const mn = Math.min(...counts) * 6, mx = Math.max(...counts) * 6;
+      electiveUoCLabel = mn === mx ? `${mn} UoC` : `${mn}–${mx} UoC`;
+    }
+  }
+
+  // ── Deduplicate elective slots that appear in multiple streams ───────────
+  // slotEntries: [{key, slot, streams:[...]}] in first-appearance order
+  const slotEntries = [];
+  for (const str of streamsWithElectives) {
+    for (const slot of (str[id] || [])) {
+      const key = [...slot].sort().join(',');
+      const existing = slotEntries.find(e => e.key === key);
+      if (existing) existing.streams.push(str);
+      else slotEntries.push({ key, slot, streams:[str] });
+    }
+  }
+  // Shared = same slot code-set in 2+ streams → render once with multi-colour bar
+  const sharedKeys   = new Set(slotEntries.filter(e=>e.streams.length>1).map(e=>e.key));
+  const sharedSlots  = slotEntries.filter(e=>e.streams.length>1);
+  // Unique = slots belonging to exactly one stream
+  const streamsWithUniques = streamsWithElectives.map(str=>({
+    str,
+    slots:(str[id]||[]).filter(slot=>!sharedKeys.has([...slot].sort().join(','))),
+  })).filter(({slots})=>slots.length>0);
+
+  const stageColor = STAGE_COLORS[stageIdx % STAGE_COLORS.length];
+
+  return (
+    <div style={{ background:'#fff', borderRadius:12, marginBottom:14,
+      boxShadow:'0 2px 10px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+      {/* Stage header */}
+      <div style={{ background:stageColor, color:'#fff',
+        padding:'10px 18px', display:'flex', alignItems:'center', gap:14 }}>
+        <span style={{ fontWeight:900, fontSize:15, letterSpacing:'0.3px' }}>{stage.label}</span>
+        <span style={{ fontSize:11, opacity:0.65 }}>{stage.sub}</span>
+        <div style={{ flex:1 }}/>
+        {!honours && (
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <UoCBadge label="Core" uoc={`${coreUoC} UoC`}/>
+            {electiveUoCLabel && <UoCBadge label="Electives" uoc={electiveUoCLabel}/>}
+          </div>
+        )}
+      </div>
+
+      {/* Honours stage — no tile grid */}
+      {honours && (
+        <div style={{ padding:'20px 24px', color:'#888', fontSize:13, fontStyle:'italic',
+          borderLeft:'4px solid #c59b00', margin:'12px 16px', borderRadius:4,
+          background:'#fffdf0' }}>
+          Research thesis and coursework. Enrolment is by application — see the School of
+          Climate Change Research for entry requirements and available projects.
+        </div>
+      )}
+
+      {/* Normal stage — core + electives */}
+      {!honours && (
+        <div style={{ display:'flex', alignItems:'stretch', minHeight:120 }}>
+          {/* Core */}
+          <div style={{ flexShrink:0, background:'#edf1f7',
+            borderRight:hasElectives?'3px solid #c8d0de':'none', padding:'12px 14px' }}>
+            <PanelLabel color={stageColor}>⬡ Core</PanelLabel>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'flex-start' }}>
+              {coreGroups.map((g,i) => <TileSlot key={i} codes={g} {...slotProps}/>)}
+            </div>
+          </div>
+          {/* Electives */}
+          {hasElectives && (
+            <div style={{ flex:1, background:'#fafbff', padding:'12px 16px',
+              borderLeft:'3px solid #c8d0de', marginLeft:-3 }}>
+              <PanelLabel color="#666">⬢ Stream Electives</PanelLabel>
+              <div style={{ display:'flex', gap:14, flexWrap:'wrap', alignItems:'flex-start' }}>
+
+                {/* ── Shared slots (2+ streams) — rendered once with a multi-colour stripe ── */}
+                {sharedSlots.length > 0 && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                    {sharedSlots.map(({key, slot, streams:ss}) => (
+                      <div key={key}>
+                        {/* Stripe segments — one colour per sharing stream */}
+                        <div style={{ display:'flex', height:4, borderRadius:'3px 3px 0 0', overflow:'hidden', marginBottom:2 }}>
+                          {ss.map(s=>(
+                            <div key={s.id} style={{ flex:1, background:s.color,
+                              opacity:!activeStream||activeStream===s.id ? 1 : 0.25 }}/>
+                          ))}
+                        </div>
+                        <TileSlot codes={slot} {...slotProps}/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Stream-unique columns ── */}
+                {streamsWithUniques.map(({str, slots}) => {
+                  const isActive = !activeStream || activeStream===str.id;
+                  return (
+                    <div key={str.id} className="stream-group" style={{
+                      opacity:isActive?1:0.12, filter:isActive?'none':'grayscale(70%)' }}>
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'flex-start' }}>
+                        {slots.map((slot,i) => <TileSlot key={i} codes={slot} {...slotProps}/>)}
+                      </div>
+                    </div>
+                  );
+                })}
+
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PanelLabel({ color, children }) {
+  return (
+    <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase',
+      letterSpacing:'0.6px', color, marginBottom:10 }}>
+      {children}
+    </div>
+  );
+}
+
+function UoCBadge({ label, uoc }) {
+  return (
+    <div style={{ background:'rgba(255,255,255,0.18)', borderRadius:5,
+      padding:'2px 9px', fontSize:10, lineHeight:1.5, whiteSpace:'nowrap' }}>
+      <span style={{ opacity:0.72, fontWeight:400 }}>{label} </span>
+      <span style={{ fontWeight:800 }}>{uoc}</span>
+    </div>
+  );
+}
+
+function HelpModal({ onClose }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:500,
+      display:'flex', alignItems:'center', justifyContent:'center' }}
+      onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:14,
+        padding:'28px 32px', maxWidth:520, width:'92%',
+        boxShadow:'0 8px 40px rgba(0,0,0,0.28)', position:'relative' }}>
+        <button onClick={onClose} style={{ position:'absolute', top:12, right:14,
+          background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#aaa',
+          lineHeight:1 }}>×</button>
+        <h2 style={{ fontSize:17, fontWeight:800, marginBottom:18, color:'#1a1a2e' }}>
+          How to use this Course Map
+        </h2>
+        <div style={{ fontSize:13, lineHeight:2, color:'#444' }}>
+          <div><strong>🔍 Hover</strong> over any tile to see a quick summary of the course.</div>
+          <div><strong>📌 Click</strong> a tile to open a detailed panel — including prerequisites,
+            what the course unlocks, and a link to the UNSW Handbook.</div>
+          <div><strong>🔗 Prerequisites</strong> are highlighted in <span style={{color:'#1e8449',fontWeight:700}}>green</span>;
+            courses unlocked by your selection appear in <span style={{color:'#1a5276',fontWeight:700}}>blue</span>.</div>
+          <div><strong>🎓 Program</strong> — switch between BSc and AdvSci using the dropdown in the header.</div>
+          <div><strong>📊 Stream</strong> — click a stream button to focus on the courses relevant to
+            your specialisation. Tiles from other streams are dimmed.</div>
+          <div><strong>⌨️ Deselect</strong> — press <kbd style={{ background:'#eee', border:'1px solid #ccc',
+            borderRadius:3, padding:'1px 5px', fontSize:11 }}>Esc</kbd> or click the background.</div>
+          <div style={{ marginTop:12, fontSize:11, color:'#aaa', borderTop:'1px solid #f0f0f0', paddingTop:10 }}>
+            Course data is loaded automatically from <code>courses_handbook_2026.json</code>.
+            Run <code>python -m http.server</code> from the same folder, or use the splash screen to load a file manually.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Tooltip ──────────────────────────────────────────────────────────────── */
+function Tooltip({ code, info={}, pos }) {
+  const sec = cbSecondary(code);
+  const terms = parseTerms(info.offering_terms);
+  const prereqs = parseCodes(info.enrolment_rules||'', info.prereq_parsed);
+  const color = discColor(code);
+  return (
+    <div style={{ position:'fixed',
+      top:Math.min(pos.y+16, window.innerHeight-220),
+      left:Math.min(pos.x+16, window.innerWidth-300),
+      background:'#1a1a2e', color:'#fff', borderRadius:10,
+      padding:'12px 16px', maxWidth:290, zIndex:9999,
+      pointerEvents:'none', boxShadow:'0 6px 30px rgba(0,0,0,0.35)',
+      fontSize:12, lineHeight:1.5 }}>
+      <div style={{ fontWeight:800, color, marginBottom:2 }}>
+        {code}{sec&&<span style={{color:'#888'}}> / {sec}</span>}{info.title?` — ${info.title}`:''}
+      </div>
+      {info.units_of_credit && (
+        <div style={{ color:'#aaa', fontSize:11, marginBottom:4 }}>
+          {info.units_of_credit} UoC · {info.study_level||''}{sec&&' · co-badged'}
+        </div>
+      )}
+      {terms.length>0 && (
+        <div style={{ marginBottom:5 }}>
+          {terms.map(t=><TermBadge key={t} term={t}/>)}
+          {info.campus&&<span style={{fontSize:10,color:'#888',marginLeft:4}}>{info.campus}</span>}
+        </div>
+      )}
+      {info.delivery_mode && (
+        <div style={{ fontSize:11, color:'#aaa', marginBottom:4 }}>
+          {info.delivery_mode}{info.contact_hours?` · ${info.contact_hours}`:''}
+        </div>
+      )}
+      {prereqs.length>0 && (
+        <div style={{ fontSize:11, color:'#a8e6cf', marginBottom:3 }}>
+          Prereq: {prereqs.join(', ')}
+        </div>
+      )}
+      {info.exclusions && (
+        <div style={{ fontSize:11, color:'#f1948a', marginBottom:3 }}>
+          Excl: {info.exclusions}
+        </div>
+      )}
+      {info.overview && (
+        <div style={{ marginTop:7, fontSize:11, color:'#ccc', lineHeight:1.4,
+          borderTop:'1px solid #333', paddingTop:7,
+          overflow:'hidden', display:'-webkit-box',
+          WebkitLineClamp:3, WebkitBoxOrient:'vertical' }}>
+          {info.overview}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Side Panel ───────────────────────────────────────────────────────────── */
+function SidePanel({ code, courseData, prereqMap, dependentMap, onClose, onNavigate, side='right' }) {
+  if (!code) return null;
+  const info = courseData[code] || {};
+  const sec = cbSecondary(code);
+  const color = discColor(code);
+  const terms = parseTerms(info.offering_terms);
+  const directPrereqs = parseCodes(info.enrolment_rules||'', info.prereq_parsed);
+  const chainCodes = [...collectAllPrereqs(code, prereqMap)].filter(c=>c!==code);
+  const indirectOnly = chainCodes.filter(c=>!directPrereqs.includes(c));
+  const dependents = [...new Set([
+    ...(dependentMap[code]||[]),
+    ...(sec?(dependentMap[sec]||[]):[]),
+  ])];
+
+  function Chip({ target, subtle }) {
+    const c = discColor(target);
+    return (
+      <button onClick={()=>onNavigate(target)} style={{
+        background:subtle?'#f0f0f0':discBg(target,0.12),
+        color:subtle?'#666':c,
+        border:`1px solid ${subtle?'#ddd':c+'44'}`,
+        borderRadius:5, padding:'3px 9px',
+        cursor:'pointer', fontSize:12, fontWeight:700 }}>
+        {target}
+      </button>
+    );
+  }
+
+  function Meta({ label, value }) {
+    if (!value) return null;
+    return (
+      <div style={{ background:'#f7f8fa', borderRadius:7, padding:'7px 10px' }}>
+        <div style={{ fontSize:9, color:'#bbb', textTransform:'uppercase',
+          letterSpacing:'0.5px', marginBottom:2 }}>{label}</div>
+        <div style={{ fontSize:12, color:'#333', fontWeight:500, lineHeight:1.3 }}>{value}</div>
+      </div>
+    );
+  }
+
+  function Sect({ title, children }) {
+    return (
+      <div style={{ marginBottom:18 }}>
+        <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase',
+          letterSpacing:'0.5px', color:'#bbb', paddingBottom:5,
+          borderBottom:'1px solid #f0f0f0', marginBottom:8 }}>{title}</div>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div className="side-panel" onClick={e=>e.stopPropagation()} style={{
+      position:'fixed',
+      right: side==='right' ? 0 : 'auto',
+      left:  side==='left'  ? 0 : 'auto',
+      top:0, bottom:0, width:380,
+      background:'#fff',
+      boxShadow: side==='right' ? '-4px 0 24px rgba(0,0,0,0.13)' : '4px 0 24px rgba(0,0,0,0.13)',
+      animation: side==='left' ? 'slideInLeft 0.22s ease' : 'slideIn 0.22s ease',
+      zIndex:300, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+      <div style={{ background:color, padding:'18px 20px', color:'#fff', flexShrink:0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div>
+            <div style={{ fontSize:20, fontWeight:900 }}>
+              {code}{sec&&<span style={{fontSize:14,opacity:0.75,marginLeft:6}}>/ {sec}</span>}
+            </div>
+            <div style={{ fontSize:11, opacity:0.8, marginTop:2 }}>
+              {[info.units_of_credit&&`${info.units_of_credit} UoC`,info.study_level].filter(Boolean).join(' · ')}
+              {sec&&<span style={{marginLeft:8,opacity:0.7}}>· co-badged</span>}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.2)', border:'none',
+            color:'#fff', width:30, height:30, borderRadius:'50%', cursor:'pointer',
+            fontSize:18, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+        </div>
+        {terms.length>0 && <div style={{marginTop:9}}>{terms.map(t=><TermBadge key={t} term={t}/>)}</div>}
+      </div>
+
+      <div style={{ flex:1, overflow:'auto', padding:'16px 20px' }}>
+        {info.title && (
+          <h2 style={{ fontSize:15, fontWeight:700, color:'#1a1a2e',
+            marginBottom:14, lineHeight:1.3 }}>{info.title}</h2>
+        )}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7, marginBottom:16 }}>
+          <Meta label="Faculty"     value={info.faculty}/>
+          <Meta label="School"      value={info.school}/>
+          <Meta label="Campus"      value={info.campus}/>
+          <Meta label="Calendar"    value={info.academic_calendar}/>
+          <Meta label="Delivery"    value={info.delivery_mode}/>
+          <Meta label="Contact Hrs" value={info.contact_hours}/>
+          {info.delivery_format && <Meta label="Format" value={info.delivery_format}/>}
+        </div>
+
+        {info.overview && (
+          <Sect title="Overview">
+            <p style={{ fontSize:13, color:'#444', lineHeight:1.65 }}>{info.overview}</p>
+          </Sect>
+        )}
+
+        {directPrereqs.length>0 && (
+          <Sect title="Prerequisites">
+            {info.enrolment_rules && (
+              <p style={{ fontSize:11, color:'#777', marginBottom:8, lineHeight:1.4 }}>
+                {info.enrolment_rules}
+              </p>
+            )}
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {directPrereqs.map(p=><Chip key={p} target={p}/>)}
+            </div>
+          </Sect>
+        )}
+
+        {indirectOnly.length>0 && (
+          <Sect title="Full Prerequisite Chain (indirect)">
+            <p style={{ fontSize:11, color:'#999', marginBottom:8 }}>
+              Earlier courses transitively required:
+            </p>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {indirectOnly.map(p=><Chip key={p} target={p} subtle/>)}
+            </div>
+          </Sect>
+        )}
+
+        {dependents.length>0 && (
+          <Sect title="Unlocks (courses that require this)">
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {dependents.map(d=><Chip key={d} target={d} subtle/>)}
+            </div>
+          </Sect>
+        )}
+
+        {info.exclusions && (
+          <Sect title="Exclusions">
+            <p style={{ fontSize:12, color:'#c0392b', lineHeight:1.4 }}>{info.exclusions}</p>
+          </Sect>
+        )}
+
+        {info.url && (
+          <a href={info.url} target="_blank" rel="noopener noreferrer" style={{
+            display:'block', marginTop:8, padding:'11px 0', background:color,
+            color:'#fff', borderRadius:8, textAlign:'center',
+            textDecoration:'none', fontWeight:700, fontSize:13 }}>
+            Open in Handbook ↗
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EscListener({ onEsc }) {
+  useEffect(() => {
+    const h = e => { if (e.key==='Escape') onEsc(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onEsc]);
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⑧ MAIN APP
+   ═══════════════════════════════════════════════════════════════════════════ */
+function App() {
+  const [courseData,   setCourseData]   = useState({});
+  const [dataLoaded,   setDataLoaded]   = useState(false);
+  const [dataError,    setDataError]    = useState(false);
+  const [selected,     setSelected]     = useState(null);
+  const [hovered,      setHovered]      = useState(null);
+  const [tooltipPos,   setTooltipPos]   = useState({x:0,y:0});
+  const [activeStream, setActiveStream] = useState(null);
+  const [programId,    setProgramId]    = useState('bsc');
+  const [programs,     setPrograms]     = useState({});
+  const [programsLoaded, setProgramsLoaded] = useState(false);
+  const [panelSide,    setPanelSide]    = useState('right');
+  const [helpOpen,     setHelpOpen]     = useState(false);
+
+  const program = programs[programId];
+
+  const prereqMap    = useMemo(() => buildPrereqMap(courseData),   [courseData]);
+  const dependentMap = useMemo(() => buildDependentMap(prereqMap), [prereqMap]);
+
+  // For co-badged tiles: collect prereqs from both primary and secondary codes
+  const prereqSet = useMemo(() => {
+    if (!selected) return new Set();
+    const s = collectAllPrereqs(selected, prereqMap);
+    const sec = cbSecondary(selected);
+    if (sec) for (const c of collectAllPrereqs(sec, prereqMap)) s.add(c);
+    s.delete(selected);
+    if (sec) s.delete(sec);
+    return s;
+  }, [selected, prereqMap]);
+
+  const dependentSet = useMemo(() => {
+    if (!selected) return new Set();
+    const ds = new Set(dependentMap[selected]||[]);
+    const sec = cbSecondary(selected);
+    if (sec) for (const c of (dependentMap[sec]||[])) ds.add(c);
+    return ds;
+  }, [selected, dependentMap]);
+
+  // ── Data loading ──────────────────────────────────────────────────────────
+  function indexRows(rows) {
+    const out = {};
+    rows.forEach(r => { if (r.course_code) out[r.course_code] = r; });
+    return out;
+  }
+  function loadJson(text) {
+    const raw = JSON.parse(text);
+    setCourseData(indexRows(Array.isArray(raw)?raw:Object.values(raw)));
+    setDataLoaded(true); setDataError(false);
+  }
+  function loadCsv(text) {
+    const { data } = Papa.parse(text, { header:true, skipEmptyLines:true });
+    setCourseData(indexRows(data));
+    setDataLoaded(true); setDataError(false);
+  }
+
+  useEffect(() => {
+    fetch('courses_handbook_2026.json')
+      .then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(loadJson)
+      .catch(()=>fetch('courses_handbook_2026.csv')
+        .then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(loadCsv)
+        .catch(()=>setDataError(true)));
+  }, []);
+
+  // Load program structure from *_structure.md files at startup
+  useEffect(() => {
+    Promise.all(PROGRAM_FILES.map(f =>
+      fetch(f).then(r => r.ok ? r.text() : null).catch(() => null)
+    )).then(texts => {
+      const loaded = {};
+      texts.forEach(t => { if (t) { const p=parseProgramMd(t); if (p.id) loaded[p.id]=p; } });
+      setPrograms(loaded);
+      setProgramsLoaded(true);
+    });
+  }, []);
+
+  // If current programId isn't in the loaded programs, switch to the first available
+  useEffect(() => {
+    if (programsLoaded && !programs[programId] && Object.keys(programs).length > 0)
+      setProgramId(Object.keys(programs)[0]);
+  }, [programsLoaded, programs, programId]);
+
+  function handleFile(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try { file.name.endsWith('.json') ? loadJson(ev.target.result) : loadCsv(ev.target.result); }
+      catch(err) { alert('Could not parse: '+err.message); }
+    };
+    reader.readAsText(file);
+  }
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleMouseMove = useCallback(e => setTooltipPos({x:e.clientX,y:e.clientY}), []);
+
+  const handleSelect = useCallback((code, e) => {
+    const p = toPrimary(code);
+    setSelected(prev => prev===p ? null : p);
+    if (e) setPanelSide(e.clientX > window.innerWidth / 2 ? 'left' : 'right');
+  }, []);
+
+  const handleHover    = useCallback(code => setHovered(toPrimary(code)), []);
+  const handleHoverOff = useCallback(() => setHovered(null), []);
+
+  // Click on empty background → deselect (but not on tiles, panel, or controls)
+  const handleBgClick = useCallback(e => {
+    if (e.target.closest('.tile, .side-panel, button, select, label, a, input')) return;
+    setSelected(null);
+  }, []);
+
+  const panelOpen = !!selected;
+
+  // ── Loading / error guards ────────────────────────────────────────────────
+  if (!programsLoaded) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center',
+      justifyContent:'center', background:'#e8eaf0', color:'#888',
+      flexDirection:'column', gap:12 }}>
+      <div style={{ fontSize:32 }}>⏳</div>
+      <div style={{ fontSize:14 }}>Loading program structure…</div>
+    </div>
+  );
+  if (!program) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center',
+      justifyContent:'center', background:'#e8eaf0', flexDirection:'column',
+      gap:14, padding:32, textAlign:'center' }}>
+      <div style={{ fontSize:36 }}>⚠️</div>
+      <div style={{ fontWeight:700, fontSize:16, color:'#c0392b' }}>
+        Could not load program structure
+      </div>
+      <div style={{ fontSize:13, color:'#666', lineHeight:1.7, maxWidth:480 }}>
+        Make sure <code>bsc_structure.md</code> and <code>advsci_structure.md</code> are
+        in the same folder as this HTML, and open it via a local server:<br/>
+        <code style={{ display:'inline-block', margin:'6px 0', background:'#f0f0f0',
+          padding:'3px 10px', borderRadius:4 }}>python -m http.server</code>
+      </div>
+    </div>
+  );
+
+  return (
+    <div onMouseMove={handleMouseMove} onClick={handleBgClick}
+      style={{ minHeight:'100vh' }}>
+
+      {/* ── Header ── */}
+      <div style={{ background:'linear-gradient(135deg,#12122a 0%,#1a1f3a 100%)',
+        color:'#fff', padding:'13px 20px', position:'sticky', top:0, zIndex:200,
+        boxShadow:'0 2px 18px rgba(0,0,0,0.4)' }}>
+        <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+
+          {/* Program dropdown */}
+          <div style={{ marginRight:12 }}>
+            <div style={{ fontSize:9, opacity:0.5, textTransform:'uppercase',
+              letterSpacing:'0.5px', marginBottom:3 }}>Program</div>
+            <select value={programId}
+              onChange={e=>{setProgramId(e.target.value);setSelected(null);setActiveStream(null);}}
+              style={{ background:'rgba(255,255,255,0.12)', color:'#fff',
+                border:'1px solid rgba(255,255,255,0.25)', borderRadius:7,
+                padding:'5px 10px', fontSize:13, fontWeight:700,
+                cursor:'pointer', outline:'none', minWidth:210 }}>
+              {Object.entries(programs).map(([id,p])=>(
+                <option key={id} value={id} style={{background:'#1a1f3a',color:'#fff'}}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize:9, opacity:0.45, marginTop:3 }}>{program.subtitle}</div>
+          </div>
+
+          <div style={{ width:1, height:40, background:'rgba(255,255,255,0.15)', margin:'0 4px' }}/>
+
+          {/* Stream selector */}
+          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', flex:1 }}>
+            <span style={{ fontSize:9, opacity:0.5, fontWeight:700,
+              textTransform:'uppercase', letterSpacing:'0.5px', marginRight:2 }}>
+              Stream
+            </span>
+            <HdrBtn active={!activeStream} onClick={()=>setActiveStream(null)}
+              color="rgba(255,255,255,0.8)">All</HdrBtn>
+            {program.streams.map(s=>(
+              <HdrBtn key={s.id} active={activeStream===s.id}
+                onClick={()=>setActiveStream(p=>p===s.id?null:s.id)}
+                color={s.color}>{s.label}</HdrBtn>
+            ))}
+          </div>
+
+          {/* Help */}
+          <button onClick={()=>setHelpOpen(true)} style={{
+            cursor:'pointer', fontSize:11, opacity:0.7,
+            padding:'5px 12px', borderRadius:6, border:'none',
+            background:'rgba(255,255,255,0.1)', color:'#fff', whiteSpace:'nowrap' }}>
+            ❓ Help
+          </button>
+        </div>
+      </div>
+
+      {/* ── Legend ── */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #e4e6ee',
+        padding:'7px 20px', display:'flex', alignItems:'center',
+        gap:14, flexWrap:'wrap' }}>
+        <span style={{ fontSize:9, color:'#ccc', textTransform:'uppercase',
+          letterSpacing:'0.5px', fontWeight:700 }}>Discipline</span>
+        {Object.entries(DISC_COLORS).map(([p,c])=>(
+          <div key={p} style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <div style={{ width:10, height:10, background:c, borderRadius:2 }}/>
+            <span style={{ fontSize:10, color:'#666' }}>{p}</span>
+          </div>
+        ))}
+        <div style={{ flex:1 }}/>
+        {[['Selected','#3a7bd5',discBg('MATH',0.18)],['Prereq','#1e8449','#d5f5e3'],['Unlocks','#1a5276','#d6eaf8']].map(([l,border,bg])=>(
+          <span key={l} style={{ padding:'2px 8px', borderRadius:4, fontSize:10,
+            fontWeight:700, border:`1px solid ${border}`, background:bg, color:border }}>
+            {l}
+          </span>
+        ))}
+        {!dataLoaded && (
+          <span style={{ fontSize:10, color:'#ca6f1e', fontWeight:600 }}>
+            ⚠ No data — tiles show codes only
+          </span>
+        )}
+      </div>
+
+      {/* ── No-data splash ── */}
+      {dataError && (
+        <div style={{ maxWidth:500, margin:'60px auto', background:'#fff',
+          borderRadius:14, padding:'36px 32px', textAlign:'center',
+          boxShadow:'0 4px 24px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize:44, marginBottom:12 }}>📂</div>
+          <h2 style={{ color:'#2c3e50', marginBottom:10 }}>Load course data</h2>
+          <p style={{ color:'#666', lineHeight:1.7, marginBottom:22, fontSize:14 }}>
+            Could not auto-load <code>courses_handbook_2026.json</code> (or .csv).
+            Run <code>python -m http.server</code> from the same folder, or pick a file:
+          </p>
+          <label style={{ display:'inline-block', padding:'11px 24px',
+            background:'#16a085', color:'#fff', borderRadius:8,
+            cursor:'pointer', fontWeight:700, fontSize:14 }}>
+            Choose file
+            <input type="file" accept=".json,.csv" onChange={handleFile} style={{display:'none'}}/>
+          </label>
+        </div>
+      )}
+
+      {/* ── Stage rows ── */}
+      <div style={{ padding:'18px 20px' }}>
+
+        {/* Prereq warning banner */}
+        {prereqSet.size > 0 && (
+          <div style={{ background:'#fff8e1', border:'1px solid #e6c300',
+            borderRadius:8, padding:'9px 14px', marginBottom:14,
+            fontSize:12, color:'#6d5600',
+            display:'flex', alignItems:'flex-start', gap:9 }}>
+            <span style={{ fontSize:16, flexShrink:0 }}>⚠</span>
+            <span>
+              <strong>Prerequisites highlighted.</strong>{' '}
+              You may only need to take a <strong>subset</strong> of these courses —
+              the exact requirement depends on your enrolment pathway.{' '}
+              <a href="https://www.handbook.unsw.edu.au" target="_blank"
+                rel="noopener noreferrer"
+                style={{ color:'#6d5600', textDecoration:'underline' }}>
+                Check the handbook
+              </a>
+              {' '}for details.
+            </span>
+          </div>
+        )}
+
+        {program.stages.map((stage,idx)=>(
+          <StageRow key={stage.id} stageIdx={idx} stage={stage} program={program}
+            courseData={courseData} selected={selected}
+            prereqSet={prereqSet} dependentSet={dependentSet}
+            activeStream={activeStream}
+            onClick={handleSelect} onMouseEnter={handleHover} onMouseLeave={handleHoverOff}/>
+        ))}
+
+        {selected && (
+          <div style={{ textAlign:'center', fontSize:11, color:'#bbb', marginTop:4 }}>
+            Click anywhere on the background or press{' '}
+            <kbd style={{ background:'#eee', border:'1px solid #ccc', borderRadius:3,
+              padding:'1px 5px', fontSize:10 }}>Esc</kbd>{' '}
+            to deselect
+          </div>
+        )}
+      </div>
+
+      {/* Tooltip */}
+      {hovered && courseData[hovered] && !panelOpen && (
+        <Tooltip code={hovered} info={courseData[hovered]} pos={tooltipPos}/>
+      )}
+
+      {/* Side panel */}
+      <SidePanel code={selected} courseData={courseData}
+        prereqMap={prereqMap} dependentMap={dependentMap}
+        onClose={()=>setSelected(null)}
+        onNavigate={code=>setSelected(toPrimary(code))}
+        side={panelSide}/>
+
+      {selected && <EscListener onEsc={()=>setSelected(null)}/>}
+      {helpOpen  && <HelpModal onClose={()=>setHelpOpen(false)}/>}
+    </div>
+  );
+}
+
+function HdrBtn({ active, onClick, color, children }) {
+  return (
+    <button onClick={onClick} style={{ padding:'5px 12px', borderRadius:20,
+      border:'none', cursor:'pointer',
+      background:active?color:'rgba(255,255,255,0.12)',
+      color:'#fff', fontWeight:700, fontSize:11,
+      outline:active?'2px solid rgba(255,255,255,0.6)':'none',
+      outlineOffset:2, transition:'all 0.18s' }}>
+      {children}
+    </button>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

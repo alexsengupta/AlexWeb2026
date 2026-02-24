@@ -16,3 +16,7 @@ climate indices/data/*
 # Old / deprecated work
 old/
 .DS_Store
+
+AI_model_growth/example_data/ai_models/*.csv
+AI_model_growth/example_data/benchmark_data/*.csv
+AI_model_growth/example_data/last_updated.json

@@ -7,7 +7,9 @@ import time
 # -----------------------------
 # CONFIG
 # -----------------------------
-API_KEY = "ebf815f3a3508b510f235961d1502913"
+API_KEY = os.environ.get("ELSEVIER_API_KEY", "")
+if not API_KEY:
+    raise RuntimeError("ELSEVIER_API_KEY is not set in the environment.")
 
 # Query targeting subsurface / depth-related marine heatwaves
 SCOPUS_QUERY = (

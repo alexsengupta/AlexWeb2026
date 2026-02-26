@@ -1,6 +1,8 @@
-import csv, requests, time
+import csv, requests, time, os
 
-API_KEY   = "ebf815f3a3508b510f235961d1502913"
+API_KEY   = os.environ.get("ELSEVIER_API_KEY", "")
+if not API_KEY:
+    raise RuntimeError("ELSEVIER_API_KEY is not set in the environment.")
 AUTHOR_ID = "57242726600"
 HEADERS   = {"Accept": "application/json", "X-ELS-APIKey": API_KEY}
 

@@ -21,6 +21,8 @@ Usage:
 Output:
     - courses_handbook_2026.csv   (spreadsheet-friendly)
     - courses_handbook_2026.json  (full structured detail)
+    - programs_handbook_2026.csv  (program/specialisation detail)
+    - programs_handbook_2026.json
 
 Requirements:
     pip install requests beautifulsoup4 lxml
@@ -60,17 +62,85 @@ def _codes_from_markdowns(directory: str = ".") -> list[str]:
     return sorted(codes)
 
 
+def _programs_from_markdowns(directory: str = ".") -> list[dict]:
+    programs: list[dict] = []
+    pattern = os.path.join(directory, "*_structure.md")
+    md_files = sorted(glob.glob(pattern))
+    if not md_files:
+        raise FileNotFoundError(
+            f"No *_structure.md files found in {os.path.abspath(directory)}.\n"
+            "Expected files like bsc_structure.md and advsci_structure.md."
+        )
+    used_ids: set[str] = set()
+    for path in md_files:
+        text = open(path, encoding="utf-8").read()
+        label = ""
+        internal_id = ""
+        subtitle = ""
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not label and line.startswith("# "):
+                label = line[2:].strip()
+                continue
+            m = re.match(r"\*\*Internal ID:\*\*\s+`(.+?)`", line)
+            if m:
+                internal_id = m.group(1).strip()
+                continue
+            m = re.match(r"\*\*Subtitle:\*\*\s+(.+)", line)
+            if m:
+                subtitle = m.group(1).strip()
+                continue
+        if not internal_id:
+            internal_id = os.path.basename(path).replace("_structure.md", "")
+        base = internal_id
+        if base in used_ids:
+            i = 2
+            while f"{base}-{i}" in used_ids:
+                i += 1
+            internal_id = f"{base}-{i}"
+        used_ids.add(internal_id)
+
+        code = ""
+        if subtitle:
+            m = re.search(r"\b[A-Z]{4,6}\d{1,2}\b", subtitle)
+            if m:
+                code = m.group(0)
+
+        programs.append({
+            "internal_id": internal_id,
+            "label": label,
+            "subtitle": subtitle,
+            "handbook_code": code,
+            "source_file": os.path.basename(path),
+        })
+    return programs
+
+
 here = os.path.dirname(os.path.abspath(__file__))
 print("Discovering course codes from *_structure.md …")
 COURSE_CODES = _codes_from_markdowns(here)
 print(f"  → {len(COURSE_CODES)} courses to scrape: {', '.join(COURSE_CODES)}\n")
 
+print("Discovering program IDs from *_structure.md …")
+PROGRAMS = _programs_from_markdowns(here)
+print(f"  → {len(PROGRAMS)} programs: "
+      f"{', '.join(p['handbook_code'] or p['internal_id'] for p in PROGRAMS)}\n")
+
 YEAR = 2026
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Gemini API (structured prerequisite parsing)
+# Gemini API (structured prerequisite parsing) — OPTIONAL
 # ─────────────────────────────────────────────────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# Set ENABLE_GEMINI = True below to use Gemini for structured prerequisite parsing.
+# To avoid rate limiting, you'll need to add a delay after the Gemini API call:
+#   1. Change ENABLE_GEMINI to True
+#   2. Add this after line 322: time.sleep(3)
+#   3. Ensure GEMINI_API_KEY is exported in your shell
+#
+# By default, fast regex-only extraction is used (no API calls, no rate limits).
+# ─────────────────────────────────────────────────────────────────────────────
+ENABLE_GEMINI = False  # Set to True to enable Gemini prerequisite parsing
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "") if ENABLE_GEMINI else ""
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
     "gemini-2.0-flash:generateContent"
@@ -86,7 +156,7 @@ def parse_prereqs_gemini(session: requests.Session, text: str) -> dict:
       groups     – OR-groups; each group is an AND-list of codes
                    (satisfying ANY one group fulfils the requirement)
       raw        – the original text
-      error      – only present if the API call failed
+      error      – only present if the API call failed (SANITIZED to not include URLs)
 
     Falls back to a simple regex extraction if the API key is absent or
     the call fails.
@@ -130,7 +200,11 @@ def parse_prereqs_gemini(session: requests.Session, text: str) -> dict:
         parsed["raw"] = text
         return parsed
     except Exception as exc:
-        return {**base, "error": str(exc)}
+        # Sanitize error message to remove any URLs that might contain API keys
+        error_msg = str(exc)
+        error_msg = re.sub(r'https?://[^\s"\']+', '[URL]', error_msg)
+        error_msg = re.sub(r'key=[A-Za-z0-9_\-]+', 'key=[REDACTED]', error_msg)
+        return {**base, "error": error_msg}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -145,6 +219,18 @@ def get_level(course_code: str) -> str:
 
 def handbook_url(course_code: str, year: int = YEAR) -> str:
     return f"https://www.handbook.unsw.edu.au/{get_level(course_code)}/courses/{year}/{course_code}"
+
+
+def handbook_program_urls(code: str, year: int = YEAR) -> list[str]:
+    if not code:
+        return []
+    slug = code.lower()
+    return [
+        f"https://www.handbook.unsw.edu.au/undergraduate/specialisations/{year}/{slug}?year={year}",
+        f"https://www.handbook.unsw.edu.au/undergraduate/programs/{year}/{slug}?year={year}",
+        f"https://www.handbook.unsw.edu.au/postgraduate/specialisations/{year}/{slug}?year={year}",
+        f"https://www.handbook.unsw.edu.au/postgraduate/programs/{year}/{slug}?year={year}",
+    ]
 
 
 def strip_html(html: str) -> str:
@@ -166,6 +252,118 @@ def safe_str(obj, *keys, default="") -> str:
         else:
             return default
     return str(obj).strip() if obj is not None else default
+
+
+def safe_path(obj, *path, default="") -> str:
+    cur = obj
+    for key in path:
+        if cur is None:
+            return default
+        if isinstance(cur, list):
+            cur = cur[0] if cur else None
+        if isinstance(cur, dict):
+            cur = cur.get(key)
+        else:
+            return default
+    return str(cur).strip() if cur is not None else default
+
+
+def pick_first_str(obj: dict, keys: list[str]) -> str:
+    for k in keys:
+        v = obj.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return ""
+
+
+def _flatten_clo(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        txt = strip_html(value).strip()
+        return [txt] if txt else []
+    if isinstance(value, dict):
+        for k in ("items", "list", "values", "content", "outcomes", "learning_outcomes"):
+            if k in value:
+                return _flatten_clo(value.get(k))
+        for k in ("description", "text", "label", "name", "title", "value"):
+            if isinstance(value.get(k), str):
+                txt = strip_html(value.get(k)).strip()
+                return [txt] if txt else []
+        return []
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            out.extend(_flatten_clo(item))
+        return [x for x in out if x]
+    return []
+
+
+def extract_program_clos(pc: dict) -> list[str]:
+    keys = [
+        "program_learning_outcomes",
+        "learning_outcomes",
+        "specialisation_learning_outcomes",
+        "learningOutcomes",
+        "programLearningOutcomes",
+        "clos",
+        "clo",
+        "outcomes",
+    ]
+    clos: list[str] = []
+    for k in keys:
+        if k in pc:
+            clos.extend(_flatten_clo(pc.get(k)))
+    if not clos:
+        for k, v in pc.items():
+            if "outcome" in k.lower():
+                clos.extend(_flatten_clo(v))
+    deduped = []
+    seen = set()
+    for c in clos:
+        if c not in seen:
+            deduped.append(c)
+            seen.add(c)
+    return deduped
+
+
+def extract_learning_outcomes(page_props: dict) -> list[str]:
+    matches: list[str] = []
+
+    def collect_from_obj(obj: dict):
+        for key in ("content", "body", "description", "overview", "text", "html", "value"):
+            if key in obj:
+                matches.extend(_flatten_clo(obj.get(key)))
+        for key in ("items", "list", "values", "children", "blocks"):
+            if key in obj:
+                matches.extend(_flatten_clo(obj.get(key)))
+
+    def walk(node):
+        if isinstance(node, dict):
+            title = ""
+            for k in ("title", "heading", "label", "name"):
+                v = node.get(k)
+                if isinstance(v, str) and v.strip():
+                    title = v.strip()
+                    break
+            if title and "learning outcome" in title.lower():
+                collect_from_obj(node)
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(page_props)
+
+    # De-dupe while preserving order
+    deduped = []
+    seen = set()
+    for c in matches:
+        if c and c not in seen:
+            deduped.append(c)
+            seen.add(c)
+    return deduped
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -275,6 +473,127 @@ def fetch_course(session: requests.Session, course_code: str) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Program / specialisation fetch
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _extract_program_summary(page_props: dict) -> dict:
+    pc = page_props.get("pageContent", {}) or {}
+    if not pc:
+        return {"error": "pageContent missing or empty", "page_content": {}}
+
+    title = pick_first_str(pc, ["title", "name"])
+    code = pick_first_str(pc, ["cl_code", "specialisation_code", "program_code", "code"])
+    overview_raw = pick_first_str(pc, ["description", "overview", "summary"])
+    overview = strip_html(overview_raw)
+
+    credit_points = (
+        pc.get("credit_points")
+        or pc.get("creditPoints")
+        or pc.get("uoc")
+        or pc.get("units_of_credit")
+        or ""
+    )
+    minimum_uoc = (
+        pc.get("minimum_uoc")
+        or pc.get("min_uoc")
+        or pc.get("minimum_credit_points")
+        or pc.get("minimum_credit_points_total")
+        or credit_points
+    )
+
+    faculty = (
+        safe_path(pc, "school_detail", "parent", "value")
+        or safe_path(pc, "academic_org", "parent", "value")
+        or safe_path(pc, "faculty_detail", "value")
+        or safe_path(pc, "faculty", "value")
+        or safe_path(pc, "faculty", "name")
+    )
+    school = (
+        safe_path(pc, "school_detail", "name")
+        or safe_path(pc, "academic_org", "name")
+        or safe_path(pc, "school", "name")
+        or safe_path(pc, "school_detail", "value")
+    )
+    study_level = (
+        safe_path(pc, "study_level", "label")
+        or safe_path(pc, "study_level", "value")
+        or safe_path(pc, "level", "label")
+    )
+
+    clos = extract_program_clos(pc)
+    if not clos:
+        clos = extract_learning_outcomes(page_props)
+
+    return {
+        "handbook_code": code,
+        "title": title,
+        "overview": overview,
+        "units_of_credit": credit_points,
+        "minimum_uoc": minimum_uoc,
+        "faculty": faculty,
+        "school": school,
+        "study_level": study_level,
+        "clos": clos,
+        "page_content": pc,
+    }
+
+
+def fetch_program(session: requests.Session, program: dict, year: int = YEAR) -> dict:
+    code = program.get("handbook_code", "")
+    urls = handbook_program_urls(code, year)
+    result_base = {
+        "internal_id": program.get("internal_id", ""),
+        "label": program.get("label", ""),
+        "subtitle": program.get("subtitle", ""),
+        "handbook_code": code,
+        "source_file": program.get("source_file", ""),
+    }
+    if not urls:
+        return {**result_base, "error": "no handbook code found in subtitle"}
+
+    last_error = ""
+    for url in urls:
+        try:
+            resp = session.get(url, timeout=20)
+        except requests.RequestException as e:
+            last_error = f"request failed: {e}"
+            continue
+
+        if resp.status_code == 404:
+            last_error = "not found (404)"
+            continue
+        if resp.status_code != 200:
+            last_error = f"HTTP {resp.status_code}"
+            continue
+
+        soup = BeautifulSoup(resp.text, "lxml")
+        next_data_tag = soup.find("script", id="__NEXT_DATA__")
+        if not next_data_tag:
+            last_error = "no __NEXT_DATA__ found in page"
+            continue
+
+        try:
+            next_data = json.loads(next_data_tag.string)
+        except json.JSONDecodeError as e:
+            last_error = f"JSON parse error: {e}"
+            continue
+
+        page_props = next_data.get("props", {}).get("pageProps", {})
+        if page_props.get("pageType") == "ErrorPage":
+            last_error = "ErrorPage"
+            continue
+
+        summary = _extract_program_summary(page_props)
+        if "error" in summary:
+            last_error = summary["error"]
+            continue
+
+        return {**result_base, "url": url, **summary}
+
+    return {**result_base, "error": last_error or "not found"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Main loop
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -331,6 +650,37 @@ def scrape_all(course_codes: list[str], delay: float = 1.5) -> list[dict]:
     return results
 
 
+def scrape_all_programs(programs: list[dict], delay: float = 1.0) -> list[dict]:
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,*/*",
+        "Accept-Language": "en-AU,en;q=0.9",
+        "Referer": "https://www.handbook.unsw.edu.au/",
+    })
+
+    results = []
+    total = len(programs)
+    for i, prog in enumerate(programs, 1):
+        code = prog.get("handbook_code") or prog.get("internal_id")
+        print(f"[{i:02d}/{total}] {code}")
+        result = fetch_program(session, prog, YEAR)
+
+        if "error" in result:
+            print(f"  ✗ {result['error']}")
+        else:
+            print(f"  ✓ {result.get('title','')}  |  {result.get('url','')}")
+
+        results.append(result)
+        if i < total:
+            time.sleep(delay)
+    return results
+
+
 def save_results(results: list[dict], base_name: str = "courses_handbook_2026"):
     # JSON — prereq_parsed stored as a nested object
     with open(f"{base_name}.json", "w", encoding="utf-8") as f:
@@ -358,6 +708,29 @@ def save_results(results: list[dict], base_name: str = "courses_handbook_2026"):
     print(f"Saved → {base_name}.csv")
 
 
+def save_program_results(results: list[dict], base_name: str = "programs_handbook_2026"):
+    with open(f"{base_name}.json", "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+    print(f"\nSaved → {base_name}.json")
+
+    fieldnames = [
+        "internal_id", "label", "subtitle", "handbook_code",
+        "title", "units_of_credit", "minimum_uoc", "faculty", "school", "study_level",
+        "overview", "clos", "url", "source_file", "page_content", "error",
+    ]
+    with open(f"{base_name}.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for row in results:
+            row_out = dict(row)
+            if isinstance(row_out.get("page_content"), dict):
+                row_out["page_content"] = json.dumps(row_out["page_content"])
+            if isinstance(row_out.get("clos"), list):
+                row_out["clos"] = json.dumps(row_out["clos"])
+            writer.writerow(row_out)
+    print(f"Saved → {base_name}.csv")
+
+
 if __name__ == "__main__":
     print(f"UNSW Handbook Scraper — {YEAR}")
     print(f"Courses to fetch: {len(COURSE_CODES)}\n")
@@ -375,3 +748,18 @@ if __name__ == "__main__":
                 print(f"  {r['course_code']:12s}  {r['error']}")
 
     save_results(results)
+
+    print(f"\nPrograms to fetch: {len(PROGRAMS)}\n")
+    prog_results = scrape_all_programs(PROGRAMS, delay=1.0)
+    ok  = sum(1 for r in prog_results if "error" not in r)
+    bad = sum(1 for r in prog_results if "error" in r)
+    print(f"\n{'─'*55}")
+    print(f"Programs: {ok} succeeded, {bad} not found / failed.")
+    if bad:
+        print("Not retrieved:")
+        for r in prog_results:
+            if "error" in r:
+                code = r.get("handbook_code") or r.get("internal_id") or "unknown"
+                print(f"  {code:12s}  {r['error']}")
+
+    save_program_results(prog_results)

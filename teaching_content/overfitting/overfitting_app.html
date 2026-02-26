@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Overfitting &amp; Spurious Skill — Interactive Demo</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1f2937;font-size:14px;background:#fff;line-height:1.5}
+input[type=range]{width:100%;accent-color:#2563eb;height:6px;cursor:pointer}
+select{padding:5px 10px;border-radius:4px;border:1px solid #d1d5db;font-size:13px;background:#fff}
+button{cursor:pointer;font-family:inherit}
+.callout{border-left:4px solid;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;line-height:1.5}
+.callout-blue{border-color:#2563eb;background:#eff6ff;color:#1e40af}
+.callout-red{border-color:#dc2626;background:#fef2f2;color:#991b1b}
+.callout-amber{border-color:#f59e0b;background:#fffbeb;color:#92400e}
+.callout-green{border-color:#16a34a;background:#f0fdf4;color:#166534}
+.callout-dark{border-color:#f59e0b;background:#1e293b;color:#f1f5f9;border-left-width:5px;border-radius:8px;padding:16px 20px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.callout-dark b{color:#fbbf24}
+.callout b{display:block;margin-bottom:2px}
+.hint{font-size:11px;color:#6b7280;line-height:1.3;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+"use strict";
+var h=React.createElement,F=React.Fragment,useState=React.useState,useMemo=React.useMemo,useEffect=React.useEffect,useRef=React.useRef;
+
+// ============================================================
+// MATH
+// ============================================================
+function mulberry32(seed){var s=seed|0;return function(){s=(s+0x6D2B79F5)|0;var t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+function normalRng(rng){var spare=null;return function(){if(spare!==null){var v=spare;spare=null;return v}var u,v,s;do{u=2*rng()-1;v=2*rng()-1;s=u*u+v*v}while(s>=1||s===0);var f=Math.sqrt(-2*Math.log(s)/s);spare=v*f;return u*f}}
+function ar1(phi,n,sigma,normal){var p=Math.max(-0.999,Math.min(0.999,phi));var isd=sigma*Math.sqrt(Math.max(1e-12,1-p*p));var x=new Array(n);x[0]=normal()*sigma;for(var t=1;t<n;t++)x[t]=p*x[t-1]+normal()*isd;return x}
+function corrcoef(a,b){var n=a.length;if(n<3)return NaN;var ma=0,mb=0;for(var i=0;i<n;i++){ma+=a[i];mb+=b[i]}ma/=n;mb/=n;var sab=0,sa2=0,sb2=0;for(var i=0;i<n;i++){var da=a[i]-ma,db=b[i]-mb;sab+=da*db;sa2+=da*da;sb2+=db*db}if(sa2<1e-15||sb2<1e-15)return NaN;return sab/Math.sqrt(sa2*sb2)}
+function r2score(obs,pred){var n=obs.length;if(n<2)return NaN;var m=0;for(var i=0;i<n;i++)m+=obs[i];m/=n;var sse=0,sst=0;for(var i=0;i<n;i++){sse+=(obs[i]-pred[i])**2;sst+=(obs[i]-m)**2}if(sst<1e-15)return NaN;return 1-sse/sst}
+function rmse(obs,pred){var n=obs.length;if(!n)return NaN;var s=0;for(var i=0;i<n;i++)s+=(obs[i]-pred[i])**2;return Math.sqrt(s/n)}
+function solveSymmetric(A,b){var n=A.length;var aug=A.map(function(row,i){return row.map(function(v,j){return v+(i===j?1e-10:0)}).concat(b[i])});for(var c=0;c<n;c++){var mr=c;for(var r=c+1;r<n;r++)if(Math.abs(aug[r][c])>Math.abs(aug[mr][c]))mr=r;var tmp=aug[c];aug[c]=aug[mr];aug[mr]=tmp;if(Math.abs(aug[c][c])<1e-15)continue;for(var r=c+1;r<n;r++){var f=aug[r][c]/aug[c][c];for(var j=c;j<=n;j++)aug[r][j]-=f*aug[c][j]}}var x=new Array(n).fill(0);for(var i=n-1;i>=0;i--){x[i]=aug[i][n];for(var j=i+1;j<n;j++)x[i]-=aug[i][j]*x[j];x[i]/=(aug[i][i]||1e-15)}return x}
+function olsFit(X,y){var n=X.length,p=X[0].length;var XtX=Array.from({length:p},function(){return new Array(p).fill(0)});for(var i=0;i<n;i++)for(var j=0;j<p;j++)for(var k=0;k<p;k++)XtX[j][k]+=X[i][j]*X[i][k];var Xty=new Array(p).fill(0);for(var i=0;i<n;i++)for(var j=0;j<p;j++)Xty[j]+=X[i][j]*y[i];return solveSymmetric(XtX,Xty)}
+function fitTrend(t,y){var n=t.length;if(n<2)return[0,0];var mt=0,my=0;for(var i=0;i<n;i++){mt+=t[i];my+=y[i]}mt/=n;my/=n;var num=0,den=0;for(var i=0;i<n;i++){num+=(t[i]-mt)*(y[i]-my);den+=(t[i]-mt)**2}var sl=den>1e-15?num/den:0;return[my-sl*mt,sl]}
+
+// ============================================================
+// SIMULATION
+// ============================================================
+function simulate(seed,params){var rng=mulberry32(seed);var normal=normalRng(rng);var years=Array.from({length:params.nYears},function(_,i){return params.startYear+i});var t=Array.from({length:params.nYears},function(_,i){return i});var y=ar1(params.phiY,params.nYears,params.sigmaY,normal);for(var i=0;i<params.nYears;i++)y[i]+=params.trendY*t[i];var X=Array.from({length:params.nPredictors},function(){var col=ar1(params.phiX,params.nYears,params.sigmaX,normal);if(Math.abs(params.trendX)>0)for(var i=0;i<params.nYears;i++)col[i]+=params.trendX*t[i];return col});return{years:years,t:t,y:y,X:X}}
+
+function fitAndScore(seed,params,mp){var data=simulate(seed,params);var years=data.years,t=data.t,y=data.y,X=data.X;var n=params.nYears,p=params.nPredictors;var nTrain=Math.max(5,Math.min(mp.nTrain,n-5));
+var trainMask;if(mp.splitMethod==="Random"){var rng2=mulberry32(seed+10000019);var idx=Array.from({length:n},function(_,i){return i});for(var i=n-1;i>0;i--){var j=Math.floor(rng2()*(i+1));var tmp=idx[i];idx[i]=idx[j];idx[j]=tmp}trainMask=new Array(n).fill(false);for(var i=0;i<nTrain;i++)trainMask[idx[i]]=true}else{trainMask=Array.from({length:n},function(_,i){return i<nTrain})}
+var yW=y.slice(),XW=X.map(function(c){return c.slice()}),yTF=new Array(n).fill(0);
+if(mp.doDetrend){var tTr=t.filter(function(_,i){return trainMask[i]}),yTr=y.filter(function(_,i){return trainMask[i]});var ab=fitTrend(tTr,yTr);yTF=t.map(function(ti){return ab[0]+ab[1]*ti});yW=y.map(function(yi,i){return yi-yTF[i]});for(var jj=0;jj<p;jj++){var xTr=X[jj].filter(function(_,i){return trainMask[i]});var axbx=fitTrend(tTr,xTr);XW[jj]=X[jj].map(function(xi,i){return xi-(axbx[0]+axbx[1]*t[i])})}}
+var trI=[],teI=[];for(var i=0;i<n;i++){if(trainMask[i])trI.push(i);else teI.push(i)}
+var XTM=trI.map(function(i){var row=[1];for(var j=0;j<p;j++)row.push(XW[j][i]);return row});var yTV=trI.map(function(i){return yW[i]});var beta=olsFit(XTM,yTV);
+// Compute detrended predictions (on anomaly scale) and raw predictions (trend added back)
+var yhatDetr=new Array(n),yhatRaw=new Array(n);for(var i=0;i<n;i++){var v=beta[0];for(var j=0;j<p;j++)v+=beta[j+1]*XW[j][i];yhatDetr[i]=v;yhatRaw[i]=v+yTF[i]}
+// When detrending: display & evaluate on anomaly scale; otherwise raw scale
+var yDisp=mp.doDetrend?yW:y,yhat=mp.doDetrend?yhatDetr:yhatRaw;
+var yTrO=trI.map(function(i){return yDisp[i]}),yTeO=teI.map(function(i){return yDisp[i]}),yhTr=trI.map(function(i){return yhat[i]}),yhTe=teI.map(function(i){return yhat[i]});
+var r2Tr=r2score(yTrO,yhTr),r2Te=r2score(yTeO,yhTe),rTr=corrcoef(yTrO,yhTr),rTe=corrcoef(yTeO,yhTe);
+var rmseTr=rmse(yTrO,yhTr),rmseTe=rmse(yTeO,yhTe);
+// Predictor correlations always on raw data (Step 2 display)
+var predCorrs=X.map(function(col){return corrcoef(col,y)});
+var adjR2=1-(1-r2Tr)*(nTrain-1)/Math.max(1,nTrain-p-1);
+var mTr=yTrO.reduce(function(a,b){return a+b},0)/yTrO.length;var rmseMean=rmse(yTeO,yTeO.map(function(){return mTr}));
+return{years:years,t:t,y:y,yDisp:yDisp,X:X,XW:XW,yhat:yhat,yTrend:yTF,trainMask:trainMask,trI:trI,teI:teI,yTrO:yTrO,yTeO:yTeO,yhTr:yhTr,yhTe:yhTe,r2Tr:r2Tr,r2Te:r2Te,adjR2:adjR2,rTr:rTr,rTe:rTe,rmseTr:rmseTr,rmseTe:rmseTe,rmseMean:rmseMean,predCorrs:predCorrs,beta:beta,p:p,nTrain:nTrain,doDetrend:mp.doDetrend}}
+
+function buildEnsemble(baseSeed,params,mp,nRuns){var results=[];for(var i=0;i<nRuns;i++){var r=fitAndScore(baseSeed+i*7+1,params,mp);results.push({r2Tr:r.r2Tr,r2Te:r.r2Te})}return results}
+
+function pVsSkillCurve(baseSeed,params,mp,maxP,nRuns){var pts=[];for(var pp=1;pp<=maxP;pp++){var sumTr=0,sumTe=0;for(var i=0;i<nRuns;i++){var r=fitAndScore(baseSeed+i*7+1,Object.assign({},params,{nPredictors:pp}),mp);sumTr+=r.r2Tr;sumTe+=r.r2Te}pts.push({p:pp,r2Tr:Math.max(-2,Math.min(1,sumTr/nRuns)),r2Te:Math.max(-2,Math.min(1,sumTe/nRuns))})}return pts}
+
+// ============================================================
+// SCENARIOS
+// ============================================================
+var SCENARIOS={
+  "Do it yourself":{
+    desc:"Explore freely. Adjust all parameters and discover what causes overfitting.",
+    params:{startYear:1985,nYears:40,phiY:0.5,sigmaY:0.8,trendY:0,nPredictors:12,phiX:0,sigmaX:1,trendX:0},
+    model:{nTrain:25,splitMethod:"Blocked",doDetrend:false},
+    guided:false
+  },
+  "Overfitting":{
+    desc:"What happens when you fit many predictors to a short time series, even though none are real?",
+    params:{startYear:1985,nYears:40,phiY:0.5,sigmaY:0.8,trendY:0,nPredictors:12,phiX:0,sigmaX:1,trendX:0},
+    model:{nTrain:25,splitMethod:"Blocked",doDetrend:false},
+    guided:true,
+    annotations:{
+      step1:"This is your response variable \u2014 think of it as an annual fish catch or coral cover index. It has moderate persistence (\u03D5 = 0.5), meaning each year is partly influenced by the previous one. There is no trend and no relationship to any predictor.",
+      step2:"We\u2019ve generated 12 random predictors that have absolutely no connection to y. But look at the bar chart: some predictors will appear to correlate with y by pure chance. With 12 predictors, you\u2019d typically expect about 1 to exceed the significance threshold even though the relationship is entirely spurious.",
+      step3:"The model fits the training data well (R\u00B2 \u2248 0.4\u20130.8) because with 12 free parameters and only 25 data points, it can \u2018memorise\u2019 much of the noise. But look at the test R\u00B2 \u2014 it\u2019s typically negative, meaning the model\u2019s predictions are worse than simply guessing the mean. This is overfitting: apparent skill that doesn\u2019t generalise.",
+      step4:"Across 100 different realisations (same properties, different random numbers), training R\u00B2 is consistently positive while test R\u00B2 clusters around zero or below. This isn\u2019t bad luck \u2014 it\u2019s a systematic consequence of fitting too many parameters to too little data. The R\u00B2-vs-p curve shows this directly: as you add predictors, training skill rises but test skill degrades."
+    }
+  },
+  "Leakage":{
+    desc:"How does the choice of validation strategy affect apparent skill when y is autocorrelated?",
+    params:{startYear:1920,nYears:100,phiY:0.95,sigmaY:0.8,trendY:0,nPredictors:5,phiX:0.95,sigmaX:1,trendX:0},
+    model:{nTrain:65,splitMethod:"Random",doDetrend:false},
+    guided:true,
+    annotations:{
+      step1:"This time y has very strong persistence (\u03D5 = 0.95). Adjacent years have very similar values \u2014 the series has long \u2018memory.\u2019 This is typical of ocean temperatures, ice extent, and many climate indices. Notice how smooth the time series looks.",
+      step2:"The 5 predictors are also strongly autocorrelated (\u03D5 = 0.95) but completely independent of y. Any correlations you see are spurious. Notice how smooth the predictor time series look \u2014 this smoothness is what enables the leakage problem.",
+      step3:"We\u2019re using a Random validation split. Because both y and the predictors are very smooth (high autocorrelation), randomly scattered test years sit right next to training years with nearly identical values. The model exploits this overlap: it effectively \u2018interpolates\u2019 between nearby training points. The test R\u00B2 is typically positive (~0.3) \u2014 but this is an illusion. Now switch to Blocked split and watch the test R\u00B2 collapse to strongly negative. Blocked splits separate training and test periods in time, preventing this leakage.",
+      step4:"The ensemble confirms the pattern systematically. Re-run with Random splits \u2014 test R\u00B2 clusters around +0.3. Switch to Blocked and re-run \u2014 test R\u00B2 is overwhelmingly negative. The lesson: always use blocked (contiguous) train/test splits for autocorrelated time series. Random splits inflate apparent skill by leaking temporal information."
+    }
+  },
+  "Shared trend":{
+    desc:"What happens when both y and predictors share a common trend?",
+    params:{startYear:1985,nYears:60,phiY:0.3,sigmaY:1,trendY:0.1,nPredictors:3,phiX:0.3,sigmaX:1,trendX:0.1},
+    model:{nTrain:39,splitMethod:"Random",doDetrend:false},
+    guided:true,
+    annotations:{
+      step1:"Now y has a clear upward trend (0.1 units/year). Think of this as warming SST, declining ice extent, or any variable with a long-term drift. The noise around the trend is moderate (\u03C3 = 1) with low persistence (\u03D5 = 0.3).",
+      step2:"The 3 predictors also share the same upward trend (0.1 units/year). This is realistic \u2014 many environmental variables trend together due to a common driver (e.g. climate change). Look at the correlation bar chart: the predictors appear to correlate with y, but this is entirely because they share the same trend, not because one predicts the other\u2019s interannual variability.",
+      step3:"The model shows apparently strong skill \u2014 both training and test R\u00B2 are high. But is this real predictive skill? Toggle the \u2018Detrend\u2019 checkbox and watch what happens: once the shared trend is removed, R\u00B2 collapses to near zero. The model was capturing the common trend, not a genuine predictive relationship. The charts now show detrended anomalies \u2014 the \u2018real\u2019 signal the model should be capturing, but can\u2019t.",
+      step4:"Run the ensemble with detrending OFF, then toggle detrending ON and re-run. Without detrending, the cloud of dots sits at high R\u00B2. With detrending, it collapses to zero. Shared trends are perhaps the most common source of spurious relationships in environmental science."
+    }
+  }
+};
+
+// ============================================================
+// COLOURS
+// ============================================================
+var BLUE="#2563eb",RED="#dc2626",GREY="#4b5563",LGREY="#9ca3af",AMBER="#f59e0b",GREEN="#16a34a",PURPLE="#7c3aed";
+
+// ============================================================
+// SVG CHART HELPERS
+// ============================================================
+function niceRange(mn,mx,nTicks){if(mx-mn<1e-9){mn-=1;mx+=1}var rough=(mx-mn)/(nTicks-1);var mag=Math.pow(10,Math.floor(Math.log10(rough)));var residual=rough/mag;var nice;if(residual<=1.5)nice=1;else if(residual<=3)nice=2;else if(residual<=7)nice=5;else nice=10;var step=nice*mag;var lo=Math.floor(mn/step)*step;var hi=Math.ceil(mx/step)*step;var ticks=[];for(var v=lo;v<=hi+step*0.001;v+=step)ticks.push(parseFloat(v.toFixed(10)));return{lo:lo,hi:hi,ticks:ticks}}
+function fmtTick(v){return Math.abs(v)>=1000?v.toFixed(0):Math.abs(v)<0.01&&v!==0?v.toExponential(1):parseFloat(v.toFixed(2)).toString()}
+
+function SvgLine(props){
+  var W=props.width||600,H=props.height||200,series=props.series,xLbl=props.xLabel,yLbl=props.yLabel,title=props.title,yMin=props.yMin,yMax=props.yMax,refY=props.refLineY,refX=props.refLineX,shade=props.shadeRegions;
+  var mg={t:title?28:12,r:16,b:xLbl?38:26,l:48};var w=W-mg.l-mg.r,ht=H-mg.t-mg.b;
+  var allX=[],allY=[];series.forEach(function(s){s.data.forEach(function(d){allX.push(d.x);allY.push(d.y)})});
+  if(!allX.length)return h("svg",{width:W,height:H});
+  var xr=niceRange(Math.min.apply(null,allX),Math.max.apply(null,allX),6);
+  var yr;if(yMin!==undefined&&yMax!==undefined)yr=niceRange(yMin,yMax,5);else yr=niceRange(Math.min.apply(null,allY),Math.max.apply(null,allY),5);
+  var sx=function(v){return mg.l+((v-xr.lo)/(xr.hi-xr.lo))*w};
+  var sy=function(v){return mg.t+ht-((v-yr.lo)/(yr.hi-yr.lo))*ht};
+  var clip=function(v){return Math.max(yr.lo,Math.min(yr.hi,v))};
+  var els=[];
+  if(title)els.push(h("text",{key:"t",x:W/2,y:16,textAnchor:"middle",fontSize:12,fontWeight:600,fill:"#374151"},title));
+  yr.ticks.forEach(function(v,i){els.push(h("line",{key:"gy"+i,x1:mg.l,y1:sy(v),x2:mg.l+w,y2:sy(v),stroke:"#f0f0f0"}));els.push(h("text",{key:"gyl"+i,x:mg.l-4,y:sy(v)+3,textAnchor:"end",fontSize:9,fill:"#9ca3af"},fmtTick(v)))});
+  xr.ticks.forEach(function(v,i){els.push(h("line",{key:"gx"+i,x1:sx(v),y1:mg.t,x2:sx(v),y2:mg.t+ht,stroke:"#f0f0f0"}));els.push(h("text",{key:"gxl"+i,x:sx(v),y:mg.t+ht+14,textAnchor:"middle",fontSize:9,fill:"#9ca3af"},fmtTick(v)))});
+  if(shade)shade.forEach(function(sr,i){var x1c=Math.max(mg.l,sx(sr.x1)),x2c=Math.min(mg.l+w,sx(sr.x2));if(x2c>x1c)els.push(h("rect",{key:"sr"+i,x:x1c,y:mg.t,width:x2c-x1c,height:ht,fill:sr.color,opacity:sr.opacity||0.08}))});
+  if(refY!==undefined)els.push(h("line",{key:"rly",x1:mg.l,y1:sy(refY),x2:mg.l+w,y2:sy(refY),stroke:"#d1d5db",strokeDasharray:"4,4"}));
+  if(refX!==undefined)els.push(h("line",{key:"rlx",x1:sx(refX),y1:mg.t,x2:sx(refX),y2:mg.t+ht,stroke:AMBER,strokeDasharray:"4,4"}));
+  els.push(h("rect",{key:"border",x:mg.l,y:mg.t,width:w,height:ht,fill:"none",stroke:"#e5e7eb"}));
+  series.forEach(function(s,si){var pts=s.data.map(function(d){return{x:sx(d.x),y:sy(clip(d.y))}});if(!s.noline){var path=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join("");els.push(h("path",{key:"l"+si,d:path,fill:"none",stroke:s.color||GREY,strokeWidth:s.width||2,strokeDasharray:s.dash||"none"}))}if(s.dots)pts.forEach(function(p,i){var dc=typeof s.dotColor==="function"?s.dotColor(i):s.dotColor||s.color||GREY;els.push(h("circle",{key:"d"+si+"_"+i,cx:p.x,cy:p.y,r:s.dotR||3,fill:dc,stroke:"#fff",strokeWidth:0.8}))})});
+  if(xLbl)els.push(h("text",{key:"xl",x:mg.l+w/2,y:H-4,textAnchor:"middle",fontSize:10,fill:"#6b7280"},xLbl));
+  if(yLbl)els.push(h("text",{key:"yl",x:14,y:mg.t+ht/2,textAnchor:"middle",fontSize:10,fill:"#6b7280",transform:"rotate(-90,14,"+(mg.t+ht/2)+")"},yLbl));
+  var legendItems=series.filter(function(s){return s.label});
+  if(legendItems.length>0){var lx=mg.l+8,ly=mg.t+8;legendItems.forEach(function(s,i){var y0=ly+i*16;els.push(h("line",{key:"ll"+i,x1:lx,y1:y0,x2:lx+16,y2:y0,stroke:s.color,strokeWidth:2,strokeDasharray:s.dash||"none"}));els.push(h("text",{key:"lt"+i,x:lx+20,y:y0+4,fontSize:10,fill:"#4b5563"},s.label))})}
+  return h("svg",{width:W,height:H,style:{background:"#fff",borderRadius:6,display:"block",maxWidth:"100%"}},els);
+}
+
+function SvgBar(props){
+  var W=props.width||500,H=props.height||160,bars=props.bars,threshold=props.threshold;
+  var mg={t:8,r:12,b:30,l:36};var w=W-mg.l-mg.r,ht=H-mg.t-mg.b;var n=bars.length;
+  if(!n)return h("svg",{width:W,height:H});
+  var barW=Math.max(2,Math.min(24,(w-n*2)/n));var gap=(w-n*barW)/(n+1);
+  var yr=niceRange(-1,1,5);var sy=function(v){return mg.t+ht-((v-yr.lo)/(yr.hi-yr.lo))*ht};var y0=sy(0);
+  var els=[];
+  yr.ticks.forEach(function(v,i){els.push(h("line",{key:"g"+i,x1:mg.l,y1:sy(v),x2:mg.l+w,y2:sy(v),stroke:"#f0f0f0"}));els.push(h("text",{key:"gl"+i,x:mg.l-4,y:sy(v)+3,textAnchor:"end",fontSize:9,fill:"#9ca3af"},v.toFixed(1)))});
+  els.push(h("line",{key:"z",x1:mg.l,y1:y0,x2:mg.l+w,y2:y0,stroke:"#d1d5db"}));
+  if(threshold){els.push(h("line",{key:"th+",x1:mg.l,y1:sy(threshold),x2:mg.l+w,y2:sy(threshold),stroke:AMBER,strokeDasharray:"4,4"}));els.push(h("line",{key:"th-",x1:mg.l,y1:sy(-threshold),x2:mg.l+w,y2:sy(-threshold),stroke:AMBER,strokeDasharray:"4,4"}))}
+  bars.forEach(function(b,i){var x=mg.l+gap+(gap+barW)*i;var yTop=b.r>=0?sy(b.r):y0;var yBot=b.r>=0?y0:sy(b.r);els.push(h("rect",{key:"b"+i,x:x,y:yTop,width:barW,height:Math.max(1,yBot-yTop),fill:b.fill,rx:1}));els.push(h("text",{key:"bl"+i,x:x+barW/2,y:mg.t+ht+14,textAnchor:"middle",fontSize:Math.min(9,barW+2),fill:"#9ca3af"},b.name))});
+  els.push(h("rect",{key:"border",x:mg.l,y:mg.t,width:w,height:ht,fill:"none",stroke:"#e5e7eb"}));
+  return h("svg",{width:W,height:H,style:{background:"#fff",borderRadius:6,display:"block",maxWidth:"100%"}},els);
+}
+
+function ScatterSVG(props){
+  var title=props.title,obs=props.obs,pred=props.pred,color=props.color,r2Val=props.r2Val,rmseVal=props.rmseVal,W=props.w||240,H=props.ht||210;
+  if(!obs||!obs.length)return null;
+  var all=obs.concat(pred);var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all);var pad=(mx-mn)*0.15||1;var lo=mn-pad,hi=mx+pad,rng=hi-lo;
+  var mg={t:26,r:12,b:34,l:42};var w=W-mg.l-mg.r,ht=H-mg.t-mg.b;
+  var sx=function(v){return mg.l+((v-lo)/rng)*w},sy=function(v){return mg.t+ht-((v-lo)/rng)*ht};
+  var ticks=5;var tv=Array.from({length:ticks},function(_,i){return lo+(rng*i)/(ticks-1)});
+  var els=[h("text",{key:"t",x:W/2,y:16,textAnchor:"middle",fontSize:11,fontWeight:600,fill:"#374151"},title)];
+  tv.forEach(function(v,i){els.push(h("line",{key:"gx"+i,x1:mg.l,y1:sy(v),x2:mg.l+w,y2:sy(v),stroke:"#f3f4f6"}));els.push(h("line",{key:"gy"+i,x1:sx(v),y1:mg.t,x2:sx(v),y2:mg.t+ht,stroke:"#f3f4f6"}));els.push(h("text",{key:"txl"+i,x:mg.l-4,y:sy(v)+3,textAnchor:"end",fontSize:9,fill:"#9ca3af"},v.toFixed(1)));els.push(h("text",{key:"txb"+i,x:sx(v),y:mg.t+ht+14,textAnchor:"middle",fontSize:9,fill:"#9ca3af"},v.toFixed(1)))});
+  els.push(h("line",{key:"11",x1:sx(lo),y1:sy(lo),x2:sx(hi),y2:sy(hi),stroke:LGREY,strokeDasharray:"4,4"}));
+  obs.forEach(function(o,i){els.push(h("circle",{key:"p"+i,cx:sx(o),cy:sy(pred[i]),r:3.5,fill:color,opacity:.7}))});
+  els.push(h("text",{key:"st",x:mg.l+4,y:mg.t+14,fontSize:10,fill:color,fontWeight:600},"R\u00B2="+(isNaN(r2Val)?"\u2014":r2Val.toFixed(2))+"  RMSE="+(isNaN(rmseVal)?"\u2014":rmseVal.toFixed(2))));
+  els.push(h("text",{key:"xlbl",x:mg.l+w/2,y:H-4,textAnchor:"middle",fontSize:10,fill:"#6b7280"},"Observed"));
+  els.push(h("text",{key:"ylbl",x:12,y:mg.t+ht/2,textAnchor:"middle",fontSize:10,fill:"#6b7280",transform:"rotate(-90,12,"+(mg.t+ht/2)+")"},"Predicted"));
+  return h("svg",{width:W,height:H,style:{background:"#fff",borderRadius:6,border:"1px solid #e5e7eb"}},els);
+}
+
+function HistorySVG(props){
+  var history=props.history;var W=300,H=260;var mg={t:22,r:12,b:32,l:44};var w=W-mg.l-mg.r,ht=H-mg.t-mg.b;
+  var allR2=[];history.forEach(function(d){if(isFinite(d.r2Tr))allR2.push(d.r2Tr);if(isFinite(d.r2Te))allR2.push(d.r2Te)});
+  var mn=Math.min(-0.5,Math.min.apply(null,allR2)),mx=Math.max(1,Math.max.apply(null,allR2)),rng=mx-mn;
+  var sx=function(v){return mg.l+((Math.max(mn,Math.min(mx,v))-mn)/rng)*w};
+  var sy=function(v){return mg.t+ht-((Math.max(mn,Math.min(mx,v))-mn)/rng)*ht};
+  var ticks=[-1,-.5,0,.5,1].filter(function(v){return v>=mn&&v<=mx});
+  var els=[h("text",{key:"t",x:W/2,y:14,textAnchor:"middle",fontSize:11,fontWeight:600,fill:"#374151"},"R\u00B2 Train vs Test"),h("line",{key:"d1",x1:sx(mn),y1:sy(mn),x2:sx(mx),y2:sy(mx),stroke:LGREY,strokeDasharray:"4,4"}),h("line",{key:"d0",x1:sx(mn),y1:sy(0),x2:sx(mx),y2:sy(0),stroke:"#fca5a5",strokeDasharray:"2,2"})];
+  history.forEach(function(d,i){els.push(h("circle",{key:"p"+i,cx:sx(d.r2Tr),cy:sy(d.r2Te),r:2.5,fill:d.r2Te<0?RED:BLUE,opacity:.5}))});
+  ticks.forEach(function(v){els.push(h("text",{key:"tx"+v,x:sx(v),y:mg.t+ht+12,textAnchor:"middle",fontSize:8,fill:"#9ca3af"},v));els.push(h("text",{key:"ty"+v,x:mg.l-4,y:sy(v)+3,textAnchor:"end",fontSize:8,fill:"#9ca3af"},v))});
+  els.push(h("text",{key:"xl",x:mg.l+w/2,y:H-4,textAnchor:"middle",fontSize:10,fill:"#6b7280"},"R\u00B2 Train"));
+  els.push(h("text",{key:"yl",x:14,y:mg.t+ht/2,textAnchor:"middle",fontSize:10,fill:"#6b7280",transform:"rotate(-90,14,"+(mg.t+ht/2)+")"},"R\u00B2 Test"));
+  return h("svg",{width:W,height:H,style:{background:"#fff",borderRadius:6,border:"1px solid #e5e7eb"}},els);
+}
+
+// ============================================================
+// SMALL COMPONENTS
+// ============================================================
+function Ctrl(props){
+  var isInt=props.step>=1;var display=isInt?props.value:props.value.toFixed(2);
+  return h("div",{style:{marginBottom:6},title:props.tip||""},
+    h("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,color:"#4b5563",marginBottom:2}},
+      h("span",null,props.label),h("span",{style:{fontWeight:600}},display,props.unit||"")),
+    h("input",{type:"range",min:props.min,max:props.max,step:props.step,value:props.value,
+      onChange:function(e){props.onChange(isInt?parseInt(e.target.value):parseFloat(e.target.value))}}),
+    props.tip&&h("div",{className:"hint"},props.tip));
+}
+
+function Callout(props){return h("div",{className:"callout callout-"+props.color,style:props.style||{}},props.title&&h("b",null,props.title),props.children)}
+
+function StepBox(props){
+  var color=props.active?props.color:"#d1d5db";var locked=!props.active;
+  return h("div",{style:{marginBottom:20,border:"1px solid #e5e7eb",borderRadius:8,overflow:"hidden"}},
+    h("div",{style:{padding:"10px 16px",background:locked?"#f3f4f6":color,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:locked?"default":"pointer",opacity:locked?.5:1},onClick:function(){if(props.active&&props.onToggle)props.onToggle()}},
+      h("span",{style:{fontSize:15,fontWeight:600,color:locked?"#9ca3af":"#fff"}},props.title),
+      props.active&&h("span",{style:{color:"#fff",fontSize:18}},props.open?"\u25BE":"\u25B8")),
+    props.active&&props.open&&h("div",{style:{padding:"16px 20px"}},props.children));
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App(){
+  var _s=useState("Do it yourself");var activeScn=_s[0],setActiveScn=_s[1];
+  var _p=useState(Object.assign({},SCENARIOS["Do it yourself"].params));var params=_p[0],setParams=_p[1];
+  var _nt=useState(25);var nTrain=_nt[0],setNTrain=_nt[1];
+  var _sm=useState("Blocked");var splitMethod=_sm[0],setSplitMethod=_sm[1];
+  var _dt=useState(false);var doDetrend=_dt[0],setDoDetrend=_dt[1];
+  var _sd=useState(42);var seed=_sd[0],setSeed=_sd[1];
+  var _hp=useState(0);var hiPred=_hp[0],setHiPred=_hp[1];
+  var _adv=useState(false);var showAdv=_adv[0],setShowAdv=_adv[1];
+
+  // Steps: which are open
+  var _so=useState({s1:true,s2:false,s3:false,s4:false});var stepsOpen=_so[0],setStepsOpen=_so[1];
+  var _sa=useState({s1:true,s2:false,s3:false,s4:false});var stepsActive=_sa[0],setStepsActive=_sa[1];
+
+  // Ensemble
+  var _ens=useState([]);var ensemble=_ens[0],setEnsemble=_ens[1];
+  var _pc=useState([]);var pCurve=_pc[0],setPCurve=_pc[1];
+
+  var isGuided=SCENARIOS[activeScn]&&SCENARIOS[activeScn].guided;
+  var annotations=isGuided?SCENARIOS[activeScn].annotations:{};
+
+  var mp={nTrain:nTrain,splitMethod:splitMethod,doDetrend:doDetrend};
+  var run=useMemo(function(){return fitAndScore(seed,params,mp)},[seed,params.startYear,params.nYears,params.phiY,params.sigmaY,params.trendY,params.nPredictors,params.phiX,params.sigmaX,params.trendX,nTrain,splitMethod,doDetrend]);
+
+  var setP=function(k,v){setParams(function(prev){var next=Object.assign({},prev);next[k]=v;return next})};
+  var maxTrainSlider=Math.max(6,params.nYears-5);
+  var threshold=2/Math.sqrt(params.nYears);
+  var corrBars=run.predCorrs.map(function(r,i){return{name:"P"+(i+1),r:parseFloat(r.toFixed(3)),fill:Math.abs(r)>threshold?AMBER:LGREY}});
+  var maxAbsR=Math.max.apply(null,run.predCorrs.map(Math.abs));
+  var nAbove=run.predCorrs.filter(function(r){return Math.abs(r)>threshold}).length;
+  var ratio=run.p/Math.max(1,run.nTrain);
+  var isOverparam=run.p>=run.nTrain-1;
+
+  var eqParts=run.beta.slice(1).map(function(b,i){return(b>=0?"+":"")+b.toFixed(3)+"\u00B7P"+(i+1)});
+  var eqStr="\u0177 = "+run.beta[0].toFixed(3)+" "+eqParts.join(" ");
+
+  // Scenario selection
+  var selectScn=function(name){
+    var scn=SCENARIOS[name];
+    setActiveScn(name);
+    setParams(Object.assign({},scn.params));
+    if(scn.model){setNTrain(scn.model.nTrain);setSplitMethod(scn.model.splitMethod);setDoDetrend(scn.model.doDetrend)}
+    setSeed(Math.floor(Math.random()*9000)+100);
+    setEnsemble([]);setPCurve([]);setHiPred(0);
+    if(scn.guided){
+      setStepsActive({s1:true,s2:true,s3:true,s4:true});
+      setStepsOpen({s1:true,s2:true,s3:true,s4:true});
+      // Auto-build ensemble after a tick
+      setTimeout(function(){
+        var s=Math.floor(Math.random()*9000)+100;
+        var ens=buildEnsemble(s,scn.params,scn.model,100);
+        setEnsemble(ens);
+        var pc=pVsSkillCurve(s,scn.params,scn.model,Math.min(50,Math.max(scn.params.nPredictors+10,25)),20);
+        setPCurve(pc);
+      },50);
+    } else {
+      setStepsActive({s1:true,s2:false,s3:false,s4:false});
+      setStepsOpen({s1:true,s2:false,s3:false,s4:false});
+    }
+  };
+
+  var advanceStep=function(from){
+    if(from===1){setStepsActive(function(p){return Object.assign({},p,{s2:true})});setStepsOpen(function(p){return Object.assign({},p,{s2:true})})}
+    if(from===2){setStepsActive(function(p){return Object.assign({},p,{s3:true})});setStepsOpen(function(p){return Object.assign({},p,{s3:true})})}
+    if(from===3){setStepsActive(function(p){return Object.assign({},p,{s4:true})});setStepsOpen(function(p){return Object.assign({},p,{s4:true})})}
+  };
+
+  var toggleStep=function(s){setStepsOpen(function(p){var next=Object.assign({},p);next[s]=!next[s];return next})};
+
+  var runEnsemble=function(){
+    var s=Math.floor(Math.random()*9000)+100;
+    var ens=buildEnsemble(s,params,mp,100);
+    setEnsemble(ens);
+    var pc=pVsSkillCurve(s,params,mp,Math.min(50,Math.max(params.nPredictors+10,25)),20);
+    setPCurve(pc);
+  };
+
+  var newRealisation=function(){setSeed(Math.floor(Math.random()*9000)+100)};
+
+  // Chart data — Step 1 always shows raw y; Step 3 shows yDisp (detrended when doDetrend)
+  var tsObsRaw=run.years.map(function(yr,i){return{x:yr,y:run.y[i]}});
+  var tsObsDisp=run.years.map(function(yr,i){return{x:yr,y:run.yDisp[i]}});
+  var tsPred=run.years.map(function(yr,i){return{x:yr,y:run.yhat[i]}});
+  var hiIdx=Math.max(0,Math.min(hiPred,params.nPredictors-1));
+  var predTS=[];if(run.X.length>0){for(var j=0;j<params.nPredictors;j++){var d=run.years.map(function(yr,i){return{x:yr,y:run.X[j][i]}});predTS.push({data:d,color:j===hiIdx?PURPLE:LGREY,width:j===hiIdx?2.5:1,dots:false,label:j===hiIdx?"P"+(hiIdx+1):undefined,dash:j===hiIdx?"none":"none"})}}
+  var step3Shade=splitMethod==="Blocked"?[{x1:params.startYear-0.5,x2:params.startYear+nTrain-0.5,color:BLUE,opacity:0.07},{x1:params.startYear+nTrain-0.5,x2:params.startYear+params.nYears-0.5,color:RED,opacity:0.07}]:[];
+  var pCurveTrain=pCurve.map(function(d){return{x:d.p,y:d.r2Tr}});
+  var pCurveTest=pCurve.map(function(d){return{x:d.p,y:d.r2Te}});
+
+  // Y-axis label for Step 3 changes when detrending
+  var step3yLabel=doDetrend?"y (detrended anomaly)":"y";
+
+  // Ensemble stats
+  var ensMedian="",ensPctNeg="";
+  if(ensemble.length>0){var sorted=ensemble.map(function(d){return d.r2Te}).slice().sort(function(a,b){return a-b});ensMedian=sorted[Math.floor(sorted.length/2)].toFixed(3);ensPctNeg=(100*ensemble.filter(function(d){return d.r2Te<0}).length/ensemble.length).toFixed(0)+"%"}
+
+  // Styles
+  var btnS=function(type){return{padding:"6px 14px",borderRadius:6,border:"none",fontSize:13,fontWeight:500,background:type==="primary"?BLUE:type==="green"?GREEN:"#e5e7eb",color:type==="primary"||type==="green"?"#fff":"#374151"}};
+  var scnBtn=function(name){var active=activeScn===name;var isGd=SCENARIOS[name].guided;return{padding:"8px 16px",borderRadius:8,border:active?"2px solid "+(isGd?PURPLE:BLUE):"1px solid #d1d5db",background:active?(isGd?"#f5f3ff":"#eff6ff"):"#fff",color:active?(isGd?PURPLE:BLUE):"#374151",fontWeight:active?600:400,fontSize:13}};
+  var hCard=function(color){return{textAlign:"center",padding:"12px 24px",borderRadius:10,border:"2px solid "+color,background:color===BLUE?"#dbeafe":"#fee2e2",minWidth:140}};
+
+  return h("div",{style:{maxWidth:1200,margin:"0 auto",padding:"24px 16px"}},
+    // Header
+    h("div",{style:{marginBottom:20,borderBottom:"2px solid #e5e7eb",paddingBottom:16}},
+      h("h1",{style:{fontSize:22,fontWeight:700}},"Overfitting and spurious skill"),
+      h("p",{style:{fontSize:13,color:"#6b7280",marginTop:4}},"An interactive tool for exploring why fitting many predictors to short time series produces misleading results.")),
+
+    // Scenario bar
+    h("div",{style:{marginBottom:8}},
+      h("div",{style:{fontSize:12,fontWeight:600,color:GREY,marginBottom:6}},"Choose a mode:"),
+      h("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+        Object.keys(SCENARIOS).map(function(name){return h("button",{key:name,style:scnBtn(name),onClick:function(){selectScn(name)}},SCENARIOS[name].guided?"\uD83C\uDFAF ":"",name)}))),
+
+    activeScn&&SCENARIOS[activeScn].guided&&h(Callout,{color:"blue",style:{marginBottom:16}},
+      h("b",null,"\uD83C\uDFAF Guided scenario: "+activeScn),
+      "All steps are open with pre-set parameters. Read the blue annotations on each step for the key takeaways. Controls are still adjustable so you can experiment."),
+
+    activeScn==="Do it yourself"&&h("div",{style:{fontSize:12,color:"#6b7280",marginBottom:16,padding:"8px 12px",background:"#f9fafb",borderRadius:6}},
+      "Work through each step at your own pace. Adjust parameters, observe the results, then advance to the next step."),
+
+    // ========== STEP 1 ==========
+    h(StepBox,{active:stepsActive.s1,open:stepsOpen.s1,onToggle:function(){toggleStep("s1")},color:BLUE,title:"Step 1 \u2014 Generate a synthetic \u2018observed\u2019 time series y(t)"},
+      annotations.step1&&h(Callout,{color:"dark",title:"\uD83D\uDC41\uFE0F What to notice"},annotations.step1),
+      h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",alignItems:"flex-start"}},
+        h("div",{style:{minWidth:280,maxWidth:360}},
+          h("p",{style:{fontSize:12,color:"#6b7280",marginBottom:8,lineHeight:1.4}},
+            "This is your response variable (e.g. fish catch, coral cover). It has ",h("strong",null,"no real relationship")," with the predictors you\u2019ll generate next."),
+          h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px"}},
+            h(Ctrl,{label:"Autocorrelation (\u03D5)",value:params.phiY,onChange:function(v){setP("phiY",v)},min:-0.2,max:0.95,step:0.05,tip:"Controls how long anomalies persist. High \u03D5 = long memory (e.g. 0.85 for ocean temperatures). Low \u03D5 = nearly independent years."}),
+            h(Ctrl,{label:"Trend (units/yr)",value:params.trendY,onChange:function(v){setP("trendY",v)},min:-0.2,max:0.2,step:0.01,tip:"Add a long-term drift (e.g. warming trend). Set to 0 for no trend."})),
+          showAdv&&h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px",marginTop:8}},
+            h(Ctrl,{label:"Duration (years)",value:params.nYears,onChange:function(v){setP("nYears",v)},min:20,max:120,step:1}),
+            h(Ctrl,{label:"Noise \u03C3",value:params.sigmaY,onChange:function(v){setP("sigmaY",v)},min:0.2,max:2,step:0.1}),
+            h(Ctrl,{label:"Start year",value:params.startYear,onChange:function(v){setP("startYear",v)},min:1900,max:2025,step:1})),
+          h("button",{style:{fontSize:12,color:BLUE,border:"none",background:"none",padding:"4px 0",marginTop:4},onClick:function(){setShowAdv(!showAdv)}},(showAdv?"Hide":"Show")+" advanced controls"),
+          h("div",{style:{marginTop:12}},
+            h("button",{style:btnS("primary"),onClick:newRealisation},"New random realisation"))),
+        h("div",{style:{flex:1,minWidth:300}},
+          h(SvgLine,{width:600,height:200,series:[{data:tsObsRaw,color:GREY,width:2,dots:true,dotR:2.5,label:"y(t)"}],xLabel:"Year",yLabel:"y"}))),
+      !isGuided&&!stepsActive.s2&&h("div",{style:{textAlign:"right",marginTop:8}},
+        h("button",{style:btnS("primary"),onClick:function(){advanceStep(1)}},"Next: Generate predictors \u2192"))),
+
+    // ========== STEP 2 ==========
+    h(StepBox,{active:stepsActive.s2,open:stepsOpen.s2,onToggle:function(){toggleStep("s2")},color:PURPLE,title:"Step 2 \u2014 Generate predictors X(t)"},
+      annotations.step2&&h(Callout,{color:"dark",title:"\uD83D\uDC41\uFE0F What to notice"},annotations.step2),
+      h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",alignItems:"flex-start"}},
+        h("div",{style:{minWidth:280,maxWidth:360}},
+          h("p",{style:{fontSize:12,color:"#6b7280",marginBottom:8,lineHeight:1.4}},
+            "These predictors are ",h("strong",null,"completely independent")," of y. Any apparent correlation is pure chance. With more predictors, you\u2019re more likely to find one that appears to correlate well."),
+          h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px"}},
+            h(Ctrl,{label:"Number of predictors (p)",value:params.nPredictors,onChange:function(v){setP("nPredictors",v)},min:1,max:60,step:1,tip:"More predictors = more chances to find a spurious correlation. Try 1 vs 30."}),
+            h(Ctrl,{label:"Predictor autocorr. (\u03D5)",value:params.phiX,onChange:function(v){setP("phiX",v)},min:-0.2,max:0.95,step:0.05,tip:"Persistence in the predictors. High values make them smoother."}),
+            h(Ctrl,{label:"Predictor trend",value:params.trendX,onChange:function(v){setP("trendX",v)},min:-0.2,max:0.2,step:0.01,tip:"Add a shared trend to all predictors. Combined with a trend in y, this creates spurious correlations."}),
+            h(Ctrl,{label:"Highlight predictor",value:hiPred+1,onChange:function(v){setHiPred(v-1)},min:1,max:Math.max(1,params.nPredictors),step:1,tip:"Select which predictor to highlight in the time series plot."})),
+          h("div",{style:{marginTop:12}},
+            h("button",{style:btnS("primary"),onClick:newRealisation},"New random realisation"))),
+        h("div",{style:{flex:1,minWidth:300}},
+          h("div",{style:{fontSize:12,fontWeight:600,color:"#4b5563",marginBottom:4}},"Predictor time series (highlighted: P"+(hiIdx+1)+")"),
+          h(SvgLine,{width:600,height:170,series:predTS,xLabel:"Year",yLabel:"X"}),
+          h("div",{style:{fontSize:12,fontWeight:600,color:"#4b5563",marginTop:12,marginBottom:4}},
+            "Predictor\u2013y correlations (amber bars exceed the 2/\u221An significance threshold)"),
+          h(SvgBar,{width:550,height:140,bars:corrBars,threshold:threshold}),
+          h("p",{style:{fontSize:12,color:"#6b7280",marginTop:4}},
+            "Strongest |r| = "+maxAbsR.toFixed(2)+". "+nAbove+" of "+params.nPredictors+" predictors exceed the threshold by chance alone. With "+params.nPredictors+" predictors, you\u2019d expect roughly "+Math.max(1,Math.round(params.nPredictors*0.05))+" false positive"+(Math.round(params.nPredictors*0.05)!==1?"s":"")+" at the 5% level even with no real relationships."))),
+      !isGuided&&!stepsActive.s3&&h("div",{style:{textAlign:"right",marginTop:8}},
+        h("button",{style:btnS("primary"),onClick:function(){advanceStep(2)}},"Next: Fit model \u2192"))),
+
+    // ========== STEP 3 ==========
+    h(StepBox,{active:stepsActive.s3,open:stepsOpen.s3,onToggle:function(){toggleStep("s3")},color:GREEN,title:"Step 3 \u2014 Fit an OLS multiple regression and evaluate"},
+      annotations.step3&&h(Callout,{color:"dark",title:"\uD83D\uDC41\uFE0F What to notice"},annotations.step3),
+      h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",marginBottom:16}},
+        h("div",{style:{minWidth:280,maxWidth:360}},
+          h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px"}},
+            h(Ctrl,{label:"Training years (test: "+(params.nYears-nTrain)+")",value:nTrain,onChange:setNTrain,min:5,max:maxTrainSlider,step:1,tip:"How many years to use for fitting. The rest are reserved for independent testing."}),
+            h("div",null,
+              h("div",{style:{fontSize:12,color:"#4b5563",marginBottom:2}},"Validation split"),
+              h("select",{value:splitMethod,onChange:function(e){setSplitMethod(e.target.value)}},
+                h("option",null,"Blocked"),h("option",null,"Random")),
+              splitMethod==="Blocked"?h("div",{className:"hint",style:{marginTop:4}},"Blocked: first N years = training, remainder = test. Respects temporal order \u2014 the correct choice for autocorrelated data."):h("div",{className:"hint",style:{marginTop:4,color:"#d97706"}},"Random: years are randomly assigned to train/test. Can leak information when y is autocorrelated \u2014 nearby years in the test set may be very similar to training years."))),
+          h("label",{style:{display:"flex",alignItems:"center",gap:6,fontSize:12,cursor:"pointer",marginTop:8}},
+            h("input",{type:"checkbox",checked:doDetrend,onChange:function(e){setDoDetrend(e.target.checked)}}),
+            "Detrend y and X before fitting"),
+          doDetrend?h("div",{className:"hint",style:{marginTop:2}},"Linear trends removed (fitted on training data only). R\u00B2 and charts now show detrended anomalies \u2014 testing whether the model captures real interannual relationships rather than just the shared trend."):h("div",{className:"hint",style:{marginTop:2}},"No detrending. If y and X share a trend, the model may capture the trend rather than genuine interannual relationships."),
+          h("div",{style:{marginTop:12,padding:"8px 10px",background:"#f9fafb",borderRadius:6,fontSize:12}},
+            h("div",null,"p = "+run.p+", n",h("sub",null,"train")," = "+run.nTrain+" \u2192 ",h("strong",null,"p/n = "+ratio.toFixed(2))),
+            run.p>0&&h("div",null,"Adj. R\u00B2 (train) = "+run.adjR2.toFixed(3)),
+            h("div",null,"Mean-baseline RMSE (test) = "+run.rmseMean.toFixed(2)),
+            isOverparam&&h("div",{style:{color:RED,fontWeight:600,marginTop:4}},"p \u2265 n_train \u2212 1: model can interpolate training data!"),
+            ratio>0.4&&!isOverparam&&h("div",{style:{color:"#d97706",fontWeight:600,marginTop:4}},"High p/n ratio \u2014 elevated overfitting risk"))),
+        // Headline R²
+        h("div",{style:{flex:1}},
+          h("div",{style:{display:"flex",gap:16,justifyContent:"center",margin:"12px 0",flexWrap:"wrap"}},
+            h("div",{style:hCard(BLUE)},
+              h("div",{style:{fontSize:28,fontWeight:700,color:BLUE,lineHeight:1.2}},isNaN(run.r2Tr)?"\u2014":run.r2Tr.toFixed(2)),
+              h("div",{style:{fontSize:11,color:"#6b7280",marginTop:2}},doDetrend?"R\u00B2 Train (detrended)":"R\u00B2 Training (in-sample)")),
+            h("div",{style:hCard(RED)},
+              h("div",{style:{fontSize:28,fontWeight:700,color:RED,lineHeight:1.2}},isNaN(run.r2Te)?"\u2014":run.r2Te.toFixed(2)),
+              h("div",{style:{fontSize:11,color:"#6b7280",marginTop:2}},doDetrend?"R\u00B2 Test (detrended)":"R\u00B2 Test (out-of-sample)"))),
+          doDetrend&&h(Callout,{color:"green"},"Showing R\u00B2 on detrended anomalies. This measures whether the model captures real interannual variability, not just the shared trend."),
+          run.r2Te<0&&!doDetrend&&h(Callout,{color:"red"},"Negative R\u00B2 means the model\u2019s predictions are further from the observations than simply predicting the mean every year. The model is actively misleading."),
+          run.r2Tr>0.3&&run.r2Te<0.05&&!isNaN(run.r2Te)&&!doDetrend&&h(Callout,{color:"amber"},"Large gap between training and test R\u00B2 is a hallmark of overfitting. The model has fitted noise in the training period that doesn\u2019t generalise."))),
+
+      // Time series — uses yDisp (detrended when doDetrend=true)
+      h(SvgLine,{width:900,height:240,series:[
+        {data:tsObsDisp,color:GREY,width:1.5,dots:true,dotR:3,dotColor:function(i){return run.trainMask[i]?BLUE:RED},label:doDetrend?"Observed (detrended)":"Observed"},
+        {data:tsPred,color:AMBER,width:2,dash:"6,3",label:"Predicted"}
+      ],xLabel:"Year",yLabel:step3yLabel,shadeRegions:step3Shade}),
+
+      // Scatters
+      h("div",{style:{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginTop:12}},
+        h(ScatterSVG,{title:doDetrend?"Training (detrended)":"Training (in-sample)",obs:run.yTrO,pred:run.yhTr,color:BLUE,r2Val:run.r2Tr,rmseVal:run.rmseTr}),
+        h(ScatterSVG,{title:doDetrend?"Test (detrended)":"Test (out-of-sample)",obs:run.yTeO,pred:run.yhTe,color:RED,r2Val:run.r2Te,rmseVal:run.rmseTe})),
+
+      // Equation
+      h("div",{style:{marginTop:12}},
+        h("div",{style:{fontSize:12,fontWeight:600,color:GREY,marginBottom:4}},
+          "Fitted equation ("+run.p+" free parameters fitted to "+run.nTrain+" data points"+(run.doDetrend?", applied to detrended anomalies":"")+")"),
+        h("div",{style:{fontFamily:"monospace",fontSize:11,background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:6,padding:"8px 12px",overflowX:"auto",maxHeight:80,lineHeight:1.5,color:"#374151"}},eqStr)),
+
+      !isGuided&&!stepsActive.s4&&h("div",{style:{textAlign:"right",marginTop:12}},
+        h("button",{style:btnS("primary"),onClick:function(){advanceStep(3)}},"Next: Test across many realisations \u2192"))),
+
+    // ========== STEP 4 ==========
+    h(StepBox,{active:stepsActive.s4,open:stepsOpen.s4,onToggle:function(){toggleStep("s4")},color:"#be185d",title:"Step 4 \u2014 Is this result typical? Test across 100 realisations"},
+      annotations.step4&&h(Callout,{color:"dark",title:"\uD83D\uDC41\uFE0F What to notice"},annotations.step4),
+      h("p",{style:{fontSize:13,color:"#4b5563",marginBottom:12,lineHeight:1.5}},
+        "So far you\u2019ve looked at one specific dataset. But was that result typical, or did you get lucky (or unlucky)? Here we generate 100 new datasets with the ",h("strong",null,"same statistical properties")," (same \u03D5, \u03C3, p, n) and fit the same model to each one. This reveals whether overfitting is a systematic problem or a one-off."),
+      ensemble.length===0&&h("div",{style:{textAlign:"center",padding:24}},
+        h("button",{style:Object.assign({},btnS("green"),{fontSize:16,padding:"12px 32px"}),onClick:runEnsemble},"Run 100 realisations"),
+        h("p",{style:{fontSize:12,color:"#6b7280",marginTop:8}},"Generates 100 independent datasets with the current settings and fits the model to each.")),
+      ensemble.length>0&&h("div",null,
+        h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",alignItems:"flex-start"}},
+          h("div",null,
+            h(HistorySVG,{history:ensemble})),
+          h("div",{style:{fontSize:13,color:GREY,minWidth:200}},
+            h("div",{style:{fontSize:14,marginBottom:8}},h("strong",null,"Summary across 100 realisations:")),
+            h("div",null,"Median test R\u00B2: ",h("strong",{style:{color:parseFloat(ensMedian)<0?RED:GREY}},ensMedian)),
+            h("div",null,"Realisations with negative test R\u00B2: ",h("strong",{style:{color:RED}},ensPctNeg)),
+            h("p",{style:{marginTop:12,color:"#6b7280",lineHeight:1.5}},"Each dot is one independent dataset. The diagonal dashed line marks where train = test skill. Points below the red dashed line (R\u00B2 = 0) indicate the model is worse than the mean."),
+            h("div",{style:{marginTop:12}},
+              h("button",{style:btnS("green"),onClick:runEnsemble},"Re-run 100 realisations")))),
+
+        // P vs skill curve
+        pCurve.length>0&&h("div",{style:{marginTop:20}},
+          h("div",{style:{fontSize:13,fontWeight:600,color:GREY,marginBottom:4}},"How does the number of predictors affect skill? (averaged over 20 realisations per p)"),
+          h(SvgLine,{width:700,height:240,
+            series:[{data:pCurveTrain,color:BLUE,width:2,label:"Mean R\u00B2 Train"},{data:pCurveTest,color:RED,width:2,label:"Mean R\u00B2 Test"}],
+            xLabel:"Number of predictors (p)",yLabel:"R\u00B2 (mean over realisations)",yMin:-2,yMax:1,refLineY:0,refLineX:params.nPredictors}),
+          h(Callout,{color:"amber",title:"Take-home message"},"Training R\u00B2 rises as you add predictors \u2014 the model always finds patterns in the training data, even when none are real. Test R\u00B2 degrades because those patterns are noise. The vertical dashed line marks your current number of predictors (p = "+params.nPredictors+")."))))
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>

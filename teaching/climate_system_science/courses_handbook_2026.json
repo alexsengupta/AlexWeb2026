@@ -32,8 +32,7 @@
         "PSYC2001"
       ],
       "groups": [],
-      "raw": "Exclusion: MATH2099 & PSYC2001",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Exclusion: MATH2099 & PSYC2001"
     }
   },
   {
@@ -138,8 +137,7 @@
         "PHYS1211"
       ],
       "groups": [],
-      "raw": "PHYS1111 or PHYS1121 or PHYS1131 or DPST1023 or PHYS1141 or PHYS1211 and MATH1011 or MATH1031 or MATH1131 or DPST1013 or MATH1141 or MATH1151",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "PHYS1111 or PHYS1121 or PHYS1131 or DPST1023 or PHYS1141 or PHYS1211 and MATH1011 or MATH1031 or MATH1131 or DPST1013 or MATH1141 or MATH1151"
     }
   },
   {
@@ -190,8 +188,7 @@
         "PHYS2801"
       ],
       "groups": [],
-      "raw": "Prerequisite: CLIM2001 or PHYS2801 or GEOS2711 or MATH2241",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: CLIM2001 or PHYS2801 or GEOS2711 or MATH2241"
     }
   },
   {
@@ -241,8 +238,7 @@
         "CHEM1811"
       ],
       "groups": [],
-      "raw": "Prerequisite: CHEM1011 or CHEM1031 or CHEM1811",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: CHEM1011 or CHEM1031 or CHEM1811"
     }
   },
   {
@@ -288,8 +284,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "None",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "None"
     }
   },
   {
@@ -312,8 +307,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "Prerequisite: Students must have completed a minimum of 48 UoC",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: Students must have completed a minimum of 48 UoC"
     }
   },
   {
@@ -361,8 +355,7 @@
         "GEOS1701"
       ],
       "groups": [],
-      "raw": "Prerequisite: GEOS1701",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: GEOS1701"
     }
   },
   {
@@ -387,8 +380,7 @@
         "GEOS2811"
       ],
       "groups": [],
-      "raw": "Excl:  GEOS2811",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Excl:  GEOS2811"
     }
   },
   {
@@ -411,8 +403,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "None",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "None"
     }
   },
   {
@@ -435,8 +426,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "None",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "None"
     }
   },
   {
@@ -459,8 +449,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "Prerequisite: Students must have completed a minimum of 48 UoC",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: Students must have completed a minimum of 48 UoC"
     }
   },
   {
@@ -533,8 +522,7 @@
         "MATH1141"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1131 or MATH1141 or DPST1013",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1131 or MATH1141 or DPST1013"
     }
   },
   {
@@ -561,8 +549,7 @@
         "MATH1141"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1131 (CR) or MATH1141 (CR) or DPST1013 (CR)",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1131 (CR) or MATH1141 (CR) or DPST1013 (CR)"
     }
   },
   {
@@ -590,8 +577,7 @@
         "MATH1251"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014"
     }
   },
   {
@@ -606,7 +592,7 @@
     "academic_calendar": "3+",
     "overview": "This is a core second-year higher mathematics course for students from all disciplines. The course extends the theory of one-variable calculus to functions or mappings with several variables. It forms the foundation for various courses in pure and applied mathematics, as well as in physics, economics and others. Topics covered include functions of several variables, limits and continuity, differentiability, gradients, surfaces, maxima and minima, Taylor series, Lagrange multipliers, chain rules, inverse function theorem, Jacobian derivatives, double and triple integrals, iterated integrals, Riemann sums, cylindrical and spherical coordinates, change of variables, centre of mass, curves in space, line integrals, parametrised surfaces, surface integrals, divergence and curl, Stokes' theorem, Green's theorem in the plane, and applications of integral theorems. The material will be covered in lectures, problem sheets will be discussed in tutorials.",
     "enrolment_rules": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014 each with a mark of at least 70",
-    "exclusions": "MATH2011, MATH2069, MATH2019, MATH2018",
+    "exclusions": "MATH2069, MATH2018, MATH2019, MATH2011",
     "delivery_mode": "In-person",
     "delivery_format": "Standard (usually weekly or fortnightly)",
     "contact_hours": "6 hrs/week",
@@ -619,8 +605,7 @@
         "MATH1251"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014 each with a mark of at least 70",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014 each with a mark of at least 70"
     }
   },
   {
@@ -635,7 +620,7 @@
     "academic_calendar": "3+",
     "overview": "This course builds on elementary knowledge of differential equations (taught in MATH1231 at UNSW) to provide further theory and methods for solving ordinary differential equations and partial differential equations with illustrative applications in physics, engineering, and biology. \n The specific topics for ordinary differential equations include: first order, linear second order, variation of parameters, dynamical systems, power series representations and Frobenius method, orthogonal functions and Fourier series, initial and boundary value problems, eigenfunction expansions, Bessel's equation. For partial differential equations, topics include: classification, method of separation of variables, application of Fourier series, heat equation, wave equation, Laplace's equation, applications of Bessel functions. \n Tutorials are designed to reinforce the techniques taught in lectures for solving differential equations.",
     "enrolment_rules": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014",
-    "exclusions": "MATH2221, MATH2019, MATH2018",
+    "exclusions": "MATH2221, MATH2018, MATH2019",
     "delivery_mode": "Multimodal",
     "delivery_format": "Standard (usually weekly or fortnightly)",
     "contact_hours": "5 hrs/week",
@@ -648,8 +633,7 @@
         "MATH1251"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1231 or MATH1241 or MATH1251 or DPST1014"
     }
   },
   {
@@ -677,8 +661,7 @@
         "MATH1251"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1231 or DPST1014 or MATH1241 or MATH1251",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1231 or DPST1014 or MATH1241 or MATH1251"
     }
   },
   {
@@ -707,8 +690,7 @@
         "MATH1251"
       ],
       "groups": [],
-      "raw": "Prerequisite: MATH1031(CR) or MATH1231 or MATH1241 or MATH1251 or DPST1014",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: MATH1031(CR) or MATH1231 or MATH1241 or MATH1251 or DPST1014"
     }
   },
   {
@@ -731,8 +713,7 @@
     "prereq_parsed": {
       "all_codes": [],
       "groups": [],
-      "raw": "Prerequisite: 12 units of credit in Level 2 Maths courses.",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: 12 units of credit in Level 2 Maths courses."
     }
   },
   {
@@ -767,8 +748,7 @@
         "MATH2601"
       ],
       "groups": [],
-      "raw": "Prerequisite: (MATH2501 or MATH2601 or MATH2089 or MATH2099) and (MATH2011 or MATH2111 or MATH2018 (DN) or MATH2019 (DN) or MATH2069 (CR) or MATH2121 or MATH2221)",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: (MATH2501 or MATH2601 or MATH2089 or MATH2099) and (MATH2011 or MATH2111 or MATH2018 (DN) or MATH2019 (DN) or MATH2069 (CR) or MATH2121 or MATH2221)"
     }
   },
   {
@@ -800,8 +780,7 @@
         "MATH2221"
       ],
       "groups": [],
-      "raw": "Prerequisite: 12 units of credit in Level 2 Math courses including (MATH2011 or MATH2111) or (MATH2121 or MATH2221) or (both MATH2019 (DN) and MATH2089) or (both MATH2069 (DN) and MATH2099)",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Prerequisite: 12 units of credit in Level 2 Math courses including (MATH2011 or MATH2111) or (MATH2121 or MATH2221) or (both MATH2019 (DN) and MATH2089) or (both MATH2069 (DN) and MATH2099)"
     }
   },
   {
@@ -877,8 +856,7 @@
         "MATH1151"
       ],
       "groups": [],
-      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031"
     }
   },
   {
@@ -908,8 +886,7 @@
         "MATH1151"
       ],
       "groups": [],
-      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031"
     }
   },
   {
@@ -939,8 +916,7 @@
         "MATH1151"
       ],
       "groups": [],
-      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "Corequisite: MATH1131 or DPST1013 or MATH1141 or MATH1151 or MATH1011 or MATH1031"
     }
   },
   {
@@ -976,8 +952,7 @@
         "PHYS1211"
       ],
       "groups": [],
-      "raw": "PHYS1111 or PHYS1121 or PHYS1131 or DPST1023 or PHYS1141 or PHYS1211 and MATH1011 or MATH1031 or MATH1131 or DPST1013 or MATH1141 or MATH1151",
-      "error": "429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBV2nUA97zoceBi8IYr7DUyN8ShZUDEESE"
+      "raw": "PHYS1111 or PHYS1121 or PHYS1131 or DPST1023 or PHYS1141 or PHYS1211 and MATH1011 or MATH1031 or MATH1131 or DPST1013 or MATH1141 or MATH1151"
     }
   }
 ]

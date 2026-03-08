@@ -447,6 +447,10 @@
       }).filter(p => p.title);
     }
 
+    function formatDate(date) {
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
     async function loadPapers() {
       const files = [
         './scopus_all_MHW_themes.csv',
@@ -579,6 +583,7 @@
       const [papers, setPapers] = useState([]);
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
+      const [lastUpdated, setLastUpdated] = useState('');
 
       useEffect(() => {
         loadPapers()
@@ -590,6 +595,30 @@
           })
           .catch(err => setError(err.message))
           .finally(() => setLoading(false));
+      }, []);
+
+      useEffect(() => {
+        let active = true;
+        const setFromHeaders = (res) => {
+          const lastMod = res.headers.get('Last-Modified');
+          if (!lastMod) return false;
+          const parsed = new Date(lastMod);
+          if (Number.isNaN(parsed.valueOf())) return false;
+          if (active) setLastUpdated(formatDate(parsed));
+          return true;
+        };
+
+        fetch('scopus_all_MHW.csv', { method: 'HEAD', cache: 'no-store' })
+          .then(res => {
+            if (!setFromHeaders(res)) throw new Error('missing-last-modified');
+          })
+          .catch(() => {
+            fetch('scopus_all_MHW.csv', { method: 'GET', cache: 'no-store' })
+              .then(res => { setFromHeaders(res); })
+              .catch(() => {});
+          });
+
+        return () => { active = false; };
       }, []);
 
       const { journals, types, authors: allAuthors, minYear, maxYear } = useMemo(() => {
@@ -720,7 +749,7 @@
                   Marine Heatwaves
                 </h1>
                 <p className="text-sm font-semibold" style={{ color: '#1e5245' }}>Paper Browser</p>
-                <p className="text-xs text-gray-600 mt-1">Last updated: February 4, 2026</p>
+                <p className="text-xs text-gray-600 mt-1">Last updated: {lastUpdated || '—'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}

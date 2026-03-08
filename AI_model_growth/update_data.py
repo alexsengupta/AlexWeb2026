@@ -18,7 +18,7 @@ DATA_SOURCES = {
         'type': 'zip'
     },
     'metr_data': {
-        'url': 'https://metr.org/assets/benchmark_results.yaml',
+        'url': 'https://metr.org/assets/benchmark_results_1_1.yaml',
         'target_path': 'METR/benchmark_results.yaml',
         'type': 'file'
     }

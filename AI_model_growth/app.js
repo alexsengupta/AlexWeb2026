@@ -191,6 +191,8 @@ async function initApp() {
         d['Parameters'] = parseFloat(d['Parameters']) || null;
 
         let ds = d['Training dataset size (gradients)'];
+        if (!ds) ds = d['Training dataset size (total)'];
+        if (!ds) ds = d['Training dataset size'];
         if (ds && typeof ds === 'string') ds = ds.replace(/,/g, '');
         d['Training dataset size (gradients)'] = parseFloat(ds) || null;
 

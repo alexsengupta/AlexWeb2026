@@ -94,26 +94,26 @@ var SCENARIOS={
   },
   "Leakage":{
     desc:"How does the choice of validation strategy affect apparent skill when y is autocorrelated?",
-    params:{startYear:1920,nYears:100,phiY:0.95,sigmaY:0.8,trendY:0,nPredictors:5,phiX:0.95,sigmaX:1,trendX:0},
+    params:{startYear:1920,nYears:100,phiY:0.95,sigmaY:0.8,trendY:0,nPredictors:10,phiX:0.95,sigmaX:1,trendX:0},
     model:{nTrain:65,splitMethod:"Random",doDetrend:false},
     guided:true,
     annotations:{
       step1:"This time y has very strong persistence (\u03D5 = 0.95). Adjacent years have very similar values \u2014 the series has long \u2018memory.\u2019 This is typical of ocean temperatures, ice extent, and many climate indices. Notice how smooth the time series looks.",
-      step2:"The 5 predictors are also strongly autocorrelated (\u03D5 = 0.95) but completely independent of y. Any correlations you see are spurious. Notice how smooth the predictor time series look \u2014 this smoothness is what enables the leakage problem.",
-      step3:"We\u2019re using a Random validation split. Because both y and the predictors are very smooth (high autocorrelation), randomly scattered test years sit right next to training years with nearly identical values. The model exploits this overlap: it effectively \u2018interpolates\u2019 between nearby training points. The test R\u00B2 is typically positive (~0.3) \u2014 but this is an illusion. Now switch to Blocked split and watch the test R\u00B2 collapse to strongly negative. Blocked splits separate training and test periods in time, preventing this leakage.",
-      step4:"The ensemble confirms the pattern systematically. Re-run with Random splits \u2014 test R\u00B2 clusters around +0.3. Switch to Blocked and re-run \u2014 test R\u00B2 is overwhelmingly negative. The lesson: always use blocked (contiguous) train/test splits for autocorrelated time series. Random splits inflate apparent skill by leaking temporal information."
+      step2:"The 10 predictors are also strongly autocorrelated (\u03D5 = 0.95) but completely independent of y. Any correlations you see are spurious. Notice how smooth the predictor time series look \u2014 this smoothness is what enables the leakage problem.",
+      step3:"We\u2019re using a Random validation split. Because both y and the predictors are very smooth (high autocorrelation), randomly scattered test years sit right next to training years with nearly identical values. The model exploits this overlap: it effectively \u2018interpolates\u2019 between nearby training points. The test R\u00B2 is typically positive (~0.5) \u2014 but this is an illusion. Now switch to Blocked split and watch the test R\u00B2 collapse to strongly negative. Blocked splits separate training and test periods in time, preventing this leakage.",
+      step4:"The ensemble confirms the pattern systematically. Re-run with Random splits \u2014 test R\u00B2 clusters around +0.5. Switch to Blocked and re-run \u2014 test R\u00B2 is overwhelmingly negative. The lesson: always use blocked (contiguous) train/test splits for autocorrelated time series. Random splits inflate apparent skill by leaking temporal information."
     }
   },
   "Shared trend":{
     desc:"What happens when both y and predictors share a common trend?",
-    params:{startYear:1985,nYears:60,phiY:0.3,sigmaY:1,trendY:0.1,nPredictors:3,phiX:0.3,sigmaX:1,trendX:0.1},
-    model:{nTrain:39,splitMethod:"Random",doDetrend:false},
+    params:{startYear:1940,nYears:80,phiY:0.3,sigmaY:0.5,trendY:0.15,nPredictors:3,phiX:0.3,sigmaX:0.5,trendX:0.15},
+    model:{nTrain:52,splitMethod:"Blocked",doDetrend:false},
     guided:true,
     annotations:{
-      step1:"Now y has a clear upward trend (0.1 units/year). Think of this as warming SST, declining ice extent, or any variable with a long-term drift. The noise around the trend is moderate (\u03C3 = 1) with low persistence (\u03D5 = 0.3).",
-      step2:"The 3 predictors also share the same upward trend (0.1 units/year). This is realistic \u2014 many environmental variables trend together due to a common driver (e.g. climate change). Look at the correlation bar chart: the predictors appear to correlate with y, but this is entirely because they share the same trend, not because one predicts the other\u2019s interannual variability.",
-      step3:"The model shows apparently strong skill \u2014 both training and test R\u00B2 are high. But is this real predictive skill? Toggle the \u2018Detrend\u2019 checkbox and watch what happens: once the shared trend is removed, R\u00B2 collapses to near zero. The model was capturing the common trend, not a genuine predictive relationship. The charts now show detrended anomalies \u2014 the \u2018real\u2019 signal the model should be capturing, but can\u2019t.",
-      step4:"Run the ensemble with detrending OFF, then toggle detrending ON and re-run. Without detrending, the cloud of dots sits at high R\u00B2. With detrending, it collapses to zero. Shared trends are perhaps the most common source of spurious relationships in environmental science."
+      step1:"Now y has a clear upward trend (0.15 units/year). Think of this as warming SST, declining ice extent, or any variable with a long-term drift. The noise is moderate (\u03C3 = 0.5) with low persistence (\u03D5 = 0.3).",
+      step2:"The 3 predictors also share the same upward trend (0.15 units/year). This is realistic \u2014 many environmental variables trend together due to a common driver (e.g. climate change). Look at the correlation bar chart: the predictors appear to correlate with y, but this is entirely because they share the same trend, not because one predicts the other\u2019s interannual variability.",
+      step3:"We use a Blocked split \u2014 training is the first 52 years, test is the last 28. Despite this proper validation strategy, the model shows high test R\u00B2 (~0.7). This is because both y and the predictors share the same upward trend: the model learns the trend relationship in training and it extrapolates to the test period. But is this real predictive skill? Toggle the \u2018Detrend\u2019 checkbox: once the shared trend is removed, R\u00B2 collapses to near zero or negative. The model was capturing the common trend, not a genuine predictive relationship.",
+      step4:"Run the ensemble with detrending OFF, then toggle detrending ON and re-run. Without detrending, test R\u00B2 clusters around +0.7. With detrending, it collapses to zero or negative. Unlike the leakage scenario (which is fixed by using blocked splits), shared-trend spurious skill persists even with correct validation. The only remedy is detrending. This is perhaps the most common source of spurious relationships in environmental science."
     }
   }
 };
@@ -238,6 +238,7 @@ function App(){
   var _sd=useState(42);var seed=_sd[0],setSeed=_sd[1];
   var _hp=useState(0);var hiPred=_hp[0],setHiPred=_hp[1];
   var _adv=useState(false);var showAdv=_adv[0],setShowAdv=_adv[1];
+  var _hi=useState(false);var showHelp=_hi[0],setShowHelp=_hi[1];
 
   // Steps: which are open
   var _so=useState({s1:true,s2:false,s3:false,s4:false});var stepsOpen=_so[0],setStepsOpen=_so[1];
@@ -314,7 +315,7 @@ function App(){
   var tsPred=run.years.map(function(yr,i){return{x:yr,y:run.yhat[i]}});
   var hiIdx=Math.max(0,Math.min(hiPred,params.nPredictors-1));
   var predTS=[];if(run.X.length>0){for(var j=0;j<params.nPredictors;j++){var d=run.years.map(function(yr,i){return{x:yr,y:run.X[j][i]}});predTS.push({data:d,color:j===hiIdx?PURPLE:LGREY,width:j===hiIdx?2.5:1,dots:false,label:j===hiIdx?"P"+(hiIdx+1):undefined,dash:j===hiIdx?"none":"none"})}}
-  var step3Shade=splitMethod==="Blocked"?[{x1:params.startYear-0.5,x2:params.startYear+nTrain-0.5,color:BLUE,opacity:0.07},{x1:params.startYear+nTrain-0.5,x2:params.startYear+params.nYears-0.5,color:RED,opacity:0.07}]:[];
+  var step3Shade;if(splitMethod==="Blocked"){step3Shade=[{x1:params.startYear-0.5,x2:params.startYear+nTrain-0.5,color:BLUE,opacity:0.07},{x1:params.startYear+nTrain-0.5,x2:params.startYear+params.nYears-0.5,color:RED,opacity:0.07}]}else{step3Shade=[];for(var si=0;si<params.nYears;si++){step3Shade.push({x1:params.startYear+si-0.5,x2:params.startYear+si+0.5,color:run.trainMask[si]?BLUE:RED,opacity:0.10})}}
   var pCurveTrain=pCurve.map(function(d){return{x:d.p,y:d.r2Tr}});
   var pCurveTest=pCurve.map(function(d){return{x:d.p,y:d.r2Te}});
 
@@ -333,8 +334,35 @@ function App(){
   return h("div",{style:{maxWidth:1200,margin:"0 auto",padding:"24px 16px"}},
     // Header
     h("div",{style:{marginBottom:20,borderBottom:"2px solid #e5e7eb",paddingBottom:16}},
-      h("h1",{style:{fontSize:22,fontWeight:700}},"Overfitting and spurious skill"),
-      h("p",{style:{fontSize:13,color:"#6b7280",marginTop:4}},"An interactive tool for exploring why fitting many predictors to short time series produces misleading results.")),
+      h("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}},
+        h("div",null,
+          h("h1",{style:{fontSize:22,fontWeight:700}},"Overfitting and spurious skill"),
+          h("p",{style:{fontSize:13,color:"#6b7280",marginTop:4}},"An interactive tool for exploring why fitting many predictors to short time series produces misleading results.")),
+        h("button",{onClick:function(){setShowHelp(!showHelp)},style:{padding:"8px 16px",borderRadius:8,border:"2px solid #6366f1",background:showHelp?"#6366f1":"#fff",color:showHelp?"#fff":"#6366f1",fontWeight:600,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}},showHelp?"\u2716 Close guide":"\u2753 How to use this app")),
+      showHelp&&h("div",{style:{marginTop:16,padding:"20px 24px",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,fontSize:13,lineHeight:1.7}},
+        h("h3",{style:{fontSize:16,fontWeight:700,marginBottom:10,color:"#1e293b"}},"What this app demonstrates"),
+        h("p",{style:{marginBottom:12,color:"#374151"}},"In environmental and climate science, researchers often build statistical models that relate a response variable (e.g. fish catch, coral cover, species abundance) to a set of environmental predictors (e.g. SST, salinity, climate indices). When these models are evaluated carelessly, they can appear to have strong predictive skill even when the predictors have ",h("em",null,"no real relationship")," to the response. This app lets you explore three distinct mechanisms that produce such spurious skill."),
+        h("h3",{style:{fontSize:15,fontWeight:700,marginBottom:8,color:"#1e293b"}},"Suggested learning order"),
+        h("div",{style:{display:"flex",flexDirection:"column",gap:12,marginBottom:12}},
+          h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
+            h("span",{style:{background:"#6366f1",color:"#fff",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}},"1"),
+            h("div",null,
+              h("b",{style:{color:"#6366f1"}},"Overfitting"),
+              h("span",{style:{color:"#374151"}}," \u2014 Start here. When you have many predictors (p) relative to your sample size (n), the model memorises noise in the training data. Training R\u00B2 looks great; test R\u00B2 is terrible. This is the most fundamental pitfall and underlies all statistical modelling."))),
+          h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
+            h("span",{style:{background:"#6366f1",color:"#fff",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}},"2"),
+            h("div",null,
+              h("b",{style:{color:"#6366f1"}},"Leakage"),
+              h("span",{style:{color:"#374151"}}," \u2014 Even with proper p/n ratios, randomly splitting autocorrelated time series leaks information from training to test. The model appears to predict the future, but it\u2019s really just interpolating between nearby training points. Switching from Random to Blocked validation exposes the illusion."))),
+          h("div",{style:{display:"flex",gap:10,alignItems:"flex-start"}},
+            h("span",{style:{background:"#6366f1",color:"#fff",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}},"3"),
+            h("div",null,
+              h("b",{style:{color:"#6366f1"}},"Shared trend"),
+              h("span",{style:{color:"#374151"}}," \u2014 The subtlest trap. When both y and predictors share a common trend (e.g. due to climate change), the model appears skillful even with proper blocked validation. Only by detrending the data is the spurious relationship revealed. This is arguably the most common source of inflated skill in environmental forecasting.")))),
+        h("h3",{style:{fontSize:15,fontWeight:700,marginBottom:8,color:"#1e293b"}},"How each step works"),
+        h("p",{style:{color:"#374151",marginBottom:6}},h("b",null,"Step 1")," generates a synthetic response variable y with known statistical properties (autocorrelation, noise, trend). ",h("b",null,"Step 2")," generates independent random predictors \u2014 crucially, these have ",h("em",null,"no real connection")," to y. ",h("b",null,"Step 3")," fits an OLS regression and evaluates it on held-out test data. ",h("b",null,"Step 4")," repeats this 100 times to show whether patterns are systematic."),
+        h("p",{style:{color:"#374151",marginBottom:6}},"In the guided scenarios (\uD83C\uDFAF), all steps open automatically with pre-set parameters and explanatory annotations. The ",h("b",null,"Do it yourself")," mode lets you experiment freely."),
+        h("p",{style:{color:"#6b7280",fontStyle:"italic"}},"Tip: In each guided scenario, first observe the initial result, then toggle the key control (split method or detrend) and re-run the 100\u00D7 ensemble to see the contrast."))),
 
     // Scenario bar
     h("div",{style:{marginBottom:8}},
@@ -402,14 +430,14 @@ function App(){
       h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",marginBottom:16}},
         h("div",{style:{minWidth:280,maxWidth:360}},
           h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 16px"}},
-            h(Ctrl,{label:"Training years (test: "+(params.nYears-nTrain)+")",value:nTrain,onChange:setNTrain,min:5,max:maxTrainSlider,step:1,tip:"How many years to use for fitting. The rest are reserved for independent testing."}),
+            h(Ctrl,{label:"Training years (test: "+(params.nYears-nTrain)+")",value:nTrain,onChange:function(v){setNTrain(v);setEnsemble([]);setPCurve([])},min:5,max:maxTrainSlider,step:1,tip:"How many years to use for fitting. The rest are reserved for independent testing."}),
             h("div",null,
               h("div",{style:{fontSize:12,color:"#4b5563",marginBottom:2}},"Validation split"),
-              h("select",{value:splitMethod,onChange:function(e){setSplitMethod(e.target.value)}},
+              h("select",{value:splitMethod,onChange:function(e){setSplitMethod(e.target.value);setEnsemble([]);setPCurve([])}},
                 h("option",null,"Blocked"),h("option",null,"Random")),
               splitMethod==="Blocked"?h("div",{className:"hint",style:{marginTop:4}},"Blocked: first N years = training, remainder = test. Respects temporal order \u2014 the correct choice for autocorrelated data."):h("div",{className:"hint",style:{marginTop:4,color:"#d97706"}},"Random: years are randomly assigned to train/test. Can leak information when y is autocorrelated \u2014 nearby years in the test set may be very similar to training years."))),
           h("label",{style:{display:"flex",alignItems:"center",gap:6,fontSize:12,cursor:"pointer",marginTop:8}},
-            h("input",{type:"checkbox",checked:doDetrend,onChange:function(e){setDoDetrend(e.target.checked)}}),
+            h("input",{type:"checkbox",checked:doDetrend,onChange:function(e){setDoDetrend(e.target.checked);setEnsemble([]);setPCurve([])}}),
             "Detrend y and X before fitting"),
           doDetrend?h("div",{className:"hint",style:{marginTop:2}},"Linear trends removed (fitted on training data only). R\u00B2 and charts now show detrended anomalies \u2014 testing whether the model captures real interannual relationships rather than just the shared trend."):h("div",{className:"hint",style:{marginTop:2}},"No detrending. If y and X share a trend, the model may capture the trend rather than genuine interannual relationships."),
           h("div",{style:{marginTop:12,padding:"8px 10px",background:"#f9fafb",borderRadius:6,fontSize:12}},

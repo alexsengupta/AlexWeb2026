@@ -715,16 +715,12 @@
         <div className="min-h-screen w-full text-gray-900">
           <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/80 header-bg">
             <div className="mx-auto max-w-7xl px-4 py-4 md:py-5 flex items-center gap-4">
-              <a href="../index.html" className="home-btn" aria-label="Home">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                </svg>
-              </a>
               <div className="flex-1">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ background: 'linear-gradient(to right, #1e5245, #c4704f, #8b5a3c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   Marine Heatwaves
                 </h1>
                 <p className="text-sm font-semibold" style={{ color: '#1e5245' }}>Paper Browser</p>
+                <p className="text-xs text-gray-600 mt-1">Last updated: February 4, 2026</p>
               </div>
               <div className="flex items-center gap-2">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -989,6 +985,7 @@
 
           <footer className="mx-auto max-w-7xl px-4 pb-10 text-xs text-gray-500">
             <p>Data source: Scopus export for all marine heatwave publications.</p>
+            <p>Created by Alex Sen Gupta <a href="https://www.timesareachangin.com/" target="_blank" rel="noreferrer">www.timesareachangin.com</a></p>
           </footer>
 
           <AbstractModal open={modalOpen} onClose={() => setModalOpen(false)} paper={selectedPaper} />

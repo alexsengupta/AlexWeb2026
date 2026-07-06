@@ -16,6 +16,15 @@ lxml>=4.9.0
 # PDF Summarizer (publications/pdf-summarizer/)
 google-generativeai>=0.3.0
 
+# MHW Live daily map (MarineHeatwaves/MHWlive/update_mhw_map.py)
+# numpy is already listed above. cartopy also needs the system libraries
+# GEOS and PROJ (e.g. apt: libgeos-dev libproj-dev proj-data proj-bin),
+# or install the lot with: conda install -c conda-forge cartopy
+netCDF4>=1.6.0
+matplotlib>=3.7.0
+scipy>=1.10.0
+cartopy>=0.22.0
+
 # Note: The main website (index.html) is a static site and does not require
 # any Python dependencies to run. These requirements are only needed if you
 # want to regenerate/update data files using the Python processing scripts.

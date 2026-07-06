@@ -1,0 +1,11 @@
+# Copy this file to ~/.scopus_env on Katana and fill in the real keys.
+# The cron wrapper (run_monthly_update.sh) sources it before launching the
+# Scopus scripts. Keep it readable only by you:
+#     chmod 600 ~/.scopus_env
+
+# Required — Elsevier/Scopus API key (https://dev.elsevier.com/)
+ELSEVIER_API_KEY=
+
+# Optional — enables OpenAI theme classification of papers.
+# Without this, the `themes` column in the CSVs is left blank.
+OPENAI_API_KEY=

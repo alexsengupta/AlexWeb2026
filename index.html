@@ -1043,7 +1043,9 @@
 
         async function loadPublications() {
             try {
-                const response = await fetch('assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv');
+                // no-cache: always revalidate with the server so a freshly deployed CSV
+                // isn't masked by the browser's heuristic HTTP cache
+                const response = await fetch('assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv', { cache: 'no-cache' });
                 const csvText = await response.text();
                 const lines = csvText.split('\n');
 

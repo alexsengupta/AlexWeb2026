@@ -25,6 +25,7 @@
     "E_Abry_etal_2024_Combined_Impacts_of_Southern_Annular_Journal_of_Climate.md",
     "Eabry_etal_2021_What_determines_the_lagged_ENSO_Geophysical_Research_Letters.md",
     "Eabry_etal_2022_The_impact_of_Indonesian_Throughflow_Journal_of_Geophysical_Research.md",
+    "Eabry_etal_2025_The_2016_Abrupt_Antarctic_Sea_Journal_of_Climate.md",
     "England_etal_2009_Constraining_future_greenhouse_gas_emiss_PNAS.md",
     "England_etal_2014_Recent_intensification_of_wind-driven_ci_Nature_Climate_Change.md",
     "England_etal_2025_Drivers_of_the_extreme_North_Nature.md",
@@ -69,6 +70,7 @@
     "Maher_etal_2014_Drivers_of_decadal_hiatus_periods_Geophysical_Research_Letters.md",
     "Maher_etal_2015_Effects_of_volcanism_on_tropical_Geophysical_Research_Letters.md",
     "Maher_etal_2018_Role_of_Pacific_trade_winds_Climate_Dynamics.md",
+    "Malan_etal_2025_Lifting_the_lid_on_Marine_Progress_in_Oceanography.md",
     "McGregor_etal_2009_The_Modulation_of_ENSO_Variability_Journal_of_Climate.md",
     "McGregor_etal_2012_Constraining_Wind_Stress_Products_with_Journal_of_Climate.md",
     "McGregor_etal_2017_Factors_influencing_the_skill_of_Journal_of_Geophysical_Research.md",
@@ -155,8 +157,10 @@
     "Ummenhofer_etal_2015_How_did_ocean_warming_affect_Geophysical_Research_Letters.md",
     "Verges_etal_2014_The_tropicalization_of_temperate_marine_Proc_R_Soc_B.md",
     "Wernberg_etal_2025_Marine_heatwaves_as_hot_spots_Nature_Reviews_Biodiversity.md",
+    "Zhang_etal_2026_Diagnosing_Spice_and_Heave_Contributions_Journal_of_Climate.md",
+    "Zhao_etal_2026_Toward_a_mechanistic_characterisation_of_Scientific_Reports.md",
     "van_Sebille_etal_2014_Pacific-to-Indian_Ocean_connectivity_Tas_Journal_of_Geophysical_Research.md"
   ],
-  "generated": "/Users/z3045790/Dropbox/AI code/conceptual_model_course/deploy/publications/pdf-summarizer",
-  "count": 156
+  "generated": "/Users/z3045790/Dropbox/Alex_web/publications/pdf-summarizer",
+  "count": 160
 }

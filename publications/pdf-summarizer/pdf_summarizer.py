@@ -19,7 +19,7 @@ DEFAULT_OUTPUT_FOLDER = "./summaries"
 PROGRESS_FILE = ".progress.json"
 
 # Gemini model configuration
-MODEL_NAME = "models/gemini-pro-latest"  # Gemini Pro model
+MODEL_NAME = "models/gemini-flash-latest"  # Gemini Flash (free tier)
 
 # Prompt templates
 SHORT_SUMMARY_PROMPT = """

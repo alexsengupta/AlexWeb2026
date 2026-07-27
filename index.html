@@ -149,6 +149,20 @@
             transition-delay: 1s;
         }
 
+        /* Top-nav button that uses an SVG icon instead of an emoji */
+        .nav-btn.has-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 1rem;
+        }
+
+        .nav-btn-icon {
+            height: 26px;
+            width: auto;
+            flex: none;
+        }
+
         /* Main container - no longer centered vertically */
         .container {
             min-height: 100vh;
@@ -236,6 +250,7 @@
         .nav-button:nth-child(9) { animation-delay: 0.45s; }
         .nav-button:nth-child(10) { animation-delay: 0.5s; }
         .nav-button:nth-child(11) { animation-delay: 0.55s; }
+        .nav-button:nth-child(12) { animation-delay: 0.6s; }
 
         @keyframes fadeInUp {
             from {
@@ -272,6 +287,7 @@
         .nav-button:nth-child(9) { --glow-color: #ff6b6b; --glow-color-alpha: rgba(255, 107, 107, 0.2); }
         .nav-button:nth-child(10) { --glow-color: #4ecdc4; --glow-color-alpha: rgba(78, 205, 196, 0.2); }
         .nav-button:nth-child(11) { --glow-color: #6c5ce7; --glow-color-alpha: rgba(108, 92, 231, 0.2); }
+        .nav-button:nth-child(12) { --glow-color: #fdcb6e; --glow-color-alpha: rgba(253, 203, 110, 0.2); }
 
         .nav-button-icon {
             width: 50px;
@@ -647,6 +663,278 @@
             }
         }
 
+        /* ===== DAILY AI BRIEF ARCHIVE ===== */
+        .brief-archive {
+            padding: 0.5rem 0 1rem;
+            color: #37474f;
+        }
+
+        .brief-status {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem 1rem;
+            font-size: 0.85rem;
+            color: #78909c;
+            padding: 0 0 1rem;
+            border-bottom: 1px solid rgba(78, 205, 196, 0.25);
+            margin-bottom: 1.5rem;
+        }
+
+        .brief-status strong {
+            color: #37474f;
+            font-weight: 600;
+        }
+
+        .brief-status .brief-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            flex-shrink: 0;
+        }
+
+        /* The fragment itself, as written by the daily task */
+        .ai-brief {
+            display: block;
+        }
+
+        .ai-brief h2 {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0 0 0.35rem;
+            line-height: 1.3;
+        }
+
+        .ai-brief .subtitle {
+            font-size: 0.95rem;
+            color: #78909c;
+            font-style: italic;
+            margin: 0 0 1.5rem;
+            line-height: 1.5;
+        }
+
+        .ai-brief ol {
+            list-style: none;
+            counter-reset: brief-item;
+            padding: 0;
+            margin: 0;
+        }
+
+        .ai-brief ol > li {
+            counter-increment: brief-item;
+            position: relative;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-left: 3px solid #4ecdc4;
+            border-radius: 12px;
+            padding: 1.1rem 1.3rem 1.1rem 3.4rem;
+            margin-bottom: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .ai-brief ol > li:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+        }
+
+        .ai-brief ol > li::before {
+            content: counter(brief-item);
+            position: absolute;
+            left: 1.1rem;
+            top: 1.05rem;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            background: rgba(78, 205, 196, 0.18);
+            color: #2b8f88;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-brief ol > li > a {
+            display: inline-block;
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: #2c3e50;
+            text-decoration: none;
+            line-height: 1.4;
+            border-bottom: 1px solid transparent;
+            transition: color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .ai-brief ol > li > a:hover {
+            color: #2b8f88;
+            border-bottom-color: rgba(78, 205, 196, 0.6);
+        }
+
+        .ai-brief ol > li > a::after {
+            content: " ↗";
+            font-size: 0.8em;
+            opacity: 0.5;
+        }
+
+        .ai-brief ol > li p {
+            margin: 0.45rem 0 0;
+            font-size: 0.92rem;
+            line-height: 1.6;
+            color: #546e7a;
+        }
+
+        .ai-brief .sources {
+            margin: 1.4rem 0 0;
+            padding-top: 0.9rem;
+            border-top: 1px dashed rgba(120, 144, 156, 0.35);
+            font-size: 0.82rem;
+            color: #90a4ae;
+            line-height: 1.5;
+        }
+
+        /* Newest brief, shown expanded */
+        .brief-latest {
+            margin-bottom: 2.5rem;
+        }
+
+        .brief-latest-flag {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: #2b8f88;
+            background: rgba(78, 205, 196, 0.16);
+            border-radius: 20px;
+            padding: 0.25rem 0.7rem;
+            margin-bottom: 0.7rem;
+        }
+
+        /* Archive of earlier days */
+        .brief-archive-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #37474f;
+            margin: 0 0 1rem;
+            padding-top: 1.4rem;
+            border-top: 1px solid rgba(120, 144, 156, 0.2);
+        }
+
+        .brief-month {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #90a4ae;
+            margin: 1.4rem 0 0.6rem;
+        }
+
+        .brief-month:first-of-type {
+            margin-top: 0;
+        }
+
+        details.brief-item {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        details.brief-item[open] {
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 3px 14px rgba(0, 0, 0, 0.06);
+        }
+
+        details.brief-item > summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 0.85rem 1.1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            font-size: 0.94rem;
+            color: #37474f;
+            transition: color 0.2s ease;
+        }
+
+        details.brief-item > summary::-webkit-details-marker { display: none; }
+
+        details.brief-item > summary:hover { color: #2b8f88; }
+
+        .brief-chevron {
+            flex-shrink: 0;
+            color: #4ecdc4;
+            font-size: 0.75rem;
+            transition: transform 0.25s ease;
+            line-height: 1.6;
+        }
+
+        details.brief-item[open] .brief-chevron { transform: rotate(90deg); }
+
+        .brief-item-date { font-weight: 600; }
+
+        .brief-item-meta {
+            margin-left: auto;
+            font-size: 0.78rem;
+            color: #90a4ae;
+            white-space: nowrap;
+        }
+
+        .brief-item-body {
+            padding: 0.2rem 1.2rem 1.2rem;
+        }
+
+        .brief-item-body .ai-brief h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .brief-item-body .ai-brief .subtitle {
+            margin-bottom: 1rem;
+            font-size: 0.88rem;
+        }
+
+        .brief-loading, .brief-message {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #78909c;
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .brief-message code {
+            background: rgba(120, 144, 156, 0.12);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .brief-spinner {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto 0.9rem;
+            border: 3px solid rgba(78, 205, 196, 0.25);
+            border-top-color: #4ecdc4;
+            border-radius: 50%;
+            animation: brief-spin 0.8s linear infinite;
+        }
+
+        @keyframes brief-spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .ai-brief ol > li {
+                padding: 1rem 1rem 1rem 3rem;
+            }
+            .ai-brief ol > li::before { left: 0.85rem; }
+            .brief-item-meta { display: none; }
+        }
+
         /* ===== DARK THEME ===== */
         body.dark-theme {
             color: #e0f7fa;
@@ -774,6 +1062,82 @@
         body.dark-theme #ai-news-content a {
             color: #4ecdc4 !important;
         }
+
+        /* Daily AI Brief -- dark mode */
+        body.dark-theme .brief-archive { color: #b0bec5; }
+
+        body.dark-theme .brief-status {
+            color: #90a4ae;
+            border-bottom-color: rgba(78, 205, 196, 0.25);
+        }
+
+        body.dark-theme .brief-status strong { color: #e0f7fa; }
+
+        body.dark-theme .ai-brief h2 { color: #e0f7fa; }
+
+        body.dark-theme .ai-brief .subtitle { color: #90a4ae; }
+
+        body.dark-theme .ai-brief ol > li {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #4ecdc4;
+        }
+
+        body.dark-theme .ai-brief ol > li:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-theme .ai-brief ol > li::before {
+            background: rgba(78, 205, 196, 0.2);
+            color: #7fe6de;
+        }
+
+        body.dark-theme .ai-brief ol > li > a { color: #e0f7fa; }
+
+        body.dark-theme .ai-brief ol > li > a:hover { color: #4ecdc4; }
+
+        body.dark-theme .ai-brief ol > li p { color: #b0bec5; }
+
+        body.dark-theme .ai-brief .sources {
+            color: #78909c;
+            border-top-color: rgba(255, 255, 255, 0.12);
+        }
+
+        body.dark-theme .brief-latest-flag {
+            color: #7fe6de;
+            background: rgba(78, 205, 196, 0.18);
+        }
+
+        body.dark-theme .brief-archive-heading {
+            color: #e0f7fa;
+            border-top-color: rgba(255, 255, 255, 0.12);
+        }
+
+        body.dark-theme .brief-month { color: #78909c; }
+
+        body.dark-theme details.brief-item {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.09);
+        }
+
+        body.dark-theme details.brief-item[open] {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        body.dark-theme details.brief-item > summary { color: #cfd8dc; }
+
+        body.dark-theme details.brief-item > summary:hover { color: #4ecdc4; }
+
+        body.dark-theme .brief-item-meta { color: #78909c; }
+
+        body.dark-theme .brief-loading,
+        body.dark-theme .brief-message { color: #90a4ae; }
+
+        body.dark-theme .brief-message code {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0f7fa;
+        }
+
     </style>
 </head>
 <body>
@@ -783,14 +1147,15 @@
             <button class="nav-btn" onclick="openCard('climate')" data-tooltip="Real-time dashboard of global climate indices including ENSO, IOD, and SAM">
                 🌍 Climate Indices
             </button>
-            <button class="nav-btn" onclick="openCard('ai')" data-tooltip="Latest AI and AGI news articles and podcast summaries, updated automatically">
-                🤖 AI News
+            <button class="nav-btn" onclick="openCard('ai')" data-tooltip="A daily curated brief on AI in education, research, universities and society -- with the full archive of previous days">
+                🤖 AI Brief
             </button>
             <button class="nav-btn" onclick="openCard('aiscaling')" data-tooltip="Interactive charts tracking AI model growth, benchmarks, and compute scaling">
                 📈 AI Scaling
             </button>
-            <button class="nav-btn" onclick="window.location.href='AI_SLOP/index.html'" data-tooltip="AI-generated summaries and critiques of thought-provoking AI articles">
-                📝 AI Slop
+            <button class="nav-btn has-icon" onclick="window.open('https://simple-climate.cloud.edu.au', '_blank', 'noopener')" data-tooltip="Carbonator 2 (beta): the new SSP-based climate model, with spatial projections">
+                <img src="assets/graphics/13-carbonator2.svg" alt="" class="nav-btn-icon">
+                Carbonator 2
             </button>
         </div>
         <div style="display: flex; gap: 1rem;">
@@ -872,6 +1237,11 @@
             <a href="teaching_content/resources.html" class="nav-button" data-tooltip="Derivations and interactive tools">
                 <img src="assets/graphics/11-teaching-resources.svg" alt="Teaching Resources" class="nav-button-icon">
                 <span>Teaching Resources</span>
+            </a>
+
+            <a href="AI_SLOP/index.html" class="nav-button" data-tooltip="AI-generated summaries and critiques of thought-provoking AI articles">
+                <img src="assets/graphics/12-ai-slop.svg" alt="AI Slop" class="nav-button-icon">
+                <span>AI Slop</span>
             </a>
         </div>
 
@@ -1043,7 +1413,9 @@
 
         async function loadPublications() {
             try {
-                const response = await fetch('assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv');
+                // no-cache: always revalidate with the server so a freshly deployed CSV
+                // isn't masked by the browser's heuristic HTTP cache
+                const response = await fetch('assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv', { cache: 'no-cache' });
                 const csvText = await response.text();
                 const lines = csvText.split('\n');
 
@@ -1373,6 +1745,198 @@
         const cardClose = document.getElementById('cardClose');
         const cardTitle = document.getElementById('cardTitle');
         const cardContent = document.getElementById('cardContent');
+        // ===================================================================
+        // DAILY AI BRIEF ARCHIVE
+        //
+        // Reads ai_brief/index.json (written each morning by
+        // ai_brief/fetch_briefs.py, which pulls the day's brief from Google
+        // Drive). The newest brief is shown expanded; earlier days are
+        // collapsed and their HTML is fetched only when opened, so the panel
+        // stays fast however large the archive grows.
+        // ===================================================================
+        const AI_BRIEF_BASE = 'ai_brief/';
+        const aiBriefCache = new Map();   // date -> fragment HTML
+
+        function briefEscape(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function briefMonthLabel(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d)) return dateStr.slice(0, 7);
+            return d.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+        }
+
+        function briefRelativeDays(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d)) return '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const days = Math.round((today - d) / 86400000);
+            if (days <= 0) return 'today';
+            if (days === 1) return 'yesterday';
+            if (days < 7) return days + ' days ago';
+            if (days < 14) return 'last week';
+            if (days < 60) return Math.round(days / 7) + ' weeks ago';
+            return Math.round(days / 30) + ' months ago';
+        }
+
+        // Fetch one day's fragment. Cached, so reopening a day is instant.
+        async function fetchBriefFragment(dir, file, dateStr) {
+            if (aiBriefCache.has(dateStr)) return aiBriefCache.get(dateStr);
+            const url = `${AI_BRIEF_BASE}${dir}/${encodeURIComponent(file)}?v=${Date.now()}`;
+            const resp = await fetch(url, { cache: 'no-store' });
+            if (!resp.ok) throw new Error(`could not load ${file} (HTTP ${resp.status})`);
+            const text = await resp.text();
+            aiBriefCache.set(dateStr, text);
+            return text;
+        }
+
+        function briefMessage(title, detail) {
+            return `<div class="brief-message"><p><strong>${briefEscape(title)}</strong></p><p>${detail}</p></div>`;
+        }
+
+        async function loadAIBriefArchive(target) {
+            target.innerHTML = '<div class="brief-loading"><div class="brief-spinner"></div>Loading the AI brief archive…</div>';
+
+            let manifest;
+            try {
+                const resp = await fetch(`${AI_BRIEF_BASE}index.json?v=${Date.now()}`, { cache: 'no-store' });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                manifest = await resp.json();
+            } catch (err) {
+                target.innerHTML = briefMessage(
+                    'The brief archive is not available yet.',
+                    'The daily fetch has not produced <code>ai_brief/index.json</code> on this server. ' +
+                    'Run <code>ai_brief/run_fetch.sh</code> once by hand to populate it.' +
+                    `<br><br><span style="opacity:0.7">(${briefEscape(err.message)})</span>`
+                );
+                return;
+            }
+
+            const dir = manifest.dir || 'briefs';
+            const briefs = (manifest.briefs || []).filter(b => b && b.date && b.file);
+
+            if (!briefs.length) {
+                target.innerHTML = briefMessage(
+                    'No briefs yet.',
+                    'The archive is set up and working, but the Drive folder has no ' +
+                    '<code>ai-brief-YYYY-MM-DD.html</code> files in it so far. ' +
+                    'The first one should appear the morning after the scheduled task next runs.'
+                );
+                return;
+            }
+
+            briefs.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+            const [latest, ...earlier] = briefs;
+
+            const generated = manifest.generated
+                ? new Date(manifest.generated).toLocaleString('en-AU',
+                    { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : '';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'brief-archive';
+
+            // --- status line -------------------------------------------------
+            const status = document.createElement('div');
+            status.className = 'brief-status';
+            status.innerHTML =
+                '<span class="brief-dot"></span>' +
+                `<span><strong>${briefs.length}</strong> brief${briefs.length === 1 ? '' : 's'} in the archive</span>` +
+                `<span>Newest: <strong>${briefEscape(latest.label || latest.date)}</strong>` +
+                (briefRelativeDays(latest.date) ? ` (${briefRelativeDays(latest.date)})` : '') + '</span>' +
+                (generated ? `<span>Archive updated ${briefEscape(generated)}</span>` : '');
+            wrap.appendChild(status);
+
+            // --- newest brief, expanded --------------------------------------
+            const latestBox = document.createElement('div');
+            latestBox.className = 'brief-latest';
+            latestBox.innerHTML =
+                '<span class="brief-latest-flag">Latest brief</span>' +
+                '<div class="brief-latest-body"><div class="brief-loading"><div class="brief-spinner"></div>Loading…</div></div>';
+            wrap.appendChild(latestBox);
+
+            // --- earlier days, collapsed and lazily fetched -------------------
+            if (earlier.length) {
+                const heading = document.createElement('h3');
+                heading.className = 'brief-archive-heading';
+                heading.textContent = `Earlier briefs (${earlier.length})`;
+                wrap.appendChild(heading);
+
+                let currentMonth = null;
+                earlier.forEach(brief => {
+                    const month = brief.date.slice(0, 7);
+                    if (month !== currentMonth) {
+                        currentMonth = month;
+                        const mh = document.createElement('div');
+                        mh.className = 'brief-month';
+                        mh.textContent = briefMonthLabel(brief.date);
+                        wrap.appendChild(mh);
+                    }
+
+                    const det = document.createElement('details');
+                    det.className = 'brief-item';
+                    det.dataset.date = brief.date;
+
+                    const meta = [];
+                    if (brief.items) meta.push(`${brief.items} item${brief.items === 1 ? '' : 's'}`);
+                    const rel = briefRelativeDays(brief.date);
+                    if (rel) meta.push(rel);
+
+                    det.innerHTML =
+                        '<summary>' +
+                            '<span class="brief-chevron">▶</span>' +
+                            `<span class="brief-item-date">${briefEscape(brief.label || brief.date)}</span>` +
+                            (meta.length ? `<span class="brief-item-meta">${briefEscape(meta.join(' · '))}</span>` : '') +
+                        '</summary>' +
+                        '<div class="brief-item-body"></div>';
+
+                    det.addEventListener('toggle', async () => {
+                        const body = det.querySelector('.brief-item-body');
+                        if (!det.open || body.dataset.loaded === 'yes') return;
+                        body.dataset.loaded = 'yes';
+                        body.innerHTML = '<div class="brief-loading"><div class="brief-spinner"></div>Loading…</div>';
+                        try {
+                            body.innerHTML = await fetchBriefFragment(dir, brief.file, brief.date);
+                        } catch (err) {
+                            body.dataset.loaded = '';
+                            body.innerHTML = briefMessage('Could not load this brief.', briefEscape(err.message));
+                        }
+                    });
+
+                    wrap.appendChild(det);
+                });
+            }
+
+            target.innerHTML = '';
+            target.appendChild(wrap);
+
+            // Load the newest brief's content.
+            const latestBody = latestBox.querySelector('.brief-latest-body');
+            try {
+                latestBody.innerHTML = await fetchBriefFragment(dir, latest.file, latest.date);
+            } catch (err) {
+                latestBody.innerHTML = briefMessage(
+                    'Could not load the latest brief.',
+                    `The archive lists <code>${briefEscape(latest.file)}</code> but the file could not be fetched. ` +
+                    `<br><br><span style="opacity:0.7">(${briefEscape(err.message)})</span>`
+                );
+            }
+
+            // Deep link support: #brief=2026-07-24 opens that day.
+            const match = /(?:^|[#&])brief=(\d{4}-\d{2}-\d{2})/.exec(window.location.hash);
+            if (match) {
+                const wanted = wrap.querySelector(`details.brief-item[data-date="${match[1]}"]`);
+                if (wanted) {
+                    wanted.open = true;
+                    wanted.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
         let aboutInterval = null;
 
         function openCard(type) {
@@ -1424,7 +1988,21 @@
                     };
                     break;
                 case 'ai':
-                    title = 'AI & AGI News Briefing';
+                    // Daily AI Brief archive (ai_brief/index.json).
+                    // The previous RSS-based briefing is kept as a fallback:
+                    // openCard('ai-rss') still renders it from
+                    // AI_RSSfeed/ai_news_outputs/ai_news_latest.md
+                    title = 'Daily AI Brief';
+                    content = '<div id="ai-brief-placeholder"></div>';
+                    onOpen = () => {
+                        const el = document.getElementById('ai-brief-placeholder');
+                        if (el) loadAIBriefArchive(el);
+                    };
+                    break;
+                case 'ai-rss':
+                    // Legacy RSS digest -- no longer linked from the nav bar,
+                    // retained as a backup. Reachable via openCard('ai-rss').
+                    title = 'AI & AGI News Briefing (RSS archive)';
                     content = '<div id="ai-news-placeholder"></div>';
                     onOpen = () => {
                         const el = document.getElementById('ai-news-placeholder');

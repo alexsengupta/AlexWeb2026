@@ -17,6 +17,7 @@ corresponding web page displays as "Data last downloaded."
 | `AI_model_growth/update_data.py` | AI model and benchmark CSVs from epoch.ai; METR autonomy data | `AI_model_growth/example_data/` |
 | `AI_RSSfeed/scanForAInews.py` | Scans 40+ RSS feeds, generates AI news briefing via OpenAI API | `AI_RSSfeed/ai_news_outputs/` |
 | `AI_SLOP/update_posts.py` | Scans `AI_SLOP/markdowns/` for new articles, updates `posts.json` | `AI_SLOP/` |
+| `ai_brief/fetch_briefs.py` | Pulls the daily AI Brief HTML from Google Drive, builds the archive manifest (**runs on cron**, see `ai_brief/README.md`) | `ai_brief/briefs/` |
 
 ### Running the scripts
 
@@ -32,7 +33,14 @@ cd AI_RSSfeed && source ai-news-env/bin/activate && python scanForAInews.py
 
 # AI Slop blog posts (run after adding a new .md to AI_SLOP/markdowns/)
 cd AI_SLOP && python update_posts.py
+
+# Daily AI Brief archive (requires a Google service-account key -- see ai_brief/README.md)
+cd ai_brief && ./venv/bin/python fetch_briefs.py
 ```
+
+> The AI Brief fetch is the only script here that is expected to run
+> automatically. On the Nectar VM it is scheduled by cron three times a day; its
+> downloads and manifest are gitignored, so `git pull` never disturbs them.
 
 ### Other utility scripts
 
@@ -52,7 +60,7 @@ cd AI_SLOP && python update_posts.py
 The main entry point. A single-page layout with:
 
 - **Top navigation bar** -- buttons that open slide-in card panels:
-  - Climate Indices, AI News, AI Scaling, AI Slop
+  - Climate Indices, AI Brief, AI Scaling, AI Slop
   - About Me, Dark/Light theme toggle
 - **Central button grid** -- links to the main content sections (see below)
 - **Publications section** -- loads from `assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv`, filterable by year slider
@@ -68,9 +76,11 @@ index.html (landing page)
 │  │                                   └─ reads data/*.csv (from climate_dashboard.py)
 │  │                                   └─ reads data/last_updated.json
 │  │
-│  ├─ AI News ──── fetches ──► AI_RSSfeed/ai_news_outputs/ai_news_latest.md
-│  │               fetches ──► AI_RSSfeed/ai_news_outputs/last_updated.json
-│  │               fetches ──► AI_RSSfeed/ai_news_outputs/archive_index.json
+│  ├─ AI Brief ─── fetches ──► ai_brief/index.json         (manifest)
+│  │               fetches ──► ai_brief/briefs/ai-brief-YYYY-MM-DD.html
+│  │                            (newest expanded, earlier days lazy-loaded)
+│  │               [legacy RSS digest kept at openCard('ai-rss'):
+│  │                fetches ──► AI_RSSfeed/ai_news_outputs/ai_news_latest.md]
 │  │
 │  ├─ AI Scaling ──── iframe ──► AI_model_growth/index.html
 │  │                              ├─ app.js (D3.js charts)
@@ -122,8 +132,12 @@ update_data.py ────────► example_data/**/*.csv ───► AI
                      ──► example_data/             (via app.js + D3)
                          last_updated.json ───────┘
 
+Google Drive ──────────► ai_brief/briefs/*.html ──► index.html
+  (daily task)              via fetch_briefs.py       (loadAIBriefArchive)
+                     ──► ai_brief/index.json ────────┘
+
 scanForAInews.py ──────► ai_news_latest.md ───────► index.html (loadAINews)
-                     ──► archive_index.json ──────┘
+  (legacy, unlinked)  ──► archive_index.json ──────┘
                      ──► last_updated.json ───────┘
 
 update_posts.py ───────► posts.json ──────────────► AI_SLOP/index.html

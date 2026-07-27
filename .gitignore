@@ -20,3 +20,17 @@ old/
 AI_model_growth/example_data/ai_models/*.csv
 AI_model_growth/example_data/benchmark_data/*.csv
 AI_model_growth/example_data/last_updated.json
+
+# Daily AI Brief -- code is tracked, everything the cron job produces is not.
+# Each machine (Mac, Nectar VM) fetches its own copy from Google Drive, so
+# nothing here should ever be pushed.
+ai_brief/briefs/*
+!ai_brief/briefs/.gitkeep
+ai_brief/index.json
+ai_brief/.env
+ai_brief/service_account.json
+ai_brief/*.json
+ai_brief/venv/
+ai_brief/fetch.log
+ai_brief/.fetch.lock
+ai_brief/__pycache__/

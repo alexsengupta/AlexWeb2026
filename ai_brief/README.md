@@ -88,7 +88,8 @@ Drive.
 ### 2. Install on the server (and locally)
 
 ```bash
-cd /path/to/Alex_web/ai_brief
+cd ~/AlexWeb2026/ai_brief          # on the Nectar VM
+# cd ~/Dropbox/Alex_web/ai_brief   # on the Mac
 
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
@@ -135,16 +136,14 @@ crontab -e
 # CRON_TZ matters: Nectar VMs usually run on UTC, and Sydney shifts by an hour
 # in daylight saving. This line makes the times below mean Sydney time.
 CRON_TZ=Australia/Sydney
-35 6  * * * /var/www/Alex_web/ai_brief/run_fetch.sh
-5  9  * * * /var/www/Alex_web/ai_brief/run_fetch.sh
-5  13 * * * /var/www/Alex_web/ai_brief/run_fetch.sh
+35 6  * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
+5  9  * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
+5  13 * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
 ```
 
-Check what path to use with `pwd`, and make the wrapper executable once:
-
-```bash
-chmod +x /var/www/Alex_web/ai_brief/run_fetch.sh
-```
+Those paths assume the repo is at `~/AlexWeb2026` on the VM; confirm with
+`pwd`. `run_fetch.sh` is committed with its executable bit set, so no `chmod`
+is needed after a fresh clone or pull.
 
 If `CRON_TZ` is unsupported on your VM's cron, use UTC times instead
 (06:35 Sydney = 20:35 UTC the previous day during AEST, 19:35 UTC during AEDT)
@@ -154,7 +153,7 @@ Sydney time with `sudo timedatectl set-timezone Australia/Sydney`.
 Logs go to `ai_brief/fetch.log`, trimmed automatically at 2000 lines:
 
 ```bash
-tail -f /var/www/Alex_web/ai_brief/fetch.log
+tail -f /home/ubuntu/AlexWeb2026/ai_brief/fetch.log
 ```
 
 ---

@@ -389,10 +389,13 @@ def build_drive_service(cfg: Config):
     try:
         from googleapiclient.discovery import build
     except ImportError as exc:
+        # Give the exact command for THIS interpreter. A generic "pip install"
+        # hint sends people to the system pip, which installs somewhere the
+        # venv running this script will never look.
         die(
             f"Missing Google API libraries ({exc}).\n"
-            "Install them with:\n"
-            "  pip install -r ai_brief/requirements.txt"
+            "Install them into the interpreter running this script:\n"
+            f"  {sys.executable} -m pip install -r {SCRIPT_DIR / 'requirements.txt'}"
         )
 
     if cfg.api_key:

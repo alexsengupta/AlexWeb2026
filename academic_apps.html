@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Store - Alex Sen Gupta</title>
+    <meta name="description" content="Interactive apps, simulations and explainers for ocean and climate science, statistics, and conceptual modelling.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg-overlay: rgba(255, 255, 255, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #f0f4f8;
+            color: var(--primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Canvas Background */
+        #flow-field {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            /* generous bottom padding so a tooltip on the last row is not clipped */
+            padding: 3rem 2rem 8rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Home button, top left */
+        .home-link {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            color: #546e7a;
+            font-weight: 500;
+            padding: 0.5rem 1.1rem;
+            background: var(--bg-overlay);
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            transition: transform 0.2s, color 0.2s;
+            z-index: 5;
+        }
+
+        .home-link:hover { transform: translateX(-3px); color: var(--accent); }
+
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+            padding-top: 0.5rem;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            background: var(--bg-overlay);
+            display: inline-block;
+            padding: 0.4rem 1.4rem;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* ---- Compact app grid -------------------------------------------- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .card {
+            background: var(--bg-overlay);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 1rem 0.8rem 0.9rem;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+                        box-shadow 0.2s, background 0.2s, border-color 0.2s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            min-height: 104px;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.97);
+            border-color: var(--accent);
+        }
+
+        .card-icon {
+            font-size: 1.7rem;
+            line-height: 1;
+            margin-bottom: 0.55rem;
+        }
+
+        .card h2 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--primary);
+        }
+
+        /* Small marker for links that leave the site */
+        .card .ext {
+            position: absolute;
+            top: 0.45rem;
+            right: 0.55rem;
+            font-size: 0.7rem;
+            color: #b0bec5;
+        }
+
+        .card:hover .ext { color: var(--accent); }
+
+        /* ---- Tooltip ------------------------------------------------------
+           The description that used to sit in the card. Shown BELOW the card,
+           because above would be clipped by the viewport on the first row. */
+        .card[data-tip]::after,
+        .card[data-tip]::before {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease;
+            position: absolute;
+            left: 50%;
+            z-index: 20;
+        }
+
+        .card[data-tip]::after {
+            content: attr(data-tip);
+            top: calc(100% + 9px);
+            transform: translateX(-50%);
+            width: max-content;
+            max-width: 250px;
+            white-space: normal;
+            text-align: left;
+            background: rgba(38, 55, 71, 0.96);
+            color: #eceff1;
+            font-size: 0.78rem;
+            font-weight: 400;
+            line-height: 1.5;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        /* little arrow */
+        .card[data-tip]::before {
+            content: "";
+            top: calc(100% + 3px);
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: rgba(38, 55, 71, 0.96);
+        }
+
+        .card[data-tip]:hover::after,
+        .card[data-tip]:hover::before,
+        .card[data-tip]:focus-visible::after,
+        .card[data-tip]:focus-visible::before { opacity: 1; }
+
+        .card:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ---- Sections ------------------------------------------------------ */
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #78909c;
+            margin: 1.6rem 0 0.4rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+        }
+
+        .section-title:first-child { margin-top: 0; }
+
+        footer {
+            max-width: 900px;
+            margin: 3.5rem auto 0;
+            padding: 1.3rem 1.6rem;
+            background: var(--bg-overlay);
+            backdrop-filter: blur(5px);
+            border-radius: 14px;
+            color: #546e7a;
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        footer a { color: var(--accent); }
+
+        @media (max-width: 768px) {
+            .container { padding: 5rem 1rem 6rem; }
+            .home-link { top: 1rem; left: 1rem; padding: 0.4rem 0.9rem; }
+            h1 { font-size: 1.8rem; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 0.7rem; }
+            .card { min-height: 92px; padding: 0.8rem 0.5rem; }
+            .card-icon { font-size: 1.45rem; }
+            .card h2 { font-size: 0.8rem; }
+            /* Tooltips need hover; on touch the name has to stand alone. */
+            .card[data-tip]::after, .card[data-tip]::before { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="flow-field"></canvas>
+
+    <div class="container">
+        <a href="index.html" class="home-link">⌂ Home</a>
+
+        <header>
+            <h1>App Store</h1>
+        </header>
+
+        <div class="grid">
+
+            <!-- ============================================================ -->
+            <div class="section-title">Data Visualisation</div>
+
+            <a href="https://object-store.rc.nectar.org.au/v1/AUTH_d512c403a65b49c0929e1b6d5765520a/australian-gliders/glider_map.html"
+               class="card" target="_blank" rel="noopener noreferrer"
+               data-tip="Explore ANFOG glider deployments around Australia. Trajectories and depth–time sections of temperature, salinity, density and mixed layer depth, filtered by year, vehicle and season."
+               aria-label="Ocean Glider Explorer — ANFOG glider deployments around Australia, with trajectories and depth-time sections">
+                <span class="ext">↗</span>
+                <span class="card-icon">🗺️</span>
+                <h2>Ocean Glider Explorer</h2>
+            </a>
+
+            <a href="simulations/seasonality/index.html" class="card"
+               data-tip="Investigate seasonality, variability and trends in surface temperature."
+               aria-label="Seasonal Cycles — seasonality, variability and trends in surface temperature">
+                <span class="card-icon">🌡️</span>
+                <h2>Seasonal Cycles</h2>
+            </a>
+
+            <!-- ============================================================ -->
+            <div class="section-title">Statistical</div>
+
+            <a href="simulations/MHW_acceleration/mhw_acceleration.html" class="card"
+               data-tip="See how steady warming can produce accelerating marine heatwave metrics."
+               aria-label="MHW Acceleration Explainer — how steady warming produces accelerating marine heatwave metrics">
+                <span class="card-icon">🔥</span>
+                <h2>MHW Acceleration</h2>
+            </a>
+
+            <a href="simulations/monte_carlo_simulation/mc_input.html" class="card"
+               data-tip="A simpler, more intuitive way of performing statistical significance tests using resampling."
+               aria-label="Monte Carlo Simulation — significance testing by resampling">
+                <span class="card-icon">🎲</span>
+                <h2>Monte Carlo</h2>
+            </a>
+
+            <a href="teaching_content/overfitting/overfitting_app.html" class="card"
+               data-tip="Interactively explore bias-variance tradeoffs and how model complexity affects generalisation."
+               aria-label="Overfitting Explorer — bias-variance tradeoffs and model complexity">
+                <span class="card-icon">📉</span>
+                <h2>Overfitting Explorer</h2>
+            </a>
+
+            <a href="simulations/counterintuitive_correlations/correlation_madness.html" class="card"
+               data-tip="Why combining correlations can lead to paradoxes, including Simpson's Paradox."
+               aria-label="Correlation Madness — how combining correlations produces paradoxes">
+                <span class="card-icon">📊</span>
+                <h2>Correlation Madness</h2>
+            </a>
+
+            <a href="simulations/syntheticSST/web_app/index.html" class="card"
+               data-tip="Create synthetic sea surface temperature time series to test hypotheses and methods."
+               aria-label="SST Generator — synthetic sea surface temperature time series">
+                <span class="card-icon">📈</span>
+                <h2>SST Generator</h2>
+            </a>
+
+            <!-- ============================================================ -->
+            <div class="section-title">Conceptual Models</div>
+
+            <a href="simulations/coral_lagoon/coral_bleaching_multiyear.html" class="card"
+               data-tip="Simulate how heat stress accumulates to cause bleaching events."
+               aria-label="Coral Bleaching — how heat stress accumulates to cause bleaching">
+                <span class="card-icon">🪸</span>
+                <h2>Coral Bleaching</h2>
+            </a>
+
+            <a href="Carbonator.html" class="card"
+               data-tip="Look into the future with this easy-to-use, interactive climate model. Explore emissions scenarios and their impacts."
+               aria-label="Carbonator — interactive climate model for exploring emissions scenarios">
+                <span class="card-icon">🌍</span>
+                <h2>Carbonator</h2>
+            </a>
+
+            <a href="simulations/predator_prey/pred_prey_model.html" class="card"
+               data-tip="Simulate species interactions and chaotic population dynamics."
+               aria-label="Predator Prey — species interactions and chaotic population dynamics">
+                <span class="card-icon">🦊</span>
+                <h2>Predator Prey</h2>
+            </a>
+
+            <a href="simulations/stommel_model/index.html" class="card"
+               data-tip="Explore the classic two-box model of basin-scale circulation and western boundary currents."
+               aria-label="Stommel Basin Model — two-box model of basin-scale circulation">
+                <span class="card-icon">🌀</span>
+                <h2>Stommel Basin Model</h2>
+            </a>
+
+            <a href="simulations/estuary/index.html" class="card"
+               data-tip="Investigate processes driving circulation, temperature, and salinity in estuaries."
+               aria-label="Estuarine Dynamics — circulation, temperature and salinity in estuaries">
+                <span class="card-icon">🌊</span>
+                <h2>Estuarine Dynamics</h2>
+            </a>
+
+            <!-- ============================================================ -->
+            <div class="section-title">Teaching Resources</div>
+
+            <a href="teaching_content/Deriving_Coriolis_Force.html" class="card"
+               data-tip="A step-by-step derivation of the Coriolis force from scratch. Understand the maths behind motion on a rotating planet."
+               aria-label="Deriving the Coriolis Force — step-by-step derivation from scratch">
+                <span class="card-icon">🌪️</span>
+                <h2>Coriolis Derivation</h2>
+            </a>
+
+            <a href="http://203.101.229.0/aus" class="card" target="_blank" rel="noopener noreferrer"
+               data-tip="Track floating objects moving around the Australian coastline using particle tracking."
+               aria-label="Lagrangian Floats Australia — particle tracking around the Australian coastline">
+                <span class="ext">↗</span>
+                <span class="card-icon">🇦🇺</span>
+                <h2>Lagrangian Floats (Aus)</h2>
+            </a>
+
+            <a href="http://203.101.229.0/gbr" class="card" target="_blank" rel="noopener noreferrer"
+               data-tip="Track particle movement within the Great Barrier Reef system."
+               aria-label="Lagrangian Floats Great Barrier Reef — particle movement in the reef system">
+                <span class="ext">↗</span>
+                <span class="card-icon">🐠</span>
+                <h2>Lagrangian Floats (GBR)</h2>
+            </a>
+
+            <a href="http://203.101.229.0/aragonite/" class="card" target="_blank" rel="noopener noreferrer"
+               data-tip="Examine model projections of aragonite saturation and pH levels globally."
+               aria-label="Acidification Projections — aragonite saturation and global pH projections">
+                <span class="ext">↗</span>
+                <span class="card-icon">🧪</span>
+                <h2>Acidification Projections</h2>
+            </a>
+
+            <a href="simulations/waves/w7.html" class="card"
+               data-tip="Explore wave dispersion, phase speed, and group velocity in deep water."
+               aria-label="Deep Water Waves — dispersion, phase speed and group velocity">
+                <span class="card-icon">🚤</span>
+                <h2>Deep Water Waves</h2>
+            </a>
+
+            <!-- ============================================================ -->
+            <div class="section-title">Just for Fun</div>
+
+            <a href="simulations/traffic_model/motorway_traffic.html" class="card"
+               data-tip="Create phantom traffic jams and see how small changes ripple through a flow."
+               aria-label="Traffic Jam — phantom traffic jams from small perturbations">
+                <span class="card-icon">🚦</span>
+                <h2>Traffic Jam</h2>
+            </a>
+
+            <a href="simulations/flocking/boids_demo.html" class="card"
+               data-tip="Emergent behaviour from simple rules: alignment, cohesion, and separation."
+               aria-label="Flocking — emergent behaviour from alignment, cohesion and separation">
+                <span class="card-icon">🐦</span>
+                <h2>Flocking</h2>
+            </a>
+
+            <a href="simulations/schelling_model/schelling-enhanced.html" class="card"
+               data-tip="A simple model of division showing why and how segregation emerges from mild preferences."
+               aria-label="Schelling Model — how segregation emerges from mild individual preferences">
+                <span class="card-icon">🏘️</span>
+                <h2>Schelling Model</h2>
+            </a>
+
+        </div>
+
+        <footer>
+            Many of the apps here were developed with the help of AI using vibe coding — using
+            natural language to develop code. This opens up conceptual modelling and app
+            development to those without a coding background. Be warned: you still need some
+            understanding of coding principles, and of the systems you are modelling, to be able
+            to test that what you've built works as expected.
+            <a href="AIrabbithole/conceptual_models.html">Read more about conceptual models →</a>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('flow-field');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speed = Math.random() * 0.2 + 0.1;
+                this.angle = Math.random() * Math.PI * 2;
+                this.life = Math.random() * 200 + 100; // Random lifespan
+                this.opacity = 0;
+            }
+
+            update() {
+                this.life--;
+                if (this.life <= 0) {
+                    this.reset();
+                }
+
+                // Fade in/out logic
+                if (this.opacity < 0.4 && this.life > 50) {
+                    this.opacity += 0.01;
+                } else if (this.life < 50) {
+                    this.opacity = (this.life / 50) * 0.4;
+                }
+
+                // Smooth flow field based on position
+                const flowAngle = (Math.cos(this.x * 0.002) + Math.sin(this.y * 0.002)) * Math.PI;
+
+                // Interaction: attraction to mouse/hovered elements
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < 300) {
+                    const attractAngle = Math.atan2(dy, dx);
+                    // Blend flow angle with attraction angle
+                    this.angle = this.angle * 0.95 + attractAngle * 0.05;
+                    this.speed = 0.8; // Speed up slightly when attracted
+                } else {
+                    this.angle = this.angle * 0.98 + flowAngle * 0.02;
+                    this.speed = 0.2; // Return to drift speed
+                }
+
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // Wrap around screen
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = '#3498db';
+                ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = (canvas.width * canvas.height) / 1000;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        // Track mouse over cards
+        document.addEventListener('mousemove', (e) => {
+            const target = e.target.closest('.card');
+            if (target) {
+                const rect = target.getBoundingClientRect();
+                mouse.x = rect.left + rect.width / 2;
+                mouse.y = rect.top + rect.height / 2;
+            } else {
+                mouse.x = -1000;
+            }
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

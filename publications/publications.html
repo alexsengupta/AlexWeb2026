@@ -398,12 +398,29 @@
       return paper;
     }
 
+    function formatDate(date) {
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Pull the Last-Modified header off a response and keep the newest one seen.
+    // This tells us when the underlying briefs were last regenerated, without
+    // any extra network requests.
+    function newerTimestamp(current, response) {
+      const header = response.headers.get('Last-Modified');
+      if (!header) return current;
+      const parsed = new Date(header).valueOf();
+      if (Number.isNaN(parsed)) return current;
+      return current === null || parsed > current ? parsed : current;
+    }
+
     async function loadPapersFromManifest() {
       try {
         const manifestResponse = await fetch('./pdf-summarizer/summaries/manifest.json');
         if (!manifestResponse.ok) {
           throw new Error('Manifest file not found. Please run: python pdf-summarizer/create_manifest.py');
         }
+
+        let newest = newerTimestamp(null, manifestResponse);
 
         const manifest = await manifestResponse.json();
         const papers = await Promise.all(
@@ -416,6 +433,7 @@
                 console.warn(`Failed to load ${filename}: ${response.status} ${response.statusText}`);
                 return null;
               }
+              newest = newerTimestamp(newest, response);
               const content = await response.text();
               return parseMarkdownFile(filename, content);
             } catch (err) {
@@ -425,10 +443,13 @@
           })
         );
 
-        return papers.filter(p => p !== null && p.title);
+        return {
+          papers: papers.filter(p => p !== null && p.title),
+          lastUpdated: newest === null ? '' : formatDate(new Date(newest)),
+        };
       } catch (error) {
         console.error('Error loading papers:', error);
-        return [];
+        return { papers: [], lastUpdated: '' };
       }
     }
 
@@ -642,14 +663,16 @@
       const [papers, setPapers] = useState([]);
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
+      const [lastUpdated, setLastUpdated] = useState('');
 
       useEffect(() => {
         loadPapersFromManifest()
-          .then(loadedPapers => {
+          .then(({ papers: loadedPapers, lastUpdated: updated }) => {
             if (loadedPapers.length === 0) {
               setError('No papers found. Please generate summaries first and run: python pdf-summarizer/create_manifest.py');
             }
             setPapers(loadedPapers);
+            if (updated) setLastUpdated(updated);
           })
           .catch(err => {
             setError(err.message);
@@ -771,7 +794,7 @@
         <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white text-gray-900">
           <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/80 header-bg">
             <div className="mx-auto max-w-7xl px-4 py-4 md:py-5 flex items-center gap-4">
-              <a href="../index.html" class="home-btn" aria-label="Home">
+              <a href="../index.html" className="home-btn" aria-label="Home">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                 </svg>
@@ -781,6 +804,7 @@
                   Alex Sen Gupta
                 </h1>
                 <p className="text-sm font-semibold" style={{ color: '#1e5245' }}>Paper Browser</p>
+                <p className="text-xs text-gray-600 mt-1">Last updated: {lastUpdated || '—'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}

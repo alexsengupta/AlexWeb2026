@@ -448,6 +448,10 @@
       }).filter(p => p.title);
     }
 
+    function formatDate(date) {
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
     async function loadPapers() {
       const files = [
         './scopus_polar_MHW.csv',
@@ -460,13 +464,13 @@
           const papers = parseCSV(text);
           if (papers.length > 0) {
             console.log(`Loaded ${papers.length} papers from ${file}`);
-            return papers;
+            return { papers, lastModified: response.headers.get('Last-Modified') || '' };
           }
         } catch (err) {
           console.warn(`Could not load ${file}:`, err);
         }
       }
-      return [];
+      return { papers: [], lastModified: '' };
     }
 
     const normalize = (s) => (s || '').toLowerCase();
@@ -578,14 +582,19 @@
       const [papers, setPapers] = useState([]);
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
+      const [lastUpdated, setLastUpdated] = useState('');
 
       useEffect(() => {
         loadPapers()
-          .then(loaded => {
+          .then(({ papers: loaded, lastModified }) => {
             if (loaded.length === 0) {
               setError('No papers found. Ensure scopus_polar_MHW.csv is in the same directory.');
             }
             setPapers(loaded);
+            if (lastModified) {
+              const parsed = new Date(lastModified);
+              if (!Number.isNaN(parsed.valueOf())) setLastUpdated(formatDate(parsed));
+            }
           })
           .catch(err => setError(err.message))
           .finally(() => setLoading(false));
@@ -724,6 +733,7 @@
                   Polar Marine Heatwaves
                 </h1>
                 <p className="text-sm font-semibold" style={{ color: '#0c3d6b' }}>Arctic &amp; Antarctic Paper Browser</p>
+                <p className="text-xs text-gray-600 mt-1">Last updated: {lastUpdated || '—'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}

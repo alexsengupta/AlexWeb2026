@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reef bathtub model</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#14181f; --ink2:#4a5464; --ink3:#79839a;
+    --panel:#f4f7fb; --rule:#ccd6e2; --rule2:#e3e9f1;
+    --water:#2a78d6; --sun:#eda100; --carbon:#0f8f61; --carbonate:#4a3aa7;
+    --warm:#e34948; --cool:#1c4e8f; --heat:#d9660f;
+    --s1:#2a78d6; --s2:#d9660f; --s3:#0f8f61;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;font-size:15px;line-height:1.45}
+  .wrap{max-width:1560px;margin:0 auto;padding:16px 20px 40px}
+
+  /* ---------- header & mode switch ---------- */
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+    flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:20px;margin:0 0 3px;font-weight:700}
+  .sub{color:var(--ink2);font-size:13.5px;margin:0;max-width:100ch}
+  .modes{display:flex;gap:0;border:1px solid var(--rule);border-radius:9px;overflow:hidden;flex:0 0 auto}
+  .modes button{border:none;border-radius:0;padding:8px 18px;font-weight:700;font-size:14px;
+    background:#fff;color:var(--ink2);cursor:pointer}
+  .modes button+button{border-left:1px solid var(--rule)}
+  .modes button[aria-selected="true"]{background:var(--water);color:#fff}
+  .hdr-x{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+
+  button{font:inherit;font-size:13.5px;background:#fff;color:var(--ink);border:1px solid var(--rule);
+    border-radius:7px;padding:5px 12px;cursor:pointer}
+  button:hover{border-color:#8fa6c2}
+  .hiw{font-size:13.5px;background:#fff;color:var(--ink);border:1px solid var(--rule);
+    border-radius:7px;padding:5px 12px;text-decoration:none;white-space:nowrap}
+  .hiw:hover{border-color:#8fa6c2}
+  button[aria-pressed="true"]{background:#e4eefb;border-color:var(--water);color:#17457f;font-weight:700}
+
+  /* ---------- generated control panel ---------- */
+  .bar{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--rule);border-radius:11px;padding:11px 14px;margin-bottom:12px}
+  .grp{display:flex;gap:8px;align-items:center}
+  .grp>.lab{color:var(--ink3);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+  .ctl{min-width:186px}
+  .ctl .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .ctl label{font-size:12.5px;color:var(--ink)}
+  .ctl .v{font-variant-numeric:tabular-nums;color:var(--water);font-weight:700;font-size:12.5px;white-space:nowrap}
+  .ctl .hint{color:var(--ink3);font-size:11px;line-height:1.3;margin-top:1px}
+  input[type=range]{width:100%;accent-color:var(--water);cursor:pointer;margin:2px 0 0}
+  .grp input[type=range]{width:140px}
+  .val{font-variant-numeric:tabular-nums;color:var(--water);font-weight:700;font-size:13px;min-width:54px}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .chk input{accent-color:var(--water);width:14px;height:14px;cursor:pointer}
+
+  /* advanced panel */
+  .adv{border:1px solid var(--rule);border-radius:11px;padding:0;margin-bottom:12px;background:#fff}
+  .adv>summary{cursor:pointer;list-style:none;padding:10px 14px;font-weight:700;font-size:13.5px;
+    display:flex;justify-content:space-between;align-items:center}
+  .adv>summary::-webkit-details-marker{display:none}
+  .adv>summary::before{content:"▸  ";color:var(--ink3)}
+  .adv[open]>summary::before{content:"▾  "}
+  .adv>summary .r{font-weight:400;color:var(--ink3);font-size:12.5px}
+  .advbody{padding:2px 14px 14px;border-top:1px solid var(--rule2)}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:12px 18px}
+  .fs{border:none;margin:10px 0 0;padding:0}
+  .fs>legend{padding:0;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--ink3);font-weight:700;margin-bottom:6px}
+  .dirty{background:#fff8e6;border:1px solid #e8c65f;border-radius:7px;padding:2px 9px;
+    font-size:12px;color:#8a6508;font-weight:700}
+
+  .legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;padding:0 2px}
+  .legend .lab{color:var(--ink3);font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+  .legend .ramp{width:250px;height:13px;border-radius:3px;border:1px solid var(--rule);
+    background:linear-gradient(90deg,#5984b6 0%,#bcdcf5 50%,#d4818a 100%)}
+  .legend .end{font-size:13px;color:var(--ink2);font-weight:700}
+  .legend .mid{font-size:13px;color:var(--ink3)}
+
+  .stage{border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:#fff}
+  svg{display:block;width:100%;height:auto}
+  #scrub{width:100%;accent-color:var(--water);cursor:pointer;margin:12px 0 0}
+
+  .gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+  @media(max-width:1080px){.gauges{grid-template-columns:1fr}}
+  .gauge{border:1px solid var(--rule);border-radius:11px;padding:10px 14px 12px;background:#fff}
+  .gauge h3{margin:0 0 1px;font-size:13px;font-weight:700}
+  .gauge .unit{color:var(--ink3);font-size:11.5px;margin:0 0 6px}
+  .gauge .verdict{font-size:14.5px;font-weight:700;margin-top:7px}
+  .gauge .verdict span{font-weight:400;color:var(--ink3);font-size:12.5px}
+
+  .readout{display:flex;flex-wrap:wrap;margin:12px 0 0;border:1px solid var(--rule);
+    border-radius:11px;overflow:hidden}
+  .cell{flex:1 1 0;min-width:132px;padding:9px 14px;border-right:1px solid var(--rule)}
+  .cell:last-child{border-right:none}
+  .cell .k{color:var(--ink3);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .cell .v{font-size:18px;font-variant-numeric:tabular-nums;margin-top:1px}
+  .cell .v small{font-size:12px;color:var(--ink3);font-weight:400}
+  .cell.on{background:#fff8e6}
+  .note{color:var(--ink2);font-size:13px;margin-top:12px}
+  .note b{color:var(--ink)}
+
+  /* ---------- analysis view ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:9px;margin-bottom:12px}
+  .tile{background:var(--panel);border:1px solid var(--rule);border-radius:9px;padding:9px 11px}
+  .tile .k{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;
+    font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .v{font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+  .tile .v small{font-size:11px;color:var(--ink3)}
+  .notes{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+  .n{border-radius:8px;padding:8px 11px;font-size:12.5px;border:1px solid}
+  .n.warn{background:#fff8e6;border-color:#e8c65f;color:#7a5a06}
+  .n.info{background:#eef4fc;border-color:#bcd4ee;color:#1d4a7e}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:900px){.charts{grid-template-columns:1fr}}
+  .chart{background:#fff;border:1px solid var(--rule);border-radius:11px;padding:11px 12px 6px;position:relative}
+  .chart.wide{grid-column:1/-1}
+  .chart .ct{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .chart .ct h3{margin:0;font-size:13px;font-weight:700}
+  .chart .ct .u{color:var(--ink3);font-size:11.5px}
+  .lgd{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin:3px 0 1px}
+  .lgd span{display:inline-flex;align-items:center;gap:5px}
+  .lgd i{width:14px;height:2.5px;border-radius:2px;display:inline-block}
+  .lgd i.d{height:0;border-top:2px dashed currentColor;background:none!important;opacity:.7}
+  canvas{display:block;width:100%;cursor:crosshair}
+  .tip{position:fixed;pointer-events:none;z-index:60;display:none;background:#fff;
+    border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:11.5px;
+    box-shadow:0 8px 26px rgba(20,30,50,.16);min-width:158px}
+  .tip .th{color:var(--ink3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--rule2)}
+  .tip .tr{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;line-height:1.6}
+  .tip .tr span:first-child{color:var(--ink3)}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:4px 8px}
+  thead th{position:sticky;top:0;background:#fff;color:var(--ink3);font-weight:700;
+    border-bottom:1px solid var(--rule);font-size:11px}
+  tbody tr:nth-child(2n){background:#f7f9fc}
+  td:first-child,th:first-child{text-align:left;color:var(--ink3)}
+  .tblwrap{max-height:400px;overflow:auto;border:1px solid var(--rule);border-radius:9px;margin-top:12px}
+
+  .hidden{display:none!important}
+  /* presentation mode: strip everything that is not the figure */
+  body.present .no-present{display:none!important}
+  body.present .wrap{padding-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="no-present">
+  <div>
+    <h1 id="title">Reef “bathtub” model</h1>
+    <p class="sub" id="blurb"></p>
+  </div>
+  <div class="hdr-x">
+    <div class="modes" role="tablist">
+      <button id="mScene" role="tab" aria-selected="true">Basic</button>
+      <button id="mAnalysis" role="tab" aria-selected="false">Advanced</button>
+    </div>
+    <a class="hiw" href="reef_explainer.html" title="a scrollable walk-through of how the model works">How it works →</a>
+    <button id="btnReset">Reset</button>
+  </div>
+</header>
+
+<!-- controls are generated from the parameter registry -->
+<div class="bar" id="bar"></div>
+<details class="adv no-present" id="advPanel">
+  <summary>All parameters <span class="r" id="advCount"></span></summary>
+  <div class="advbody"><div id="advBody"></div></div>
+</details>
+
+<!-- ===================== BASIC ===================== -->
+<section id="viewScene">
+  <div class="legend">
+    <span class="lab">Lagoon tint</span>
+    <span class="end" id="legLo"></span><span class="ramp"></span><span class="end" id="legHi"></span>
+    <span class="mid">middle = no tint = same as the ocean</span>
+  </div>
+  <div class="stage"><svg id="fig" viewBox="0 0 1500 560" role="img"
+    aria-label="Animated cross-section of a reef lagoon behind a crest"></svg></div>
+  <div class="gauges">
+    <div class="gauge"><h3>Organic carbon</h3>
+      <p class="unit">mmol C m⁻² h⁻¹ — which way is CO₂ moving?</p>
+      <svg id="gC" viewBox="0 0 440 54"></svg><div class="verdict" id="vC"></div></div>
+    <div class="gauge"><h3>Calcium carbonate</h3>
+      <p class="unit">mmol CaCO₃ m⁻² h⁻¹ — is the reef building or losing?</p>
+      <svg id="gK" viewBox="0 0 440 54"></svg><div class="verdict" id="vK"></div></div>
+    <div class="gauge"><h3>Heat</h3>
+      <p class="unit">W m⁻² — is the lagoon gaining or losing heat?</p>
+      <svg id="gH" viewBox="0 0 440 54"></svg><div class="verdict" id="vH"></div></div>
+  </div>
+  <div class="chart" style="margin-top:12px">
+    <div class="ct"><h3 id="stripTitle">Temperature in the lagoon</h3>
+      <span class="u">dashed line = the ocean value · blue bands = lagoon isolated · grey = night</span></div>
+    <canvas id="stripCanvas" height="200"></canvas>
+  </div>
+  <input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Scrub through time">
+  <div class="readout">
+    <div class="cell"><div class="k">Time</div><div class="v" id="rT">—</div></div>
+    <div class="cell"><div class="k">Lagoon depth</div><div class="v" id="rH">—</div></div>
+    <div class="cell" id="cTemp"><div class="k">Temperature</div><div class="v" id="rTemp">—</div></div>
+    <div class="cell" id="cPH"><div class="k">pH</div><div class="v" id="rPH">—</div></div>
+    <div class="cell" id="cOm"><div class="k">Ω aragonite</div><div class="v" id="rOm">—</div></div>
+    <div class="cell" style="flex:1.7 1 0"><div class="k">Link to the ocean</div><div class="v" id="rK">—</div></div>
+  </div>
+  <p class="note no-present" id="foot"></p>
+</section>
+
+<!-- ===================== ADVANCED ===================== -->
+<section id="viewAnalysis" class="hidden">
+  <div class="tiles" id="tiles"></div>
+  <div class="notes" id="notes"></div>
+  <div class="charts" id="charts">
+    <div class="chart wide hidden" id="envT"><div class="ct">
+      <h3>Daily temperature range over the whole run</h3>
+      <span class="u">°C — the hottest and coldest moment of each day</span></div>
+      <div class="lgd" id="l_envT"></div><canvas id="c_envT" height="210"></canvas></div>
+    <div class="chart wide hidden" id="envOm"><div class="ct">
+      <h3>Daily Ω<sub>ar</sub> range over the whole run</h3>
+      <span class="u">dimensionless — the highest and lowest moment of each day</span></div>
+      <div class="lgd" id="l_envOm"></div><canvas id="c_envOm" height="210"></canvas></div>
+    <div class="chart wide"><div class="ct"><h3>Aragonite saturation state Ω<sub>ar</sub></h3>
+      <span class="u">dimensionless</span></div><div class="lgd" id="l_om"></div>
+      <canvas id="c_om" height="230"></canvas></div>
+    <div class="chart"><div class="ct"><h3>pH (total scale)</h3><span class="u">total scale</span></div>
+      <div class="lgd" id="l_ph"></div><canvas id="c_ph" height="190"></canvas></div>
+    <div class="chart"><div class="ct"><h3>Temperature</h3><span class="u">°C</span></div>
+      <div class="lgd" id="l_t"></div><canvas id="c_t" height="190"></canvas></div>
+    <div class="chart"><div class="ct"><h3>Alkalinity and DIC</h3><span class="u">µmol kg⁻¹</span></div>
+      <div class="lgd" id="l_c"></div><canvas id="c_c" height="190"></canvas></div>
+    <div class="chart"><div class="ct"><h3>Seawater <i>p</i>CO₂</h3><span class="u">µatm</span></div>
+      <div class="lgd" id="l_p"></div><canvas id="c_p" height="190"></canvas></div>
+    <div class="chart"><div class="ct"><h3>Water depth and offshore sea level</h3>
+      <span class="u">m above lagoon floor</span></div><div class="lgd" id="l_h"></div>
+      <canvas id="c_h" height="190"></canvas></div>
+    <div class="chart"><div class="ct"><h3>Exchange rate with the ocean</h3>
+      <span class="u">h⁻¹ (0 = isolated)</span></div><div class="lgd" id="l_k"></div>
+      <canvas id="c_k" height="190"></canvas></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <button id="btnTable" aria-pressed="false">Data table</button>
+    <button id="btnCsv">Download CSV</button>
+  </div>
+  <div id="tableCard" class="hidden"><div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div></div>
+</section>
+
+<div class="tip" id="tip"></div>
+</div>
+
+<script>
+/* =====================================================================
+   REEF BATHTUB MODEL — physics core
+   This block is shared verbatim between the node test harness and the
+   single-file HTML app. Do not edit one without the other.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   PHYSICAL CONSTANTS
+   ------------------------------------------------------------------ */
+const RHO_SW   = 1025.0;      // kg m-3, seawater density
+const CP_SW    = 3990.0;      // J kg-1 K-1, specific heat
+const RHOCP    = RHO_SW*CP_SW;// J m-3 K-1
+
+/* ---------------------------------------------------------------------
+   CARBONATE SYSTEM
+   Constants on the TOTAL pH scale, mol (kg-soln)-1.
+     K1, K2  Lueker, Dickson & Keeling (2000)  [Mehrbach refit, total scale]
+     KB      Dickson (1990)
+     Kw      Millero (1995) / DOE handbook
+     K0      Weiss (1974), mol kg-1 atm-1
+     Ksp,ar  Mucci (1983)
+     BT      Lee et al. (2010)
+     CaT     Riley & Tongudai (1967)
+   Alkalinity is approximated as carbonate + borate + water. Phosphate,
+   silicate, sulfate and fluoride contributions are neglected; for open
+   reef water this is a <2 umol kg-1 error on TA.
+   ------------------------------------------------------------------ */
+
+function carbConstants(T, S){
+  const TK = T + 273.15;
+  const lnTK = Math.log(TK);
+
+  // Lueker et al. (2000), total scale
+  const pK1 = 3633.86/TK - 61.2172 + 9.67770*lnTK - 0.011555*S + 0.0001152*S*S;
+  const pK2 =  471.78/TK + 25.9290 - 3.16967*lnTK - 0.01781 *S + 0.0001122*S*S;
+  const K1 = Math.pow(10, -pK1);
+  const K2 = Math.pow(10, -pK2);
+
+  // Dickson (1990) boric acid, total scale
+  const sqS = Math.sqrt(S);
+  const lnKB = (-8966.90 - 2890.53*sqS - 77.942*S + 1.728*Math.pow(S,1.5) - 0.0996*S*S)/TK
+             + 148.0248 + 137.1942*sqS + 1.62142*S
+             - (24.4344 + 25.085*sqS + 0.2474*S)*lnTK
+             + 0.053105*sqS*TK;
+  const KB = Math.exp(lnKB);
+
+  // Water dissociation, total scale
+  const lnKw = 148.9652 - 13847.26/TK - 23.6521*lnTK
+             + (-5.977 + 118.67/TK + 1.0495*lnTK)*sqS - 0.01615*S;
+  const Kw = Math.exp(lnKw);
+
+  // CO2 solubility, Weiss (1974), mol kg-1 atm-1
+  const T100 = TK/100;
+  const K0 = Math.exp(-60.2409 + 93.4517/T100 + 23.3585*Math.log(T100)
+           + S*(0.023517 - 0.023656*T100 + 0.0047036*T100*T100));
+
+  // Aragonite solubility, Mucci (1983), (mol kg-1)^2
+  const logKsp = -171.945 - 0.077993*TK + 2903.293/TK + 71.595*Math.log10(TK)
+               + (-0.068393 + 0.0017276*TK + 88.135/TK)*sqS
+               - 0.10018*S + 0.0059415*Math.pow(S,1.5);
+  const KspAr = Math.pow(10, logKsp);
+
+  const BT  = 0.0004326*(S/35.0);   // mol kg-1, Lee et al. (2010)
+  const CaT = 0.01028  *(S/35.0);   // mol kg-1
+
+  return {K1,K2,KB,Kw,K0,KspAr,BT,CaT};
+}
+
+/* Solve for [H+] from TA and DIC by bisection on pH.
+   Bisection is used rather than Newton because it cannot diverge and
+   needs no derivative; 60 iterations over pH 2-12 is exact to ~1e-16.  */
+function solveCarbonate(TA_umol, DIC_umol, T, S, c){
+  const K = c || carbConstants(T,S);
+  const AT = TA_umol*1e-6, CT = DIC_umol*1e-6;
+
+  function residual(H){
+    const den  = H*H + K.K1*H + K.K1*K.K2;
+    const alk  = CT*(K.K1*H + 2*K.K1*K.K2)/den
+               + K.KB*K.BT/(K.KB + H)
+               + K.Kw/H - H;
+    return alk - AT;
+  }
+
+  let lo = 1e-12, hi = 1e-2;            // pH 12 .. pH 2
+  if(residual(lo) < 0 || residual(hi) > 0){
+    return {ok:false, pH:NaN, OmegaAr:NaN, pCO2:NaN, CO2:NaN, CO3:NaN, HCO3:NaN, revelle:NaN};
+  }
+  for(let i=0;i<60;i++){
+    const mid = Math.sqrt(lo*hi);       // geometric mean = bisection in pH
+    if(residual(mid) > 0) lo = mid; else hi = mid;
+  }
+  const H   = Math.sqrt(lo*hi);
+  const den = H*H + K.K1*H + K.K1*K.K2;
+  const CO2  = CT*H*H/den;
+  const HCO3 = CT*K.K1*H/den;
+  const CO3  = CT*K.K1*K.K2/den;
+
+  return {
+    ok: true,
+    pH: -Math.log10(H),
+    H: H,
+    CO2: CO2*1e6, HCO3: HCO3*1e6, CO3: CO3*1e6,   // umol kg-1
+    pCO2: CO2/K.K0*1e6,                            // uatm
+    OmegaAr: K.CaT*CO3/K.KspAr
+  };
+}
+
+/* ---------------------------------------------------------------------
+   FORCING
+   ------------------------------------------------------------------ */
+
+/* Insolation: half-sine over the daylight window, centred on local noon,
+   and exactly zero at night. */
+function insolation(tHours, Ipeak, dayLenH){
+  const h = ((tHours % 24) + 24) % 24;
+  const sunrise = 12 - dayLenH/2;
+  const x = (h - sunrise)/dayLenH;
+  if(x <= 0 || x >= 1) return 0;
+  return Ipeak*Math.sin(Math.PI*x);
+}
+/* Daily mean of the above, used to define the equilibrium heat balance. */
+function insolationDailyMean(Ipeak, dayLenH){
+  return Ipeak*(2/Math.PI)*(dayLenH/24);
+}
+
+/* Offshore sea surface elevation above the lagoon floor.
+   phaseHighH = local hour at which high tide occurs.                  */
+function seaLevel(tHours, msl, amp, periodH, phaseHighH){
+  return msl + amp*Math.cos(2*Math.PI*(tHours - phaseHighH)/periodH);
+}
+
+/* ---------------------------------------------------------------------
+   ONE SIMULATION
+   State: T (degC), TA and DIC (umol kg-1). Depth h(t) is diagnostic.
+
+   Geometry. The lagoon floor is the datum. The reef crest sits hCrest
+   above it. Offshore level eta(t) floods the lagoon when eta > hCrest;
+   below that the lagoon is impounded and retains a ponded depth hCrest.
+       h(t) = max(hCrest, eta(t))
+   This removes the inconsistency of a lagoon that overtops its wall but
+   never changes depth.
+
+   Exchange. Two distinct processes:
+     (a) Filling. When h is rising, the added volume is ocean water:
+             dX/dt = (dh/dt)+ / h * (X_ocean - X)
+         Draining removes lagoon water and changes no concentration.
+     (b) Crest-driven exchange while connected, shaped like broad-crested
+         weir discharge (proportional to head^3/2) and normalised so that
+         k = kMax at a head of HEAD_REF:
+             k(t) = kMax * min(1, (head/HEAD_REF)^1.5)
+   ------------------------------------------------------------------ */
+const HEAD_REF  = 0.5;   // m, head above crest at which k reaches kMax
+const DARK_FRAC = 0.30;  // dark calcification as a fraction of the light value
+
+function runSim(P){
+  const dtH    = P.dtMin/60;
+  const nSteps = Math.max(1, Math.round(P.days*24/dtH));
+  const Ibar   = insolationDailyMean(P.Ipeak, P.dayLenH);
+
+  // Ocean end-member; the lagoon starts in equilibrium with it.
+  const TA_o = P.oceanTA, DIC_o = P.oceanDIC, T_o = P.oceanT;
+  let TA = TA_o, DIC = DIC_o, T = T_o;
+
+  const kGas = P.gasVel/24;   // m d-1 -> m h-1
+
+  const rows = [];
+  let hPrev = Math.max(P.hCrest, seaLevel(0, P.msl, P.tideAmp, P.tidePeriodH, P.tidePhaseH));
+
+  for(let i=0;i<=nSteps;i++){
+    const t   = i*dtH;
+    const eta = seaLevel(t, P.msl, P.tideAmp, P.tidePeriodH, P.tidePhaseH);
+    const h   = Math.max(P.hCrest, eta);
+    const head = Math.max(0, eta - P.hCrest);
+    const connected = head > 0;
+    const k = connected ? P.kMax*Math.min(1, Math.pow(head/HEAD_REF, 1.5)) : 0;
+
+    // --- light ---
+    const I     = insolation(t, P.Ipeak, P.dayLenH);      // surface, W m-2
+    const Ibed  = I*Math.exp(-P.Kd*h);                    // at the benthos
+    const Lfac  = P.Ik > 0 ? Math.tanh(Ibed/P.Ik) : 0;    // saturating P-I curve
+
+    // --- carbonate state at the start of the step ---
+    const carb = solveCarbonate(TA, DIC, T, P.S);
+
+    // --- areal metabolic fluxes, mmol m-2 h-1 ---
+    const Q10fac = Math.pow(P.Q10, (T - 25)/10);
+    const GPP  = P.Pmax*Lfac;
+    const Resp = P.Rbase*Q10fac;
+    const NCP  = GPP - Resp;                              // + = net autotrophy
+
+    /* Calcification is split into gross precipitation and gross dissolution
+       so the two can be reasoned about separately.
+         - light enhancement: dark calcification is DARK_FRAC of the light
+           value, consistent with the classic ~3x light enhancement factor
+         - saturation dependence: linear in Omega, zero at Omega = 1,
+           1.0 at Omega = 3, capped so the curve cannot run away
+         - dissolution: constant, representing sediment and framework
+           dissolution that continues day and night                        */
+    let Ggross = 0, Dgross = 0, Gcalc = 0;
+    if(P.calcify){
+      const omFac = P.omegaDep
+        ? Math.max(0, Math.min(1.25, (carb.OmegaAr - 1)/2))
+        : 1;
+      Ggross = P.Gmax*(DARK_FRAC + (1-DARK_FRAC)*Lfac)*omFac;
+      Dgross = P.Diss;
+      Gcalc  = Ggross - Dgross;
+    }
+
+    // --- areal flux -> concentration tendency, umol kg-1 h-1 ---
+    // (mmol m-2 h-1) / (rho * h kg m-2) * 1e3 = umol kg-1 h-1
+    const conv = 1e3/(RHO_SW*h);
+    let dDIC = (-NCP - Gcalc)*conv;
+    let dTA  = P.includeTA ? (-2*Gcalc)*conv : 0;
+
+    // --- air-sea CO2 exchange, umol kg-1 h-1 ---
+    let Fco2 = 0;
+    if(P.gasExchange){
+      const Kc     = carbConstants(T, P.S);
+      const CO2eq  = Kc.K0*P.pCO2air*1e-6*1e6;            // umol kg-1
+      Fco2  = -kGas*(carb.CO2 - CO2eq)/h;                 // + = uptake
+      dDIC += Fco2;
+    }
+
+    // --- heat, W m-2 over a water column of depth h ---
+    // Solar anomaly about its own daily mean, plus a linear restoring flux,
+    // so a well-flushed lagoon sits at the ocean temperature by construction.
+    const Qnet = P.absorb*(I - Ibar) - P.lambdaHeat*(T - T_o);
+    const dT   = Qnet/(RHOCP*h)*3600;                     // degC h-1
+
+    rows.push({
+      t, eta, h, head, k, I, Ibed,
+      T, TA, DIC,
+      pH: carb.pH, OmegaAr: carb.OmegaAr, pCO2: carb.pCO2,
+      GPP, Resp, NCP, G: Gcalc, Ggross, Dgross, Fco2,
+      resTime: k > 0 ? 1/k : NaN
+    });
+
+    if(i === nSteps) break;
+
+    /* --- integrate ------------------------------------------------
+       Operator split: explicit Euler on the source terms, then the
+       linear relaxation terms applied exactly. The exact exponential
+       makes the scheme unconditionally stable in k and lambda, which
+       forward Euler is not.                                          */
+    T   += dT*dtH;
+    DIC += dDIC*dtH;
+    TA  += dTA*dtH;
+
+    // (a) filling with ocean water
+    const etaNext = seaLevel(t+dtH, P.msl, P.tideAmp, P.tidePeriodH, P.tidePhaseH);
+    const hNext   = Math.max(P.hCrest, etaNext);
+    const dhPos   = Math.max(0, hNext - h);
+    if(dhPos > 0){
+      const f = dhPos/hNext;              // fraction of the new volume that is ocean water
+      T   += f*(T_o   - T);
+      DIC += f*(DIC_o - DIC);
+      TA  += f*(TA_o  - TA);
+    }
+
+    // (b) crest-driven exchange, exact
+    if(k > 0){
+      const decay = Math.exp(-k*dtH);
+      T   = T_o   + (T   - T_o  )*decay;
+      DIC = DIC_o + (DIC - DIC_o)*decay;
+      TA  = TA_o  + (TA  - TA_o )*decay;
+    }
+    hPrev = h;
+
+    if(!isFinite(T) || !isFinite(DIC) || !isFinite(TA)) break;
+  }
+  return rows;
+}
+
+
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+
+/* ============================================================================
+   1. PARAMETER REGISTRY — the single source of truth.
+   Every control in both views is generated from this table. `tier` decides
+   whether a parameter appears in the Basic bar or only in All parameters.
+   ========================================================================== */
+const f2=v=>v.toFixed(2), f1=v=>v.toFixed(1), f0=v=>String(Math.round(v));
+const hhmm=v=>String(Math.floor(v)).padStart(2,'0')+':'+(v%1?'30':'00');
+
+const PARAMS=[
+ /* --- basic tier: the three knobs that carry the qualitative story --- */
+ {id:'hCrest',     g:'Geometry & tide', tier:'basic', label:'Reef crest height',
+  min:0.1,max:2,step:0.05,def:0.5, fmt:v=>f2(v)+' m',
+  hint:'How much water the lagoon keeps at low tide, and how easily it is sealed off'},
+ {id:'tidePhaseH', g:'Geometry & tide', tier:'basic', label:'Hour of high tide',
+  min:0,max:24,step:0.5,def:6, fmt:hhmm,
+  hint:'Whether low tide falls at midday or at midnight'},
+ {id:'tidePeriodH',g:'Geometry & tide', tier:'basic', label:'Tidal period',
+  min:12,max:24.84,step:0.01,def:12.42, fmt:v=>f2(v)+' h',
+  hint:'12.42 h = twice daily, 24.84 h = once daily'},
+
+ /* --- everything else --- */
+ {id:'msl',        g:'Geometry & tide', label:'Mean sea level above the floor',min:0.2,max:3,step:0.05,def:1.1,fmt:v=>f2(v)+' m'},
+ {id:'tideAmp',    g:'Geometry & tide', label:'Tidal amplitude',   min:0,max:1.5,step:0.05,def:0.85,fmt:v=>f2(v)+' m'},
+ {id:'kMax',       g:'Geometry & tide', label:'Max exchange rate', min:0,max:5,step:0.1,def:1.5,fmt:v=>f1(v)+' h⁻¹'},
+
+ {id:'oceanT',     g:'Ocean & atmosphere', label:'Ocean temperature',min:18,max:34,step:0.1,def:27,fmt:v=>f1(v)+' °C'},
+ {id:'oceanDIC',   g:'Ocean & atmosphere', label:'Ocean DIC',       min:1850,max:2150,step:5,def:1980,fmt:v=>f0(v)+' µmol/kg',
+  hint:'Raising DIC at fixed alkalinity is what ocean acidification does'},
+ {id:'oceanTA',    g:'Ocean & atmosphere', label:'Ocean alkalinity',min:2150,max:2450,step:5,def:2300,fmt:v=>f0(v)+' µmol/kg'},
+ {id:'pCO2air',    g:'Ocean & atmosphere', label:'Atmospheric pCO₂',min:280,max:1100,step:5,def:425,fmt:v=>f0(v)+' µatm'},
+ {id:'S',          g:'Ocean & atmosphere', label:'Salinity',        min:30,max:38,step:0.5,def:35,fmt:f1},
+
+ {id:'Ipeak',      g:'Sun', label:'Peak insolation at noon',min:0,max:1200,step:10,def:900,fmt:v=>f0(v)+' W/m²'},
+ {id:'dayLenH',    g:'Sun', label:'Day length',            min:8,max:16,step:0.25,def:12,fmt:v=>f2(v)+' h'},
+
+ {id:'Pmax',       g:'Reef metabolism', label:'Max gross photosynthesis',min:0,max:80,step:1,def:34,fmt:v=>f0(v)+' mmol/m²/h'},
+ {id:'Rbase',      g:'Reef metabolism', label:'Respiration at 25 °C',    min:0,max:40,step:0.5,def:12,fmt:v=>f1(v)+' mmol/m²/h'},
+ {id:'Gmax',       g:'Reef metabolism', label:'Max gross calcification', min:0,max:30,step:0.5,def:12,fmt:v=>f1(v)+' mmol/m²/h'},
+ {id:'Diss',       g:'Reef metabolism', label:'Dissolution, day and night',min:0,max:15,step:0.25,def:5,fmt:v=>f2(v)+' mmol/m²/h'},
+ {id:'Ik',         g:'Reef metabolism', label:'Saturating irradiance Iₖ', min:20,max:800,step:10,def:150,fmt:v=>f0(v)+' W/m²',
+  hint:'Low values mean the reef is light-saturated for most of the day'},
+ {id:'Kd',         g:'Reef metabolism', label:'Light attenuation K_d',   min:0,max:1.5,step:0.05,def:0.2,fmt:v=>f2(v)+' m⁻¹'},
+ {id:'Q10',        g:'Reef metabolism', label:'Respiration Q₁₀',         min:1,max:3,step:0.1,def:2,fmt:f1},
+
+ {id:'lambdaHeat', g:'Heat & gas', label:'Heat-loss sensitivity λ', min:5,max:90,step:1,def:40,fmt:v=>f0(v)+' W/m²/K'},
+ {id:'absorb',     g:'Heat & gas', label:'Shortwave absorbed',      min:0.3,max:1,step:0.01,def:0.9,fmt:f2},
+ {id:'gasVel',     g:'Heat & gas', label:'Gas transfer velocity',   min:0,max:12,step:0.25,def:3,fmt:v=>f2(v)+' m/d'},
+
+ {id:'days',       g:'Run settings', label:'How long to simulate',min:1,max:60,step:1,def:6,fmt:v=>f0(v)+' d',
+  hint:'Run 30 days or more to watch low tide drift through the middle of the day'},
+ {id:'showDays',   g:'Run settings', label:'How much of it to show',min:1,max:60,step:1,def:3,fmt:v=>f0(v)+' d',
+  hint:'Counted back from the end. Anything earlier is thrown away as model spin-up'},
+ {id:'dtMin',      g:'Run settings', label:'Time step',min:1,max:60,step:1,def:5,fmt:v=>f0(v)+' min'}
+];
+const TOGGLES=[
+ {id:'calcify',    g:'Reef metabolism', label:'Calcification and dissolution on', def:true},
+ {id:'omegaDep',   g:'Reef metabolism', label:'Calcification responds to Ω',      def:true},
+ {id:'includeTA',  g:'Reef metabolism', label:'Alkalinity may change',            def:true},
+ {id:'gasExchange',g:'Heat & gas',      label:'Air–sea CO₂ exchange on',          def:true}
+];
+const GROUPS=['Geometry & tide','Ocean & atmosphere','Sun','Reef metabolism','Heat & gas','Run settings'];
+const byId={}; PARAMS.forEach(p=>byId[p.id]=p); TOGGLES.forEach(t=>byId[t.id]=t);
+
+const defaults=()=>{const o={};PARAMS.forEach(p=>o[p.id]=p.def);TOGGLES.forEach(t=>o[t.id]=t.def);return o;};
+let P=defaults();
+
+/* variables the tint / strip can show */
+const VARS={
+ T : {key:'T',       label:'Temperature', dp:2, range:3.0,  lo:'3 °C cooler', hi:'3 °C warmer'},
+ pH: {key:'pH',      label:'pH',          dp:3, range:0.14, lo:'0.14 lower',  hi:'0.14 higher'},
+ Om: {key:'OmegaAr', label:'Ω aragonite', dp:2, range:0.9,  lo:'0.9 lower',   hi:'0.9 higher'}
+};
+
+/* ============================================================================
+   2. STATE
+   ========================================================================== */
+let VAR='T', view='scene', sim=[], win=[], ocean={}, Ibar=0;
+let tNow=0, playing=true, lastFrame=null, hoursPerSec=24/12;
+let analysisBuilt=false, present=false;
+const SEC_PER_DAY=v=>48-v;
+let speedVal=36;
+
+/* ============================================================================
+   3. SHARED HELPERS
+   ========================================================================== */
+const mk=(tag,a,par)=>{const n=document.createElementNS(NS,tag);for(const k in a)n.setAttribute(k,a[k]);par.appendChild(n);return n;};
+const tx=(par,x,y,s,o={})=>{const n=mk('text',Object.assign({x,y,'font-size':o.size||17,
+  fill:o.fill||'#14181f','text-anchor':o.anchor||'start','font-weight':o.weight||400},
+  o.ls?{'letter-spacing':o.ls}:{}),par);n.textContent=s;return n;};
+const lerp=(a,b,u)=>a+(b-a)*u;
+const mix=(c1,c2,u)=>{const h=c=>[1,3,5].map(i=>parseInt(c.substr(i,2),16));
+  const A=h(c1),B=h(c2);return '#'+A.map((v,i)=>Math.round(lerp(v,B[i],u)).toString(16).padStart(2,'0')).join('');};
+const wavy=(y,x0,x1,amp)=>{let d=`M${x0},${y}`;const n=Math.max(2,Math.round((x1-x0)/32));
+  for(let i=0;i<n;i++){const a=x0+(x1-x0)*i/n,b=x0+(x1-x0)*(i+1)/n;
+    d+=` Q${((a+b)/2).toFixed(1)},${(y+(i%2?amp:-amp)).toFixed(1)} ${b.toFixed(1)},${y}`;}return d;};
+const CSS=getComputedStyle(document.documentElement);
+const col=n=>n.startsWith('--')?CSS.getPropertyValue(n).trim():n;
+
+/* clock label for a time measured from the start of the shown window */
+function clockOf(t){const h=((t%24)+24)%24;
+  return String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor((h%1)*60)).padStart(2,'0');}
+const dayOf=t=>Math.floor(t/24)+1;
+
+/* ============================================================================
+   4. CONTROL PANEL — generated from the registry
+   ========================================================================== */
+/* A basic-tier parameter is rendered twice: once in the bar and once in the
+   All-parameters panel. They must therefore be addressed by data-param, not by
+   a DOM id, or the second copy is dead and drifts out of sync with the first. */
+let uid=0;
+function slider(p){
+  const el='c'+(uid++);
+  const d=document.createElement('div'); d.className='ctl';
+  d.innerHTML=`<div class="top"><label for="${el}">${p.label}</label>`+
+    `<span class="v" data-vfor="${p.id}"></span></div>`+
+    `<input id="${el}" data-param="${p.id}" type="range" `+
+    `min="${p.min}" max="${p.max}" step="${p.step}">`+
+    (p.hint?`<div class="hint">${p.hint}</div>`:'');
+  return d;
+}
+function toggle(t){
+  const el='c'+(uid++);
+  const l=document.createElement('label'); l.className='chk';
+  l.innerHTML=`<input type="checkbox" id="${el}" data-toggle="${t.id}">${t.label}`;
+  return l;
+}
+function buildControls(){
+  /* --- basic bar: the three model knobs plus the playback controls --- */
+  const bar=$('bar'); bar.textContent='';
+  PARAMS.filter(p=>p.tier==='basic').forEach(p=>bar.appendChild(slider(p)));
+
+  const g1=document.createElement('div'); g1.className='grp';
+  g1.innerHTML='<span class="lab">Colour</span>';
+  ['T','pH','Om'].forEach(v=>{const b=document.createElement('button');
+    b.className='var'; b.dataset.v=v; b.textContent=VARS[v].label;
+    b.setAttribute('aria-pressed',String(v===VAR)); g1.appendChild(b);});
+  bar.appendChild(g1);
+
+  const g2=document.createElement('div'); g2.className='grp';
+  g2.innerHTML='<button id="play">Pause</button><span class="lab">Speed</span>'+
+    '<input id="speed" type="range" min="0" max="44" step="1"><span class="val" id="vspeed"></span>';
+  bar.appendChild(g2);
+
+  /* --- all parameters --- */
+  const body=$('advBody'); body.textContent='';
+  GROUPS.forEach(gname=>{
+    const ps=PARAMS.filter(p=>p.g===gname), ts=TOGGLES.filter(t=>t.g===gname);
+    if(!ps.length&&!ts.length) return;
+    const fs=document.createElement('fieldset'); fs.className='fs';
+    fs.innerHTML=`<legend>${gname}</legend>`;
+    const grid=document.createElement('div'); grid.className='fgrid';
+    ps.forEach(p=>grid.appendChild(slider(p)));
+    ts.forEach(t=>grid.appendChild(toggle(t)));
+    fs.appendChild(grid); body.appendChild(fs);
+  });
+
+  /* one listener per rendered control, however many copies exist */
+  document.querySelectorAll('[data-param]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const id=el.dataset.param;
+      P[id]=parseFloat(el.value);
+      if(id==='days'&&P.showDays>P.days) P.showDays=P.days;
+      if(id==='showDays'&&P.showDays>P.days) P.showDays=P.days;
+      pushToUI(); recompute(); writeURL();});
+  });
+  document.querySelectorAll('[data-toggle]').forEach(el=>{
+    el.addEventListener('change',()=>{
+      const id=el.dataset.toggle;
+      P[id]=el.checked;
+      document.querySelectorAll('[data-toggle="'+id+'"]').forEach(o=>o.checked=el.checked);
+      recompute(); writeURL();});
+  });
+
+  document.querySelectorAll('.var').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.var').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));
+    VAR=b.dataset.v; drawStrip(); renderScene(); writeURL(); }));
+  $('play').addEventListener('click',()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play';});
+  $('speed').addEventListener('input',e=>{speedVal=+e.target.value;
+    hoursPerSec=24/SEC_PER_DAY(speedVal); $('vspeed').textContent=SEC_PER_DAY(speedVal)+' s/day';});
+}
+const CSS_ESC=s=>s;
+
+/* push P back into every control (used on reset, URL load, and clamping) */
+function pushToUI(){
+  /* the window shown can never exceed the run, so its slider tracks `days`
+     instead of being clamped after the fact and going dead at the right end */
+  document.querySelectorAll('[data-param="showDays"]').forEach(el=>el.max=P.days);
+  if(P.showDays>P.days) P.showDays=P.days;
+  document.querySelectorAll('[data-param]').forEach(el=>{
+    const v=P[el.dataset.param]; if(+el.value!==v) el.value=v;});
+  document.querySelectorAll('[data-vfor]').forEach(el=>{
+    const p=byId[el.dataset.vfor]; el.textContent=p.fmt(P[el.dataset.vfor]);});
+  document.querySelectorAll('[data-toggle]').forEach(el=>el.checked=!!P[el.dataset.toggle]);
+  $('speed').value=speedVal; $('vspeed').textContent=SEC_PER_DAY(speedVal)+' s/day';
+  /* flag advanced settings that differ from default, so a demo cannot run oddly by accident */
+  const d=defaults();
+  const changed=PARAMS.filter(p=>p.tier!=='basic'&&P[p.id]!==d[p.id])
+    .concat(TOGGLES.filter(t=>P[t.id]!==d[t.id]));
+  $('advCount').innerHTML = changed.length
+    ? `<span class="dirty">${changed.length} changed from default</span>`
+    : `${PARAMS.length+TOGGLES.length} parameters, all at defaults`;
+}
+
+/* ============================================================================
+   5. MODEL
+   ========================================================================== */
+function recompute(){
+  sim=runSim(P);
+  const t0=Math.max(0,(P.days-Math.min(P.showDays,P.days))*24);
+  win=sim.filter(r=>r.t>=t0).map(r=>Object.assign({},r,{t:r.t-t0}));
+  ocean=solveCarbonate(P.oceanTA,P.oceanDIC,P.oceanT,P.S);
+  Ibar=insolationDailyMean(P.Ipeak,P.dayLenH);
+  if(tNow>win[win.length-1].t) tNow=0;
+  drawStrip();
+  if(analysisBuilt) renderAnalysis();
+  renderScene();
+}
+const KEYS=['t','eta','h','head','k','I','T','TA','DIC','pH','OmegaAr','pCO2','GPP','Resp','NCP','G','Ggross','Dgross','Fco2'];
+function stateAt(t){
+  const dtH=P.dtMin/60,n=win.length;
+  const f=Math.max(0,Math.min(n-1.0001,t/dtH)),i=Math.floor(f),u=f-i;
+  const a=win[i],b=win[Math.min(n-1,i+1)],o={};
+  KEYS.forEach(k=>o[k]=lerp(a[k],b[k],u)); return o;
+}
+const oceanValOf=v=>v==='T'?P.oceanT:(v==='pH'?ocean.pH:ocean.OmegaAr);
+
+/* ============================================================================
+   3b. SHARED CHART ENGINE (canvas)
+   Used by BOTH views: the Basic strip and every Advanced panel. One y-axis per
+   chart, never two. Handles night shading, "lagoon isolated" bands, reference
+   lines, a hover crosshair and a programmatic cursor.
+   ========================================================================== */
+const CHARTS=[];
+
+function niceTicks(lo,hi,n){
+  if(!(isFinite(lo)&&isFinite(hi))) return [0,1];
+  if(hi===lo){hi=lo+1;lo=lo-1;}
+  const raw=(hi-lo)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),norm=raw/mag;
+  const step=(norm<=1?1:norm<=2?2:norm<=2.5?2.5:norm<=5?5:10)*mag;
+  const out=[];for(let v=Math.ceil(lo/step)*step;v<=hi+step*1e-9;v+=step)out.push(v);
+  return out.length?out:[lo,hi];
+}
+/* ticks land on whole hours a reader recognises */
+const HOUR_STEPS=[1,2,3,4,6,12,24,48,72,120,168];
+/* over a span of a day or more, step in half-days so every tick is a named
+   time of day (midnight / midday) rather than an arbitrary clock hour */
+const DAY_STEPS=[12,24,48,72,120,168,336,720];
+function timeTicks(t0,t1,maxN){
+  const span=t1-t0;
+  const list=span>=30?DAY_STEPS:HOUR_STEPS;
+  const step=list.find(s=>span/s<=maxN)||Math.ceil(span/maxN);
+  const out=[];for(let t=Math.ceil(t0/step)*step;t<=t1+1e-9;t+=step)out.push({t,step});
+  return out.length?out:[{t:t0,step},{t:t1,step}];
+}
+function tickLabel(t,step){
+  const h=((t%24)+24)%24;
+  if(step>=48) return 'day '+dayOf(t);                 /* multi-week axis */
+  if(step>=12) return h===0?'midnight':(h===12?'midday':clockOf(t));
+  return clockOf(t);
+}
+
+function makeChart(canvasId,legendId,spec){
+  const cv=$(canvasId); if(!cv) return null;
+  /* capture the intended CSS height ONCE: layout() overwrites the attribute
+     with device pixels, so re-reading it would grow the canvas every redraw */
+  const cssH=parseInt(cv.getAttribute('height'),10)||190;
+  const ch={cv,ctx:cv.getContext('2d'),legend:legendId?$(legendId):null,spec,cssH,data:[],hoverT:null};
+  CHARTS.push(ch);
+  cv.addEventListener('mousemove',e=>onHover(ch,e));
+  cv.addEventListener('mouseleave',()=>{CHARTS.forEach(c=>{c.hoverT=null;drawChart(c);});
+    $('tip').style.display='none';});
+  return ch;
+}
+function layout(ch){
+  const cssW=Math.max(220,ch.cv.clientWidth||600);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  if(ch.cv.width!==Math.round(cssW*dpr)||ch.cv.height!==Math.round(ch.cssH*dpr)){
+    ch.cv.width=Math.round(cssW*dpr); ch.cv.height=Math.round(ch.cssH*dpr);
+  }
+  ch.cv.style.height=ch.cssH+'px';
+  ch.ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {W:cssW,H:ch.cssH,padL:58,padR:14,padT:10,padB:26};
+}
+function drawChart(ch){
+  const g=ch.ctx,L=layout(ch),d=ch.data,s=ch.spec;
+  g.clearRect(0,0,L.W,L.H);
+  if(!d||!d.length) return;
+  const pw=L.W-L.padL-L.padR, ph=L.H-L.padT-L.padB;
+  const t0=d[0].t,t1=d[d.length-1].t;
+  const X=t=>L.padL+((t-t0)/((t1-t0)||1))*pw;
+
+  let lo=Infinity,hi=-Infinity;
+  s.series.forEach(se=>d.forEach(r=>{const v=r[se.key];
+    if(isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v);}}));
+  (s.refs||[]).forEach(rf=>{const v=rf.value();
+    if(isFinite(v)&&rf.include!==false){lo=Math.min(lo,v);hi=Math.max(hi,v);}});
+  if(!isFinite(lo)){lo=0;hi=1;}
+  const pad=(hi-lo)*0.12||Math.max(Math.abs(hi)*0.1,0.5);
+  lo-=pad; hi+=pad;
+  if(s.floorZero&&lo<0) lo=0;
+  const Y=v=>L.padT+(1-(v-lo)/((hi-lo)||1))*ph;
+
+  g.save(); g.beginPath(); g.rect(L.padL,L.padT,pw,ph); g.clip();
+  /* night */
+  const sunrise=12-P.dayLenH/2, sunset=12+P.dayLenH/2;
+  g.fillStyle='rgba(20,24,31,0.075)';
+  if(!s.noNight) for(let day=Math.floor(t0/24)-1;day<=Math.ceil(t1/24);day++){
+    const a=day*24+sunset,b=(day+1)*24+sunrise;
+    const xa=X(Math.max(a,t0)),xb=X(Math.min(b,t1));
+    if(xb>xa) g.fillRect(xa,L.padT,xb-xa,ph);
+  }
+  /* lagoon isolated */
+  if(s.bands){
+    g.fillStyle='rgba(42,120,214,0.18)';
+    s.bands(d).forEach(([a,b])=>{const xa=X(a),xb=X(b); if(xb>xa) g.fillRect(xa,L.padT,Math.max(1,xb-xa),ph);});
+  }
+  g.restore();
+
+  /* grid + y labels */
+  g.font='11px ui-sans-serif,system-ui,sans-serif'; g.textBaseline='middle';
+  niceTicks(lo,hi,5).forEach(v=>{const y=Y(v);
+    if(y<L.padT-1||y>L.padT+ph+1) return;
+    g.strokeStyle='rgba(120,132,150,0.16)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(L.padL,Math.round(y)+.5); g.lineTo(L.padL+pw,Math.round(y)+.5); g.stroke();
+    g.fillStyle=col('--ink3'); g.textAlign='right'; g.fillText(s.yfmt(v),L.padL-7,y);});
+
+  /* x labels */
+  g.textAlign='center'; g.textBaseline='top';
+  timeTicks(t0,t1,Math.max(2,Math.floor(pw/104))).forEach(({t,step})=>{
+    const x=X(t); if(x<L.padL+16||x>L.padL+pw-16) return;
+    g.strokeStyle='rgba(120,132,150,0.16)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(Math.round(x)+.5,L.padT); g.lineTo(Math.round(x)+.5,L.padT+ph); g.stroke();
+    g.fillStyle=col('--ink3'); g.fillText(tickLabel(t,step),x,L.padT+ph+7);});
+
+  /* reference lines */
+  (s.refs||[]).forEach(rf=>{const v=rf.value(); if(!isFinite(v)) return;
+    const y=Y(v); if(y<L.padT||y>L.padT+ph) return;
+    g.save(); g.setLineDash([5,4]); g.strokeStyle=rf.color||col('--ink3'); g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(L.padL,y); g.lineTo(L.padL+pw,y); g.stroke(); g.restore();
+    if(rf.label){g.font='10.5px ui-sans-serif,system-ui,sans-serif'; g.textAlign='left';
+      g.textBaseline='bottom'; g.fillStyle=rf.color||col('--ink3'); g.fillText(rf.label,L.padL+5,y-2);}});
+
+  /* series */
+  g.lineWidth=2.2; g.lineJoin='round'; g.lineCap='round';
+  const usedY=[];
+  s.series.forEach(se=>{
+    g.strokeStyle=col(se.color); g.beginPath(); let started=false;
+    d.forEach(r=>{const v=r[se.key]; if(!isFinite(v)){started=false;return;}
+      const x=X(r.t),y=Y(v); if(!started){g.moveTo(x,y);started=true;}else g.lineTo(x,y);});
+    g.stroke();
+    if(se.label!==false) for(let i=d.length-1;i>=0;i--){const v=d[i][se.key];
+      if(!isFinite(v)) continue;
+      let y=Math.min(L.padT+ph-2,Math.max(L.padT+11,Y(v)-6)),guard=0;
+      while(usedY.some(u=>Math.abs(u-y)<12)&&guard++<12) y+=12;
+      if(y>L.padT+ph-2){y=L.padT+11;while(usedY.some(u=>Math.abs(u-y)<12)&&guard++<24)y+=12;}
+      usedY.push(y);
+      g.font='600 10.5px ui-sans-serif,system-ui,sans-serif'; g.textAlign='right'; g.textBaseline='bottom';
+      g.fillStyle=col(se.color); g.fillText(se.label,L.padL+pw-2,y); break;}
+  });
+
+  /* programmatic cursor (the Basic view's playhead) and hover crosshair */
+  const ct = ch.hoverT!=null?ch.hoverT:(s.cursorT?s.cursorT():null);
+  if(ct!=null&&ct>=t0&&ct<=t1){
+    const x=X(ct);
+    g.save(); g.strokeStyle='rgba(20,24,31,0.45)'; g.lineWidth=1.2; g.setLineDash([3,3]);
+    g.beginPath(); g.moveTo(x,L.padT); g.lineTo(x,L.padT+ph); g.stroke(); g.restore();
+    const r=nearest(d,ct);
+    s.series.forEach(se=>{const v=r[se.key]; if(!isFinite(v))return;
+      g.fillStyle=col(se.color); g.strokeStyle='#fff'; g.lineWidth=2;
+      g.beginPath(); g.arc(X(r.t),Y(v),4.5,0,7); g.fill(); g.stroke();});
+  }
+
+  if(ch.legend){
+    const parts=s.series.filter(se=>se.label!==false)
+      .map(se=>`<span><i style="background:${col(se.color)}"></i>${se.label}</span>`);
+    (s.refs||[]).forEach(rf=>{if(rf.legend)
+      parts.push(`<span style="color:${rf.color||'var(--ink3)'}"><i class="d"></i>${rf.legend}</span>`);});
+    if(s.extraLegend) parts.push(s.extraLegend);
+    ch.legend.innerHTML=parts.join('');
+  }
+}
+function nearest(d,t){
+  let lo=0,hi=d.length-1;
+  while(hi-lo>1){const m=(lo+hi)>>1; if(d[m].t<t)lo=m;else hi=m;}
+  return Math.abs(d[lo].t-t)<=Math.abs(d[hi].t-t)?d[lo]:d[hi];
+}
+function onHover(ch,e){
+  const d=ch.data; if(!d||!d.length) return;
+  const L=layout(ch),pw=L.W-L.padL-L.padR;
+  const rect=ch.cv.getBoundingClientRect(), x=e.clientX-rect.left;
+  const t0=d[0].t,t1=d[d.length-1].t;
+  const t=t0+(Math.min(Math.max(x-L.padL,0),pw)/pw)*(t1-t0);
+  CHARTS.forEach(c=>{if(c.data===d){c.hoverT=t; drawChart(c);}});
+  const r=nearest(d,t), tip=$('tip');
+  tip.innerHTML=`<div class="th">day ${dayOf(r.t)} · ${clockOf(r.t)}</div>`+[
+    ['Ω aragonite',r.OmegaAr.toFixed(2)],['pH',r.pH.toFixed(3)],
+    ['Temperature',r.T.toFixed(2)+' °C'],['TA',Math.round(r.TA)+' µmol/kg'],
+    ['DIC',Math.round(r.DIC)+' µmol/kg'],['pCO₂',Math.round(r.pCO2)+' µatm'],
+    ['Depth',r.h.toFixed(2)+' m'],['Exchange k',r.k.toFixed(2)+' h⁻¹']
+  ].map(([k,v])=>`<div class="tr"><span>${k}</span><span>${v}</span></div>`).join('');
+  tip.style.display='block';
+  const tw=tip.offsetWidth,th=tip.offsetHeight;
+  let tx2=e.clientX+16,ty=e.clientY+16;
+  if(tx2+tw>window.innerWidth-8) tx2=e.clientX-tw-16;
+  if(ty+th>window.innerHeight-8) ty=window.innerHeight-th-8;
+  tip.style.left=tx2+'px'; tip.style.top=ty+'px';
+}
+/* the shaded "lagoon isolated" spans, computed once per redraw */
+function isolatedBands(d){
+  const out=[]; let s=null;
+  for(let i=0;i<d.length;i++){
+    const cut=d[i].k<=0;
+    if(cut&&s===null) s=d[i].t;
+    if((!cut||i===d.length-1)&&s!==null){out.push([s,d[i].t]); s=null;}
+  }
+  return out;
+}
+let rz=null;
+window.addEventListener('resize',()=>{clearTimeout(rz);
+  rz=setTimeout(()=>{CHARTS.forEach(drawChart); if(view==='scene') renderScene();},120);});
+
+/* ============================================================================
+   6. BASIC VIEW — animated cross-section, gauges, and one summary chart
+   ========================================================================== */
+const W=1500,H=560,LX=30,RX=1470;
+const XS_TOP=14,XS_BOT=546;
+const LAG_FLOOR=470, MPX=120, OCEAN_FLOOR_M=-0.62;
+const CREST_X0=420,CREST_X1=560,LAG_X0=634;
+const yOf=m=>LAG_FLOOR-m*MPX;
+
+let sceneEls={}, stripChart=null;
+
+function buildScene(){
+  const svg=$('fig'); svg.textContent='';
+  const defs=mk('defs',{},svg);
+  const skyG=mk('linearGradient',{id:'skyG',x1:0,y1:0,x2:0,y2:1},defs);
+  const skyTop=mk('stop',{offset:0,'stop-color':'#d5e7fa'},skyG);
+  const skyBot=mk('stop',{offset:1,'stop-color':'#eaf3fc'},skyG);
+  [['sun','#eda100'],['water','#2a78d6'],['heat','#d9660f'],['loss','#e34948'],['ink2','#4a5464']]
+    .forEach(([k,c])=>{const m=mk('marker',{id:'a-'+k,viewBox:'0 0 10 10',refX:8.2,refY:5,
+      markerWidth:5.4,markerHeight:5.4,orient:'auto-start-reverse'},defs);
+      mk('path',{d:'M0,0.7 L10,5 L0,9.3 z',fill:c},m);});
+  const cp=mk('clipPath',{id:'xs'},defs);
+  mk('rect',{x:LX,y:XS_TOP,width:RX-LX,height:XS_BOT-XS_TOP,rx:12},cp);
+  mk('rect',{width:W,height:H,fill:'#fff'},svg);
+
+  const G=mk('g',{'clip-path':'url(#xs)'},svg);
+  mk('rect',{x:LX,y:XS_TOP,width:RX-LX,height:XS_BOT-XS_TOP,fill:'url(#skyG)'},G);
+  const stars=mk('g',{opacity:0},G);
+  for(let i=0;i<44;i++) mk('circle',{cx:(LX+40+Math.random()*(RX-LX-80)).toFixed(0),
+    cy:(XS_TOP+12+Math.random()*200).toFixed(0),r:(0.9+Math.random()*1.4).toFixed(1),fill:'#fff'},stars);
+  mk('path',{d:'M150,215 Q750,-12 1400,215',fill:'none',stroke:'#eda100','stroke-width':2.4,
+    'stroke-dasharray':'2 12','stroke-linecap':'round',opacity:0.5},G);
+  const sunG=mk('g',{},G);
+  mk('circle',{cx:0,cy:0,r:26,fill:'#eda100'},sunG);
+  for(let i=0;i<12;i++){const a=i*Math.PI/6;
+    mk('line',{x1:(Math.cos(a)*35).toFixed(1),y1:(Math.sin(a)*35).toFixed(1),
+      x2:(Math.cos(a)*45).toFixed(1),y2:(Math.sin(a)*45).toFixed(1),
+      stroke:'#eda100','stroke-width':3.6,'stroke-linecap':'round'},sunG);}
+  const moonG=mk('g',{opacity:0},G);
+  mk('circle',{cx:0,cy:0,r:19,fill:'#dfe7f4'},moonG);
+  mk('circle',{cx:8,cy:-6,r:16,fill:'#eaf3fc'},moonG);
+
+  const oceanW=mk('rect',{x:LX,width:500-LX,fill:'#bcdcf5'},G);
+  const lagoonW=mk('rect',{x:480,width:RX-480,fill:'#bcdcf5'},G);
+  const lagTint=mk('rect',{x:480,width:RX-480,fill:'#e34948',opacity:0},G);
+
+  const bed=mk('path',{fill:'#ded4c2',stroke:'#b3a48c','stroke-width':2.4,'stroke-linejoin':'round'},G);
+  const crestCorals=mk('g',{},G);
+  const CORAL='M0,0 L0,-18 M0,-9 L-10,-22 M0,-11 L10,-24 M-10,-22 L-14,-32 M10,-24 L15,-34 M0,-18 L1,-30';
+  mk('path',{d:CORAL,fill:'none',stroke:'#c07f5e','stroke-width':4.4,'stroke-linecap':'round'},crestCorals);
+  mk('path',{d:CORAL,fill:'none',stroke:'#c07f5e','stroke-width':4.4,'stroke-linecap':'round'},crestCorals);
+  [[690,1],[830,.85],[980,1.05],[1140,.9],[1300,1],[1420,.85]].forEach(([x,s])=>
+    mk('path',{d:CORAL,transform:`translate(${x},${LAG_FLOOR}) scale(${s})`,fill:'none',
+      stroke:'#c07f5e','stroke-width':4.4,'stroke-linecap':'round'},G));
+
+  const crestLine=mk('line',{x1:CREST_X1+8,x2:RX,stroke:'#b8860b','stroke-width':2,
+    'stroke-dasharray':'9 7',opacity:0.7},G);
+  const surfO=mk('path',{fill:'none',stroke:'#2a78d6','stroke-width':3.2},G);
+  const surfL=mk('path',{fill:'none',stroke:'#2a78d6','stroke-width':3.2},G);
+
+  const flow=mk('g',{},G);
+  const flowArrow=mk('path',{fill:'none',stroke:'#2a78d6','stroke-width':5,'stroke-linecap':'round',
+    'marker-end':'url(#a-water)'},flow);
+  const flowLbl=tx(flow,486,-30,'',{size:17,fill:'#2a78d6',anchor:'middle',weight:700});
+  const cutG=mk('g',{opacity:0},G);
+  mk('rect',{x:352,y:0,width:268,height:44,rx:9,fill:'#fff',stroke:'#b8860b','stroke-width':1.6},cutG);
+  tx(cutG,486,18,'crest above the water',{size:15,anchor:'middle',weight:700,fill:'#8a6508'});
+  tx(cutG,486,36,'no water in or out',{size:14,anchor:'middle',fill:'#8a6508'});
+
+  const rays=mk('g',{},G);
+  [770,880,990].forEach(x=>mk('line',{x1:x-14,x2:x,stroke:'#eda100','stroke-width':4,
+    'marker-end':'url(#a-sun)'},rays));
+  const rayLbl=tx(rays,880,0,'sunlight in',{size:15,fill:'#b57f00',anchor:'middle',weight:700});
+
+  const heat=mk('g',{},G);
+  const heatLines=[1210,1310,1410].map(x=>mk('line',{x1:x,x2:x,stroke:'#d9660f','stroke-width':4.4},heat));
+  const heatLbl=tx(heat,1310,0,'',{size:15,anchor:'middle',weight:700});
+
+  tx(G,58,yOf(-0.10),'OCEAN',{size:21,weight:700,ls:1.4});
+  tx(G,58,yOf(-0.28),'unchanging reference',{size:15,fill:'#4a5464'});
+  const crestLbl=tx(G,490,0,'REEF CREST',{size:18,weight:700,anchor:'middle',ls:1.1});
+  const crestTick=mk('line',{x1:490,x2:490,stroke:'#4a5464','stroke-width':2.4,
+    'marker-end':'url(#a-ink2)'},G);
+  const lagoonLbl=tx(G,608,0,'LAGOON',{size:21,weight:700,ls:1.4});
+  const clock=tx(G,RX-16,XS_TOP+38,'',{size:25,weight:700,anchor:'end'});
+  const dayNight=tx(G,RX-16,XS_TOP+62,'',{size:15,fill:'#4a5464',anchor:'end'});
+
+  sceneEls={skyTop,skyBot,stars,sunG,moonG,oceanW,lagoonW,lagTint,bed,crestCorals,crestLine,
+    surfO,surfL,flow,flowArrow,flowLbl,cutG,rays,rayLbl,heat,heatLines,heatLbl,
+    crestLbl,crestTick,lagoonLbl,clock,dayNight};
+
+  buildGauges();
+  /* the Basic summary chart uses the same engine as every Advanced panel */
+  stripChart=makeChart('stripCanvas',null,{
+    yfmt:v=>v.toFixed(VARS[VAR].dp),
+    series:[{key:'T',color:'--ink',label:false}],
+    refs:[{value:()=>oceanValOf(VAR),color:'#79839a',label:'ocean value'}],
+    bands:isolatedBands,
+    cursorT:()=>tNow
+  });
+  $('scrub').addEventListener('input',e=>{
+    tNow=(+e.target.value/1000)*win[win.length-1].t; renderScene();});
+}
+
+/* ---------------- gauges ---------------- */
+const gauges={};
+function buildGauges(){
+  const spec=[['gC','#8a94a6','#0f8f61','respiration','photosynthesis'],
+              ['gK','#8a94a6','#4a3aa7','dissolution','calcification'],
+              ['gH','#e34948','#d9660f','heat out','heat in']];
+  spec.forEach(([id,lc,rc,ln,rn])=>{
+    const g=$(id); g.textContent='';
+    const d=mk('defs',{},g);
+    [[lc,'L'],[rc,'R']].forEach(([c,k])=>{const m=mk('marker',{id:id+k,viewBox:'0 0 10 10',
+      refX:8.5,refY:5,markerWidth:4.6,markerHeight:4.6,orient:'auto-start-reverse'},d);
+      mk('path',{d:'M0,0.9 L10,5 L0,9.1 z',fill:c},m);});
+    mk('line',{x1:220,y1:6,x2:220,y2:44,stroke:'#ccd6e2','stroke-width':1.4},g);
+    const la=mk('line',{x1:220,y1:19,x2:220,y2:19,stroke:lc,'stroke-width':7,
+      'marker-end':`url(#${id}L)`},g);
+    const ra=mk('line',{x1:220,y1:19,x2:220,y2:19,stroke:rc,'stroke-width':7,
+      'marker-end':`url(#${id}R)`},g);
+    tx(g,214,45,ln,{size:12.5,fill:lc,anchor:'end',weight:700});
+    tx(g,226,45,rn,{size:12.5,fill:rc,weight:700});
+    const lv=tx(g,214,14,'',{size:12,fill:'#4a5464',anchor:'end'});
+    const rv=tx(g,226,14,'',{size:12,fill:'#4a5464'});
+    gauges[id.slice(1)]={la,ra,lv,rv};
+  });
+}
+function setGauge(g,leftVal,rightVal,maxVal,dp){
+  const px=v=>Math.min(200,(Math.abs(v)/maxVal)*196);
+  const arm=(el,val,x2)=>{const dead=Math.abs(val)<maxVal*0.008;
+    el.setAttribute('opacity',dead?0:1); el.setAttribute('x2',dead?220:x2.toFixed(1));};
+  arm(g.la,leftVal,220-px(leftVal)); arm(g.ra,rightVal,220+px(rightVal));
+  g.lv.textContent=leftVal.toFixed(dp); g.rv.textContent=rightVal.toFixed(dp);
+}
+
+/* ---------------- the summary chart ---------------- */
+function drawStrip(){
+  if(!stripChart) return;
+  const V=VARS[VAR];
+  stripChart.spec.series=[{key:V.key,color:'--ink',label:false}];
+  stripChart.spec.yfmt=v=>v.toFixed(V.dp);
+  stripChart.spec.refs=[{value:()=>oceanValOf(VAR),color:'#79839a',label:'ocean value'}];
+  stripChart.data=win;
+  $('stripTitle').textContent=V.label+' in the lagoon';
+  drawChart(stripChart);
+}
+
+/* ---------------- the seabed follows the crest slider ---------------- */
+function rebuildBed(){
+  const yc=yOf(P.hCrest), e=sceneEls;
+  e.bed.setAttribute('d',
+    `M${LX},${yOf(OCEAN_FLOOR_M)} L240,${yOf(OCEAN_FLOOR_M)+4}
+     C330,${yOf(OCEAN_FLOOR_M)-6} 372,${(yOf(OCEAN_FLOOR_M)+yc)/2} ${CREST_X0},${yc}
+     L${CREST_X1},${yc} C606,${yc+(LAG_FLOOR-yc)*0.35} 614,${LAG_FLOOR} ${LAG_X0},${LAG_FLOOR}
+     L${RX},${LAG_FLOOR} L${RX},${XS_BOT} L${LX},${XS_BOT} Z`);
+  e.crestCorals.children[0].setAttribute('transform',`translate(452,${yc}) scale(0.7)`);
+  e.crestCorals.children[1].setAttribute('transform',`translate(522,${yc}) scale(0.8)`);
+  e.crestLine.setAttribute('y1',yc); e.crestLine.setAttribute('y2',yc);
+  e.crestLbl.setAttribute('y',yc+72);
+  e.crestTick.setAttribute('y1',yc+50); e.crestTick.setAttribute('y2',yc+14);
+}
+
+/* ---------------- per frame ---------------- */
+function renderScene(){
+  if(view!=='scene'||!win.length) return;
+  rebuildBed();
+  const e=sceneEls, s=stateAt(tNow), V=VARS[VAR];
+  const hourLocal=((s.t%24)+24)%24;
+  const sunrise=12-P.dayLenH/2, sunset=12+P.dayLenH/2;
+  const isDay=hourLocal>sunrise&&hourLocal<sunset;
+
+  const tw=1.0; let night;
+  if(hourLocal<sunrise-tw||hourLocal>sunset+tw) night=1;
+  else if(hourLocal>sunrise+tw&&hourLocal<sunset-tw) night=0;
+  else if(hourLocal<12) night=Math.max(0,Math.min(1,(sunrise+tw-hourLocal)/(2*tw)));
+  else night=Math.max(0,Math.min(1,(hourLocal-(sunset-tw))/(2*tw)));
+  e.skyTop.setAttribute('stop-color',mix('#d5e7fa','#20304f',night));
+  e.skyBot.setAttribute('stop-color',mix('#eaf3fc','#33465f',night));
+  e.stars.setAttribute('opacity',night*0.85);
+  const arcY=(u,c)=>(1-u)*(1-u)*215+2*(1-u)*u*c+u*u*215;
+  if(isDay){const u=(hourLocal-sunrise)/P.dayLenH;
+    e.sunG.setAttribute('transform',`translate(${lerp(150,1400,u).toFixed(1)},${arcY(u,-12).toFixed(1)})`);
+    e.sunG.setAttribute('opacity',1); e.moonG.setAttribute('opacity',0);
+  }else{e.sunG.setAttribute('opacity',0);
+    const nh=(hourLocal<sunrise?hourLocal+24:hourLocal)-sunset;
+    const u=Math.max(0,Math.min(1,nh/(24-P.dayLenH)));
+    e.moonG.setAttribute('transform',`translate(${lerp(150,1400,u).toFixed(1)},${arcY(u,40).toFixed(1)})`);
+    e.moonG.setAttribute('opacity',1);}
+
+  const yEta=yOf(s.eta), yLag=yOf(s.h), yCrest=yOf(P.hCrest);
+  e.oceanW.setAttribute('y',yEta); e.oceanW.setAttribute('height',Math.max(0,XS_BOT-yEta));
+  e.lagoonW.setAttribute('y',yLag); e.lagoonW.setAttribute('height',Math.max(0,XS_BOT-yLag));
+  e.surfO.setAttribute('d',wavy(yEta,LX,CREST_X0+18,4));
+  e.surfL.setAttribute('d',wavy(yLag,CREST_X1+10,RX,3));
+  e.lagoonLbl.setAttribute('y',Math.max(XS_TOP+112,yLag-16));
+
+  const ov=oceanValOf(VAR), anom=s[V.key]-ov;
+  const mag=Math.min(1,Math.abs(anom)/V.range);
+  e.lagTint.setAttribute('fill',anom>0?'#e34948':'#1c4e8f');
+  e.lagTint.setAttribute('opacity',(mag*0.62).toFixed(3));
+  e.lagTint.setAttribute('y',yLag); e.lagTint.setAttribute('height',Math.max(0,XS_BOT-yLag));
+
+  const t0=Math.max(0,(P.days-Math.min(P.showDays,P.days))*24);
+  const dEta=seaLevel(t0+s.t+0.05,P.msl,P.tideAmp,P.tidePeriodH,P.tidePhaseH)
+            -seaLevel(t0+s.t-0.05,P.msl,P.tideAmp,P.tidePeriodH,P.tidePhaseH);
+  const conn=s.k>0.001;
+  e.flow.setAttribute('opacity',conn?Math.min(1,0.4+s.k/Math.max(0.01,P.kMax)):0);
+  e.cutG.setAttribute('opacity',conn?0:1);
+  e.flow.setAttribute('transform',
+    `translate(0,${yOf(Math.max(P.hCrest+0.12,(s.eta+P.hCrest)/2)).toFixed(1)})`);
+  if(dEta>=0){e.flowArrow.setAttribute('d','M330,0 Q470,-22 640,4');
+    e.flowLbl.textContent='tide rising — ocean water flooding in';}
+  else{e.flowArrow.setAttribute('d','M640,4 Q470,-22 330,0');
+    e.flowLbl.textContent='tide falling — lagoon water draining out';}
+  e.cutG.setAttribute('transform',`translate(0,${(yCrest-108).toFixed(1)})`);
+
+  e.rays.setAttribute('opacity',isDay?(0.4+0.6*Math.sin(Math.PI*(hourLocal-sunrise)/P.dayLenH)).toFixed(2):0);
+  e.rays.querySelectorAll('line').forEach(ln=>{ln.setAttribute('y1',yLag-84);ln.setAttribute('y2',yLag-16);});
+  e.rayLbl.setAttribute('y',yLag-96);
+
+  const solar=P.absorb*(s.I-Ibar), loss=-P.lambdaHeat*(s.T-P.oceanT);
+  const Qnet=solar+loss, gain=Qnet>=0, hmag=Math.min(1,Math.abs(Qnet)/500);
+  e.heat.setAttribute('opacity',(0.35+0.65*hmag).toFixed(2));
+  e.heatLines.forEach(ln=>{
+    ln.setAttribute('stroke',gain?'#d9660f':'#e34948');
+    ln.setAttribute('marker-end',gain?'url(#a-heat)':'url(#a-loss)');
+    if(gain){ln.setAttribute('y1',yLag-84);ln.setAttribute('y2',yLag-16);}
+    else{ln.setAttribute('y1',yLag-16);ln.setAttribute('y2',yLag-84);}});
+  e.heatLbl.setAttribute('y',yLag-96);
+  e.heatLbl.setAttribute('fill',gain?'#b0530c':'#c33');
+  e.heatLbl.textContent=gain?'net heat gain':'net heat loss';
+
+  setGauge(gauges.C,s.Resp,s.GPP,40,1);
+  setGauge(gauges.K,s.Dgross,s.Ggross,16,1);
+  setGauge(gauges.H,Math.max(0,-Qnet),Math.max(0,Qnet),600,0);
+  $('vC').innerHTML=s.NCP>0?`Photosynthesis winning <span>· pulling CO₂ out at ${s.NCP.toFixed(1)}</span>`
+                           :`Respiration winning <span>· adding CO₂ at ${(-s.NCP).toFixed(1)}</span>`;
+  $('vK').innerHTML=s.G>0?`Building reef <span>· net ${s.G.toFixed(1)} of CaCO₃ laid down</span>`
+                         :`Losing reef <span>· net ${(-s.G).toFixed(1)} of CaCO₃ dissolved</span>`;
+  $('vH').innerHTML=gain?`Warming <span>· net ${Qnet.toFixed(0)} W m⁻² in</span>`
+                        :`Cooling <span>· net ${(-Qnet).toFixed(0)} W m⁻² out</span>`;
+
+  e.clock.textContent=`Day ${dayOf(s.t)}   ${clockOf(s.t)}`;
+  e.dayNight.textContent=(night>0.08&&night<0.92)?(hourLocal<12?'sunrise':'sunset')
+                        :(isDay?'daylight':'night');
+
+  $('legLo').textContent=V.lo; $('legHi').textContent=V.hi;
+  if(stripChart&&stripChart.hoverT==null) drawChart(stripChart);
+
+  $('rT').textContent=`Day ${dayOf(s.t)} ${clockOf(s.t)}`;
+  $('rH').innerHTML=s.h.toFixed(2)+' <small>m</small>';
+  $('rTemp').innerHTML=s.T.toFixed(2)+' <small>°C</small>';
+  $('rPH').textContent=s.pH.toFixed(3);
+  $('rOm').textContent=s.OmegaAr.toFixed(2);
+  $('rK').innerHTML=conn
+    ?`<span style="color:#17457f">open</span> <small>· water exchanging with the ocean, k = ${s.k.toFixed(2)} h⁻¹</small>`
+    :`<span style="color:#8a6508">closed</span> <small>· crest above the water, the pond is on its own</small>`;
+  ['cTemp','cPH','cOm'].forEach(id=>$(id).classList.remove('on'));
+  $({T:'cTemp',pH:'cPH',Om:'cOm'}[VAR]).classList.add('on');
+  const sc=$('scrub');
+  if(document.activeElement!==sc) sc.value=Math.round(1000*s.t/win[win.length-1].t);
+}
+
+function tick(ts){
+  if(lastFrame===null) lastFrame=ts;
+  const dt=Math.min(0.1,(ts-lastFrame)/1000); lastFrame=ts;
+  if(playing&&view==='scene'&&win.length){
+    tNow+=dt*hoursPerSec;
+    const tEnd=win[win.length-1].t; if(tNow>tEnd) tNow-=tEnd;
+    renderScene();
+  }
+  requestAnimationFrame(tick);
+}
+
+
+/* ============================================================================
+   7. ADVANCED VIEW — full time series, every parameter, table and CSV.
+   Built lazily the first time it is opened so the Basic view stays light.
+   ========================================================================== */
+let A={};
+function buildAnalysis(){
+  const ref=(fn,label,legend)=>({value:fn,color:'#79839a',label,legend,include:false});
+  A.om=makeChart('c_om','l_om',{yfmt:v=>v.toFixed(1),floorZero:true,bands:isolatedBands,
+    series:[{key:'OmegaAr',color:'--s1',label:'Ω aragonite'}],
+    refs:[{value:()=>1,color:'#e34948',label:'Ω = 1  aragonite dissolves below here',legend:'Ω = 1',include:false},
+          {value:()=>3,color:'#79839a',label:'Ω = 3  typical healthy reef',legend:'Ω = 3',include:false}],
+    extraLegend:'<span style="color:var(--ink3)"><i style="background:rgba(42,120,214,0.35)"></i>lagoon isolated</span>'});
+  A.ph=makeChart('c_ph','l_ph',{yfmt:v=>v.toFixed(2),bands:isolatedBands,
+    series:[{key:'pH',color:'--s1',label:'pH'}],
+    refs:[ref(()=>ocean.pH,'ocean','ocean value')]});
+  A.t=makeChart('c_t','l_t',{yfmt:v=>v.toFixed(1),bands:isolatedBands,
+    series:[{key:'T',color:'--s2',label:'lagoon'}],
+    refs:[ref(()=>P.oceanT,'ocean','ocean value')]});
+  A.c=makeChart('c_c','l_c',{yfmt:v=>String(Math.round(v)),bands:isolatedBands,
+    series:[{key:'TA',color:'--s3',label:'TA'},{key:'DIC',color:'--s2',label:'DIC'}]});
+  A.p=makeChart('c_p','l_p',{yfmt:v=>String(Math.round(v)),floorZero:true,bands:isolatedBands,
+    series:[{key:'pCO2',color:'--s1',label:'seawater'}],
+    refs:[ref(()=>P.pCO2air,'atmosphere','atmosphere')]});
+  A.h=makeChart('c_h','l_h',{yfmt:v=>v.toFixed(2),floorZero:true,
+    series:[{key:'eta',color:'--s1',label:'offshore'},{key:'h',color:'--s3',label:'lagoon depth'}],
+    refs:[{value:()=>P.hCrest,color:'#b8860b',label:'reef crest',legend:'reef crest'}]});
+  A.k=makeChart('c_k','l_k',{yfmt:v=>v.toFixed(1),floorZero:true,
+    series:[{key:'k',color:'--s2',label:'exchange rate'}]});
+
+  /* daily extremes: the only way a multi-week run is readable, and the thing
+     that makes the tide/sun beat visible at all */
+  A.envT=makeChart('c_envT','l_envT',{yfmt:v=>v.toFixed(1),noNight:true,
+    series:[{key:'Tmax',color:'--s2',label:'daily maximum'},
+            {key:'Tmin',color:'--s1',label:'daily minimum'}],
+    refs:[{value:()=>P.oceanT,color:'#79839a',label:'ocean',legend:'ocean value',include:false}]});
+  A.envOm=makeChart('c_envOm','l_envOm',{yfmt:v=>v.toFixed(2),noNight:true,
+    series:[{key:'Ommax',color:'--s2',label:'daily maximum'},
+            {key:'Ommin',color:'--s1',label:'daily minimum'}],
+    refs:[{value:()=>ocean.OmegaAr,color:'#79839a',label:'ocean',legend:'ocean value',include:false}]});
+
+  $('btnTable').addEventListener('click',()=>{
+    const b=$('btnTable'), on=b.getAttribute('aria-pressed')!=='true';
+    b.setAttribute('aria-pressed',String(on));
+    $('tableCard').classList.toggle('hidden',!on);
+    if(on) buildTable();});
+  $('btnCsv').addEventListener('click',downloadCSV);
+  analysisBuilt=true;
+}
+
+/* one row per whole day: the extremes of each day in the shown window */
+function dailyExtremes(rows){
+  const out=[], span=rows[rows.length-1].t;
+  for(let d=0; (d+1)*24<=span+1e-6; d++){
+    const day=rows.filter(r=>r.t>=d*24&&r.t<(d+1)*24);
+    if(day.length<2) continue;
+    const T=day.map(r=>r.T), O=day.map(r=>r.OmegaAr);
+    out.push({t:d*24+12, Tmax:Math.max(...T), Tmin:Math.min(...T),
+              Ommax:Math.max(...O), Ommin:Math.min(...O),
+              /* the tooltip reads these off any row it is given */
+              OmegaAr:Math.max(...O), pH:day[0].pH, TA:day[0].TA, DIC:day[0].DIC,
+              pCO2:day[0].pCO2, h:day[0].h, k:day[0].k});
+  }
+  return out;
+}
+function renderAnalysis(){
+  if(!analysisBuilt||view!=='analysis'||!win.length) return;
+  const spanDays=win[win.length-1].t/24;
+  const longRun=spanDays>=8;
+  $('envT').classList.toggle('hidden',!longRun);
+  $('envOm').classList.toggle('hidden',!longRun);
+  const env=longRun?dailyExtremes(win):[];
+  Object.entries(A).forEach(([k,ch])=>{
+    const isEnv=(k==='envT'||k==='envOm');
+    ch.data=isEnv?env:win; ch.hoverT=null;
+    if(!isEnv||longRun) drawChart(ch);});
+
+  const dt=P.dtMin/60;
+  const rg=k=>{const v=win.map(r=>r[k]).filter(isFinite);
+    return v.length?{min:Math.min(...v),max:Math.max(...v),d:Math.max(...v)-Math.min(...v)}
+                   :{min:NaN,max:NaN,d:NaN};};
+  const lastFull=win.filter(r=>r.t>=win[win.length-1].t-24);
+  const rgL=k=>{const v=lastFull.map(r=>r[k]).filter(isFinite);
+    return v.length?Math.max(...v)-Math.min(...v):NaN;};
+  const gpp=lastFull.reduce((a,r)=>a+r.GPP*dt,0);
+  const res=lastFull.reduce((a,r)=>a+r.Resp*dt,0);
+  const gnet=lastFull.reduce((a,r)=>a+r.G*dt,0);
+  const conn=lastFull.filter(r=>r.k>0).length/lastFull.length;
+  const kmean=lastFull.reduce((a,r)=>a+r.k,0)/lastFull.length;
+  const om=rg('OmegaAr'), ph=rg('pH'), T=rg('T');
+
+  /* how much does the answer move if the time step is halved? */
+  const half=runSim(Object.assign({},P,{dtMin:Math.max(0.25,P.dtMin/2)}));
+  const dtErr=Math.abs(half[half.length-1].pH-sim[sim.length-1].pH);
+
+  $('tiles').innerHTML=[
+    ['Ω aragonite',om.min.toFixed(2)+'–'+om.max.toFixed(2),''],
+    ['Daily Ω range',rgL('OmegaAr').toFixed(2),''],
+    ['pH',ph.min.toFixed(2)+'–'+ph.max.toFixed(2),''],
+    ['Daily pH range',rgL('pH').toFixed(3),''],
+    ['Temperature',T.min.toFixed(1)+'–'+T.max.toFixed(1),'°C'],
+    ['Daily ΔT',rgL('T').toFixed(2),'°C'],
+    ['P : R',res>0?(gpp/res).toFixed(2):'—',''],
+    ['Net CaCO₃',Math.round(gnet),'mmol/m²/d'],
+    ['Open',Math.round(conn*100),'% of day'],
+    ['Residence time',kmean>0?(1/kmean).toFixed(1):'∞','h'],
+    ['ΔpH at half dt',dtErr<0.0005?'<0.001':dtErr.toFixed(3),'']
+  ].map(([k,v,u])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}<span class="u"> ${u}</span></div></div>`).join('');
+
+  const notes=[];
+  if(conn===0) notes.push(['warn','<b>The lagoon never connects to the ocean.</b> Nothing removes the '+
+    'carbon and heat that metabolism and the sun add, so there is no steady state and the curves will drift '+
+    'for as long as you run them. That is the model behaving correctly, not a bug.']);
+  if(dtErr>0.01) notes.push(['warn',`<b>The time step is too coarse.</b> Halving it changes the final pH by `+
+    `${dtErr.toFixed(3)} units. Reduce it until this stops mattering.`]);
+  if(om.min<1) notes.push(['info','<b>Ω<sub>ar</sub> drops below 1</b> here, so aragonite is thermodynamically '+
+    'unstable at those times. Real reefs dissolve well above Ω = 1 because it happens in sediment pore water '+
+    'and microenvironments more acidic than the overlying water.']);
+  if(!P.includeTA&&P.calcify) notes.push(['info','Alkalinity is frozen while calcification is still running, '+
+    'so carbonate is being removed without its alkalinity. Useful for showing what alkalinity does, but not a '+
+    'physical configuration.']);
+  if(res>0&&(gpp/res>1.6||gpp/res<0.5)) notes.push(['info',
+    `P:R is ${(gpp/res).toFixed(2)}. Real reef flats sit close to 1, so this run is strongly `+
+    `${gpp/res>1?'autotrophic':'heterotrophic'} and will drift away from ocean values day on day.`]);
+  if(P.showDays>=P.days) notes.push(['info','You are plotting the whole run including its spin-up. '+
+    'Raise the simulation length above the shown window to discard the transient start.']);
+  $('notes').innerHTML=notes.map(([c,h])=>`<div class="n ${c}">${h}</div>`).join('');
+
+  if($('btnTable').getAttribute('aria-pressed')==='true') buildTable();
+}
+
+const COLS=[['t','Time',r=>'day '+dayOf(r.t)+' '+clockOf(r.t)],
+  ['h','Depth (m)',r=>r.h.toFixed(2)],['I','Insolation (W/m²)',r=>Math.round(r.I)],
+  ['k','k (h⁻¹)',r=>r.k.toFixed(2)],['T','T (°C)',r=>r.T.toFixed(2)],
+  ['TA','TA (µmol/kg)',r=>Math.round(r.TA)],['DIC','DIC (µmol/kg)',r=>Math.round(r.DIC)],
+  ['pH','pH',r=>r.pH.toFixed(3)],['OmegaAr','Ω ar',r=>r.OmegaAr.toFixed(2)],
+  ['pCO2','pCO₂ (µatm)',r=>Math.round(r.pCO2)]];
+function buildTable(){
+  const stride=Math.max(1,Math.round(60/P.dtMin));
+  const rows=win.filter((_,i)=>i%stride===0);
+  $('tbl').querySelector('thead').innerHTML='<tr>'+COLS.map(c=>`<th scope="col">${c[1]}</th>`).join('')+'</tr>';
+  $('tbl').querySelector('tbody').innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>`<td>${c[2](r)}</td>`).join('')+'</tr>').join('');
+}
+function downloadCSV(){
+  const keys=['t','eta','h','head','k','I','T','TA','DIC','pH','OmegaAr','pCO2',
+              'GPP','Resp','NCP','Ggross','Dgross','G','Fco2'];
+  const meta=PARAMS.map(p=>`# ${p.id} = ${P[p.id]}`)
+    .concat(TOGGLES.map(t=>`# ${t.id} = ${P[t.id]}`)).join('\n');
+  let csv='# Reef bathtub model output\n# pH is on the total scale\n'+
+    '# t in hours from the start of the shown window; fluxes mmol m-2 h-1; TA and DIC umol kg-1\n'+
+    meta+'\n'+keys.join(',')+'\n';
+  win.forEach(r=>{csv+=keys.map(k=>{const v=r[k];
+    return typeof v==='number'?(isFinite(v)?v.toPrecision(8):''):v;}).join(',')+'\n';});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='reef_bathtub_output.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+
+/* ============================================================================
+   8. URL STATE  —  #scene&present=1&hCrest=0.3 …
+   ========================================================================== */
+let urlTimer=null;
+function writeURL(){
+  clearTimeout(urlTimer);
+  urlTimer=setTimeout(()=>{
+    const d=defaults(), bits=[view];
+    if(present) bits.push('present=1');
+    if(VAR!=='T') bits.push('var='+VAR);
+    PARAMS.forEach(p=>{if(P[p.id]!==d[p.id]) bits.push(p.id+'='+P[p.id]);});
+    TOGGLES.forEach(t=>{if(P[t.id]!==d[t.id]) bits.push(t.id+'='+(P[t.id]?1:0));});
+    selfHash='#'+bits.join('&');
+    history.replaceState(null,'',selfHash);
+  },200);
+}
+function readURL(){
+  const h=decodeURIComponent(location.hash.replace(/^#/,''));
+  if(!h) return;
+  present=false; VAR='T';
+  h.split('&').forEach(bit=>{
+    const [k,v]=bit.split('=');
+    if(k==='scene'||k==='analysis'){view=k; return;}
+    if(k==='present'){present=(v!=='0'); return;}
+    if(k==='var'&&VARS[v]){VAR=v; return;}
+    const p=byId[k]; if(!p||v===undefined) return;
+    if('def' in p && typeof p.def==='boolean') P[k]=(v==='1'||v==='true');
+    else if(p.min!==undefined){const n=parseFloat(v);
+      if(isFinite(n)) P[k]=Math.max(p.min,Math.min(p.max,n));}
+  });
+  if(P.showDays>P.days) P.showDays=P.days;
+}
+
+/* ============================================================================
+   9. VIEW SWITCHING
+   ========================================================================== */
+function setView(v){
+  view=v;
+  $('mScene').setAttribute('aria-selected',String(v==='scene'));
+  $('mAnalysis').setAttribute('aria-selected',String(v==='analysis'));
+  $('viewScene').classList.toggle('hidden',v!=='scene');
+  $('viewAnalysis').classList.toggle('hidden',v!=='analysis');
+  /* the basic bar's playback controls are meaningless in Advanced */
+  $('bar').classList.toggle('hidden',v==='analysis');
+  $('blurb').textContent = v==='scene'
+    ? 'The tide floods the lagoon over the reef crest, then drains away and leaves it behind as a shallow pond. '+
+      'The water is tinted by how far it has drifted from the ocean, so no tint means it currently matches the ocean.'
+    : 'Every parameter, and the full time series the model produces. Same equations as the Basic view.';
+  if(v==='analysis'){ if(!analysisBuilt) buildAnalysis(); renderAnalysis(); }
+  else renderScene();
+  writeURL();
+}
+
+/* ============================================================================
+   10. START
+   ========================================================================== */
+buildControls();
+readURL();
+document.body.classList.toggle('present',present);
+pushToUI();
+buildScene();
+recompute();
+setView(view);
+requestAnimationFrame(tick);
+
+/* A link to a different scenario, followed while this tab is already open, changes
+   only the hash. Re-read it and apply it from a clean slate, so a scenario link is
+   absolute rather than relative to whatever happens to be set right now. */
+let selfHash='';
+window.addEventListener('hashchange',()=>{
+  if(location.hash===selfHash) return;      // our own replaceState, ignore
+  P=defaults(); speedVal=36; hoursPerSec=24/12;
+  readURL();
+  document.body.classList.toggle('present',present);
+  document.querySelectorAll('.var').forEach(o=>o.setAttribute('aria-pressed',String(o.dataset.v===VAR)));
+  pushToUI(); recompute(); setView(view);
+});
+
+$('mScene').addEventListener('click',()=>setView('scene'));
+$('mAnalysis').addEventListener('click',()=>setView('analysis'));
+$('btnReset').addEventListener('click',()=>{P=defaults(); speedVal=36; hoursPerSec=24/12;
+  pushToUI(); recompute(); writeURL();});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&view==='scene'){e.preventDefault();$('play').click();}
+});
+$('foot').innerHTML='<b>Reading the figure:</b> red tint = the lagoon is above the ocean value, blue = below, '+
+  'and the tint fades to nothing whenever the two match. <b>Open</b> means the tide is over the crest so water '+
+  'moves in or out; <b>closed</b> means the crest stands above the water and the pond is sealed off. '+
+  'Space bar plays and pauses. <b>Advanced</b> shows the same run as full time series with every parameter exposed.';
+window.__ready=true;
+window.__P=()=>P;                     /* test hook */
+window.__view=()=>view;
+})();
+</script>
+</body>
+</html>

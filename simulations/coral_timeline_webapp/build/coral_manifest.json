@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Maps each SVG in the coral folder to how the corridor should use it.",
+    "Drop a new .svg in the folder, add an entry here, and re-run build_corridor.py.",
+    "  name   : growth form, for documentation only",
+    "  scale  : relative size in the scene. 1.0 is a typical head-sized colony;",
+    "           a whole reef clump is larger, a single tuft smaller.",
+    "  detail : 'chunky' shapes hold up at distance. 'fine' shapes have strokes",
+    "           that fall below one pixel far away and shimmer, so they are only",
+    "           placed near the camera.",
+    "Files are used as CSS masks, so their own fill colours are ignored and the",
+    "silhouette colour is set by the scene (it lightens with distance)."
+  ],
+  "Asset 2":  { "name": "Mixed reef clump",       "scale": 1.65, "detail": "fine"   },
+  "Asset 3":  { "name": "Digitate",               "scale": 0.85, "detail": "chunky" },
+  "Asset 4":  { "name": "Soft coral tuft",        "scale": 0.45, "detail": "chunky" },
+  "Asset 5":  { "name": "Sea urchin",             "scale": 0.32, "detail": "fine"   },
+  "Asset 6":  { "name": "Branching, small",       "scale": 0.55, "detail": "fine"   },
+  "Asset 8":  { "name": "Digitate fan",           "scale": 0.85, "detail": "chunky" },
+  "Asset 9":  { "name": "Staghorn, arborescent",  "scale": 0.75, "detail": "fine"   },
+  "Asset 10": { "name": "Massive, brain",         "scale": 0.95, "detail": "chunky" },
+  "Asset 11": { "name": "Massive, brain 2",       "scale": 0.85, "detail": "chunky" },
+  "Asset 12": { "name": "Columnar fingers",       "scale": 0.50, "detail": "chunky" },
+  "Asset 13": { "name": "Sea fan, gorgonian",     "scale": 1.15, "detail": "fine"   },
+  "Asset 14": { "name": "Tabular branching",      "scale": 0.90, "detail": "fine"   },
+  "Asset 15": { "name": "Bushy branching",        "scale": 1.00, "detail": "fine"   },
+  "Asset 16": { "name": "Pillar, columnar",       "scale": 1.00, "detail": "chunky" },
+  "Asset 18": { "name": "Delicate branching",     "scale": 0.70, "detail": "fine"   },
+  "Asset 19": { "name": "Arborescent tree",       "scale": 1.20, "detail": "fine"   }
+}

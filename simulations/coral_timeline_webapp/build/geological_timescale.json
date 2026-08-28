@@ -1,0 +1,71 @@
+{
+  "_comment": [
+    "Geological units with their start age in millions of years before present,",
+    "following the International Chronostratigraphic Chart (ICS v2023/09 and v2024).",
+    "Each level is listed oldest-first; a lookup takes the last unit whose start is",
+    "greater than or equal to the age being tested.",
+    "",
+    "On the Anthropocene: the Anthropocene Working Group's proposal to ratify it as a",
+    "formal Epoch was REJECTED by the IUGS in March 2024. It is therefore not a",
+    "chronostratigraphic unit. The formal name for the present is the Meghalayan Age",
+    "of the Holocene. 'Anthropocene' is carried here only as an informal label, marked",
+    "as such, because it is in wide use and readers will expect to see it."
+  ],
+  "eon": [
+    { "name": "Hadean",       "start": 4567.3 },
+    { "name": "Archean",      "start": 4031 },
+    { "name": "Proterozoic",  "start": 2500 },
+    { "name": "Phanerozoic",  "start": 538.8 }
+  ],
+  "era": [
+    { "name": "Eoarchean",         "start": 4031 },
+    { "name": "Palaeoarchean",     "start": 3600 },
+    { "name": "Mesoarchean",       "start": 3200 },
+    { "name": "Neoarchean",        "start": 2800 },
+    { "name": "Palaeoproterozoic", "start": 2500 },
+    { "name": "Mesoproterozoic",   "start": 1600 },
+    { "name": "Neoproterozoic",    "start": 1000 },
+    { "name": "Palaeozoic",        "start": 538.8 },
+    { "name": "Mesozoic",          "start": 251.902 },
+    { "name": "Cenozoic",          "start": 66.0 }
+  ],
+  "period": [
+    { "name": "Tonian",         "start": 1000 },
+    { "name": "Cryogenian",     "start": 720 },
+    { "name": "Ediacaran",      "start": 635 },
+    { "name": "Cambrian",       "start": 538.8 },
+    { "name": "Ordovician",     "start": 486.85 },
+    { "name": "Silurian",       "start": 443.1 },
+    { "name": "Devonian",       "start": 419.62 },
+    { "name": "Carboniferous",  "start": 358.86 },
+    { "name": "Permian",        "start": 298.9 },
+    { "name": "Triassic",       "start": 251.902 },
+    { "name": "Jurassic",       "start": 201.4 },
+    { "name": "Cretaceous",     "start": 143.1 },
+    { "name": "Palaeogene",     "start": 66.0 },
+    { "name": "Neogene",        "start": 23.03 },
+    { "name": "Quaternary",     "start": 2.58 }
+  ],
+  "epoch": [
+    { "name": "Palaeocene",  "start": 66.0 },
+    { "name": "Eocene",      "start": 56.0 },
+    { "name": "Oligocene",   "start": 33.9 },
+    { "name": "Miocene",     "start": 23.03 },
+    { "name": "Pliocene",    "start": 5.333 },
+    { "name": "Pleistocene", "start": 2.58 },
+    { "name": "Holocene",    "start": 0.0117 }
+  ],
+  "age": [
+    { "name": "Greenlandian",  "start": 0.0117 },
+    { "name": "Northgrippian", "start": 0.008326 },
+    { "name": "Meghalayan",    "start": 0.0042 }
+  ],
+  "informal": [
+    {
+      "name": "Anthropocene",
+      "start": 0.0000765,
+      "note": "informal; proposed epoch rejected by the IUGS in 2024",
+      "from_year_ce": 1950
+    }
+  ]
+}

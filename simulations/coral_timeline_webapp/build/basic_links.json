@@ -1,0 +1,1015 @@
+{
+ "topics": {
+  "stromatolites_microbial_reefs": {
+   "label": "Stromatolites and the earliest reef-like life",
+   "links": [
+    {
+     "title": "Stromatolite | Fossilized, Microbial Mats | Britannica",
+     "url": "https://www.britannica.com/science/stromatolite",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains stromatolites as layered limestone deposits built by mats of blue-green algae, formed abundantly in prehistoric times and still growing today at places such as Shark Bay in Australia."
+    }
+   ]
+  },
+  "ancient_seas_deep_time": {
+   "label": "Ancient seas and reefs through deep time",
+   "links": [
+    {
+     "title": "Ocean Through Time | Smithsonian Ocean",
+     "url": "https://ocean.si.edu/through-time/ocean-through-time",
+     "publisher": "Smithsonian Ocean (National Museum of Natural History)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Traces ocean life across the Precambrian, Palaeozoic, Mesozoic and Cenozoic, including the Cambrian explosion, ancient reef systems and the five mass extinctions."
+    }
+   ]
+  },
+  "cambrian_archaeocyaths": {
+   "label": "Archaeocyaths, the first sponge reef builders",
+   "links": [
+    {
+     "title": "Archaeocyathid | Cambrian, Sponges, Reefs | Britannica",
+     "url": "https://www.britannica.com/animal/archaeocyathid",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes archaeocyathids as an extinct group of Late Precambrian and Early Cambrian marine animals with conical skeletons that built reef-like structures in shallow seas and probably fed like sponges."
+    }
+   ]
+  },
+  "palaeozoic_corals": {
+   "label": "The extinct corals of the Palaeozoic: tabulates and rugosans",
+   "links": [
+    {
+     "title": "Tabulata | Cambrian, Paleozoic, Anthozoa | Britannica",
+     "url": "https://www.britannica.com/animal/Tabulata",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes tabulate corals, an extinct group of colonial coral animals with internal platforms called tabulae, which lived from the Ordovician to the Jurassic."
+    },
+    {
+     "title": "Horn coral | Ancient, Reef-Building, Scleractinian | Britannica",
+     "url": "https://www.britannica.com/animal/horn-coral",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Covers horn corals of the order Rugosa, which first appear in the Ordovician and persist to the Permian, and are used as index fossils for dating ancient rocks."
+    }
+   ]
+  },
+  "mass_extinctions": {
+   "label": "Mass extinctions and the gaps they leave in the reef record",
+   "links": [
+    {
+     "title": "What is mass extinction and are we facing a sixth one? | Natural History Museum",
+     "url": "https://www.nhm.ac.uk/discover/what-is-mass-extinction-and-are-we-facing-a-sixth-one.html",
+     "publisher": "Natural History Museum, London",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains what a mass extinction is and walks through the five great ones, including the Ordovician-Silurian, Late Devonian, Permian and Triassic events."
+    },
+    {
+     "title": "Permian extinction | Overview & Facts | Britannica",
+     "url": "https://www.britannica.com/science/Permian-extinction",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes the end-Permian event as a series of extinction pulses making up the greatest mass extinction in Earth's history, and the temperature and carbon-cycle causes proposed for it."
+    }
+   ]
+  },
+  "kpg_extinction": {
+   "label": "The asteroid extinction 66 million years ago",
+   "links": [
+    {
+     "title": "What killed the dinosaurs? | Natural History Museum",
+     "url": "https://www.nhm.ac.uk/discover/dinosaur-extinction.html",
+     "publisher": "Natural History Museum, London",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains how a huge asteroid impact 66 million years ago, possibly helped by volcanism and climate change, caused the end-Cretaceous mass extinction."
+    }
+   ]
+  },
+  "coral_animal": {
+   "label": "What a coral animal actually is",
+   "links": [
+    {
+     "title": "Are corals animals or plants?",
+     "url": "https://oceanservice.noaa.gov/facts/coral.html",
+     "publisher": "NOAA National Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains that corals are sessile animals that partner with plant-like algae called zooxanthellae and build the largest structures of biological origin on Earth."
+    },
+    {
+     "title": "Coral Reefs and Corals | Smithsonian Ocean",
+     "url": "https://ocean.si.edu/ocean-life/invertebrates/corals-and-coral-reefs",
+     "publisher": "Smithsonian Ocean",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Covers coral polyp structure, the stony skeleton, the algal partnership, reef formations and how corals reproduce."
+    }
+   ]
+  },
+  "coral_algae_symbiosis": {
+   "label": "The algae that live inside corals",
+   "links": [
+    {
+     "title": "Corals Tutorial: What is Zooxanthellae?",
+     "url": "https://oceanservice.noaa.gov/education/tutorial_corals/coral02_zooxanthellae.html",
+     "publisher": "NOAA National Ocean Service Education",
+     "audience": "school students",
+     "verified": true,
+     "what_it_covers": "Explains that zooxanthellae are photosynthetic cells living inside coral tissue that supply the coral with nutrients and colour in exchange for shelter and carbon dioxide."
+    },
+    {
+     "title": "Corals",
+     "url": "https://www.aims.gov.au/research-topics/marine-life/corals",
+     "publisher": "Australian Institute of Marine Science",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Introduces coral biology in plain language, including colonies of polyps, the zooxanthellae partnership, and reproduction by budding and spawning."
+    }
+   ]
+  },
+  "reef_formation_growth": {
+   "label": "How reefs form, grow and keep up with sea level",
+   "links": [
+    {
+     "title": "Corals Tutorial: How Do Coral Reefs Form?",
+     "url": "https://oceanservice.noaa.gov/education/tutorial_corals/coral04_reefs.html",
+     "publisher": "NOAA National Ocean Service Education",
+     "audience": "school students",
+     "verified": true,
+     "what_it_covers": "Describes the three major reef structures, fringing, barrier and atoll, how they develop from settling larvae, and how long reef building takes."
+    },
+    {
+     "title": "Coral reef - Marine Ecosystem, Formation, Diversity | Britannica",
+     "url": "https://www.britannica.com/science/coral-reef/Origin-and-development-of-reefs",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains how reefs originate and develop, combining Darwin's subsidence idea with changing sea level and plate tectonics."
+    }
+   ]
+  },
+  "atolls_darwin": {
+   "label": "Atolls and Darwin's sinking-island idea",
+   "links": [
+    {
+     "title": "Charles Darwin's coral conundrum | Natural History Museum",
+     "url": "https://www.nhm.ac.uk/discover/charles-darwin-coral-conundrum.html",
+     "publisher": "Natural History Museum, London",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Tells how Darwin, using corals collected on the Beagle between 1831 and 1836, proposed that atolls form as reefs grow upward around sinking volcanic islands, an idea confirmed when scientists drilled through a Pacific atoll in the early 1950s."
+    },
+    {
+     "title": "Atoll | Definition & Facts | Britannica",
+     "url": "https://www.britannica.com/science/atoll",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Defines an atoll as a coral reef enclosing a lagoon and explains its formation as the final stage of reef growth around a sinking volcanic island under Darwin's subsidence theory."
+    }
+   ]
+  },
+  "deep_sea_cold_water_corals": {
+   "label": "Cold-water and deep-sea corals",
+   "links": [
+    {
+     "title": "Do all corals live in warm water?",
+     "url": "https://oceanexplorer.noaa.gov/ocean-fact/coral-water/",
+     "publisher": "NOAA Ocean Exploration",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains that over half of all known coral species live in deep, dark, cold water rather than tropical reefs, and why these cold-water corals matter."
+    }
+   ]
+  },
+  "mesophotic_reefs": {
+   "label": "Mesophotic reefs, the ocean's twilight zone",
+   "links": [
+    {
+     "title": "What are Mesophotic Coral Ecosystems?",
+     "url": "https://oceanservice.noaa.gov/facts/mesophotic.html",
+     "publisher": "NOAA National Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes mesophotic coral ecosystems living roughly 100 to 490 feet down in tropical and subtropical seas and their possible role in supporting shallower reefs."
+    }
+   ]
+  },
+  "coral_spawning": {
+   "label": "Coral spawning and how corals reproduce",
+   "links": [
+    {
+     "title": "What is coral spawning?",
+     "url": "https://www2.gbrmpa.gov.au/learn/coral-spawning-101",
+     "publisher": "Great Barrier Reef Marine Park Authority (Reef Authority)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains the synchronised mass release of eggs and sperm by coral colonies, the lunar and temperature cues that trigger it, and why it matters for reef recovery and genetic diversity."
+    }
+   ]
+  },
+  "ocean_exploration_history": {
+   "label": "The voyages that started ocean science",
+   "links": [
+    {
+     "title": "HMS Challenger: How an 1870s expedition still influences scientific discoveries today | Natural History Museum",
+     "url": "https://www.nhm.ac.uk/discover/hms-challenger-how-1870s-expedition-still-influences-scientific-discoveries-today.html",
+     "publisher": "Natural History Museum, London",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Tells the story of the four-year HMS Challenger voyage of 1872 to 1876 and how its specimens and data still shape research on the deep sea and the changing ocean."
+    },
+    {
+     "title": "Challenger Expedition | Arctic exploration, Marine biology, Oceanography | Britannica",
+     "url": "https://www.britannica.com/event/Challenger-Expedition",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Summarises the 1872 to 1876 Challenger voyage, its measurements of ocean temperature, currents and depths, and its role in founding modern oceanography."
+    }
+   ]
+  },
+  "cook_endeavour_reef": {
+   "label": "Cook, the Endeavour and the Great Barrier Reef",
+   "links": [
+    {
+     "title": "Endeavour Reef | National Museum of Australia",
+     "url": "https://www.nma.gov.au/exhibitions/endeavour-voyage/endeavour-reef",
+     "publisher": "National Museum of Australia",
+     "audience": "general public / school (Years 3-6 resources)",
+     "verified": true,
+     "what_it_covers": "Documents the night of 11 June 1770 when Cook's Endeavour struck a reef off the Queensland coast, the crew's efforts to refloat it, and Wujal Wujal artists' responses to the story."
+    },
+    {
+     "title": "James Cook | Biography, Accomplishments, Ship, Voyage Route, Family, Death, & Facts | Britannica",
+     "url": "https://www.britannica.com/biography/James-Cook",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Biography of the British naval captain and navigator who charted Pacific coasts and set new standards in navigation and survey."
+    }
+   ]
+  },
+  "indigenous_sea_country": {
+   "label": "Indigenous sea country and traditional reef use",
+   "links": [
+    {
+     "title": "Traditional use of the Marine Park | Reef Authority",
+     "url": "https://www2.gbrmpa.gov.au/learn/traditional-owners/traditional-use-marine-park",
+     "publisher": "Great Barrier Reef Marine Park Authority (Reef Authority)",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains that around 70 Traditional Owner groups have Sea Country connections to the Great Barrier Reef dating back some 60,000 years, and how traditional use of marine resources works today."
+    },
+    {
+     "title": "Fishing",
+     "url": "https://aiatsis.gov.au/explore/fishing",
+     "publisher": "Australian Institute of Aboriginal and Torres Strait Islander Studies (AIATSIS)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes thousands of years of Aboriginal and Torres Strait Islander fishing, including stone weirs, woven traps, seasonal knowledge and the rule of never taking more than you need."
+    }
+   ]
+  },
+  "pacific_voyaging_lapita": {
+   "label": "Island voyaging and reef communities of the Pacific and Coral Sea",
+   "links": [
+    {
+     "title": "Lapita culture | Polynesia, Melanesia, Micronesia | Britannica",
+     "url": "https://www.britannica.com/topic/Lapita-culture",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes the Lapita people, the first settlers of Melanesia and much of Polynesia between about 1600 and 500 BCE, known from their distinctive pottery found across the Pacific islands."
+    },
+    {
+     "title": "First Nations watercraft culture - The Australian Museum",
+     "url": "https://australian.museum/learn/first-nations/watercraft-culture/",
+     "publisher": "Australian Museum",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Shows how Aboriginal and Torres Strait Islander peoples built bark canoes, rafts, dugouts and outriggers suited to their waters, using them to travel between islands, fish and trade."
+    }
+   ]
+  },
+  "isthmus_of_panama": {
+   "label": "When Panama split the Atlantic from the Pacific",
+   "links": [
+    {
+     "title": "Why Panama?",
+     "url": "https://stri.si.edu/why-panama",
+     "publisher": "Smithsonian Tropical Research Institute",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains how the rise of the Isthmus of Panama divided one tropical ocean into two very different seas, a warm salty Caribbean where coral reefs thrive and a cooler upwelling eastern Pacific."
+    }
+   ]
+  },
+  "bleaching": {
+   "label": "What coral bleaching is and why it happens",
+   "links": [
+    {
+     "title": "What is coral bleaching?",
+     "url": "https://oceanservice.noaa.gov/facts/coral_bleach.html",
+     "publisher": "NOAA Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains that corals turn white when stress such as unusually warm water makes them expel the tiny algae living in their tissues, and whether bleached corals can survive."
+    },
+    {
+     "title": "Coral bleaching 101",
+     "url": "https://www2.gbrmpa.gov.au/learn/reef-health/coral-bleaching",
+     "publisher": "Great Barrier Reef Marine Park Authority (Reef Authority)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains the coral-algae partnership, what makes corals bleach, how bleaching is scored and recorded, and lists the Great Barrier Reef's past bleaching events."
+    }
+   ]
+  },
+  "marine_heatwaves": {
+   "label": "Marine heatwaves: when the sea gets too hot",
+   "links": [
+    {
+     "title": "Marine Heatwaves | National Marine Ecosystem Status",
+     "url": "https://ecowatch.noaa.gov/thematic/marine-heatwaves",
+     "publisher": "NOAA",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Defines a marine heatwave as a period when ocean temperatures stay unusually high for days or longer, and explains how scientists measure their size and intensity."
+    }
+   ]
+  },
+  "enso": {
+   "label": "El Nino and La Nina, and why they matter for reefs",
+   "links": [
+    {
+     "title": "What are El Nino and La Nina?",
+     "url": "https://oceanservice.noaa.gov/facts/ninonina.html",
+     "publisher": "NOAA Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains the two opposite Pacific climate patterns, how they form and how they shift weather and ocean conditions around the world."
+    }
+   ]
+  },
+  "acidification": {
+   "label": "Ocean acidification and coral skeletons",
+   "links": [
+    {
+     "title": "What is Ocean Acidification?",
+     "url": "https://oceanservice.noaa.gov/facts/acidification.html",
+     "publisher": "NOAA Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains that the ocean absorbs carbon dioxide from the air, lowering its pH, and why that makes life harder for shell- and skeleton-building animals."
+    },
+    {
+     "title": "Ocean Acidification",
+     "url": "https://ocean.si.edu/ocean-life/invertebrates/ocean-acidification",
+     "publisher": "Smithsonian Ocean",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Covers the chemistry of acidification and its effects on corals, including slower skeleton growth, weaker reefs and changes seen at natural carbon-dioxide seeps."
+    }
+   ]
+  },
+  "cots": {
+   "label": "Crown-of-thorns starfish outbreaks",
+   "links": [
+    {
+     "title": "Crown-of-Thorns Starfish",
+     "url": "https://www.aims.gov.au/research-topics/marine-life/crown-thorns-starfish",
+     "publisher": "Australian Institute of Marine Science (AIMS)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes the coral-eating starfish, how fast it breeds and feeds, why outbreaks happen on the Great Barrier Reef and how they are controlled."
+    },
+    {
+     "title": "Crown-of-thorns starfish | Coral Reefs, Invasive Species & Predators | Britannica",
+     "url": "https://www.britannica.com/animal/crown-of-thorns-starfish",
+     "publisher": "Encyclopaedia Britannica",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "An encyclopaedia entry on the starfish's appearance and coral-eating habits, and on the population surge that began in the 1960s."
+    }
+   ]
+  },
+  "coral_disease": {
+   "label": "Diseases that kill corals",
+   "links": [
+    {
+     "title": "Coral Disease - History and General Information",
+     "url": "https://cdhc.noaa.gov/coral-disease/",
+     "publisher": "NOAA Coral Disease and Health Consortium",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Introduces what coral disease means, when it was first recognised, how many diseases and species are affected, and how scientists describe the lesions they see."
+    },
+    {
+     "title": "Florida's Coral Reef Disease Outbreak | Florida Keys National Marine Sanctuary",
+     "url": "https://floridakeys.noaa.gov/coral-disease/",
+     "publisher": "NOAA Florida Keys National Marine Sanctuary",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains stony coral tissue loss disease, thought to be bacterial and spread by contact and water movement, and the unusually large scale of the Florida outbreak."
+    }
+   ]
+  },
+  "monitoring": {
+   "label": "How scientists watch reefs and reef heat stress",
+   "links": [
+    {
+     "title": "NOAA Coral Reef Watch Program",
+     "url": "https://coralreefwatch.noaa.gov/product/5km/tutorial/crw10a_dhw_product.php",
+     "publisher": "NOAA Coral Reef Watch",
+     "audience": "general public / older school students",
+     "verified": true,
+     "what_it_covers": "A tutorial page explaining Degree Heating Weeks, the satellite measure that adds up how hot the sea has been and for how long, and the levels at which bleaching is expected."
+    },
+    {
+     "title": "Monitoring the Great Barrier Reef",
+     "url": "https://www.aims.gov.au/research-topics/monitoring-and-discovery/monitoring-great-barrier-reef",
+     "publisher": "Australian Institute of Marine Science (AIMS)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes the size and value of the Great Barrier Reef and the long-running monitoring programs that survey it and report changes to scientists, managers and the public."
+    }
+   ]
+  },
+  "mpa": {
+   "label": "Marine protected areas and no-take zones",
+   "links": [
+    {
+     "title": "About Marine Protected Areas | National Marine Protected Areas Center",
+     "url": "https://marineprotectedareas.noaa.gov/aboutmpas/",
+     "publisher": "NOAA National Marine Protected Areas Center",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains what a marine protected area is, the different levels of protection including strict no-take marine reserves, and the benefits protection brings to sea life."
+    },
+    {
+     "title": "Marine Protected Areas",
+     "url": "https://education.nationalgeographic.org/resource/marine-protected-areas/",
+     "publisher": "National Geographic Education",
+     "audience": "school (secondary)",
+     "verified": true,
+     "what_it_covers": "A classroom resource that has students explore marine protected areas on a map and compare protection at sea with protection on land."
+    }
+   ]
+  },
+  "gbr_management": {
+   "label": "The Great Barrier Reef and how it is protected",
+   "links": [
+    {
+     "title": "Great Barrier Reef Marine Park - GBRMPA - Australia",
+     "url": "https://www2.gbrmpa.gov.au/about-us/our-story",
+     "publisher": "Great Barrier Reef Marine Park Authority (Reef Authority)",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains the Reef Authority's role as Australia's lead agency for managing the Great Barrier Reef Marine Park, and how it works with government, industry and community."
+    },
+    {
+     "title": "Great Barrier Reef - UNESCO World Heritage Centre",
+     "url": "https://whc.unesco.org/en/list/154/",
+     "publisher": "UNESCO World Heritage Centre",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "The World Heritage listing page for the Great Barrier Reef, describing why it was inscribed in 1981, its wildlife, and how Australia protects it."
+    }
+   ]
+  },
+  "restoration": {
+   "label": "Coral restoration and coral gardening",
+   "links": [
+    {
+     "title": "Restoring corals",
+     "url": "https://oceanservice.noaa.gov/education/tutorial_corals/coral15_restoring-corals.html",
+     "publisher": "NOAA Ocean Service Education",
+     "audience": "school / general public",
+     "verified": true,
+     "what_it_covers": "A student-level page on growing corals in nurseries from fragments and replanting them on damaged reefs, and on fixing the wider conditions reefs need."
+    },
+    {
+     "title": "Restoring Coral Reefs | NOAA Fisheries",
+     "url": "https://www.fisheries.noaa.gov/national/habitat-conservation/restoring-coral-reefs",
+     "publisher": "NOAA Fisheries",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Sets out why reefs are worth restoring and the practical methods used, from nursery-grown corals to removing invasive algae and repairing ship-grounding damage."
+    }
+   ]
+  },
+  "assisted_evolution": {
+   "label": "Helping corals cope with heat: breeding and assisted evolution",
+   "links": [
+    {
+     "title": "Breeding temperature tolerant corals for reef restoration and adaptation",
+     "url": "https://www.aims.gov.au/research-topics/featured-projects/reef-spawning-research-aims/breeding-temperature-tolerant-corals-reef-restoration-and-adaptation",
+     "publisher": "Australian Institute of Marine Science (AIMS)",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains assisted evolution as speeding up adaptation, and walks through how scientists pick heat-tolerant parent corals and cross them to produce tougher offspring."
+    }
+   ]
+  },
+  "climate_change": {
+   "label": "Climate change and a warming ocean",
+   "links": [
+    {
+     "title": "What is climate change?",
+     "url": "https://weather.metoffice.gov.uk/climate-change/what-is-climate-change",
+     "publisher": "Met Office (UK)",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "A plain-language introduction to climate change: the greenhouse effect, the rise in carbon dioxide since the 1800s, and the impacts including warmer, more acidic seas."
+    },
+    {
+     "title": "Climate change",
+     "url": "https://www.aims.gov.au/research-topics/environmental-issues/climate-change",
+     "publisher": "Australian Institute of Marine Science (AIMS)",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "States that climate change is the greatest long-term threat to coral reefs and explains how warming and acidification drive bleaching, disease and storm damage."
+    }
+   ]
+  },
+  "projections_scenarios": {
+   "label": "What climate projections, emissions scenarios and warming limits mean",
+   "links": [
+    {
+     "title": "Scenarios and climate models",
+     "url": "https://www.canada.ca/en/environment-climate-change/services/climate-change/canadian-centre-climate-services/basics/scenario-models.html",
+     "publisher": "Government of Canada, Canadian Centre for Climate Services",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Explains that because nobody knows how much greenhouse gas humans will emit, scientists run climate models under low, medium and high emissions scenarios (RCPs) to produce projections."
+    },
+    {
+     "title": "The Paris Agreement | United Nations",
+     "url": "https://www.un.org/en/climatechange/paris-agreement",
+     "publisher": "United Nations",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Describes the 2015 treaty and its goal of holding warming well below 2 degrees C while pursuing efforts to limit it to 1.5 degrees C above pre-industrial levels."
+    }
+   ]
+  },
+  "sea_level_coasts": {
+   "label": "Sea-level rise, reefs and the coasts and islands they shelter",
+   "links": [
+    {
+     "title": "Is sea level rising?",
+     "url": "https://oceanservice.noaa.gov/facts/sealevel.html",
+     "publisher": "NOAA Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains that global sea level is rising at an accelerating rate because seawater expands as it warms and land ice is melting, and what that means for coasts."
+    },
+    {
+     "title": "How do coral reefs protect lives and property?",
+     "url": "https://oceanservice.noaa.gov/facts/coral_protect.html",
+     "publisher": "NOAA Ocean Service",
+     "audience": "general public / school",
+     "verified": true,
+     "what_it_covers": "Explains how reef structures act as natural breakwaters that absorb wave energy and shield shorelines and coastal communities from storms."
+    }
+   ]
+  },
+  "fishing": {
+   "label": "Fishing pressure and overfishing on reefs",
+   "links": [
+    {
+     "title": "Sustainable Fishing",
+     "url": "https://education.nationalgeographic.org/resource/sustainable-fishing/",
+     "publisher": "National Geographic Education",
+     "audience": "school (grades 3-12+)",
+     "verified": true,
+     "what_it_covers": "Explains overfishing, how taking fish faster than they can breed depletes populations, and what sustainable fishing and fisheries management look like."
+    }
+   ]
+  },
+  "threatened_species": {
+   "label": "Corals as threatened species",
+   "links": [
+    {
+     "title": "IUCN Red List of Threatened Species",
+     "url": "https://www.iucnredlist.org/about/background-history",
+     "publisher": "IUCN",
+     "audience": "general public",
+     "verified": true,
+     "what_it_covers": "Describes the Red List, set up in 1964, as the world's most comprehensive source on the extinction risk of species, including corals."
+    }
+   ]
+  }
+ },
+ "events": {
+  "CR-001": [
+   "stromatolites_microbial_reefs"
+  ],
+  "CR-002": [
+   "stromatolites_microbial_reefs"
+  ],
+  "CR-017": [
+   "stromatolites_microbial_reefs"
+  ],
+  "CR-003": [
+   "ancient_seas_deep_time"
+  ],
+  "CR-006": [
+   "ancient_seas_deep_time"
+  ],
+  "CR-010": [
+   "ancient_seas_deep_time"
+  ],
+  "CR-021": [
+   "ancient_seas_deep_time"
+  ],
+  "CR-023": [
+   "ancient_seas_deep_time"
+  ],
+  "CR-004": [
+   "cambrian_archaeocyaths"
+  ],
+  "CR-005": [
+   "cambrian_archaeocyaths"
+  ],
+  "CR-007": [
+   "palaeozoic_corals"
+  ],
+  "CR-008": [
+   "mass_extinctions"
+  ],
+  "CR-011": [
+   "mass_extinctions"
+  ],
+  "CR-016": [
+   "mass_extinctions"
+  ],
+  "CR-022": [
+   "mass_extinctions"
+  ],
+  "CR-026": [
+   "kpg_extinction"
+  ],
+  "CR-020": [
+   "coral_animal"
+  ],
+  "CR-014": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-057": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-060": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-063": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-066": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-084": [
+   "coral_algae_symbiosis"
+  ],
+  "CR-034": [
+   "reef_formation_growth"
+  ],
+  "CR-036": [
+   "reef_formation_growth"
+  ],
+  "CR-037": [
+   "reef_formation_growth"
+  ],
+  "CR-038": [
+   "reef_formation_growth"
+  ],
+  "CR-039": [
+   "reef_formation_growth"
+  ],
+  "CR-051": [
+   "atolls_darwin"
+  ],
+  "CR-052": [
+   "atolls_darwin"
+  ],
+  "CR-056": [
+   "atolls_darwin"
+  ],
+  "CR-058": [
+   "atolls_darwin"
+  ],
+  "CR-061": [
+   "atolls_darwin"
+  ],
+  "CR-054": [
+   "deep_sea_cold_water_corals"
+  ],
+  "CR-103": [
+   "deep_sea_cold_water_corals"
+  ],
+  "CR-143": [
+   "deep_sea_cold_water_corals"
+  ],
+  "CR-130": [
+   "mesophotic_reefs"
+  ],
+  "CR-074": [
+   "coral_spawning"
+  ],
+  "CR-055": [
+   "ocean_exploration_history"
+  ],
+  "CR-048": [
+   "cook_endeavour_reef"
+  ],
+  "CR-049": [
+   "cook_endeavour_reef"
+  ],
+  "CR-040": [
+   "indigenous_sea_country"
+  ],
+  "CR-041": [
+   "pacific_voyaging_lapita"
+  ],
+  "CR-042": [
+   "pacific_voyaging_lapita"
+  ],
+  "CR-032": [
+   "isthmus_of_panama"
+  ],
+  "CR-071": [
+   "bleaching"
+  ],
+  "CR-075": [
+   "bleaching",
+   "enso"
+  ],
+  "CR-082": [
+   "bleaching"
+  ],
+  "CR-086": [
+   "bleaching"
+  ],
+  "CR-088": [
+   "bleaching",
+   "enso"
+  ],
+  "CR-089": [
+   "bleaching"
+  ],
+  "CR-090": [
+   "bleaching"
+  ],
+  "CR-092": [
+   "bleaching"
+  ],
+  "CR-094": [
+   "bleaching"
+  ],
+  "CR-096": [
+   "bleaching"
+  ],
+  "CR-101": [
+   "bleaching"
+  ],
+  "CR-108": [
+   "bleaching"
+  ],
+  "CR-109": [
+   "bleaching"
+  ],
+  "CR-117": [
+   "bleaching"
+  ],
+  "CR-122": [
+   "bleaching"
+  ],
+  "CR-123": [
+   "bleaching"
+  ],
+  "CR-126": [
+   "bleaching"
+  ],
+  "CR-131": [
+   "bleaching"
+  ],
+  "CR-132": [
+   "bleaching"
+  ],
+  "CR-134": [
+   "bleaching"
+  ],
+  "CR-139": [
+   "bleaching",
+   "enso"
+  ],
+  "CR-141": [
+   "bleaching"
+  ],
+  "CR-142": [
+   "bleaching"
+  ],
+  "CR-144": [
+   "bleaching"
+  ],
+  "CR-146": [
+   "bleaching"
+  ],
+  "CR-147": [
+   "bleaching"
+  ],
+  "CR-148": [
+   "bleaching"
+  ],
+  "CR-149": [
+   "bleaching"
+  ],
+  "CR-152": [
+   "bleaching"
+  ],
+  "CR-154": [
+   "bleaching"
+  ],
+  "CR-112": [
+   "marine_heatwaves"
+  ],
+  "CR-121": [
+   "marine_heatwaves"
+  ],
+  "CR-106": [
+   "acidification"
+  ],
+  "CR-115": [
+   "acidification"
+  ],
+  "PJ-003": [
+   "acidification",
+   "projections_scenarios"
+  ],
+  "PJ-009": [
+   "acidification",
+   "projections_scenarios"
+  ],
+  "PJ-011": [
+   "acidification",
+   "projections_scenarios"
+  ],
+  "CR-064": [
+   "cots"
+  ],
+  "CR-113": [
+   "cots",
+   "monitoring"
+  ],
+  "CR-076": [
+   "coral_disease"
+  ],
+  "CR-125": [
+   "coral_disease"
+  ],
+  "CR-080": [
+   "monitoring"
+  ],
+  "CR-087": [
+   "monitoring"
+  ],
+  "CR-136": [
+   "monitoring"
+  ],
+  "CR-150": [
+   "monitoring"
+  ],
+  "CR-072": [
+   "mpa"
+  ],
+  "CR-077": [
+   "mpa"
+  ],
+  "CR-083": [
+   "mpa"
+  ],
+  "CR-100": [
+   "mpa"
+  ],
+  "CR-110": [
+   "mpa"
+  ],
+  "CR-069": [
+   "gbr_management"
+  ],
+  "CR-073": [
+   "gbr_management"
+  ],
+  "CR-081": [
+   "restoration"
+  ],
+  "CR-127": [
+   "restoration"
+  ],
+  "PJ-010": [
+   "restoration",
+   "sea_level_coasts"
+  ],
+  "PJ-019": [
+   "restoration",
+   "projections_scenarios"
+  ],
+  "PJ-021": [
+   "restoration",
+   "projections_scenarios"
+  ],
+  "CR-095": [
+   "assisted_evolution"
+  ],
+  "CR-099": [
+   "assisted_evolution"
+  ],
+  "CR-116": [
+   "assisted_evolution"
+  ],
+  "CR-118": [
+   "assisted_evolution"
+  ],
+  "CR-119": [
+   "assisted_evolution"
+  ],
+  "CR-135": [
+   "assisted_evolution"
+  ],
+  "PJ-017": [
+   "assisted_evolution",
+   "projections_scenarios"
+  ],
+  "PJ-018": [
+   "assisted_evolution"
+  ],
+  "PJ-020": [
+   "assisted_evolution",
+   "projections_scenarios"
+  ],
+  "CR-098": [
+   "climate_change"
+  ],
+  "CR-128": [
+   "climate_change"
+  ],
+  "CR-093": [
+   "projections_scenarios"
+  ],
+  "PJ-001": [
+   "projections_scenarios"
+  ],
+  "PJ-002": [
+   "projections_scenarios"
+  ],
+  "PJ-004": [
+   "projections_scenarios"
+  ],
+  "PJ-006": [
+   "projections_scenarios"
+  ],
+  "PJ-007": [
+   "projections_scenarios"
+  ],
+  "PJ-008": [
+   "projections_scenarios"
+  ],
+  "PJ-012": [
+   "projections_scenarios"
+  ],
+  "PJ-013": [
+   "projections_scenarios"
+  ],
+  "PJ-014": [
+   "projections_scenarios"
+  ],
+  "PJ-015": [
+   "projections_scenarios"
+  ],
+  "PJ-016": [
+   "projections_scenarios"
+  ],
+  "CR-129": [
+   "sea_level_coasts"
+  ],
+  "PJ-005": [
+   "sea_level_coasts"
+  ],
+  "CR-104": [
+   "fishing"
+  ],
+  "CR-105": [
+   "threatened_species"
+  ]
+ }
+}

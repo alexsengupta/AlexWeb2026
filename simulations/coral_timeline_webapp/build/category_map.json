@@ -1,0 +1,63 @@
+{
+  "_comment": [
+    "Controlled category vocabulary for the coral reef timeline.",
+    "The original event_category is never overwritten; these are added alongside it,",
+    "so any mapping decision here can be revisited from the source values.",
+    "",
+    "Colours are slots 1-7 of the documented dark-mode categorical palette, IN THAT",
+    "ORDER. The order is the colourblind-safety mechanism and must not be rearranged;",
+    "only which category sits in which slot is an editorial choice.",
+    "Validated against the card surface #051628: worst adjacent CVD dE 8.4,",
+    "worst adjacent normal-vision dE 19.3, all seven above 3:1 contrast.",
+    "At seven categories no palette clears the all-pairs test, so the category NAME",
+    "is printed on every card and in the legend. Colour is a scanning aid; the label",
+    "is what actually identifies the category."
+  ],
+  "families": {
+    "Reef change": "What happened to reefs",
+    "Knowledge": "How we came to know it",
+    "People & policy": "How people used and governed reefs"
+  },
+  "categories": [
+    { "slot": 1, "name": "Science & discovery",             "family": "Knowledge",
+      "colour": "#3987e5",
+      "from": ["Scientific finding", "Scientific debate"] },
+
+    { "slot": 2, "name": "Bleaching & heat stress",         "family": "Reef change",
+      "colour": "#d95926",
+      "from": ["Bleaching event", "Global bleaching event"] },
+
+    { "slot": 3, "name": "Recovery & resilience",           "family": "Reef change",
+      "colour": "#199e70",
+      "from": ["Reef recovery"] },
+
+    { "slot": 4, "name": "Experiment, method & monitoring", "family": "Knowledge",
+      "colour": "#c98500",
+      "from": ["Important experiment", "Technology / methods", "Monitoring milestone",
+               "Scientific programme", "Scientific archive"] },
+
+    { "slot": 5, "name": "Crisis & decline",                "family": "Reef change",
+      "colour": "#d55181",
+      "from": ["Extinction / reef crisis", "Disease / ecological cascade", "Reef hiatus",
+               "Ecological turnover", "Disturbance event"] },
+
+    { "slot": 6, "name": "People, records & policy",        "family": "People & policy",
+      "colour": "#008300",
+      "from": ["Written description / charting", "Discovery / exploration",
+               "Human use / knowledge", "Human use / exploitation", "Management milestone"] },
+
+    { "slot": 7, "name": "Origins & evolution",             "family": "Reef change",
+      "colour": "#9085e9",
+      "from": ["Geological formation", "Evolutionary milestone", "Biogeographic shift"] }
+  ],
+  "evidence_rules": [
+    ["geolog|drilling",                              "Geological & fossil evidence"],
+    ["indigenous|european|expedition|written|hydrograph|exploration", "Historical & Indigenous records"],
+    ["genom|molecular|microbiome|virol|phylogen",    "Genomic & laboratory science"],
+    ["experiment|intervention|restoration",          "Experimental & intervention science"],
+    ["remote sensing|imaging|\\bai\\b",              "Remote sensing & imaging"],
+    ["governance|law|spatial planning",              "Law & governance"],
+    ["monitor|field|observation|survey|demographic", "Field observation & monitoring"]
+  ],
+  "evidence_default": "Published analysis & synthesis"
+}

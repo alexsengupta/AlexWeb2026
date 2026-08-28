@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Coral Reef Timeline — a walk through reef history</title>
+<style>
+:root{
+  --bg:#0a3055; --bg2:#0a2f52; --ink:#eaf6fb; --dim:#96b8cc; --line:#1d4a6b;
+  --accent:#ff7a5c; --accent2:#6ee6ff;
+  /* Chapters are ordered, so they take a single-hue lightness ramp (deep past
+     dark, present bright) rather than ten competing hues. That frees the hue
+     channel entirely for the seven categories, whose colours live in
+     scripts/category_map.json and are injected at build time. */
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased}
+body.listmode{overflow:auto}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ---------- top bar ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;height:44px;z-index:60;display:flex;
+  align-items:center;gap:14px;padding:0 16px;background:linear-gradient(180deg,rgba(6,38,66,.92),rgba(6,38,66,0));
+  font-size:12.5px;letter-spacing:.02em}
+.brand{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.brand i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);
+  margin-right:7px;vertical-align:middle}
+.topbar .sub{color:var(--dim)}
+.topbar .spacer{flex:1}
+.tbtn{padding:5px 11px;border:1px solid var(--line);border-radius:6px;color:var(--dim);font-size:11.5px}
+.tbtn:hover,.tbtn[aria-pressed="true"]{color:var(--ink);border-color:var(--accent2)}
+.modesw{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.modesw .tbtn.m{border:0;border-radius:0;padding:5px 13px}
+.modesw .tbtn.m[aria-pressed="true"]{background:rgba(79,214,208,.17);color:var(--ink)}
+.modesw .tbtn.m+.tbtn.m{border-left:1px solid var(--line)}
+/* In basic mode the reader is a schoolchild, so the card gives the text more room
+   and drops the chapter code above the date, which means nothing to them. */
+body.basic .card .chap{display:none}
+body.basic .card p{-webkit-line-clamp:4}
+body.basic .card h3{font-size:13px}
+.detail .learn{margin:14px 0 4px;padding:11px 13px;border-radius:7px;
+  border:1px solid rgba(79,214,208,.35);background:rgba(10,44,44,.5)}
+.detail .learn .lab{font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent2);font-weight:700;display:block;margin-bottom:8px}
+.detail .learn a{display:block;font-size:12.5px;line-height:1.4;margin-bottom:3px}
+.detail .learn .pub{font-size:10.5px;color:var(--dim);margin-bottom:9px}
+.detail .learn .pub:last-child{margin-bottom:0}
+body.basic .detail .meta h4,body.basic #dSources,body.basic #dEvid,
+body.basic #dConf,body.basic #dExact{display:none}
+
+/* ---------- 3D stage ---------- */
+.viewport{position:fixed;inset:0;perspective:1100px;perspective-origin:50% 44%;
+  overflow:hidden;touch-action:none;cursor:grab}
+.viewport.grabbing{cursor:grabbing}
+.world{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;
+  will-change:transform}
+.ground{position:absolute;left:-60%;bottom:-16%;width:220%;height:150vh;
+  transform-origin:50% 100%;transform:rotateX(86.5deg);
+  background:
+    repeating-linear-gradient(0deg,rgba(110,230,255,.06) 0 1px,transparent 1px 200px),
+    linear-gradient(0deg,#12557f,#0a2c4a);
+  pointer-events:none;opacity:.9;
+  -webkit-mask-image:linear-gradient(to top,#000 6%,rgba(0,0,0,.5) 42%,transparent 84%);
+          mask-image:linear-gradient(to top,#000 6%,rgba(0,0,0,.5) 42%,transparent 84%)}
+/* underside of the sea surface, high above the reef */
+.surface{position:absolute;left:0;right:0;top:0;height:34vh;pointer-events:none;z-index:1;
+  background:
+    repeating-linear-gradient(78deg,rgba(216,252,255,.10) 0 2px,transparent 2px 96px),
+    repeating-linear-gradient(-78deg,rgba(196,246,255,.07) 0 2px,transparent 2px 132px);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0,rgba(0,0,0,.4) 34%,transparent 78%);
+          mask-image:linear-gradient(to bottom,#000 0,rgba(0,0,0,.4) 34%,transparent 78%)}
+
+/* sunlight shafts descending from the surface */
+.rays{position:absolute;inset:-24% -34% 0;pointer-events:none;z-index:2;
+  overflow:hidden;opacity:.78;
+  -webkit-mask-image:linear-gradient(to bottom,#000 4%,rgba(0,0,0,.62) 34%,rgba(0,0,0,.16) 54%,transparent 68%);
+          mask-image:linear-gradient(to bottom,#000 4%,rgba(0,0,0,.62) 34%,rgba(0,0,0,.16) 54%,transparent 68%)}
+.ray{position:absolute;top:-10%;left:50%;height:150%;transform-origin:50% 0;
+  background:
+    linear-gradient(90deg,transparent,rgba(180,238,255,.30) 28%,rgba(206,248,255,.42) 50%,
+      rgba(180,238,255,.30) 72%,transparent),
+    linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.12) 42%,transparent 78%);
+  background-blend-mode:multiply;
+  transform:translateX(-50%) rotate(var(--a));
+  animation:sway var(--d) ease-in-out var(--o) infinite alternate}
+@keyframes sway{
+  from{opacity:.42;transform:translateX(-50%) rotate(var(--a)) scaleX(1)}
+  to  {opacity:.92;transform:translateX(-50%) rotate(calc(var(--a) + 1.7deg)) scaleX(1.18)}}
+
+/* drifting fish silhouettes fill the mid water */
+.fish{position:absolute;pointer-events:none;z-index:3;
+  animation:swim var(--d) linear var(--o) infinite}
+.fish i{display:block;width:100%;height:100%;background-repeat:no-repeat;background-size:contain;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 62 24'%3E%3Cpath d='M19 12C29 3 47 2 59 12 47 22 29 21 19 12Z' fill='%23072238'/%3E%3Cpath d='M19 12 2 3 6 12 2 21Z' fill='%23072238'/%3E%3C/svg%3E")}
+.fish.left i{transform:scaleX(-1)}
+.fish.left{animation-direction:reverse}
+@keyframes swim{from{transform:translateX(-18vw)}to{transform:translateX(118vw)}}
+@media (prefers-reduced-motion: reduce){
+  .ray,.fish{animation:none}
+  .fish{display:none}
+}
+.sky{position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 42% 28% at 50% 0%,rgba(222,252,255,.70),transparent 68%),
+    radial-gradient(ellipse 70% 34% at 50% 15%,rgba(120,206,240,.34),transparent 76%),
+    linear-gradient(180deg,#8fdcf4 0%,#5cbbe4 6%,#379bd0 14%,#2380b9 23%,
+      #1a6ba1 33%,#14588a 44%,#104774 56%,#0d3a61 68%,#0a2f4f 82%,#082742 100%)}
+/* marine snow */
+.mote{position:absolute;width:3px;height:3px;margin:-1.5px 0 0 -1.5px;border-radius:50%;
+  background:rgba(214,244,255,.62);pointer-events:none}
+.fog{position:absolute;inset:0;pointer-events:none;z-index:20;
+  background:radial-gradient(ellipse 19% 16% at 50% 44%,
+    rgba(46,132,182,.62) 0%,rgba(34,108,156,.34) 36%,rgba(22,84,128,.12) 64%,rgba(14,64,102,0) 88%)}
+.horizon{position:absolute;left:0;right:0;top:44%;height:220px;margin-top:-110px;
+  pointer-events:none;z-index:19;
+  background:radial-gradient(ellipse 40% 100% at 50% 50%,rgba(126,226,255,.15),transparent 76%)}
+.vignette{position:absolute;inset:0;pointer-events:none;z-index:21;
+  background:radial-gradient(ellipse 90% 86% at 50% 50%,transparent 62%,rgba(4,28,50,.48) 100%)}
+
+/* ---------- cards ---------- */
+.card{position:absolute;width:274px;margin-left:-137px;margin-top:-96px;
+  background:linear-gradient(170deg,rgba(5,22,40,.99),rgba(2,11,22,.99));
+  border:1px solid rgba(110,200,240,.30);border-radius:9px;padding:0;text-align:left;
+  box-shadow:0 26px 64px rgba(0,10,24,.66);backface-visibility:hidden;
+  transition:border-color .18s,box-shadow .18s}
+.card .pad{padding:9px 12px 11px}
+.card .chap{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.card .date{font-size:15px;font-weight:700;margin:3px 0 5px;color:var(--accent2)}
+.card h3{margin:0 0 6px;font-size:12.5px;line-height:1.34;font-weight:600}
+.card p{margin:0;font-size:10.5px;line-height:1.45;color:var(--dim);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card .cat{margin:9px -12px -11px;padding:7px 12px;border-radius:0 0 8px 8px;
+  font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 26px 62px rgba(255,91,82,.3)}
+.card .stem{position:absolute;top:100%;left:50%;width:1px;height:196px;margin-left:-.5px;
+  background:linear-gradient(180deg,rgba(190,236,255,.7),rgba(190,236,255,.06))}
+.card .tail{position:absolute;top:100%;left:50%;margin-left:-9px;
+  border-left:9px solid transparent;border-right:9px solid transparent;
+  border-top:11px solid rgba(16,34,46,.97)}
+.card .imgslot{height:0;padding-bottom:0;overflow:hidden;background:#0d1e1d;
+  border-bottom:1px solid var(--line);display:none}
+
+/* Projections are not record. They get a dashed edge, a cooler ground and an
+   explicit flag, so nothing past the present can be skim-read as observation.
+   The category colour on the footer is kept, so the 7-colour scheme still reads;
+   the projected/observed distinction rides on shape, not on hue. */
+.card.proj{border-style:dashed;border-color:rgba(150,190,225,.42);
+  background:linear-gradient(170deg,rgba(11,26,44,.99),rgba(4,13,26,.99))}
+.card.proj .date{color:#bcd6ea}
+.card .pf{display:inline-block;margin:0 0 5px;padding:2px 6px;border-radius:3px;
+  font-size:8px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;
+  background:rgba(146,186,224,.17);color:#cfe4f5;border:1px dashed rgba(150,190,225,.5)}
+.card .pub{font-size:8.5px;color:var(--dim);margin:-2px 0 5px;letter-spacing:.03em}
+
+/* ---------- reef crest ribbon ---------- */
+.crest{position:absolute;pointer-events:none;
+  border-left:3px solid rgba(206,246,255,.72);
+  border-right:3px solid rgba(206,246,255,.72);
+  background-image:
+    linear-gradient(90deg,rgba(4,30,54,.72) 0%,rgba(12,74,118,.44) 14%,
+      rgba(30,116,168,.30) 36%,rgba(44,142,192,.26) 50%,rgba(30,116,168,.30) 64%,
+      rgba(12,74,118,.44) 86%,rgba(4,30,54,.72) 100%);
+  background-repeat:no-repeat,no-repeat;
+  background-size:100% 100%,100% 100%;
+  box-shadow:0 0 26px rgba(140,226,255,.10)}
+
+/* coral outcrops flanking the crest, silhouetted against the water */
+.bommie{position:absolute;pointer-events:none;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:50% 100%;mask-position:50% 100%;
+  -webkit-mask-size:100% 100%;mask-size:100% 100%}
+
+/* ---------- ruler ticks ---------- */
+.tick{position:absolute;width:2px;height:16px;margin-left:-1px;background:rgba(143,165,162,.55);
+  transform-origin:50% 100%;border-radius:2px}
+.tick.major{height:38px;width:3px;margin-left:-1.5px;background:rgba(63,208,201,.95);
+  box-shadow:0 0 14px rgba(63,208,201,.6)}
+.tick b{position:absolute;top:-6px;left:14px;font-size:30px;font-weight:400;
+  color:rgba(206,225,230,.42);white-space:nowrap;letter-spacing:.01em;
+  text-shadow:0 2px 18px rgba(0,0,0,.9)}
+/* Year posts past the present are forecast dates, not dates anything happened.
+   They keep the plain number and change colour, so a post reading 2048 cannot
+   be mistaken for one reading 1998 by anyone who skipped the boundary gate. */
+.tick.fut{background:rgba(174,205,232,.85);box-shadow:0 0 14px rgba(174,205,232,.4)}
+.tick.fut b{color:rgba(196,222,244,.5);font-style:italic}
+
+/* ---------- chapter gates ---------- */
+.gate{position:absolute;width:1000px;margin-left:-500px;height:520px;margin-top:-300px;
+  border-left:2px solid rgba(79,214,208,.42);border-right:2px solid rgba(79,214,208,.42);
+  border-top:2px solid rgba(79,214,208,.26);
+  background:linear-gradient(180deg,rgba(79,214,208,.08),transparent 66%);
+  pointer-events:none}
+.gate span{position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+  font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:rgba(79,214,208,.95);
+  white-space:nowrap;font-weight:600}
+/* the one gate that separates what happened from what is forecast */
+.gate.now{border-left-style:dashed;border-right-style:dashed;
+  border-left-color:rgba(196,222,244,.85);border-right-color:rgba(196,222,244,.85);
+  border-top-color:rgba(196,222,244,.5);
+  background:linear-gradient(180deg,rgba(196,222,244,.13),transparent 70%)}
+.gate.now span{color:rgba(224,240,255,.97);font-size:12.5px;letter-spacing:.13em;
+  text-transform:none}
+
+/* ---------- HUD ---------- */
+.hud{position:fixed;left:16px;top:60px;z-index:40;width:236px;
+  background:rgba(6,14,13,.84);border:1px solid var(--line);border-radius:10px;
+  padding:14px 15px;backdrop-filter:blur(9px)}
+.hud .big{font-size:34px;font-weight:700;line-height:1;letter-spacing:-.01em}
+.hud .biglab{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+.hud .geo{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;
+  font-size:12.5px;line-height:1.5;color:#d3e7f2}
+.hud .geo b{font-weight:700;color:var(--accent2)}
+.hud .geo i{font-style:normal;color:var(--dim)}
+.hud .geo .inf{display:block;margin-top:3px;font-size:10px;color:#c98b4a}
+.hud .chap{font-size:10.5px;color:var(--dim);margin-top:8px;line-height:1.4}
+.scalebox{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.scalebox .v{font-size:11.5px;font-weight:700;color:var(--accent2);font-variant-numeric:tabular-nums}
+.scalebox .warn{font-size:9px;color:#8fa9ba;margin-top:2px;line-height:1.35}
+
+/* ---------- detail ---------- */
+.detail{position:fixed;right:16px;top:60px;bottom:104px;width:352px;z-index:50;
+  background:rgba(6,14,13,.95);border:1px solid var(--line);border-radius:11px;
+  padding:20px;overflow:auto;backdrop-filter:blur(11px)}
+.detail[hidden]{display:none}
+.detail .x{position:absolute;top:11px;right:13px;color:var(--dim);font-size:19px;line-height:1}
+.detail .x:hover{color:var(--ink)}
+.detail .chap{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+.detail .date{font-size:25px;font-weight:700;color:var(--accent2);margin:5px 0 3px}
+.detail .exact{font-size:10.5px;color:var(--dim);margin-bottom:14px}
+.detail h3{margin:0 0 12px;font-size:18px;line-height:1.3}
+.detail h4{margin:16px 0 5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.detail p{margin:0;font-size:13px;line-height:1.6;color:#cfe0dd}
+.detail .meta{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:11.5px;color:var(--dim)}
+.detail .meta div{padding:2px 0}
+.detail a{color:var(--accent2);font-size:12px;word-break:break-word}
+.detail .src{padding:9px 0;border-top:1px solid rgba(29,74,107,.6)}
+.detail .src:first-child{border-top:none}
+.detail .src .t{font-size:12px;color:#cfe6f2;line-height:1.4}
+.detail .src .meta2{font-size:10.5px;color:var(--dim);margin-top:3px}
+.detail .src .badge{display:inline-block;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;
+  padding:2px 6px;border-radius:3px;margin-right:6px;vertical-align:1px;font-weight:700}
+.detail .src .ok{background:rgba(25,158,112,.20);color:#63e3b6;box-shadow:inset 0 0 0 1px rgba(25,158,112,.5)}
+.detail .src .warn{background:rgba(217,89,38,.18);color:#ffab7d;box-shadow:inset 0 0 0 1px rgba(217,89,38,.55)}
+.detail .src .none{background:rgba(120,150,170,.14);color:#a8c2d2;box-shadow:inset 0 0 0 1px rgba(120,150,170,.4)}
+.detail .pbox{margin:14px 0 4px;padding:11px 13px;border-radius:7px;
+  border:1px dashed rgba(150,190,225,.46);background:rgba(14,32,53,.72)}
+.detail .pbox .lab{font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:#cfe4f5;font-weight:700;display:block;margin-bottom:7px}
+.detail .pbox q{display:block;font-size:12px;line-height:1.5;color:#e8f4ff;
+  quotes:'\201C' '\201D'}
+.detail .pbox .sc{margin-top:9px;font-size:11px;color:var(--dim)}
+.detail .pbox .sc b{color:#bcd6ea}
+.detail .pbox .nb{margin-top:7px;font-size:10.5px;color:var(--dim);opacity:.85}
+.detail .abs{margin-top:8px;padding:9px 11px;background:rgba(8,38,64,.72);
+  border-left:2px solid var(--accent2);border-radius:0 5px 5px 0;
+  font-size:11.5px;line-height:1.55;color:#cfe2ec}
+.detail .abs .cap{display:block;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:5px}
+.detail .abs .srclink{display:block;margin-top:8px;font-size:11px;font-weight:600}
+
+/* ---------- scrubber ---------- */
+.scrub{position:fixed;left:0;right:0;bottom:0;height:88px;z-index:45;
+  background:linear-gradient(0deg,rgba(4,9,9,.97),rgba(4,9,9,.82) 62%,transparent);
+  padding:10px 16px 12px}
+.track{position:relative;height:38px;border-radius:5px;overflow:hidden;cursor:pointer;
+  border:1px solid var(--line);background:#050d0c}
+.seg{position:absolute;top:0;bottom:0;border-right:1px solid rgba(0,0,0,.55);
+  opacity:.5;overflow:hidden}
+.seg em{position:absolute;left:5px;top:4px;font-size:8.5px;font-style:normal;letter-spacing:.04em;
+  color:rgba(255,255,255,.92);white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+.evm{position:absolute;bottom:5px;width:1px;height:8px;background:rgba(255,255,255,.42)}
+.evm.key{height:15px;width:2px;background:var(--accent);bottom:5px}
+.head{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink);
+  box-shadow:0 0 12px rgba(255,255,255,.85);pointer-events:none}
+.head::after{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+  border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--ink)}
+.axis{position:relative;height:15px;margin-top:3px}
+.axis i{position:absolute;top:0;font-style:normal;font-size:9px;color:var(--dim);
+  transform:translateX(-50%);white-space:nowrap;font-variant-numeric:tabular-nums}
+.hint{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:44;
+  font-size:11px;color:var(--dim);background:rgba(6,14,13,.8);padding:6px 14px;
+  border-radius:20px;border:1px solid var(--line);transition:opacity .5s}
+
+/* ---------- list view ---------- */
+.listview{position:relative;z-index:70;max-width:860px;margin:0 auto;padding:64px 20px 80px}
+.listview[hidden]{display:none}
+.listview h1{font-size:26px;margin:0 0 6px}
+.listview .lead{color:var(--dim);font-size:13.5px;line-height:1.6;margin:0 0 26px}
+.lchap{margin:30px 0 10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:6px}
+.litem{padding:12px 0;border-bottom:1px solid rgba(29,50,48,.6)}
+.litem.lproj{border-left:2px dashed rgba(150,190,225,.5);padding-left:12px}
+.litem .llink{margin-top:7px;font-size:12px}
+.litem .llink span{color:var(--dim);font-size:11px}
+.litem.lproj .d{color:#bcd6ea}
+.litem .d{font-size:12px;color:var(--accent2);font-weight:600}
+.litem h3{margin:3px 0 5px;font-size:15px;line-height:1.35}
+.litem p{margin:0;font-size:12.5px;line-height:1.55;color:var(--dim)}
+body.listmode .viewport,body.listmode .hud,body.listmode .scrub,
+body.listmode .detail,body.listmode .hint{display:none}
+
+@media (max-width:900px){
+  .topbar{height:38px;gap:8px;padding:0 10px;flex-wrap:nowrap}
+  .topbar .sub{display:none}
+  .brand{font-size:10.5px}
+  .tbtn{padding:4px 8px;font-size:10px;white-space:nowrap}
+  .hud{width:154px;padding:9px 10px;top:44px;left:8px}
+  .hud h2{font-size:11px}
+  .hud .big{font-size:21px}
+  .hud .rows{margin-top:9px;padding-top:7px}
+  .hud .row{font-size:10.5px;padding:2px 0}
+  .scalebox .warn{display:none}
+  .detail{width:auto;left:8px;right:8px;top:auto;bottom:98px;max-height:46vh}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand"><i></i>Coral Reef Timeline</span>
+  <span class="sub" id="brandSub"></span>
+  <span class="spacer"></span>
+  <div class="modesw" role="group" aria-label="Reading level">
+    <button class="tbtn m" id="btnBasic" aria-pressed="false">Basic</button>
+    <button class="tbtn m" id="btnAdv" aria-pressed="true">Advanced</button>
+  </div>
+  <button class="tbtn" id="btnList" aria-pressed="false">List view</button>
+  <button class="tbtn" id="btnAbout">Why the scale changes</button>
+</header>
+
+<div class="viewport" id="viewport" role="application" aria-label="Three-dimensional reef history corridor">
+  <div class="sky"></div>
+  <div class="surface" id="surface"></div>
+  <div class="rays" id="rays"></div>
+  <div class="fishes" id="fishes"></div>
+  <div class="ground" id="ground"></div>
+  <div class="world" id="world"></div>
+  <div class="horizon"></div>
+  <div class="fog"></div>
+  <div class="vignette"></div>
+</div>
+
+<aside class="hud" id="hud" aria-live="polite">
+  <div class="big" id="hudTime">—</div>
+  <div class="biglab">position in time</div>
+  <div class="geo" id="hudGeo"></div>
+  <div class="chap" id="hudChapter">—</div>
+  <div class="scalebox">
+    <div class="v" id="hudScale">—</div>
+    <div class="warn">per step — distance is not duration</div>
+  </div>
+</aside>
+
+<div class="detail" id="detail" hidden role="dialog" aria-label="Event detail">
+  <button class="x" id="detailClose" aria-label="Close">×</button>
+  <div class="chap" id="dChap"></div>
+  <div class="date" id="dDate"></div>
+  <div class="exact" id="dExact"></div>
+  <h3 id="dHead"></h3>
+  <h4>What happened</h4><p id="dSig"></p>
+  <h4>Why it matters</h4><p id="dWhy"></p>
+  <div id="dProj"></div>
+  <div id="dLearn"></div>
+  <div class="meta">
+    <div id="dLoc"></div><div id="dReef"></div><div id="dCat"></div>
+    <div id="dEvid"></div><div id="dConf"></div>
+    <h4 style="margin-top:16px">Sources</h4>
+    <div id="dSources"></div>
+  </div>
+</div>
+
+<div class="hint" id="hint">Drag the corridor, scroll, use ← → keys, or drag the bar below</div>
+
+<footer class="scrub">
+  <div class="track" id="track">
+    <div class="head" id="head"></div>
+  </div>
+  <div class="axis" id="axis"></div>
+</footer>
+
+<section class="listview" id="listview" hidden>
+  <h1>Coral Reef Timeline</h1>
+  <p class="lead" id="listLead">Every event in chronological order, observations first and projections last. This is the flat, motion-free equivalent of the
+</p>
+  <div id="listBody"></div>
+</section>
+
+<script>const DATA = /*__TIMELINE_DATA__*/;</script>
+<script>
+(function(){
+"use strict";
+
+var EV = DATA.events, META = DATA.meta;
+var L = META.corridor_units;
+var K = 26;                 // pixels per corridor unit
+var LAT = 338;              // lateral offset of a lane, px
+var BEHIND = 26, AHEAD = 330;
+// The track's shape is decorative. Deliberately small, smooth and periodic so it
+// reads as styling and cannot be mistaken for a plotted data series.
+var CURVE_AMP = 640, CURVE_LEN = 330;
+var RIBBON_W = 430, RIBBON_Y = 248;     // reef crest width and height below eye level
+var SEG = 6, SEG_POOL = 70;
+var RUNOUT = 260;   // how far the crest continues beyond each end of the timeline            // crest is chained from short flat quads
+var TICK_STEP = 24, TICK_POOL = 26;     // labelled year posts beside the crest
+var MOTE_STEP = 5.5, MOTE_POOL = 62;    // coral outcrops
+  var bomFirst = Math.floor((cam - 30) / BOM_STEP);
+  for (var bj = 0; bj < BOM_POOL; bj++){
+    var bcell = bomFirst + bj, brec = bommies[bj];
+    if (brec.at !== bcell){
+      brec.at = bcell;
+      var bp = bcell * BOM_STEP + hash(bcell, 31) * BOM_STEP;
+      var side = hash(bcell, 37) > 0.5 ? 1 : -1;
+      var near = bj < 14;
+      var pool = near ? CORAL_NEAR : CORAL_FAR;
+      var form = pool[Math.floor(hash(bcell, 97) * pool.length) % pool.length];
+      var spec = CORAL[form];
+      var bw = (150 + hash(bcell, 41) * 210) * spec.s;
+      var bh = bw / spec.r;
+      brec.el.style.display = '';
+      brec.el.style.webkitMaskImage = CORAL_MASK[form];
+      brec.el.style.maskImage = CORAL_MASK[form];
+      brec.el.style.width = bw.toFixed(0) + 'px';
+      brec.el.style.height = bh.toFixed(0) + 'px';
+      brec.el.style.marginLeft = (-bw / 2) + 'px';
+      brec.el.style.marginTop = (-bh) + 'px';
+      // aerial perspective: near colonies read almost black, far ones take the
+      // colour of the water they sit in
+      var far = Math.min(1, bj / (BOM_POOL - 1));
+      var mix = function(a, b2){ return Math.round(a + (b2 - a) * far); };
+      brec.el.style.backgroundColor =
+        'rgb(' + mix(2, 20) + ',' + mix(20, 82) + ',' + mix(40, 128) + ')';
+      brec.el.style.opacity = (0.97 - 0.2 * far) * (0.86 + hash(bcell, 47) * 0.14);
+      brec.el.style.transform =
+        'translate3d(' + (curve(bp) + side * (520 + hash(bcell, 53) * 700)) + 'px,' +
+        (curveY(bp) + RIBBON_Y + 74) + 'px,' + (-(bp - origin) * K) + 'px)';
+    }
+  }
+  // marine snow
+var ORIGIN_WINDOW = 600;    // re-base the world transform beyond this drift
+
+var CHAPTERS = META.chapters;
+var chapIdx = {}; CHAPTERS.forEach(function(c,i){ chapIdx[c] = i; });
+
+// Chapters are an ordered sequence, so they take a single-hue lightness ramp:
+// the deep past sits dark, the present bright. Hue is reserved for categories.
+function chapColour(c){
+  var i = chapIdx[c] || 0, t = CHAPTERS.length > 1 ? i / (CHAPTERS.length - 1) : 0;
+  var a = [30, 82, 124], b = [160, 232, 254];
+  return 'rgb(' + a.map(function(v, k){ return Math.round(v + (b[k] - v) * t); }).join(',') + ')';
+}
+
+// The seven categories and their colours, injected from scripts/category_map.json
+// so the legend, the cards and the CSV can never drift apart. Slot order is the
+// documented palette order and is the colourblind-safety mechanism: do not
+// rearrange it, only change which category sits in which slot.
+var CATEGORIES = /*__CATEGORY_DATA__*/;
+
+// International Chronostratigraphic Chart units, injected at build time from
+// build/geological_timescale.json. Lookup takes the last unit whose start age is
+// at or before the age being tested.
+var TIMESCALE = /*__TIMESCALE_DATA__*/;
+function unitAt(level, ma){
+  var list = TIMESCALE[level] || [], hit = null;
+  for (var i = 0; i < list.length; i++) if (ma <= list[i].start) hit = list[i];
+  return hit;
+}
+function geologyAt(yearsBP){
+  var ma = yearsBP / 1e6;
+  var parts = [], seen = {};
+  ['eon', 'era', 'period', 'epoch', 'age'].forEach(function(lv){
+    var u = unitAt(lv, ma);
+    if (u && !seen[u.name]){ seen[u.name] = 1; parts.push({ level: lv, name: u.name }); }
+  });
+  // The Anthropocene is carried as informal only: the IUGS rejected it as a
+  // formal epoch in 2024, so it must not sit in the ranked chain above.
+  var inf = null;
+  TIMESCALE.informal.forEach(function(u){ if (ma <= u.start) inf = u; });
+  return { chain: parts, informal: inf };
+}
+var CAT_COLOUR = {}, CAT_FAMILY = {};
+CATEGORIES.forEach(function(c){ CAT_COLOUR[c.name] = c.colour; CAT_FAMILY[c.name] = c.family; });
+function catColour(name){ return CAT_COLOUR[name] || '#7f93a4'; }
+// Text sits directly on the category colour. Pick the ink by measuring the
+// actual WCAG contrast against both candidates and taking the better one; a
+// luminance threshold guesses wrong (it put light ink on yellow at 2.96:1).
+// With this, all seven bands clear 4.5:1 — worst is 4.76:1.
+var INK_LIGHT = '#f4fcff', INK_DARK = '#04121f';
+function relLum(hex){
+  var f = function(c){ c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(parseInt(hex.substr(1, 2), 16)) +
+         0.7152 * f(parseInt(hex.substr(3, 2), 16)) +
+         0.0722 * f(parseInt(hex.substr(5, 2), 16));
+}
+function contrast(a, b){
+  var la = relLum(a), lb = relLum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function inkOn(hex){
+  return contrast(hex, INK_LIGHT) >= contrast(hex, INK_DARK) ? INK_LIGHT : INK_DARK;
+}
+
+var world = document.getElementById('world');
+var viewport = document.getElementById('viewport');
+var ground = document.getElementById('ground');
+var surface = document.getElementById('surface');
+
+// ---------------------------------------------------------------- time lookup
+// Where the corridor stops being a calendar. Past this point events are placed
+// only so that the solver has an order; the year is meaningless and is hidden.
+var SCEN_X = (function(){
+  for (var i = 1; i < EV.length; i++)
+    if (EV[i].proj_undated && !EV[i-1].proj_undated) return (EV[i].x + EV[i-1].x) / 2;
+  return Infinity;
+})();
+var XS = EV.map(function(e){ return e.x; });
+// Interpolation between events happens in log-time, so the corridor reads
+// smoothly across nine orders of magnitude. Projections have NEGATIVE years BP,
+// where log10 is undefined, so the curve is reflected through the present. This
+// is the same transform the axis solver uses, and it has to stay the same one:
+// if the two disagree, the year posts stop matching the card positions.
+var LOG_K = 3;
+function signedLog(y){
+  return y >= 0 ? Math.log10(y + LOG_K)
+                : 2 * Math.log10(LOG_K) - Math.log10(LOG_K - y);
+}
+function signedLogInv(v){
+  return v >= Math.log10(LOG_K) ? Math.pow(10, v) - LOG_K
+                                : LOG_K - LOG_K * LOG_K / Math.pow(10, v);
+}
+var LB = EV.map(function(e){ return signedLog(e.yearsBP); });
+
+function lowerBound(a, v){
+  var lo = 0, hi = a.length - 1;
+  while (lo < hi){ var m = (lo + hi) >> 1; if (a[m] < v) lo = m + 1; else hi = m; }
+  return lo;
+}
+// Interpolate in log space, which is where the layout is smooth.
+function ybpAt(x){
+  if (x <= XS[0]) return EV[0].yearsBP;
+  if (x >= XS[XS.length-1]) return EV[EV.length-1].yearsBP;
+  var i = lowerBound(XS, x); if (i < 1) i = 1;
+  var f = (x - XS[i-1]) / (XS[i] - XS[i-1]);
+  return signedLogInv(LB[i-1] + f * (LB[i] - LB[i-1]));
+}
+function fmtBP(y){
+  if (y >= 1e6) return (y/1e6 < 10 ? (y/1e6).toFixed(2) : Math.round(y/1e6)) + ' Ma';
+  if (y >= 1e4) return (y/1e3).toFixed(1) + ' ka';
+  var yr = Math.round(2026.5 - y);
+  return yr > 0 ? String(yr) : String(1 - yr) + ' BCE';
+}
+function fmtBPShort(y){
+  if (y >= 1e6) return (y/1e6 < 10 ? (y/1e6).toFixed(1) : Math.round(y/1e6)) + 'Ma';
+  if (y >= 1e4) return Math.round(y/1e3) + 'ka';
+  var yr = Math.round(2026.5 - y);
+  return yr > 0 ? String(yr) : String(1 - yr) + 'BC';
+}
+function fmtYears(v){
+  if (v >= 1e6) return (v/1e6).toFixed(v/1e6 < 10 ? 2 : 0) + ' Myr';
+  if (v >= 1e3) return (v/1e3).toFixed(1) + ' kyr';
+  if (v >= 1)   return v.toFixed(v < 10 ? 1 : 0) + ' yr';
+  return (v * 12).toFixed(1) + ' months';
+}
+function curve(x){ return Math.sin(x / CURVE_LEN) * CURVE_AMP + Math.sin(x / 131 + 1.7) * 155; }
+function curveY(x){ return Math.sin(x / 246 + 0.6) * 40 + Math.sin(x / 97) * 12; }
+function hash(a, b){ var t = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return t - Math.floor(t); }
+
+// ---------------------------------------------------------------- reading level
+// Two modes over one dataset. Basic is a restatement of the same vetted claims in
+// plainer words, with journal citations replaced by verified general-audience
+// pages where one exists. It is not a different set of facts, and it is not a
+// shorter set: nothing is dropped from an event except the apparatus around it.
+var MODE = /(^|[#&])basic\b/.test(location.hash) ? 'basic' : 'advanced';
+function txtHead(e){ return MODE === 'basic' && e.b_head ? e.b_head : e.headline; }
+function txtSig(e){  return MODE === 'basic' && e.b_sig  ? e.b_sig  : (e.significance || ''); }
+function txtWhy(e){  return MODE === 'basic' && e.b_why  ? e.b_why  : (e.why || ''); }
+
+// ---------------------------------------------------------------- build scene
+var origin = 0;
+var cards = [], gates = [];
+
+function cardHTML(e, pj){
+  return '<div class="pad">' +
+      '<div class="chap">' + esc(e.chapter) + '</div>' +
+      (pj ? '<span class="pf">' +
+              (e.proj_undated
+                 ? (MODE === 'basic' ? 'A prediction \u00b7 no date given'
+                                     : 'Projected \u00b7 no date stated')
+                 : (MODE === 'basic' ? 'A prediction' : 'Projected')) +
+            '</span>' : '') +
+      '<div class="date">' + esc(pj && !e.proj_undated ? 'by ' + e.date : e.date) + '</div>' +
+      (pj ? '<div class="pub">' +
+            (MODE === 'basic' ? 'worked out in ' : 'study published ') +
+            esc(e.proj_pub_year) + '</div>' : '') +
+      '<h3>' + esc(txtHead(e)) + '</h3>' +
+      '<p>' + esc(txtSig(e)) + '</p>' +
+      '<div class="cat" style="background:' + catColour(e.category) +
+        ';color:' + inkOn(catColour(e.category)) + '">' + esc(e.category) + '</div>' +
+    '</div><span class="tail"></span><span class="stem"></span>';
+}
+
+EV.forEach(function(e, i){
+  var el = document.createElement('button');
+  el.className = 'card';
+  el.type = 'button';
+  var pj = !!e.is_projection;
+  if (pj) el.className = 'card proj';
+  el.setAttribute('aria-label',
+    (pj ? 'Projection. ' : '') + e.date + ': ' + e.headline);
+  el.innerHTML = cardHTML(e, pj);
+  el.addEventListener('click', function(ev){ ev.stopPropagation(); flyTo(e.x); select(i, true); });
+  el.__pj = pj;
+  el.style.display = 'none';
+  world.appendChild(el);
+    var band = (i * 37) % 4;
+  var cy0 = -34 - band * 74;                       // -34, -108, -182, -256
+  var stem = RIBBON_Y - (cy0 + 96);                // reach from card bottom to the crest
+  el.querySelector('.stem').style.height = stem + 'px';
+  cards.push({ e:e, el:el, y: cy0, shown:false, op:1 });
+});
+
+// chapter gates sit at the midpoint between the last and first event of adjacent chapters
+for (var i = 1; i < EV.length; i++){
+  if (EV[i].chapter !== EV[i-1].chapter){
+    var g = document.createElement('div');
+    // The gate where record ends and forecast begins is the one boundary in the
+    // walk that is not just an editorial chapter break, so it says so plainly.
+    var crossesNow = EV[i-1].yearsBP >= 0 && EV[i].yearsBP < 0;
+    g.className = 'gate' + (crossesNow ? ' now' : '');
+    g.innerHTML = '<span>' + esc(crossesNow
+      ? 'THE PRESENT \u00b7 everything beyond this point is projected, not observed'
+      : EV[i].chapter) + '</span>';
+    world.appendChild(g);
+    gates.push({ x: (EV[i].x + EV[i-1].x) / 2, el: g, shown:false });
+  }
+}
+
+// The reef crest: short flat quads chained end to end, each yawed and pitched to
+// the local heading of the centreline. Recycled from a pool as the camera moves.
+var segs = [];
+for (var q = 0; q < SEG_POOL; q++){
+  var sg = document.createElement('div');
+  sg.className = 'crest';
+  sg.style.width = RIBBON_W + 'px';
+  sg.style.marginLeft = (-RIBBON_W / 2) + 'px';
+  sg.style.display = 'none';
+  var far = Math.max(0, (q - 11) / (SEG_POOL - 11));
+  sg.style.opacity = (1 - 0.82 * Math.pow(far, 0.75)).toFixed(3);
+  world.appendChild(sg);
+  segs.push({ el: sg, at: null });
+}
+function placeSeg(rec, k){
+  var p0 = k * SEG, p1 = p0 + SEG, pm = p0 + SEG / 2;
+  var dx = curve(p1) - curve(p0);
+  var dy = curveY(p1) - curveY(p0);
+  var dz = -SEG * K;
+  var horiz = Math.sqrt(dx * dx + dz * dz);
+  var len = Math.sqrt(horiz * horiz + dy * dy);
+  var yaw = Math.atan2(-dx, -dz) * 180 / Math.PI;
+  var pitch = Math.atan2(dy, horiz) * 180 / Math.PI;
+  var el = rec.el;
+  el.style.height = (len + 1.5) + 'px';              // overlap hides the seams
+  el.style.marginTop = (-(len + 1.5) / 2) + 'px';
+  // the quad is drawn ~1.5px longer than its true span to hide the seam, so the
+  // wave slice is computed over that same extended span or the pattern drifts
+  var pad = 0.75 / K;
+  el.style.backgroundImage = crestWave(p0 - pad, p1 + pad) + ',' + CREST_BASE;
+  el.style.transform =
+    'translate3d(' + curve(pm) + 'px,' + (curveY(pm) + RIBBON_Y) + 'px,' +
+    (-(pm - origin) * K) + 'px) rotateY(' + yaw + 'deg) rotateX(' + (90 + pitch) + 'deg)';
+}
+
+var motes = [];
+for (var mi = 0; mi < MOTE_POOL; mi++){
+  var mo = document.createElement('div');
+  mo.className = 'mote';
+  mo.style.display = 'none';
+  world.appendChild(mo);
+  motes.push({ el: mo, at: null });
+}
+
+// One repeating tile of wave lines, plus fine ruler ticks hugging both edges so
+// the crest still reads as a scale. Drawn once and reused by every crest quad.
+// A handful of irregular lines running ALONG the corridor, in the direction of
+// travel, at varying thickness. Each line is a sine of an INTEGER number of
+// periods over the tile height, so its x position matches at the tile's top and
+// bottom edge and the lines flow unbroken from one crest quad into the next.
+// Longitudinal lines also alias far less than the previous cross-rungs: a
+// continuous line has no high-frequency repeat along the depth axis to shimmer.
+// Waves running ALONG the corridor. Each line is a function of ABSOLUTE corridor
+// position, and every crest quad draws only the slice of that function covering
+// its own span. Two neighbouring quads therefore evaluate the same function at
+// the position they share, so the lines join exactly — continuity is guaranteed
+// by construction rather than by lining tiles up, which is what left them
+// segmented before.
+var WAVE_VB_W = 200, WAVE_VB_H = 100, WAVE_STEPS = 6;
+var WAVE_LINES = [
+  // across-track centre, swing, wavelength in corridor units, phase, width, colour, opacity
+  { cx:  30, amp: 22, lam:  68, ph: 0.4, w: 2.2, col: '#dff7ff', op: 0.32 },
+  { cx:  68, amp: 34, lam:  41, ph: 1.9, w: 5.2, col: '#a7e2f7', op: 0.38 },
+  { cx: 100, amp: 20, lam:  95, ph: 3.4, w: 1.2, col: '#f2fdff', op: 0.26 },
+  { cx: 128, amp: 30, lam:  77, ph: 0.9, w: 3.2, col: '#cbeeff', op: 0.42 },
+  { cx: 158, amp: 22, lam:  33, ph: 2.4, w: 1.6, col: '#9fdcf5', op: 0.24 },
+  { cx: 182, amp: 12, lam: 120, ph: 5.0, w: 6.2, col: '#e6faff', op: 0.34 }
+];
+function waveX(L, p){ return L.cx + L.amp * Math.sin(2 * Math.PI * p / L.lam + L.ph); }
+
+var CREST_BASE =
+  'linear-gradient(90deg,rgba(4,30,54,.72) 0%,rgba(12,74,118,.44) 14%,' +
+  'rgba(30,116,168,.30) 36%,rgba(44,142,192,.26) 50%,rgba(30,116,168,.30) 64%,' +
+  'rgba(12,74,118,.44) 86%,rgba(4,30,54,.72) 100%)';
+
+var waveCache = {};
+function crestWave(p0, p1){
+  var key = p0.toFixed(2);
+  var hit = waveCache[key];
+  if (hit) return hit;
+  var parts = '';
+  for (var i = 0; i < WAVE_LINES.length; i++){
+    var L = WAVE_LINES[i], d = '';
+    for (var j = 0; j <= WAVE_STEPS; j++){
+      var t = j / WAVE_STEPS;
+      // rotateX(90deg) puts the quad's local TOP at the far end, so the viewBox
+      // runs from p1 (far) down to p0 (near). Sampling the other way round drew
+      // every quad's span backwards, which is what broke the lines at each join.
+      d += (j ? 'L' : 'M') + waveX(L, p1 - (p1 - p0) * t).toFixed(2) +
+           ' ' + (WAVE_VB_H * t).toFixed(2);
+    }
+    parts += "<path d='" + d + "' stroke='" + L.col + "' stroke-width='" + L.w +
+             "' opacity='" + L.op + "'/>";
+  }
+  var svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " + WAVE_VB_W + " " +
+            WAVE_VB_H + "' preserveAspectRatio='none'><g fill='none' stroke-linecap='round'>" +
+            parts + "</g></svg>";
+  var url = 'url("data:image/svg+xml,' + encodeURIComponent(svg).replace(/"/g, '%22') + '")';
+  // bounded cache: quads are recycled, so only the live window is ever needed
+  if (Object.keys(waveCache).length > 400) waveCache = {};
+  waveCache[key] = url;
+  return url;
+}
+
+// Coral growth forms supplied as artwork, injected at build time from the SVG
+// folder plus coral_manifest.json. Used as CSS masks: each file's own fills are
+// ignored and the scene sets the silhouette colour, which lightens with distance
+// so far colonies sit back in the water (aerial perspective).
+var CORAL = /*__CORAL_DATA__*/;
+var CORAL_MASK = CORAL.map(function(c){
+  return 'url("data:image/svg+xml,' + encodeURIComponent(c.svg).replace(/"/g, '%22') + '")';
+});
+// Fine, filigree forms shimmer once their strokes fall below a pixel, so they are
+// only placed near the camera. Distant slots draw from the chunky forms only.
+var CORAL_NEAR = CORAL.map(function(_, i){ return i; });
+var CORAL_FAR  = CORAL.map(function(c, i){ return c.d === 'chunky' ? i : -1; })
+                      .filter(function(i){ return i >= 0; });
+if (!CORAL_FAR.length) CORAL_FAR = CORAL_NEAR;
+
+// Sunlight shafts. Screen-space by design: real shafts originate at the surface,
+// effectively at infinity, so they should not parallax with the camera.
+(function buildRays(){
+  var host = document.getElementById('rays');
+  for (var r = 0; r < 7; r++){
+    var d = document.createElement('div');
+    d.className = 'ray';
+    var ang = -30 + r * 10 + (hash(r, 9) - 0.5) * 4;
+    d.style.setProperty('--a', ang.toFixed(2) + 'deg');
+    d.style.setProperty('--d', (7 + hash(r, 3) * 9).toFixed(1) + 's');
+    d.style.setProperty('--o', (-hash(r, 7) * 9).toFixed(1) + 's');
+    d.style.width = (90 + hash(r, 5) * 210).toFixed(0) + 'px';
+    host.appendChild(d);
+  }
+})();
+(function buildFish(){
+  var host = document.getElementById('fishes');
+  for (var f = 0; f < 7; f++){
+    var d = document.createElement('div');
+    d.className = 'fish';
+    var w = 26 + hash(f, 11) * 74;
+    d.style.width = w + 'px';
+    d.style.height = (w * 0.39) + 'px';
+    d.style.top = (9 + hash(f, 13) * 46).toFixed(1) + '%';
+    d.style.opacity = (0.20 + hash(f, 17) * 0.30).toFixed(2);
+    d.style.setProperty('--d', (46 + hash(f, 19) * 70).toFixed(0) + 's');
+    d.style.setProperty('--o', (-hash(f, 23) * 90).toFixed(0) + 's');
+    if (hash(f, 29) > 0.5) d.className = 'fish left';   // swims the other way, and faces it
+    d.appendChild(document.createElement('i'));
+    host.appendChild(d);
+  }
+})();
+
+// Coral outcrops beside the crest. World-space, so they parallax properly and
+// give the empty deep-time stretches something to move past.
+var BOM_STEP = 15, BOM_POOL = 38;
+var bommies = [];
+for (var bi = 0; bi < BOM_POOL; bi++){
+  var bm = document.createElement('div');
+  bm.className = 'bommie';
+  bm.style.display = 'none';
+  world.appendChild(bm);
+  bommies.push({ el: bm, at: null });
+}
+
+var ticks = [];
+for (var t = 0; t < TICK_POOL; t++){
+  var tk = document.createElement('div');
+  tk.className = 'tick';
+  tk.innerHTML = '<b></b>';
+  tk.style.display = 'none';
+  world.appendChild(tk);
+  ticks.push({ el: tk, lab: tk.querySelector('b'), at: null, major: null, txt: '' });
+}
+
+function rebase(){
+  cards.forEach(function(c){
+    c.el.style.transform =
+      'translate3d(' + (curve(c.e.x) + c.e.lane * LAT) + 'px,' + (curveY(c.e.x) + c.y) + 'px,' +
+      (-(c.e.x - origin) * K) + 'px) rotateY(' + (c.e.lane * -15) + 'deg)';
+  });
+  gates.forEach(function(g){
+    g.el.style.transform =
+      'translate3d(' + curve(g.x) + 'px,' + curveY(g.x) + 'px,' + (-(g.x - origin) * K) + 'px)';
+  });
+  ticks.forEach(function(t){ t.at = null; });   // force refresh against the new origin
+  segs.forEach(function(t){ t.at = null; });
+  motes.forEach(function(t){ t.at = null; });
+  bommies.forEach(function(t){ t.at = null; });
+}
+rebase();
+
+// ---------------------------------------------------------------- camera
+var cam = 0, vel = 0, target = null, dragging = false, lastPointer = 0;
+var selected = -1, userMoved = false;
+
+function clamp(v){ return v < 0 ? 0 : (v > L ? L : v); }
+function flyTo(x){ target = clamp(x); }
+
+function select(i, openPanel){
+  if (selected === i && !openPanel) return;
+  if (selected >= 0 && cards[selected]) cards[selected].el.classList.remove('sel');
+  selected = i;
+  if (i < 0) return;
+  cards[i].el.classList.add('sel');
+  if (openPanel) showDetail(EV[i]);
+}
+
+function nearestIndex(x){
+  var i = lowerBound(XS, x);
+  if (i > 0 && (i >= XS.length || Math.abs(XS[i-1] - x) <= Math.abs(XS[i] - x))) i--;
+  return i;
+}
+
+// ---------------------------------------------------------------- render loop
+var lastCam = -1e9, lastSel = -2;
+
+function updateVisible(){
+  var lo = cam - BEHIND, hi = cam + AHEAD;
+  var a = lowerBound(XS, lo), b = lowerBound(XS, hi);
+  for (var i = 0; i < cards.length; i++){
+    var want = (i >= a && i <= b);
+    if (want !== cards[i].shown){
+      cards[i].el.style.display = want ? '' : 'none';
+      cards[i].shown = want;
+    }
+  }
+  // Fade cards out over the last stretch as they pass the camera, rather than
+  // culling them the instant they go behind it.
+  for (var f = Math.max(0, a); f <= b && f < cards.length; f++){
+    var rel = XS[f] - cam;
+    var op = rel >= -3 ? 1 : Math.max(0, 1 - (-rel - 3) / (BEHIND - 5));
+    op = Math.round(op * 20) / 20;
+    if (cards[f].op !== op){ cards[f].el.style.opacity = op; cards[f].op = op; }
+  }
+  for (var g = 0; g < gates.length; g++){
+    var w = gates[g].x > lo - 60 && gates[g].x < hi + 60;
+    if (w !== gates[g].shown){ gates[g].el.style.display = w ? '' : 'none'; gates[g].shown = w; }
+  }
+  // reef crest
+  var segFirst = Math.floor((cam - 22) / SEG);
+  for (var q = 0; q < SEG_POOL; q++){
+    var k = segFirst + q, rec = segs[q];
+    // The crest runs RUNOUT units past both ends of the timeline, so the ribbon
+    // fades into the water instead of showing a cut edge at 3.48 Ga or at 2026.
+    if (k * SEG < -RUNOUT || k * SEG > L + RUNOUT){
+      if (rec.at !== -1){ rec.el.style.display = 'none'; rec.at = -1; }
+      continue;
+    }
+    if (rec.at !== k){ rec.at = k; rec.el.style.display = ''; placeSeg(rec, k); }
+  }
+  // coral outcrops
+  var bomFirst = Math.floor((cam - 30) / BOM_STEP);
+  for (var bj = 0; bj < BOM_POOL; bj++){
+    var bcell = bomFirst + bj, brec = bommies[bj];
+    if (brec.at !== bcell){
+      brec.at = bcell;
+      var bp = bcell * BOM_STEP + hash(bcell, 31) * BOM_STEP;
+      var side = hash(bcell, 37) > 0.5 ? 1 : -1;
+      var near = bj < 14;
+      var pool = near ? CORAL_NEAR : CORAL_FAR;
+      var form = pool[Math.floor(hash(bcell, 97) * pool.length) % pool.length];
+      var spec = CORAL[form];
+      var bw = (150 + hash(bcell, 41) * 210) * spec.s;
+      var bh = bw / spec.r;
+      brec.el.style.display = '';
+      brec.el.style.webkitMaskImage = CORAL_MASK[form];
+      brec.el.style.maskImage = CORAL_MASK[form];
+      brec.el.style.width = bw.toFixed(0) + 'px';
+      brec.el.style.height = bh.toFixed(0) + 'px';
+      brec.el.style.marginLeft = (-bw / 2) + 'px';
+      brec.el.style.marginTop = (-bh) + 'px';
+      // aerial perspective: near colonies read almost black, far ones take the
+      // colour of the water they sit in
+      var far = Math.min(1, bj / (BOM_POOL - 1));
+      var mix = function(a, b2){ return Math.round(a + (b2 - a) * far); };
+      brec.el.style.backgroundColor =
+        'rgb(' + mix(2, 20) + ',' + mix(20, 82) + ',' + mix(40, 128) + ')';
+      brec.el.style.opacity = (0.97 - 0.2 * far) * (0.86 + hash(bcell, 47) * 0.14);
+      brec.el.style.transform =
+        'translate3d(' + (curve(bp) + side * (520 + hash(bcell, 53) * 700)) + 'px,' +
+        (curveY(bp) + RIBBON_Y + 74) + 'px,' + (-(bp - origin) * K) + 'px)';
+    }
+  }
+  // marine snow
+  var moteFirst = Math.floor((cam - 26) / MOTE_STEP);
+  for (var mj = 0; mj < MOTE_POOL; mj++){
+    var cell = moteFirst + mj, mrec = motes[mj];
+    if (mrec.at !== cell){
+      mrec.at = cell;
+      var mp = cell * MOTE_STEP + hash(cell, 0) * MOTE_STEP;
+      var sz = 1.6 + hash(cell, 4) * 3.4;
+      mrec.el.style.display = '';
+      mrec.el.style.width = mrec.el.style.height = sz + 'px';
+      mrec.el.style.opacity = (0.16 + hash(cell, 5) * 0.42).toFixed(2);
+      mrec.el.style.transform =
+        'translate3d(' + (curve(mp) + (hash(cell, 1) - 0.5) * 1750) + 'px,' +
+        (curveY(mp) + (hash(cell, 2) - 0.62) * 760) + 'px,' +
+        (-(mp - origin) * K) + 'px)';
+    }
+  }
+  // year posts
+  var first = Math.ceil((cam + 9) / TICK_STEP) * TICK_STEP;
+  for (var t = 0; t < TICK_POOL; t++){
+    var at = first + t * TICK_STEP;
+    var tk = ticks[t];
+    if (at < -RUNOUT || at > L + RUNOUT){
+      if (tk.at !== -1){ tk.el.style.display = 'none'; tk.at = -1; }
+      continue;
+    }
+    if (tk.at !== at){
+      tk.at = at;
+      tk.el.style.display = '';
+      tk.el.style.transform =
+        'translate3d(' + (curve(at) + RIBBON_W / 2 + 26) + 'px,' +
+        (curveY(at) + RIBBON_Y - 30) + 'px,' + (-(at - origin) * K) + 'px)';
+      var fut = ybpAt(at) < 0;
+      var cls = 'tick major' + (fut ? ' fut' : '');
+      if (tk.cls !== cls){ tk.el.className = cls; tk.cls = cls; }
+      // beyond the timeline there is no year to state
+      var y = ybpAt(at);
+      var txt = (at < 0 || at > L || at >= SCEN_X) ? ''
+              : (y < 0 ? String(Math.round(2026.5 - y)) : fmtBPShort(y));
+      if (tk.txt !== txt){ tk.lab.textContent = txt; tk.txt = txt; }
+    }
+  }
+}
+
+var elChapter = document.getElementById('hudChapter'), elTime = document.getElementById('hudTime'),
+    elGeo = document.getElementById('hudGeo'), elScale = document.getElementById('hudScale'),
+    head = document.getElementById('head');
+
+var isExt = EV.map(function(e){ return e.category === 'Crisis & decline'; });
+var isBleach = EV.map(function(e){ return e.category === 'Bleaching & heat stress'; });
+var cumExt = [], cumBleach = [], ae = 0, ab = 0;
+EV.forEach(function(e, i){ ae += isExt[i] ? 1 : 0; ab += isBleach[i] ? 1 : 0; cumExt.push(ae); cumBleach.push(ab); });
+
+var lastGeo = '';
+var elBigLab = document.querySelector('.hud .biglab');
+function updateHUD(){
+  var y = ybpAt(cam);
+  var scen = cam >= SCEN_X;
+  elTime.textContent = scen ? 'no date' : fmtBP(y);
+  elBigLab.textContent = scen ? 'these studies state no year' : 'position in time';
+
+  if (y < 0){
+    // Past the present there is no geological unit to name, and pretending
+    // otherwise would dress a forecast up as stratigraphy.
+    var fh = scen
+      ? '<b>Scenario only</b><br><i>results given against a warming level or ' +
+        'emissions pathway. Position here says nothing about when.</i>'
+      : '<b>Projected</b><br><i>beyond the observational record</i>';
+    if (fh !== lastGeo){ elGeo.innerHTML = fh; lastGeo = fh; }
+    var nf = nearestIndex(cam);
+    elChapter.textContent = EV[nf] ? EV[nf].chapter : '';
+    elScale.textContent = scen ? 'not on a calendar' : 'model projections';
+    head.style.left = (cam / L * 100) + '%';
+    return;
+  }
+  var g = geologyAt(y);
+  // the two most specific formal units carry the most meaning; the rest give context
+  var chain = g.chain;
+  var html = '';
+  if (chain.length){
+    var tail = chain.slice(-2), headUnits = chain.slice(0, -2);
+    html = '<b>' + tail.map(function(u){ return esc(u.name); }).join(' \u00b7 ') + '</b>';
+    if (headUnits.length)
+      html += '<br><i>' + headUnits.map(function(u){ return esc(u.name); }).join(' \u00b7 ') + '</i>';
+  }
+  if (g.informal)
+    html += '<span class="inf">' + esc(g.informal.name) + ' \u2014 ' +
+            esc(MODE === 'basic'
+                ? 'a nickname for the time humans have been changing the planet. ' +
+                  'Geologists voted in 2024 not to make it official.'
+                : g.informal.note) + '</span>';
+  if (html !== lastGeo){ elGeo.innerHTML = html; lastGeo = html; }
+
+  var near = nearestIndex(cam);
+  elChapter.textContent = EV[near] ? EV[near].chapter : '';
+  // Local scale: years of real time per corridor unit, by central difference.
+  // Widen the window where events share a date, otherwise the difference is
+  // exactly zero and the readout goes blank.
+  var s = 0;
+  for (var d = 3; d <= 96; d *= 2){
+    var a = Math.max(0, cam - d), b2 = Math.min(L, cam + d);
+    if (b2 <= a) break;
+    s = (ybpAt(a) - ybpAt(b2)) / (b2 - a);
+    if (s > 0) break;
+  }
+  elScale.textContent = s > 0 ? fmtYears(s) + ' per step' : 'same year';
+  head.style.left = (cam / L * 100) + '%';
+}
+
+// ---------------------------------------------------------------- mode switch
+var btnBasic = document.getElementById('btnBasic'), btnAdv = document.getElementById('btnAdv');
+function setMode(m){
+  MODE = m;
+  document.body.classList.toggle('basic', m === 'basic');
+  btnBasic.setAttribute('aria-pressed', String(m === 'basic'));
+  btnAdv.setAttribute('aria-pressed', String(m !== 'basic'));
+  cards.forEach(function(c){ c.el.innerHTML = cardHTML(c.e, c.el.__pj);
+    c.el.setAttribute('aria-label', (c.el.__pj ? 'Projection. ' : '') +
+      c.e.date + ': ' + txtHead(c.e));
+    c.el.querySelector('.stem').style.height = (RIBBON_Y - (c.y + 96)) + 'px'; });
+  if (!detail.hidden && selected != null) showDetail(EV[selected]);
+  buildList();
+  lastGeo = '\u0000';   // force the geology readout to re-render in the new wording
+  updateHUD();
+  document.getElementById('listLead').textContent = m === 'basic'
+    ? 'Every event in order, from the oldest to what scientists think could happen next. ' +
+      'Written in plain language, with links to places you can read more.'
+    : 'Every event in chronological order, observations first and projections last. ' +
+      'This is the flat, motion-free equivalent of the corridor, and the accessible reading path.';
+  try { history.replaceState(null, '', m === 'basic' ? '#basic' : '#'); } catch (err) {}
+}
+btnBasic.addEventListener('click', function(){ setMode('basic'); });
+btnAdv.addEventListener('click', function(){ setMode('advanced'); });
+
+document.getElementById('brandSub').textContent =
+  EV.length + ' events \u00b7 3.48 Ga \u2192 2026, then ' +
+  EV.filter(function(e){ return e.is_projection; }).length + ' projections';
+
+var lastT = 0;
+function frame(now){
+  var dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
+  lastT = now;
+  if (target !== null){
+    var d = target - cam;
+    if (Math.abs(d) < 0.5 || reduceMotion){ cam = target; target = null; }
+    else cam += d * (1 - Math.exp(-7.5 * dt));      // time-based, so frame rate cannot change the feel
+  } else if (!dragging){
+    if (Math.abs(vel) > 0.6){ cam = clamp(cam + vel * dt); vel *= Math.exp(-3.1 * dt); }
+    else vel = 0;
+  }
+  if (cam !== lastCam){
+    if (Math.abs(cam - origin) > ORIGIN_WINDOW){ origin = cam; rebase(); }
+    world.style.transform = 'translate3d(' + (-curve(cam)) + 'px,' + (-curveY(cam)) + 'px,' +
+      ((cam - origin) * K) + 'px)';
+    ground.style.backgroundPosition = '0 ' + (cam * K * 0.5) + 'px, 0 0';
+    surface.style.backgroundPosition =
+      (cam * K * 0.05) + 'px 0, ' + (-cam * K * 0.04) + 'px 0, ' + (cam * K * 0.02) + 'px 0';
+    updateVisible();
+    updateHUD();
+    var n = nearestIndex(cam);
+    if (n !== lastSel){ select(n, false); lastSel = n; }
+    lastCam = cam;
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- interaction
+var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function hideHint(){
+  var h = document.getElementById('hint');
+  if (h && !userMoved){ userMoved = true; h.style.opacity = '0'; setTimeout(function(){ h.remove(); }, 600); }
+}
+
+var px = 0, py = 0, moved = 0, lastMoveT = 0, captured = false, capturedId = null;
+viewport.addEventListener('pointerdown', function(ev){
+  dragging = true; target = null; vel = 0; moved = 0;
+  px = ev.clientX; py = ev.clientY; lastMoveT = performance.now();
+  // Capture is deliberately NOT taken here. Capturing on pointerdown retargets the
+  // subsequent click to the viewport, so a card never receives it and tapping a
+  // tile does nothing. Capture is taken in pointermove, once a real drag starts.
+  captured = false; capturedId = ev.pointerId;
+  viewport.classList.add('grabbing');
+});
+viewport.addEventListener('pointermove', function(ev){
+  if (!dragging) return;
+  var dx = ev.clientX - px, dy = ev.clientY - py;
+  px = ev.clientX; py = ev.clientY;
+  moved += Math.abs(dx) + Math.abs(dy);
+  if (!captured && moved > 4){
+    try { viewport.setPointerCapture(capturedId); } catch (err) {}
+    captured = true;
+  }
+  // dragging down or left pulls you forward along the corridor
+  var step = (dy * 0.055) + (-dx * 0.030);
+  cam = clamp(cam + step);
+  var now = performance.now();
+  var dtm = Math.min(0.1, Math.max(0.008, (now - lastMoveT) / 1000));
+  lastMoveT = now;
+  vel = vel * 0.6 + (step / dtm) * 0.4;      // smoothed, in units per second
+  hideHint();
+});
+function endDrag(ev){
+  if (!dragging) return;
+  dragging = false;
+  viewport.classList.remove('grabbing');
+  if (captured){
+    try { viewport.releasePointerCapture(capturedId); } catch (err) {}
+    captured = false;
+  }
+  if (moved < 4){
+    // A tap. If it landed on a card, that card's own click handler opens it;
+    // only a tap on empty water dismisses the panel.
+    var hit = ev && document.elementFromPoint(ev.clientX, ev.clientY);
+    if (!(hit && hit.closest && hit.closest('.card'))) closeDetail();
+  }
+}
+viewport.addEventListener('pointerup', endDrag);
+viewport.addEventListener('pointercancel', endDrag);
+
+viewport.addEventListener('wheel', function(ev){
+  ev.preventDefault(); target = null;
+  cam = clamp(cam + ev.deltaY * 0.055);
+  vel = ev.deltaY * 0.9;
+  hideHint();
+}, { passive:false });
+
+window.addEventListener('keydown', function(ev){
+  var n;
+  if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown'){ n = Math.min(EV.length-1, nearestIndex(cam)+1); }
+  else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp'){ n = Math.max(0, nearestIndex(cam)-1); }
+  else if (ev.key === 'Home'){ n = 0; }
+  else if (ev.key === 'End'){ n = EV.length-1; }
+  else if (ev.key === 'PageDown'){ flyTo(clamp(cam + 160)); hideHint(); ev.preventDefault(); return; }
+  else if (ev.key === 'PageUp'){ flyTo(clamp(cam - 160)); hideHint(); ev.preventDefault(); return; }
+  else if (ev.key === 'Enter'){ if (selected >= 0) showDetail(EV[selected]); return; }
+  else if (ev.key === 'Escape'){ closeDetail(); return; }
+  else return;
+  ev.preventDefault(); hideHint(); flyTo(EV[n].x); select(n, false);
+});
+
+// ---------------------------------------------------------------- scrubber
+var track = document.getElementById('track');
+(function buildScrub(){
+  var bounds = {};
+  EV.forEach(function(e){
+    var b = bounds[e.chapter] || (bounds[e.chapter] = { a: e.x, b: e.x });
+    if (e.x < b.a) b.a = e.x; if (e.x > b.b) b.b = e.x;
+  });
+  CHAPTERS.forEach(function(c, i){
+    var b = bounds[c]; if (!b) return;
+    var a0 = i === 0 ? 0 : b.a, b0 = i === CHAPTERS.length-1 ? L : b.b;
+    var d = document.createElement('div');
+    d.className = 'seg';
+    d.style.left = (a0 / L * 100) + '%';
+    d.style.width = ((b0 - a0) / L * 100) + '%';
+    d.style.background = 'var(--c' + (i % 10) + ')';
+    if ((b0 - a0) / L > 0.05) d.innerHTML = '<em>' + esc(c) + '</em>';
+    track.appendChild(d);
+  });
+  EV.forEach(function(e, i){
+    var m = document.createElement('div');
+    var key = isExt[i] || /global bleaching/i.test(e.category);
+    m.className = 'evm' + (key ? ' key' : '');
+    m.style.left = (e.x / L * 100) + '%';
+    track.appendChild(m);
+  });
+  var axis = document.getElementById('axis');
+  for (var p = 0; p <= 10; p++){
+    var x = L * p / 10;
+    var s = document.createElement('i');
+    s.style.left = (p * 10) + '%';
+    s.textContent = fmtBPShort(ybpAt(x));
+    axis.appendChild(s);
+  }
+})();
+
+var scrubbing = false;
+function seekFromEvent(ev){
+  var r = track.getBoundingClientRect();
+  var f = (ev.clientX - r.left) / r.width;
+  cam = clamp(Math.max(0, Math.min(1, f)) * L);
+  target = null; vel = 0; hideHint();
+}
+track.addEventListener('pointerdown', function(ev){
+  scrubbing = true; track.setPointerCapture(ev.pointerId); seekFromEvent(ev);
+});
+track.addEventListener('pointermove', function(ev){ if (scrubbing) seekFromEvent(ev); });
+track.addEventListener('pointerup', function(){ scrubbing = false; });
+track.addEventListener('pointercancel', function(){ scrubbing = false; });
+
+// ---------------------------------------------------------------- detail panel
+var detail = document.getElementById('detail');
+function showDetail(e){
+  document.getElementById('dChap').textContent = e.chapter;
+  document.getElementById('dDate').textContent =
+    e.date + (e.end_range ? ' \u2192 ' + e.end_range : '');
+  document.getElementById('dExact').textContent = e.is_projection
+    ? (e.proj_undated
+        ? 'no projection date stated \u2014 the result is given against a scenario'
+        : Math.round(-e.yearsBP) + ' years from now')
+    : fmtBP(e.yearsBP) + ' · ' + (e.yearsBP >= 1e6
+        ? (e.yearsBP/1e6).toFixed(1) + ' million years before present'
+        : Math.round(e.yearsBP).toLocaleString() + ' years before present');
+  document.getElementById('dHead').textContent = txtHead(e);
+  document.getElementById('dSig').textContent = txtSig(e) || '—';
+  document.getElementById('dWhy').textContent = txtWhy(e) || '—';
+  document.getElementById('dLoc').textContent = 'Location: ' + (e.location || e.region || '—');
+  document.getElementById('dReef').textContent = e.reef_system ? 'Reef system: ' + e.reef_system : '';
+  document.getElementById('dCat').innerHTML =
+    'Category: <b style="color:' + catColour(e.category) + '">' + esc(e.category) + '</b>' +
+    (e.category_group ? ' · ' + esc(e.category_group) : '') +
+    (e.category_source && MODE !== 'basic'
+       ? '<br><span style="opacity:.7">as compiled: ' + esc(e.category_source) + '</span>' : '');
+  document.getElementById('dEvid').textContent =
+    e.evidence_type ? 'Evidence: ' + e.evidence_type + (e.knowledge_frame ? ' (' + e.knowledge_frame + ')' : '') : '';
+  document.getElementById('dConf').textContent =
+    'Confidence: ' + e.confidence + (e.priority ? ' · ' + e.priority : '') + ' · ' + e.id;
+
+  document.getElementById('dProj').innerHTML = projectionBlock(e);
+  document.getElementById('dLearn').innerHTML = learnBlock(e);
+  // Sources are still built in basic mode but hidden by CSS, so switching mode
+  // with a card open does not need a rebuild and nothing can get out of step.
+  document.getElementById('dSources').innerHTML =
+    sourceBlock(e, '1') + sourceBlock(e, '2');
+  detail.hidden = false;
+}
+function closeDetail(){ detail.hidden = true; }
+
+// A projection is shown with the sentence the study itself uses, quoted, plus the
+// emissions scenario or warming level it depends on. Without the scenario the
+// number is meaningless: "reefs decline 99%" is a statement about 2°C, not about
+// the future. Publication year and projection year are stated separately.
+function projectionBlock(e){
+  if (!e.is_projection) return '';
+  if (MODE === 'basic'){
+    // The quoted sentence is written for scientists and would not help here, but
+    // the scenario has to survive: without it the number means nothing.
+    var b = '<div class="pbox"><span class="lab">This has not happened. ' +
+            'It is a prediction.</span>' +
+            '<q>Scientists used computer models to work out what could happen to ' +
+            'reefs in the future. This is what they found.</q><div class="sc">' +
+            'It depends on how much the world warms: <b>' + esc(e.proj_scenario) + '</b>';
+    b += ' \u00b7 Worked out in <b>' + esc(e.proj_pub_year) + '</b>';
+    b += e.proj_undated
+       ? '. No year is given, so where it sits on the timeline does not tell you when.'
+       : '. It looks ahead to <b>' + esc(e.proj_year) + '</b>.';
+    return b + '</div></div>';
+  }
+  var h = '<div class="pbox"><span class="lab">Projection, not a record</span>';
+  if (e.proj_quote) h += '<q>' + esc(e.proj_quote) + '</q>';
+  var bits = [];
+  if (e.proj_scenario) bits.push('Scenario: <b>' + esc(e.proj_scenario) + '</b>');
+  bits.push('Study published <b>' + esc(e.proj_pub_year) + '</b>');
+  bits.push(e.proj_undated
+    ? 'Stated against a scenario, <b>not a date</b>. Its position on the corridor ' +
+      'carries no claim about when this happens.'
+    : 'Projects to <b>' + esc(e.proj_year) + '</b>');
+  h += '<div class="sc">' + bits.join(' \u00b7 ') + '</div>';
+  if (e.proj_quote_note) h += '<div class="nb">' + esc(e.proj_quote_note) + '</div>';
+  return h + '</div>';
+}
+
+// Further reading replaces the citations in basic mode. Only events with a page
+// that was actually fetched and read, and that actually covers this subject, get
+// one. 46 of 175 events have none, and show nothing rather than a weak link.
+function learnBlock(e){
+  if (MODE !== 'basic' || !e.b_links || !e.b_links.length) return '';
+  var h = '<div class="learn"><span class="lab">Find out more</span>';
+  e.b_links.forEach(function(l){
+    h += '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + '</a>' +
+         '<div class="pub">' + esc(l.p) + '</div>';
+  });
+  return h + '</div>';
+}
+
+// Publication text is shown only where the DOI resolved AND the title it returned
+// matched the citation. A source that failed either test shows its status instead,
+// so the page never presents an unchecked citation as a checked one.
+//
+// ABSTRACT_POLICY:
+//   'full'    every verified abstract in full, each attributed and linked  (current)
+//   'extract' open-licensed in full, first ABSTRACT_EXTRACT_CHARS of the rest
+//   'open'    open-licensed abstracts only
+var ABSTRACT_POLICY = 'full';
+var ABSTRACT_EXTRACT_CHARS = 320;
+
+function extract(text, chars){
+  if (text.length <= chars) return text;
+  var cut = text.slice(0, chars);
+  var stop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
+  return (stop > chars * 0.5 ? cut.slice(0, stop + 1) : cut.replace(/\s+\S*$/, '')) + ' \u2026';
+}
+
+function sourceBlock(e, n){
+  var title = e['source' + (n === '1' ? '' : '2') + '_title'];
+  if (!title) return '';
+  var url    = e['source' + (n === '1' ? '' : '2') + '_url'] || '';
+  var type   = e['source' + (n === '1' ? '' : '2') + '_type'] || '';
+  var st     = e['s' + n + '_status'] || 'not-checked';
+  var html   = '<div class="src">';
+
+  var badge = { 'verified':    ['ok',   'Verified'],
+                'no-abstract': ['none', 'Resolves, no abstract'],
+                'non-doi':     ['none', 'Not a DOI'],
+                'wrong-paper': ['warn', 'Citation needs checking'],
+                'dead':        ['warn', 'Link does not resolve'],
+                'tombstone':   ['warn', 'DOI withdrawn'] }[st] || ['none', 'Unchecked'];
+
+  html += '<div class="t"><span class="badge ' + badge[0] + '">' + badge[1] + '</span>' +
+          (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(title) + '</a>'
+               : esc(title)) + '</div>';
+
+  var bits = [];
+  if (type) bits.push(esc(type));
+  if (e['s' + n + '_journal']) bits.push(esc(e['s' + n + '_journal']));
+  if (e['s' + n + '_year'])    bits.push(esc(String(e['s' + n + '_year'])));
+  if (bits.length) html += '<div class="meta2">' + bits.join(' \u00b7 ') + '</div>';
+
+  if (st === 'wrong-paper')
+    html += '<div class="meta2">This DOI resolves to a different work. The reference has not been ' +
+            'confirmed and no publication text is shown for it.</div>';
+
+  var abs = e['s' + n + '_abstract'];
+  if (st === 'verified' && abs){
+    var open = e['s' + n + '_open_licence'];
+    var body = '';
+    if (ABSTRACT_POLICY === 'full')        body = abs;
+    else if (ABSTRACT_POLICY === 'open')   body = open ? abs : '';
+    else                                   body = open ? abs : extract(abs, ABSTRACT_EXTRACT_CHARS);
+    if (body){
+      // attribution travels with the text: publisher, year, where it came from and when
+      var cred = [];
+      if (e['s' + n + '_journal']) cred.push(esc(e['s' + n + '_journal']));
+      if (e['s' + n + '_year'])    cred.push(esc(String(e['s' + n + '_year'])));
+      cred.push('retrieved ' + esc(e['s' + n + '_retrieved'] || '') +
+                ' from ' + esc(e['s' + n + '_abstract_source'] || ''));
+      // Where the text was fetched twice and compared, say so. Abstracts carried
+      // over from the earlier OpenAlex reconstruction have no agreement field and
+      // are marked as needing re-checking rather than left to look equivalent.
+      var agr = e['s' + n + '_abstract_agreement'];
+      cred.push(agr ? 'two fetches, ' + esc(agr)
+                    : 'rebuilt from an index, wording not re-checked');
+      html += '<div class="abs"><span class="cap">Abstract' +
+              (open ? ', open licence' : '') + ' \u00b7 ' + cred.join(' \u00b7 ') +
+              '</span>' + esc(body) +
+              (url ? '<a class="srclink" href="' + esc(url) +
+                     '" target="_blank" rel="noopener">Read the full paper \u2192</a>' : '') +
+              '</div>';
+    }
+    var oa = e['s' + n + '_oa_url'];
+    if (oa) html += '<div class="meta2"><a href="' + esc(oa) +
+                    '" target="_blank" rel="noopener">Free full text</a></div>';
+  }
+  return html + '</div>';
+}
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+
+// ---------------------------------------------------------------- list view
+function buildList(){
+  var body = document.getElementById('listBody'), cur = null, html = '';
+  EV.forEach(function(e){
+    if (e.chapter !== cur){ cur = e.chapter; html += '<div class="lchap">' + esc(cur) + '</div>'; }
+    var links = '';
+    if (MODE === 'basic' && e.b_links && e.b_links.length)
+      links = '<p class="llink">' + e.b_links.map(function(l){
+        return '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' +
+               esc(l.t) + '</a> <span>' + esc(l.p) + '</span>'; }).join('<br>') + '</p>';
+    html += '<div class="litem' + (e.is_projection ? ' lproj' : '') + '"><div class="d">' +
+            (e.is_projection ? (MODE === 'basic' ? '[a prediction] ' : '[projected] ') : '') + esc(e.date) +
+            '<span style="margin-left:9px;color:' + catColour(e.category) + '">\u25a0</span>' +
+            '<span style="margin-left:5px;color:var(--dim);font-weight:400">' + esc(e.category) + '</span>' +
+            '</div><h3>' + esc(txtHead(e)) + '</h3><p>' + esc(txtSig(e)) + '</p>' + links + '</div>';
+  });
+  body.innerHTML = html;
+}
+buildList();
+
+var btnList = document.getElementById('btnList');
+btnList.addEventListener('click', function(){
+  var on = document.body.classList.toggle('listmode');
+  document.getElementById('listview').hidden = !on;
+  btnList.setAttribute('aria-pressed', String(on));
+  btnList.textContent = on ? 'Corridor view' : 'List view';
+});
+if (reduceMotion) btnList.click();
+
+document.getElementById('btnAbout').addEventListener('click', function(){
+  alertPanel();
+});
+function alertPanel(){
+  var e = {
+    chapter: 'About this timeline', date: 'Reading the scale',
+    yearsBP: 0, headline: 'Distance along the corridor is not proportional to time',
+    significance: 'This walk covers 3.48 billion years. Laid out truthfully, every event after 1950 would ' +
+      'sit inside the last few centimetres and be unreadable. The corridor therefore stretches recent ' +
+      'centuries and compresses deep time, by a factor of about ' +
+      Math.round(META.scale_dynamic_range/1e6) + ' million between its slowest and fastest stretch.',
+    why: 'The track winds and rises purely as styling. Its shape carries no data: it is not sea ' +
+      'level, temperature or anything else, and it is kept small and regular so it cannot be ' +
+      'mistaken for a measurement. ' +
+      'The year posts beside the crest and the "local scale" readout show how much real time each step ' +
+      'covers at your current position. Watch it change as you walk: that changing number is the ' +
+      'distortion made visible, in the same way a map projection distorts area. Roughly 45% of the ' +
+      'spacing between cards is set by readability rather than by elapsed time.',
+    location: 'Layout alpha = ' + META.alpha, region: 'corridor ' + Math.round(L) + ' units',
+    category: 'Method note', confidence: 'n/a', id: 'META',
+    source_title: 'Generated from ' + META.generated_from, source_url: '#'
+  };
+  showDetail(e);
+  document.getElementById('dExact').textContent = META.event_count + ' events · nonlinear axis';
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
+}
+
+// exposed for automated testing and for tuning from the console
+window.__corridor = {
+  get cam(){ return cam; },
+  seek: function(v){ cam = clamp(v); target = null; vel = 0; },
+  L: L, K: K, SEG: SEG, ybpAt: ybpAt, events: EV, waveLines: WAVE_LINES, waveX: waveX,
+  visibleCards: function(){ return cards.filter(function(c){ return c.shown; }).length; }
+};
+
+// ---------------------------------------------------------------- go
+if (MODE === 'basic'){ MODE = 'advanced'; setMode('basic'); } else { setMode('advanced'); }
+cam = 0; lastCam = -1e9;
+updateVisible(); updateHUD();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

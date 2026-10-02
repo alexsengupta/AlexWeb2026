@@ -34,3 +34,13 @@ ai_brief/venv/
 ai_brief/fetch.log
 ai_brief/.fetch.lock
 ai_brief/__pycache__/
+
+# Data generated on Katana or the Nectar VM; never goes through git
+MarineHeatwaves/scopus_*.csv
+assets/data/scopus_alex_sen_gupta_articles_with_abstracts.csv
+AI_model_growth/METR/benchmark_results.yaml
+MarineHeatwaves/MHWlive/latest.png
+MarineHeatwaves/MHWlive/meta.js
+MarineHeatwaves/MHWlive/meta.json
+MarineHeatwaves/MHWlive/data/
+__pycache__/

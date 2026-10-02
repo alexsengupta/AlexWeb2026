@@ -45,3 +45,5 @@ MarineHeatwaves/MHWlive/meta.json
 MarineHeatwaves/MHWlive/data/
 __pycache__/
 AI_model_growth/example_data/**/*.csv
+AI_model_growth/example_data/**/README.md
+AI_RSSfeed/ai_usage_log.csv

@@ -171,6 +171,198 @@
             font-size: 0.85rem;
             margin-bottom: 0;
         }
+
+        /* --- Launch buttons ------------------------------------------------ */
+        .launch-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            justify-content: center;
+            align-items: stretch;
+            margin: 2rem 0 1.5rem;
+        }
+
+        .launch-item {
+            position: relative;
+            display: flex;
+        }
+
+        .launch-btn {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 0.15rem;
+            min-width: 250px;
+            padding: 1rem 1.75rem;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        }
+
+        .launch-btn small {
+            font-weight: 500;
+            font-size: 0.75rem;
+            letter-spacing: 0.03em;
+            opacity: 0.9;
+        }
+
+        .launch-btn:hover,
+        .launch-btn:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+        }
+
+        .launch-btn.v2 {
+            background: #1e5245;
+        }
+
+        .launch-btn.v2:hover {
+            background: #163d33;
+        }
+
+        .launch-btn.v1 {
+            background: #df7926;
+        }
+
+        .launch-btn.v1:hover {
+            background: #c56820;
+        }
+
+        .beta-tag {
+            display: inline-block;
+            margin-left: 0.45rem;
+            padding: 0.12rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.25);
+            font-size: 0.62rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            vertical-align: 0.12em;
+        }
+
+        /* Rollover comparison panel */
+        .launch-tip {
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            width: 300px;
+            max-width: 80vw;
+            padding: 0.85rem 1rem;
+            background: rgba(44, 62, 80, 0.95);
+            color: #eef2f5;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            line-height: 1.45;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+            z-index: 50;
+        }
+
+        .launch-tip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 7px solid transparent;
+            border-bottom-color: rgba(44, 62, 80, 0.95);
+        }
+
+        .launch-tip .tip-head {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: #ffc98a;
+        }
+
+        .launch-tip ul {
+            margin: 0;
+            padding-left: 1.05rem;
+        }
+
+        .launch-tip li {
+            margin-bottom: 0.3rem;
+        }
+
+        .launch-tip li:last-child {
+            margin-bottom: 0;
+        }
+
+        .launch-tip .tip-note {
+            display: block;
+            margin-top: 0.55rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.18);
+            font-style: italic;
+            opacity: 0.85;
+        }
+
+        .launch-item:hover .launch-tip,
+        .launch-item:focus-within .launch-tip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .launch-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #8a99a8;
+            font-style: italic;
+            margin-bottom: 2rem;
+        }
+
+        /* On touch devices (and narrow screens) there is no hover, so show the
+           comparison panels inline instead of as floating tooltips. */
+        @media (hover: none),
+        (max-width: 620px) {
+            .launch-row {
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 2rem;
+            }
+
+            .launch-item {
+                flex-direction: column;
+                align-items: stretch;
+                width: min(100%, 360px);
+            }
+
+            .launch-tip,
+            .launch-item:hover .launch-tip,
+            .launch-item:focus-within .launch-tip {
+                position: static;
+                transform: none;
+                opacity: 1;
+                visibility: visible;
+                width: auto;
+                max-width: none;
+                margin-top: 0.6rem;
+                box-shadow: none;
+            }
+
+            .launch-tip::before {
+                display: none;
+            }
+
+            .launch-hint {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -287,14 +479,48 @@
     <div class="content">
         <h1>Carbonator Climate Model</h1>
 
-        <div style="text-align: center; margin: 2rem 0;">
-            <a href="http://carbonator.org" style="display: inline-block; background: #df7926; color: white; padding: 1rem 2rem; 
-                      text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 1.1rem;
-                      box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;"
-                onmouseover="this.style.background='#c56820'" onmouseout="this.style.background='#df7926'">
-                Launch Carbonator →
-            </a>
+        <div class="launch-row">
+            <div class="launch-item">
+                <a class="launch-btn v2" href="https://simple-climate.cloud.edu.au" target="_blank" rel="noopener">
+                    <span>Launch Carbonator 2 <span class="beta-tag">Beta</span></span>
+                    <small>SSP scenarios · maps · new</small>
+                </a>
+                <div class="launch-tip" role="tooltip">
+                    <span class="tip-head">Carbonator 2 — the new version</span>
+                    <ul>
+                        <li>Uses the current <strong>SSP</strong> scenarios (SSP1-1.9 through SSP5-8.5)</li>
+                        <li>Adds <strong>spatial projections</strong> — 1°×1° maps of temperature, rainfall and
+                            regional sea level</li>
+                        <li>Compare runs against <strong>observations</strong> and CMIP6 model ranges</li>
+                        <li>More inputs: N₂O, ozone, synthetic gases, surface albedo</li>
+                        <li>Optional natural variability (ENSO-like ocean mixing, cloud and solar noise)</li>
+                        <li>Save, load and compare scenarios as CSV</li>
+                    </ul>
+                    <span class="tip-note">Beta version — still being tested, so expect the occasional rough
+                        edge.</span>
+                </div>
+            </div>
+
+            <div class="launch-item">
+                <a class="launch-btn v1" href="http://carbonator.org" target="_blank" rel="noopener">
+                    <span>Launch Carbonator</span>
+                    <small>ORIGINAL · RCP SCENARIOS</small>
+                </a>
+                <div class="launch-tip" role="tooltip">
+                    <span class="tip-head">Carbonator (original)</span>
+                    <ul>
+                        <li>Uses the earlier <strong>RCP</strong> scenarios</li>
+                        <li><strong>Global averages only</strong> — no maps or regional detail</li>
+                        <li>Six inputs: CO₂, CH₄, human and volcanic aerosols, solar output, surface
+                            reflectivity</li>
+                        <li>Outputs surface and deep-ocean temperature, sea level, ocean pH, CO₂ and CH₄
+                            concentrations</li>
+                    </ul>
+                    <span class="tip-note">The established version — stable and classroom-tested.</span>
+                </div>
+            </div>
         </div>
+        <p class="launch-hint">Hover over either button for a breakdown of the differences.</p>
 
         <h2>What is Carbonator?</h2>
         <p>
@@ -433,11 +659,17 @@
             style="background: #edf2f7; padding: 1.5rem; border-radius: 8px; margin-top: 2rem; border-left: 4px solid #486072;">
             <h3 style="color: #486072; margin-top: 0;">Getting Started</h3>
             <p style="margin-bottom: 0.5rem;">
-                Ready to explore climate science through hands-on modeling? Visit Carbonator to begin your
-                investigation.
+                Ready to explore climate science through hands-on modeling? There are two versions to choose from —
+                Carbonator 2 (beta) adds SSP scenarios and spatial projections, while the original remains available.
             </p>
-            <a href="http://carbonator.org" style="color: #df7926; text-decoration: none; font-weight: bold;">
-                Visit carbonator.org →
+            <a href="https://simple-climate.cloud.edu.au" target="_blank" rel="noopener"
+                style="color: #1e5245; text-decoration: none; font-weight: bold;">
+                Carbonator 2 (beta) →
+            </a>
+            <span style="color: #a0aec0; margin: 0 0.6rem;">|</span>
+            <a href="http://carbonator.org" target="_blank" rel="noopener"
+                style="color: #df7926; text-decoration: none; font-weight: bold;">
+                carbonator.org (original) →
             </a>
         </div>
     </div>

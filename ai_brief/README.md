@@ -123,32 +123,44 @@ You should see `+ added ai-brief-2026-07-27.html` lines and then
 
 ### 4. Schedule it
 
-The brief is generated at 06:00 Sydney time. Fetching at 06:35 gives it time to
-land, and the two later runs are cheap insurance for a slow or failed morning
-run (the script skips unchanged files, so extra runs cost almost nothing).
+The brief is generated at 06:00 Sydney time. The Nectar VM runs on UTC, and
+**Ubuntu's cron does not support `CRON_TZ`** — it is Debian's vixie-cron, whose
+manual page states it "will only handle tasks in a single timezone", taken from
+`/etc/timezone`. (`CRON_TZ` is a cronie/Red Hat feature. Setting it in a Debian
+crontab is silently ignored: the line is accepted as an ordinary environment
+variable and the schedule stays on UTC.)
+
+Rather than converting Sydney times to UTC — and re-converting twice a year for
+daylight saving — just check often. The script skips unchanged files, so a run
+costs about 100 Drive API quota units against a 400,000,000/day free allowance.
 
 ```bash
 crontab -e
 ```
 
 ```cron
-# Daily AI Brief -- pull from Drive and rebuild the archive.
-# CRON_TZ matters: Nectar VMs usually run on UTC, and Sydney shifts by an hour
-# in daylight saving. This line makes the times below mean Sydney time.
-CRON_TZ=Australia/Sydney
-35 6  * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
-5  9  * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
-5  13 * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
+# Daily AI Brief -- pull from Drive and rebuild the archive, every 2 hours.
+# Deliberately timezone-free: see above. Each morning's brief appears on the
+# site within 2 hours of landing in Drive.
+0 */2 * * * /home/ubuntu/AlexWeb2026/ai_brief/run_fetch.sh
 ```
 
 Those paths assume the repo is at `~/AlexWeb2026` on the VM; confirm with
 `pwd`. `run_fetch.sh` is committed with its executable bit set, so no `chmod`
 is needed after a fresh clone or pull.
 
-If `CRON_TZ` is unsupported on your VM's cron, use UTC times instead
-(06:35 Sydney = 20:35 UTC the previous day during AEST, 19:35 UTC during AEDT)
-and accept the one-hour drift across daylight saving, or set the whole VM to
-Sydney time with `sudo timedatectl set-timezone Australia/Sydney`.
+If you would rather have it fire at an exact Sydney time, use a systemd timer
+instead of cron — systemd does understand timezones. Check support first:
+
+```bash
+systemd-analyze calendar "*-*-* 06:35:00 Australia/Sydney"
+```
+
+If that parses, an `OnCalendar` line with the timezone suffix plus
+`Persistent=true` gives an exact local-time schedule that survives daylight
+saving and catches up after a reboot. Do NOT reach for
+`timedatectl set-timezone` as a fix — it would shift every other cron job on
+this VM by ten hours.
 
 Logs go to `ai_brief/fetch.log`, trimmed automatically at 2000 lines:
 

@@ -612,7 +612,7 @@
       const [selectedJournal, setSelectedJournal] = useState('');
       const [activeTypes, setActiveTypes] = useState([]);
       const [activeThemes, setActiveThemes] = useState([]);
-      const [themeMode, setThemeMode] = useState('all');
+      const [themeMode, setThemeMode] = useState('all'); // 'any' or 'all'
       const [yearRange, setYearRange] = useState([minYear, maxYear]);
       const [sortBy, setSortBy] = useState('year-desc');
       const [themesExpanded, setThemesExpanded] = useState(true);
@@ -632,14 +632,10 @@
         setActiveThemes(prev => prev.includes(themeNum) ? prev.filter(t => t !== themeNum) : [...prev, themeNum]);
       };
 
-      const themeCounts = useMemo(() => {
-        const counts = {};
-        for (let i = 1; i <= 16; i++) counts[i] = 0;
-        papers.forEach(p => p.themes.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
-        return counts;
-      }, [papers]);
-
-      const filtered = useMemo(() => {
+      // Every filter EXCEPT themes. Used both as the input to the theme filter
+      // and as the basis for the theme chip counts, so those counts show how
+      // many papers each theme would actually yield given the other filters.
+      const preThemeFiltered = useMemo(() => {
         const q = normalize(query);
         return papers
           .filter(p => p.year && p.year >= yearRange[0] && p.year <= yearRange[1])
@@ -647,19 +643,26 @@
           .filter(p => !selectedJournal || p.journal === selectedJournal)
           .filter(p => !selectedAuthor || p.authors.includes(selectedAuthor))
           .filter(p => {
-            if (activeThemes.length === 0) return true;
-            if (themeMode === 'all') {
-              return activeThemes.every(t => p.themes.includes(t));
-            }
-            return activeThemes.some(t => p.themes.includes(t));
-          })
-          .filter(p => {
             if (!q) return true;
             const hay = [p.title, p.journal, p.abstract, p.type, ...p.authors].join(' ').toLowerCase();
             const tokens = q.split(/\s+/).filter(Boolean);
             return tokens.every(t => hay.includes(t));
           });
-      }, [papers, query, selectedAuthor, selectedJournal, activeTypes, activeThemes, themeMode, yearRange]);
+      }, [papers, query, selectedAuthor, selectedJournal, activeTypes, yearRange]);
+
+      const themeCounts = useMemo(() => {
+        const counts = {};
+        for (let i = 1; i <= 16; i++) counts[i] = 0;
+        preThemeFiltered.forEach(p => p.themes.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+        return counts;
+      }, [preThemeFiltered]);
+
+      const filtered = useMemo(() => {
+        if (activeThemes.length === 0) return preThemeFiltered;
+        return preThemeFiltered.filter(p => themeMode === 'all'
+          ? activeThemes.every(t => p.themes.includes(t))
+          : activeThemes.some(t => p.themes.includes(t)));
+      }, [preThemeFiltered, activeThemes, themeMode]);
 
       const sorted = useMemo(() => {
         const copy = [...filtered];
@@ -679,6 +682,7 @@
         setSelectedJournal('');
         setActiveTypes([]);
         setActiveThemes([]);
+        setThemeMode('all');
         setYearRange([minYear, maxYear]);
         setSortBy('year-desc');
       };
@@ -835,18 +839,19 @@
                     <span className="text-sm font-bold" style={{ color: '#0c3d6b' }}>Filter by Theme</span>
                     <span className="text-xs text-gray-500">{themesExpanded ? '\u25B2' : '\u25BC'}</span>
                   </div>
-                  {activeThemes.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setThemeMode(m => m === 'any' ? 'all' : 'any')}
-                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50">
-                        Match: {themeMode === 'any' ? 'Any theme' : 'All themes'}
-                      </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setThemeMode(m => m === 'any' ? 'all' : 'any')}
+                      title="All themes: a paper must carry every selected theme (narrows as you add themes). Any theme: a paper needs only one of them."
+                      className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50">
+                      Match: {themeMode === 'any' ? 'Any theme' : 'All themes'}
+                    </button>
+                    {activeThemes.length > 0 && (
                       <button onClick={() => setActiveThemes([])} className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50">
                         Clear themes
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 {themesExpanded && (
                   <div className="theme-filter-grid">
@@ -991,6 +996,12 @@
               <div className="text-center py-16 text-gray-500">
                 <div className="text-4xl mb-4">&#x1F50D;</div>
                 <p className="text-lg">No papers match your filters.</p>
+                {activeThemes.length > 1 && themeMode === 'all' && (
+                  <p className="mt-2 text-sm">
+                    You have {activeThemes.length} themes set to <strong>match all</strong>, so a paper must carry every one of them.
+                    <button onClick={() => setThemeMode('any')} className="ml-2 underline">Switch to &ldquo;Any theme&rdquo;</button>
+                  </p>
+                )}
                 <button onClick={clearAll} className="mt-4 px-4 py-2 btn-primary text-white rounded-lg text-sm">Clear Filters</button>
               </div>
             )}

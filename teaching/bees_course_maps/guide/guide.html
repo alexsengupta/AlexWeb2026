@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BEES Course Maps: how to keep them up to date</title>
+<style>
+  @page { size: A4; margin: 18mm 18mm 20mm 18mm; }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #1d2430; }
+  h1 { font-size: 24pt; margin: 0 0 4px; color: #1f3a5f; letter-spacing: -.01em; }
+  .lede { color: #5f6b7a; font-size: 11.5pt; margin: 0 0 18px; }
+  h2 { font-size: 15pt; color: #1f3a5f; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #d8dee7; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 16px 0 5px; page-break-after: avoid; }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 8px 22px; padding: 0; }
+  li { margin: 3px 0; }
+  code { font-family: Menlo, Consolas, monospace; font-size: 9.3pt; background: #eef1f5; padding: 1px 4px; border-radius: 3px; }
+  pre { font-family: Menlo, Consolas, monospace; font-size: 9.3pt; background: #eef1f5; padding: 9px 12px; border-radius: 6px; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 10px; font-size: 9.5pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #cfd6df; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #1f3a5f; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f6f8fb; }
+  .sheet { border: 1px solid #b9c6d8; }
+  .sheet caption { caption-side: top; text-align: left; font-weight: 700; font-size: 9.5pt; color: #1f3a5f; padding: 0 0 4px; }
+  .sheet th { background: #e9edf3; color: #1d2430; }
+  .tip { background: #edf7f0; border-left: 4px solid #1e8449; padding: 8px 12px; margin: 10px 0; border-radius: 4px; }
+  .warn { background: #fef8ec; border-left: 4px solid #d68910; padding: 8px 12px; margin: 10px 0; border-radius: 4px; }
+  .fig { margin: 10px 0 14px; page-break-inside: avoid; }
+  .fig img { width: 100%; border: 1px solid #d8dee7; border-radius: 6px; }
+  .fig .cap { font-size: 9pt; color: #5f6b7a; margin-top: 4px; }
+  .toc { background: #f6f8fb; border: 1px solid #d8dee7; border-radius: 8px; padding: 12px 18px; margin: 14px 0 6px; }
+  .toc ol { margin: 4px 0 0 18px; }
+  .toc li { margin: 2px 0; }
+  .pb { page-break-before: always; }
+  .small { font-size: 9pt; color: #5f6b7a; }
+  kbd { font-family: inherit; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>BEES Course Maps</h1>
+<p class="lede">How to keep the interactive course map up to date: change a program, add a pathway, add a new major, refresh the handbook details. No coding needed.</p>
+
+<div class="toc">
+<b>Contents</b>
+<ol>
+  <li>What the course map is</li>
+  <li>The files in the folder</li>
+  <li>Golden rules for editing</li>
+  <li>Changing a program (add or remove a course, change UoC)</li>
+  <li>Adding or changing a pathway (stream)</li>
+  <li>Adding a new program or a new major</li>
+  <li>The handbook details and when to run the scraper</li>
+  <li>Fixing course details by hand: the Overrides sheet</li>
+  <li>Checking your work</li>
+  <li>Looking at the page and putting it live</li>
+  <li>If something goes wrong</li>
+</ol>
+</div>
+
+<h2>1. What the course map is</h2>
+<p>The course map is a web page that shows students how a major is built: which courses are core, which electives they choose from, how many they need, and which courses lead to which. Students can click a course to see its description, prerequisites and handbook link, and can pick a "pathway" to see which electives suit an interest such as meteorology or policy.</p>
+<div class="fig"><img src="g_overview.png" alt="The course map"><div class="cap">The BSc Climate Systems Science map. Each stage has three rows: core, prescribed electives, and degree requirements outside the major.</div></div>
+<p>Everything the page shows comes from a handful of Excel files sitting next to it. <b>To change the map, you change a spreadsheet.</b> The page reads the spreadsheets fresh every time it loads, so there is no "publish" step beyond saving the file (and copying the folder to the website, see section 10).</p>
+
+<h2>2. The files in the folder</h2>
+<table>
+<tr><th style="width:26%">File</th><th>What it is</th><th style="width:22%">Who edits it</th></tr>
+<tr><td><code>course_map.html</code></td><td>The web page itself.</td><td>Nobody (unless changing the design)</td></tr>
+<tr><td><code>lib/xlsx.full.min.js</code></td><td>A helper that lets the page read Excel files.</td><td>Nobody</td></tr>
+<tr><td><code>programs.xlsx</code></td><td>The list of programs to show, and site-wide text such as the feedback email.</td><td>You, when adding a program</td></tr>
+<tr><td><code>CLIME1_bsc.xlsx</code><br><code>CLIMB1_advsci.xlsx</code><br><code>CLIMB2_minor.xlsx</code></td><td>One workbook per program: its stages, core courses, elective pools and pathways. These are the files you will edit most.</td><td>You</td></tr>
+<tr><td><code>handbook.xlsx</code></td><td>Course titles, terms offered, prerequisites and handbook links, copied from the UNSW Handbook by the scraper. Has an <b>Overrides</b> sheet for hand corrections.</td><td>The scraper writes it; you edit only the Overrides sheet</td></tr>
+<tr><td><code>scrape_handbook.py</code><br><code>requirements.txt</code></td><td>The scraper: a small program that refreshes <code>handbook.xlsx</code> from the Handbook, and the list of packages it needs.</td><td>Nobody; you just run it</td></tr>
+<tr><td><code>README.md</code></td><td>A shorter version of this guide, in plain text.</td><td>Keep it in step with this guide</td></tr>
+</table>
+
+<p>Think of it as two separate kinds of information:</p>
+<ul>
+  <li><b>What the major says about its structure</b> (which courses, which stage, core or elective, pathways). This lives in the program workbooks and is typed by a person.</li>
+  <li><b>What the university says about each course</b> (title, terms, prerequisites). This lives in <code>handbook.xlsx</code> and is fetched automatically. You never type it, except for corrections in Overrides.</li>
+</ul>
+
+<h2>3. Golden rules for editing</h2>
+<ol>
+  <li>In every sheet, <b>row 1 is a note, row 2 is the header, data starts on row 3.</b> Don't rename sheets or change the header words; the page looks for them by name.</li>
+  <li>Course codes must be exactly four capital letters and four digits, e.g. <code>CLIM2001</code>. A space or a lower-case letter means the page won't recognise it.</li>
+  <li>Save as a normal Excel file (<code>.xlsx</code>). Don't change the file names unless you also change them in <code>programs.xlsx</code>.</li>
+  <li>After any change, reload the page and press the <b>Check</b> button (section 9). It tells you if you've typed a code the handbook doesn't know, or listed a course in a pathway that isn't on the map.</li>
+  <li>If you add a course code that is new to the map, run the scraper (section 7) so its title and details appear.</li>
+</ol>
+
+<h2 class="pb">4. Changing a program</h2>
+<p>Open the program's workbook (for example <code>CLIME1_bsc.xlsx</code> for the BSc). It has four sheets.</p>
+
+<h3>The <b>Program</b> sheet: names and notes</h3>
+<p>Two columns, Setting and Value. Only change the Value column.</p>
+<table class="sheet"><caption>Program sheet</caption>
+<tr><th>Setting</th><th>Value</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Climate Systems Science</td><td>The major's name</td></tr>
+<tr><td>Degree</td><td>Bachelor of Science</td><td>Shown under the title</td></tr>
+<tr><td>Program code</td><td>3970</td><td>UNSW program number</td></tr>
+<tr><td>Plan code</td><td>CLIME1</td><td>UNSW plan / specialisation code</td></tr>
+<tr><td>Structure year</td><td>2028</td><td>The year this structure applies from; shown in the footer</td></tr>
+<tr><td>Layout</td><td>stages</td><td><code>stages</code> for a major (rows per year), <code>pool</code> for a minor (one list of courses)</td></tr>
+<tr><td>Subtitle</td><td>78 UoC major: 48 UoC core + 30 UoC prescribed electives</td><td>One line under the header</td></tr>
+<tr><td>Handbook link</td><td>https://www.handbook.unsw.edu.au/...</td><td>"Official handbook entry" link in the footer</td></tr>
+<tr><td>Honours note</td><td>Stage 4 is a 48 UoC Honours year...</td><td>Text shown for an Honours stage (Advanced Science only)</td></tr>
+<tr><td>Note</td><td>The major is 78 UoC of the 144 UoC degree...</td><td>Shown under the map. Add as many Note rows as you like.</td></tr>
+</table>
+
+<h3>The <b>Stages</b> sheet: how much in each year</h3>
+<table class="sheet"><caption>Stages sheet</caption>
+<tr><th>Stage</th><th>Label</th><th>Core UoC</th><th>Elective UoC</th><th>Note</th></tr>
+<tr><td>1</td><td>Stage 1</td><td>24</td><td>6</td><td></td></tr>
+<tr><td>2</td><td>Stage 2</td><td>12</td><td>12</td><td></td></tr>
+<tr><td>3</td><td>Stage 3</td><td>12</td><td>12</td><td></td></tr>
+<tr><td>4</td><td>Honours</td><td>48</td><td>0</td><td>HONOURS</td></tr>
+</table>
+<p><b>Elective UoC</b> is what students must choose from that stage's elective pool. The page turns it into "choose 12 UoC (2 courses) from 9". Writing <code>HONOURS</code> in the Note column shows that stage as a text box (using the Honours note from the Program sheet) instead of course tiles.</p>
+
+<h3>The <b>Structure</b> sheet: the courses</h3>
+<p>One row per requirement. This is where you add and remove courses.</p>
+<table class="sheet"><caption>Structure sheet (extract)</caption>
+<tr><th>Stage</th><th>Type</th><th>Course</th><th>Alternative 1</th><th>Alternative 2</th><th>Display label</th><th>Link</th><th>Note</th></tr>
+<tr><td>1</td><td>Core</td><td>CLIM1001</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>1</td><td>Core</td><td>MATH1131</td><td>MATH1141</td><td></td><td></td><td></td><td>Maths 1A or Higher Maths 1A</td></tr>
+<tr><td>1</td><td>Elective</td><td>CHEM1011</td><td>CHEM1031</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>1</td><td>Degree</td><td>SCIF1000</td><td></td><td></td><td></td><td></td><td>Faculty of Science core</td></tr>
+<tr><td>2</td><td>Core</td><td>CLIM2001 / PHYS2801</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>2</td><td>Degree</td><td>WIL/RIL</td><td></td><td></td><td>Employability elective (WIL/RIL), 6 UoC</td><td>https://www.unsw.edu.au/science/...</td><td></td></tr>
+</table>
+<ul>
+  <li><b>Stage</b> must match a Stage in the Stages sheet.</li>
+  <li><b>Type</b> is one of three words: <code>Core</code> (everyone does it), <code>Elective</code> (one option in that stage's elective pool), or <code>Degree</code> (something the degree requires that is not part of the major, such as the SCIF courses; shown in grey).</li>
+  <li><b>Course</b> is the code. For a co-badged course (one course with two codes) write both in the one cell with a slash: <code>CLIM2001 / PHYS2801</code>.</li>
+  <li><b>Alternative 1, 2, 3</b>: courses that can be taken <i>instead</i>. The page shows these as a "choose one" group with "or" between them. Leave blank if there is no choice.</li>
+  <li><b>Display label</b> and <b>Link</b> are only for Degree rows that aren't a single course, like the WIL/RIL placeholder.</li>
+  <li><b>Note</b> is optional and appears in the course's side panel.</li>
+</ul>
+<div class="tip"><b>To add a course:</b> add a row. <b>To remove one:</b> delete its row. <b>To move it between stages:</b> change the Stage number. Courses appear in the order of the rows.</div>
+
+<h2>5. Adding or changing a pathway (stream)</h2>
+<p>Pathways are the coloured buttons at the top ("Meteorology &amp; Forecasting", "Government Policy"...). They are advice, not rules: clicking one highlights the electives that suit that interest and fades the rest. They live in the <b>Streams</b> sheet of the program workbook, one row per pathway.</p>
+<table class="sheet"><caption>Streams sheet</caption>
+<tr><th>Stream</th><th>Colour</th><th>Description</th><th>Course 1</th><th>Course 2</th><th>Course 3</th><th>Course 4</th><th>Course 5</th><th>...</th></tr>
+<tr><td>Meteorology &amp; Forecasting</td><td>#c0392b</td><td>Atmospheric dynamics and weather prediction; maths-heavy</td><td>MATH1231</td><td>MATH2011</td><td>MATH2241</td><td>MATH3201</td><td>MATH3261</td><td></td></tr>
+<tr><td>Government Policy</td><td>#7d3c98</td><td>Climate risk, energy transition and environmental management</td><td>GEOS1701</td><td>BEES2041</td><td>GEOS2241</td><td>GEOS3761</td><td>GEOS3922</td><td></td></tr>
+</table>
+<ul>
+  <li><b>To add a pathway:</b> add a row. Give it a name, a colour, a one-line description, and list its courses across the row. Order doesn't matter, and a course can be in several pathways.</li>
+  <li><b>To change one:</b> edit the codes in its row. <b>To remove one:</b> delete the row.</li>
+  <li><b>Colour</b> is a six-character "hex" code with a # in front, e.g. <code>#2471a3</code>. Any web colour picker will give you one. Pick colours that are easy to tell apart.</li>
+  <li>Only list <b>electives</b>. Core courses are already compulsory, so listing them in a pathway means nothing; the Check button will warn you.</li>
+  <li>Every course in a pathway must already be in the Structure sheet's elective pool for that program.</li>
+  <li>A program with no pathways (the minor) just has an empty Streams sheet with the header row.</li>
+</ul>
+<div class="fig"><img src="g_stream.png" alt="A pathway selected"><div class="cap">With "Meteorology &amp; Forecasting" pressed, its electives are highlighted in the pathway's colour and the others fade.</div></div>
+
+<h2 class="pb">6. Adding a new program or a new major</h2>
+<p>Two situations. A <b>new program of an existing major</b> (say, the Climate minor was added alongside the BSc and AdvSci) becomes another button next to BSc / AdvSci / Minor. A <b>new major altogether</b> (say, Geology, or Marine Science) gets its own entry in a drop-down list at the top of the page; the drop-down only appears once there is more than one major.</p>
+<p>Either way the steps are the same:</p>
+<ol>
+  <li><b>Copy an existing program workbook</b> and rename the copy, e.g. <code>GEOSA1_bsc.xlsx</code>. Copy the one closest to what you need: a BSc major from <code>CLIME1_bsc.xlsx</code>, a minor from <code>CLIMB2_minor.xlsx</code>.</li>
+  <li><b>Edit its four sheets</b> as in sections 4 and 5: Program details, Stages, Structure, Streams. Delete the rows you don't need; the Climate courses won't disappear on their own.</li>
+  <li><b>Add a row to <code>programs.xlsx</code></b>, sheet <b>Programs</b>:</li>
+</ol>
+<table class="sheet"><caption>programs.xlsx, Programs sheet</caption>
+<tr><th>File</th><th>Major</th><th>Button label</th><th>Show</th></tr>
+<tr><td>CLIME1_bsc.xlsx</td><td>Climate Systems Science</td><td>BSc</td><td>yes</td></tr>
+<tr><td>CLIMB1_advsci.xlsx</td><td>Climate Systems Science</td><td>AdvSci</td><td>yes</td></tr>
+<tr><td>CLIMB2_minor.xlsx</td><td>Climate Systems Science</td><td>Minor</td><td>yes</td></tr>
+<tr><td>GEOSA1_bsc.xlsx</td><td>Geology</td><td>BSc</td><td>yes</td></tr>
+</table>
+<ul>
+  <li><b>File</b> is the workbook's file name, exactly.</li>
+  <li><b>Major</b> groups programs together. Rows with the same Major share one page and appear as buttons; each different Major is an entry in the drop-down.</li>
+  <li><b>Button label</b> is the short text on the button.</li>
+  <li><b>Show</b>: <code>yes</code> to show it, <code>no</code> to hide it while you're still working on it. Handy for drafting a new major without students seeing it.</li>
+</ul>
+<ol start="4">
+  <li><b>Run the scraper</b> (section 7) so the new program's courses get their titles and details.</li>
+  <li>Reload the page and press <b>Check</b>.</li>
+</ol>
+<p>The <b>Settings</b> sheet of <code>programs.xlsx</code> holds text that applies to every program: the site title shown above the drop-down, the feedback email, the "suggested pathways" wording, and the myPlan and WIL links.</p>
+
+<h2>7. The handbook details and when to run the scraper</h2>
+<p><code>handbook.xlsx</code> is where the page gets each course's title, the terms it runs in, its prerequisites and exclusions, and its handbook link. You don't type any of this. The <b>scraper</b> (<code>scrape_handbook.py</code>) fills it in by reading the UNSW Handbook website.</p>
+
+<h3>How the scraper knows which courses to fetch</h3>
+<p>It reads <code>programs.xlsx</code> to find the program workbooks, then collects <b>every course code in the Course, Alternative and Stream columns</b> of all of them. So you never give it a list: if a course is on any map, it gets fetched. Codes mentioned only in a Note column are ignored.</p>
+
+<h3>When to run it</h3>
+<ul>
+  <li><b>Whenever you add a course code that wasn't on any map before.</b> Until you do, the new tile says "Title to be confirmed" and the Check button will flag it.</li>
+  <li><b>Once a year when the new Handbook is published</b> (usually September or October), and again a few months later, because term offerings are sometimes added after the structure. The footer of the page shows which handbook year the details came from.</li>
+  <li>Any time you suspect the details are stale.</li>
+</ul>
+<p>You do <b>not</b> need to run it after moving courses between stages, changing pathways, changing UoC numbers, or editing notes. Those come straight from the program workbooks.</p>
+
+<h3>Running it</h3>
+<p>You need Python 3 on your computer and normal internet access (the UNSW network is fine). Open a terminal (Mac: Terminal app; Windows: Command Prompt or PowerShell) in the course map folder.</p>
+<p><b>First time only</b>, install the packages it needs:</p>
+<pre>pip install -r requirements.txt</pre>
+<p class="small">If <code>pip</code> is not found, try <code>pip3</code> or <code>python3 -m pip</code>.</p>
+<p><b>Each time</b>:</p>
+<pre>python scrape_handbook.py</pre>
+<p>It prints one line per course as it goes and finishes with a summary of anything it couldn't find. It takes about a minute. Other useful forms:</p>
+<pre>python scrape_handbook.py --year 2027     # a particular handbook year
+python scrape_handbook.py --dry-run       # just list the codes it would fetch</pre>
+<p>Without <code>--year</code> it uses the newest handbook year that exists. The year it used is written into the Info sheet of <code>handbook.xlsx</code> and shown in the page footer.</p>
+<div class="warn">The scraper <b>rewrites</b> the <b>Courses</b> and <b>Info</b> sheets of <code>handbook.xlsx</code> every time. Never type into those two sheets; anything you put there is lost on the next run. Corrections go in <b>Overrides</b> (next section), which the scraper never touches.</div>
+
+<h2 class="pb">8. Fixing course details by hand: the Overrides sheet</h2>
+<p>Sometimes the Handbook is wrong, out of date, or doesn't have a course yet (a brand-new course, or a code that is changing next year). The <b>Overrides</b> sheet in <code>handbook.xlsx</code> is for this.</p>
+<p>It has the same columns as the Courses sheet. The rule is simple: <b>any cell you fill in here replaces the scraped value for that course. Blank cells are ignored.</b> So you only fill in what you want to change.</p>
+<table class="sheet"><caption>Overrides sheet (extract)</caption>
+<tr><th>Code</th><th>Title</th><th>UoC</th><th>Terms</th><th>Prerequisites</th><th>...</th><th>Error</th></tr>
+<tr><td>BEES1042</td><td>(the new course’s title)</td><td>6</td><td>Term 1</td><td></td><td></td><td></td></tr>
+<tr><td>GEOS3922</td><td></td><td></td><td>Term 2</td><td></td><td></td><td></td></tr>
+</table>
+<p>In this example, BEES1042 is a new course not yet in the Handbook, so its title, UoC and term are all typed in by hand. GEOS3922 is in the Handbook but has no term listed, so only Terms is filled in; its title and everything else still come from the scrape.</p>
+<ul>
+  <li>A course that is in Overrides but <b>not</b> in Courses (like BEES1042 above) is simply added to the map.</li>
+  <li>Overrides survive every scraper run. When the Handbook catches up, delete the override row so the live details are used.</li>
+  <li>Write terms the way the Handbook does: <code>Term 1, Term 2</code> (with commas). From 2028 this will be semesters; use whatever the Handbook uses.</li>
+  <li>The <b>Prerequisites</b> column is free text, shown in the side panel. The page picks course codes out of it to draw the prerequisite links, so include the codes.</li>
+</ul>
+
+<h2>9. Checking your work</h2>
+<p>Press the <b>Check</b> button in the page header after any edit. It reads all the files and lists anything that doesn't add up.</p>
+<div class="fig"><img src="g_check.png" alt="The Check panel"><div class="cap">The Check panel. Red items mean something will be missing or wrong on the map; amber items are worth a look but not urgent.</div></div>
+<p>Typical messages and what to do:</p>
+<table>
+<tr><th style="width:45%">Message</th><th>What to do</th></tr>
+<tr><td>"...is in the Structure sheet but not in handbook.xlsx"</td><td>Run the scraper, or if the course isn't in the Handbook yet, add it to Overrides.</td></tr>
+<tr><td>"...has no title in handbook.xlsx"</td><td>The scraper couldn't find it. Check the code is right; if it's a new course, put a title in Overrides.</td></tr>
+<tr><td>"...has no offering terms listed"</td><td>Usually the Handbook hasn't published them yet. Ignore, or add them in Overrides if you know them.</td></tr>
+<tr><td>"Stream ... lists X, which is not on this program's map"</td><td>Either add X to the Structure sheet as an Elective, or remove it from the pathway.</td></tr>
+<tr><td>"Stream ... lists X, which is a core course"</td><td>Remove it from the pathway; core courses are compulsory anyway.</td></tr>
+<tr><td>"Core UoC is 24 in the Stages sheet but the core rows add up to 30"</td><td>Fix whichever is wrong.</td></tr>
+<tr><td>"...must choose 12 UoC of electives but the pool only has 6 UoC"</td><td>Add electives or reduce Elective UoC.</td></tr>
+</table>
+<p>The count on the Check button goes red when there is at least one real problem and amber when there are only warnings. Aim for zero before the page goes live.</p>
+
+<h2>10. Looking at the page and putting it live</h2>
+<h3>Looking at it on your own computer</h3>
+<p>Web browsers won't let a page read spreadsheets straight from your disk, so double-clicking <code>course_map.html</code> shows an error. Instead, open a terminal in the folder and run:</p>
+<pre>python -m http.server</pre>
+<p>then go to <a href="http://localhost:8000/course_map.html">http://localhost:8000/course_map.html</a> in your browser. Leave the terminal window open while you look. Every time you save a spreadsheet, just reload the page.</p>
+<h3>Putting it live</h3>
+<p>The live page is simply this folder copied to the website. Copy the whole folder (including <code>lib/</code>) so the spreadsheets sit next to the page. How the copy happens depends on the site; at the time of writing the folder lives in the <code>teaching/bees_course_maps/</code> part of Alex Sen Gupta's site and is pushed with the rest of it.</p>
+<h3>Sharing a link to one program</h3>
+<p>The web address remembers which program (and pathway) is showing, so you can link straight to one: <code>course_map.html#CLIME1_bsc</code> opens on the BSc. The part after <code>#</code> is the workbook's file name without <code>.xlsx</code>.</p>
+<h3>Printing</h3>
+<p>The <b>Print</b> button gives a one-page landscape summary of the program on screen, for handbooks and induction slides.</p>
+
+<h2>11. If something goes wrong</h2>
+<table>
+<tr><th style="width:40%">What you see</th><th>Likely cause and fix</th></tr>
+<tr><td>"Could not load the course map"</td><td>The page was opened by double-clicking, or a file it needs is missing or misnamed. Use the local server (section 10) and check that <code>programs.xlsx</code>, the workbooks it lists and <code>handbook.xlsx</code> are all in the same folder as the page.</td></tr>
+<tr><td>A program has disappeared</td><td>Its row in <code>programs.xlsx</code> has Show = no, or its file name doesn't match.</td></tr>
+<tr><td>A course shows "Title to be confirmed"</td><td>It isn't in <code>handbook.xlsx</code>. Run the scraper, or add it to Overrides.</td></tr>
+<tr><td>A course tile is missing altogether</td><td>The code is mistyped (must be four capital letters + four digits), its Stage doesn't match the Stages sheet, or its Type isn't exactly Core, Elective or Degree.</td></tr>
+<tr><td>"Choose one" group not appearing</td><td>The alternatives must be in the Alternative columns, not in the Course cell with a slash. A slash means co-badged (same course, two codes), not a choice.</td></tr>
+<tr><td>The scraper says "not in 2027 handbook" for a course</td><td>Either the code is wrong, or the course is new. New courses go in Overrides until the Handbook lists them.</td></tr>
+<tr><td>The scraper won't run at all</td><td>Check Python is installed (<code>python --version</code>) and the packages are installed (<code>pip install -r requirements.txt</code>). Some university networks block scripts from fetching web pages; try from home or on Wi-Fi.</td></tr>
+<tr><td>Changes don't show after saving</td><td>Make sure you saved as <code>.xlsx</code> in the same folder, then do a hard reload of the page (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows).</td></tr>
+</table>
+
+<p class="small" style="margin-top:24px">BEES Course Maps guide, version 1, September 2026. For questions about the Climate Systems Science content contact Alex Sen Gupta (a.sengupta@unsw.edu.au).</p>
+
+</body>
+</html>

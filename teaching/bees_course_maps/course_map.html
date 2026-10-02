@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Map</title>
+<!-- SheetJS (xlsx 0.18.5, Apache-2.0) reads the Excel input files directly in the browser.
+     A local copy is used so the page has no dependency on an outside CDN. -->
+<script src="lib/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #eef1f5; --panel: #ffffff; --ink: #1d2430; --muted: #5f6b7a; --line: #d8dee7;
+    --core: #1f3a5f; --elective: #3b6ea5; --degree: #8a94a3;
+    --prereq: #1e8449; --unlock: #2471a3; --select: #f39c12;
+    --radius: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink);
+         line-height: 1.35; font-size: 15px; }
+  a { color: var(--elective); }
+  button { font: inherit; cursor: pointer; }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 22px 12px; position: sticky; top: 0; z-index: 20; }
+  .hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+  .hrow + .hrow { margin-top: 10px; }
+  h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+  h1 .site { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  h1 select.major { font: inherit; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; background: #fff; color: var(--ink); max-width: 100%; }
+  h1 small { display: block; font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  .grow { flex: 1 1 auto; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #f6f8fb; }
+  .seg button { border: 0; background: transparent; padding: 7px 14px; color: var(--muted); font-weight: 600; }
+  .seg button.on { background: var(--core); color: #fff; }
+  .chip { border: 1.5px solid var(--c, #999); color: var(--c, #999); background: #fff; border-radius: 999px;
+          padding: 5px 12px; font-weight: 600; font-size: 0.85rem; transition: all .15s; }
+  .chip.on { background: var(--c, #999); color: #fff; }
+  .chip.all { --c: #46505c; }
+  .tools button { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 11px; color: var(--ink); font-size: 0.85rem; }
+  .tools button:hover { background: #f2f5f9; }
+  .tools button .n { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: #c0392b; color: #fff; font-size: 0.75rem; text-align: center; margin-left: 4px; }
+  .streamlabel { font-size: 0.8rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ── Map ────────────────────────────────────────────────── */
+  main { padding: 18px 22px 40px; max-width: 1500px; margin: 0 auto; }
+  .intro { color: var(--muted); font-size: 0.92rem; margin-bottom: 14px; max-width: 900px; }
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+  .stage-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding: 10px 16px; background: #f6f8fb; border-bottom: 1px solid var(--line); }
+  .stage-head h2 { font-size: 1.05rem; }
+  .stage-head .uoc { color: var(--muted); font-size: 0.88rem; }
+  .stage-head .uoc b { color: var(--ink); }
+  .tier { display: grid; grid-template-columns: 170px 1fr; border-bottom: 1px dashed var(--line); }
+  .tier:last-child { border-bottom: 0; }
+  .tier-label { padding: 12px 14px; font-size: 0.78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-right: 1px dashed var(--line); }
+  .tier-label span { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.8rem; margin-top: 4px; color: var(--muted); line-height: 1.3; }
+  .tier-label .k { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .tier.core .k { background: var(--core); } .tier.elective .k { background: var(--elective); } .tier.degree .k { background: var(--degree); }
+  .tiles { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 14px; align-content: flex-start; }
+  .honours { padding: 14px 16px; color: var(--ink); background: #fbfcfe; }
+
+  /* ── Tiles ──────────────────────────────────────────────── */
+  .tiles { gap: 14px 18px; }
+  .group { display: flex; align-items: stretch; }
+  .group.multi { position: relative; padding: 22px 8px 8px; background: #e9edf3; border-radius: 12px; }
+  .group.multi::before { content: "choose one"; position: absolute; top: 6px; left: 12px; font-size: 0.66rem; font-weight: 700;
+                         letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .group.multi .tile { box-shadow: 0 1px 3px rgba(20,30,50,.12); }
+  .group.multi { gap: 18px; }
+  .group .or { position: relative; z-index: 5; align-self: center; width: 28px; height: 28px; margin: 0 -23px; border-radius: 50%;
+               display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 1.5px solid #b9c6d8;
+               font-size: 0.68rem; color: var(--muted); font-weight: 700; box-shadow: 0 1px 3px rgba(20,30,50,.15); }
+  .group.multi .tile:hover, .group.multi .tile.is-selected { z-index: 3; }
+  .tile { position: relative; width: 160px; min-height: 84px; padding: 9px 10px 10px; border-radius: 8px; border: 1.5px solid var(--edge, var(--line));
+          background: var(--fill, #fff); text-align: left; color: var(--ink); display: flex; flex-direction: column; gap: 3px;
+          transition: transform .12s, box-shadow .15s, opacity .2s, filter .2s; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(20,30,50,.14); }
+  .tile .code { font-weight: 700; font-size: 0.9rem; letter-spacing: .01em; }
+  .tile .code small { font-weight: 500; color: var(--muted); font-size: 0.72rem; margin-left: 4px; }
+  .tile .title { font-size: 0.76rem; color: #2f3a48; line-height: 1.25; flex: 1; }
+  .tile .title.tbc { color: var(--muted); font-style: italic; }
+  .tile .terms { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+  .term { font-size: 0.66rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #e6ebf2; color: #3d4a5c; }
+  .tile.core { --edge: #b9c6d8; --fill: #f4f7fb; }
+  .tile.core .code { color: var(--core); }
+  .tile.elective { --edge: #c9d3df; --fill: #fff; }
+  .tile.degree { --edge: #d5d9e0; --fill: #f7f8fa; border-style: dashed; }
+  .tile.degree .code { color: #5c6673; }
+  .tile.dim { opacity: .22; filter: grayscale(1); }
+  /* When a course is selected: unrelated tiles recede, prerequisites flash green, follow-on courses flash blue */
+  .tile.unrelated { opacity: .38; filter: saturate(.4); }
+  .tile.is-prereq { --edge: var(--prereq); --fill: #e6f5ea; border-width: 3px; animation: flash-g 0.5s ease-in-out 3; }
+  .tile.is-unlock { --edge: var(--unlock); --fill: #e8f1f9; border-width: 3px; animation: flash-b 0.5s ease-in-out 3; }
+  .tile.is-prereq::after, .tile.is-unlock::after { position: absolute; top: -9px; right: 8px; font-size: 0.6rem; font-weight: 800; letter-spacing: .05em;
+      text-transform: uppercase; color: #fff; padding: 2px 6px; border-radius: 4px; }
+  .tile.is-prereq::after { content: "prerequisite"; background: var(--prereq); }
+  .tile.is-unlock::after { content: "leads to"; background: var(--unlock); }
+  @keyframes flash-g { 0%,100% { box-shadow: 0 0 0 0 rgba(30,132,73,0); } 50% { box-shadow: 0 0 0 8px rgba(30,132,73,.45); background: #bfe8cb; } }
+  @keyframes flash-b { 0%,100% { box-shadow: 0 0 0 0 rgba(36,113,163,0); } 50% { box-shadow: 0 0 0 8px rgba(36,113,163,.45); background: #c3dcf0; } }
+  .group.multi { overflow: visible; }
+  .tile.is-selected { --edge: var(--select); box-shadow: 0 0 0 2.5px var(--select) inset, 0 6px 18px rgba(243,156,18,.35); transform: translateY(-1px); }
+  .tile.instream { --edge: var(--sc); --fill: color-mix(in srgb, var(--sc) 9%, #fff); border-width: 2.5px;
+                   box-shadow: 0 4px 14px color-mix(in srgb, var(--sc) 35%, transparent); transform: translateY(-2px) scale(1.03); }
+  .tile.instream::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--sc); border-radius: 6px 6px 0 0; }
+  .tile.cob { width: 200px; }
+  .cobadge { font-size: 0.6rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ── Pool layout (minor) ───────────────────────────────── */
+  .pool .tiles { padding: 16px; }
+  .pool .tile { width: 190px; }
+
+  /* ── Legend / footer ───────────────────────────────────── */
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 0 0 14px; }
+  .hint b { color: var(--ink); font-weight: 600; }
+  .key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; color: var(--muted); margin: 8px 0 12px; }
+  .key i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 2px solid; }
+  footer { color: var(--muted); font-size: 0.82rem; padding: 10px 22px 30px; max-width: 1500px; margin: 0 auto; }
+  footer p { margin: 4px 0; }
+  .notes { margin: 10px 0 0; padding: 12px 16px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.9rem; }
+  .notes p { margin: 4px 0; }
+
+  /* ── Side panel ─────────────────────────────────────────── */
+  .panel { position: fixed; top: 0; right: 0; height: 100%; width: min(420px, 100%); background: #fff; border-left: 1px solid var(--line);
+           box-shadow: -8px 0 30px rgba(0,0,0,.12); z-index: 30; overflow-y: auto; padding: 18px 20px 30px; animation: slidein .2s ease; }
+  @keyframes slidein { from { transform: translateX(100%); } to { transform: none; } }
+  .panel .close { position: absolute; top: 12px; right: 12px; border: 0; background: #eef1f5; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; }
+  .panel h3 { font-size: 1.15rem; margin: 6px 40px 2px 0; }
+  .panel .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 12px; }
+  .panel h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 16px 0 6px; }
+  .panel p { font-size: 0.9rem; }
+  .panel .pill { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; margin: 2px 4px 2px 0; border: 1.5px solid; }
+  .pill.g { color: var(--prereq); border-color: var(--prereq); background: #edf7f0; }
+  .pill.b { color: var(--unlock); border-color: var(--unlock); background: #ecf3fa; }
+  .pill.x { color: #7a2e2e; border-color: #c98a8a; background: #fbeeee; }
+  .pill.s { color: #fff; border-color: transparent; }
+  .panel .meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 0.85rem; }
+  .panel .meta dt { color: var(--muted); }
+  .panel .rule { background: #f6f8fb; border-left: 3px solid var(--prereq); padding: 8px 10px; border-radius: 4px; font-size: 0.85rem; }
+  .overlay { position: fixed; inset: 0; z-index: 25; }
+
+  /* ── Modals (help / check) ───────────────────────────────── */
+  .modal-bg { position: fixed; inset: 0; background: rgba(20,28,40,.45); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: #fff; border-radius: 12px; max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 22px 26px; position: relative; }
+  .modal h3 { margin-bottom: 10px; }
+  .modal h4 { margin: 14px 0 4px; font-size: 0.95rem; }
+  .modal p, .modal li { font-size: 0.92rem; margin: 4px 0; }
+  .modal ul { padding-left: 20px; }
+  .modal .close { position: absolute; top: 12px; right: 12px; border: 0; background: #eef1f5; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; }
+  .issue { padding: 6px 10px; border-left: 3px solid #c0392b; background: #fdf3f2; border-radius: 4px; margin: 6px 0; font-size: 0.88rem; }
+  .issue.warn { border-color: #d68910; background: #fef8ec; }
+  .issue b { font-family: ui-monospace, Menlo, monospace; }
+  .ok { padding: 10px; background: #edf7f0; border-radius: 6px; color: var(--prereq); font-weight: 600; }
+
+  /* ── Loading / error ───────────────────────────────────── */
+  .loading { padding: 60px 20px; text-align: center; color: var(--muted); }
+  .error { margin: 30px auto; max-width: 720px; background: #fff; border: 1px solid #e3b4b4; border-radius: 10px; padding: 20px; }
+  .error code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; }
+
+  /* ── Small screens ─────────────────────────────────────── */
+  @media (max-width: 720px) {
+    header, main { padding-left: 14px; padding-right: 14px; }
+    .tier { grid-template-columns: 1fr; }
+    .tier-label { border-right: 0; border-bottom: 1px dashed var(--line); padding: 8px 12px; }
+    header { position: static; }
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .group .tile { flex: 1 1 0; width: auto; min-width: 0; }
+    .group.multi { grid-column: 1 / -1; }
+    .pool .tile { width: auto; }
+    .panel { width: 100%; }
+  }
+
+  /* ── Print ──────────────────────────────────────────────── */
+  @media print {
+    @page { size: A4 landscape; margin: 12mm; }
+    body { background: #fff; font-size: 12px; }
+    header { position: static; border: 0; padding: 0 0 8px; }
+    .seg, .chips, .tools, .panel, .overlay, .modal-bg { display: none !important; }
+    .streamlabel { display: none; }
+    main { padding: 0; max-width: none; }
+    .stage { break-inside: avoid; border-color: #bbb; margin-bottom: 10px; }
+    .tile { width: 140px; min-height: 70px; break-inside: avoid; box-shadow: none !important; transform: none !important; }
+    .tile.dim { opacity: .35; }
+    .tile:hover { transform: none; }
+    footer { padding: 0; }
+    .print-only { display: flex !important; }
+    .no-print { display: none !important; }
+    .tile.instream { transform: none; box-shadow: none; }
+    .tile.unrelated { opacity: 1; filter: none; }
+  }
+  .print-only { display: none; }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Loading course map…</div></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEES course map
+   Reads programs.xlsx (index + site settings), one workbook per program, and
+   handbook.xlsx (scraped course details + hand overrides). All in the browser.
+   ═══════════════════════════════════════════════════════════════════════════ */
+'use strict';
+
+const CODE_RE = /\b[A-Z]{4}\d{4}\b/g;
+const DISC_COLORS = {   // subtle tint per discipline prefix, used for the code text
+  CLIM: '#16a085', MSCI: '#1a6fa3', MATH: '#3a7bd5', PHYS: '#8e44ad', BEES: '#219a52',
+  GEOS: '#c0550a', CHEM: '#7d6608', CVEN: '#c0392b', SCIF: '#5c6673', GENS: '#16a085'
+};
+
+const state = {
+  settings: {}, programs: [], handbook: {}, hbInfo: {},
+  programId: null, streamId: null, selected: null, modal: null, error: null
+};
+
+/* ── Excel helpers ─────────────────────────────────────────────────────── */
+async function fetchWorkbook(file) {
+  const res = await fetch(file, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Could not load ${file} (HTTP ${res.status})`);
+  const buf = await res.arrayBuffer();
+  return XLSX.read(buf, { type: 'array' });
+}
+// Returns rows as objects keyed by header. The header row is the first row whose
+// first cell matches `firstHeader`, so a note line above the header is skipped.
+function rowsOf(wb, sheetName, firstHeader) {
+  const ws = wb.Sheets[sheetName];
+  if (!ws) return null;
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const hi = aoa.findIndex(r => String(r[0]).trim() === firstHeader);
+  if (hi < 0) return [];
+  const header = aoa[hi].map(h => String(h).trim());
+  return aoa.slice(hi + 1)
+    .filter(r => r.some(v => String(v).trim() !== ''))
+    .map(r => Object.fromEntries(header.map((h, i) => [h, r[i] === undefined ? '' : String(r[i]).trim()])));
+}
+function kvOf(wb, sheetName) {
+  const rows = rowsOf(wb, sheetName, 'Setting') || [];
+  const kv = {}; const notes = [];
+  rows.forEach(r => {
+    const k = r.Setting, v = r.Value;
+    if (!k) return;
+    if (k.toLowerCase() === 'note') notes.push(v); else kv[k] = v;
+  });
+  kv._notes = notes;
+  return kv;
+}
+const yes = v => /^(y|yes|true|1)$/i.test(String(v).trim());
+const codesIn = s => (String(s || '').match(CODE_RE) || []);
+const stageOfCode = c => parseInt(c[4], 10);
+
+/* ── Parsing a program workbook ─────────────────────────────────────────── */
+function parseProgram(file, wb) {
+  const info = kvOf(wb, 'Program');
+  const stagesRaw = rowsOf(wb, 'Stages', 'Stage') || [];
+  const structRaw = rowsOf(wb, 'Structure', 'Stage') || [];
+  const streamsRaw = rowsOf(wb, 'Streams', 'Stream') || [];
+
+  const stages = stagesRaw.map(r => ({
+    id: r.Stage, label: r.Label || `Stage ${r.Stage}`,
+    coreUoC: Number(r['Core UoC']) || 0, electiveUoC: Number(r['Elective UoC']) || 0,
+    note: r.Note || '', honours: /honours/i.test(r.Note || ''),
+    core: [], elective: [], degree: []
+  }));
+  const stageById = Object.fromEntries(stages.map(s => [String(s.id), s]));
+
+  // One "group" per Structure row: a tile, or an alt-group of tiles ("or").
+  const groups = [];
+  structRaw.forEach((r, i) => {
+    const st = stageById[String(r.Stage)];
+    const type = (r.Type || '').toLowerCase();
+    if (!st || !['core', 'elective', 'degree'].includes(type)) return;
+    const cells = [r.Course, r['Alternative 1'], r['Alternative 2'], r['Alternative 3']].filter(v => v && v.trim());
+    const options = cells.map(cell => {
+      const codes = codesIn(cell);
+      return {
+        id: `${file}:${i}:${cell}`, codes, cell, primary: codes[0] || null,
+        cobadged: codes.length > 1 && /\//.test(cell),
+        label: r['Display label'] || (codes.length ? null : cell),
+        link: r.Link || '', note: r.Note || '', type, stage: st
+      };
+    });
+    const g = { type, stage: st, options, note: r.Note || '' };
+    groups.push(g);
+    st[type].push(g);
+  });
+
+  const streams = streamsRaw.map((r, i) => {
+    const codes = Object.keys(r).filter(k => /^Course\s*\d+/i.test(k)).flatMap(k => codesIn(r[k]));
+    return { id: `s${i}`, name: r.Stream, colour: r.Colour || '#777', description: r.Description || '', codes: new Set(codes) };
+  }).filter(s => s.name);
+
+  return {
+    file, id: file.replace(/\.xlsx$/i, ''), info, stages, groups, streams,
+    layout: (info.Layout || 'stages').toLowerCase(),
+    allTiles: groups.flatMap(g => g.options)
+  };
+}
+
+/* ── Handbook lookups ───────────────────────────────────────────────────── */
+function parseHandbook(wb) {
+  const courses = rowsOf(wb, 'Courses', 'Code') || [];
+  const overrides = rowsOf(wb, 'Overrides', 'Code') || [];
+  const hb = {};
+  courses.forEach(r => { if (r.Code) hb[r.Code] = { ...r }; });
+  overrides.forEach(r => {
+    if (!r.Code) return;
+    const base = hb[r.Code] || { Code: r.Code };
+    Object.keys(r).forEach(k => { if (String(r[k]).trim() !== '') base[k] = r[k]; });
+    base._overridden = true;
+    hb[r.Code] = base;
+  });
+  const info = kvOf(wb, 'Info');
+  return { hb, info };
+}
+const course = code => state.handbook[code] || null;
+const termsOf = code => { const c = course(code); return c && c.Terms ? c.Terms.split(/,\s*/).map(t => t.replace(/^Term\s*/i, 'T')) : []; };
+const prereqCodes = code => { const c = course(code); return c ? codesIn(c['Prerequisite codes'] || c.Prerequisites) : []; };
+
+/* ── Derived state ──────────────────────────────────────────────────────── */
+const currentProgram = () => state.programs.find(p => p.id === state.programId);
+function tileByCode(prog, code) { return prog.allTiles.find(t => t.codes.includes(code)); }
+function tileStreams(prog, tile) { return prog.streams.filter(s => tile.codes.some(c => s.codes.has(c))); }
+
+// prerequisite / unlock sets for the selected tile, restricted to tiles on this map
+function relations(prog, sel) {
+  const pre = new Set(), unlock = new Set();
+  if (!sel) return { pre, unlock };
+  sel.codes.forEach(code => prereqCodes(code).forEach(p => { const t = tileByCode(prog, p); if (t && t !== sel) pre.add(t.id); }));
+  prog.allTiles.forEach(t => {
+    if (t === sel) return;
+    if (t.codes.some(c => prereqCodes(c).some(p => sel.codes.includes(p)))) unlock.add(t.id);
+  });
+  return { pre, unlock };
+}
+
+/* ── Data checks (shown in the Check panel) ─────────────────────────────── */
+function runChecks() {
+  const issues = [];
+  const add = (level, prog, msg) => issues.push({ level, prog: prog ? prog.info['Plan code'] || prog.id : '', msg });
+  state.programs.forEach(p => {
+    if (!p.stages.length) add('error', p, 'No rows in the Stages sheet.');
+    p.allTiles.forEach(t => {
+      t.codes.forEach(c => {
+        const h = course(c);
+        if (!h) add('error', p, `<b>${c}</b> is in the Structure sheet but not in handbook.xlsx. Run the scraper or add it to Overrides.`);
+        else if (!h.Title) add('warn', p, `<b>${c}</b> has no title in handbook.xlsx${h.Error ? ` (${h.Error})` : ''}. Add one in Overrides.`);
+        else if (!h.Terms && t.type !== 'degree') add('warn', p, `<b>${c}</b> has no offering terms listed in the handbook.`);
+      });
+      if (!t.codes.length && !t.label) add('error', p, `A ${t.type} row in Stage ${t.stage.id} has no course code and no Display label.`);
+    });
+    p.stages.forEach(s => {
+      if (s.honours) return;
+      const coreUoC = s.core.reduce((n, g) => n + uocOf(g.options[0]), 0);
+      if (s.coreUoC && coreUoC !== s.coreUoC) add('warn', p, `Stage ${s.id}: Core UoC is ${s.coreUoC} in the Stages sheet but the core rows add up to ${coreUoC}.`);
+      const poolUoC = s.elective.reduce((n, g) => n + uocOf(g.options[0]), 0);
+      if (s.electiveUoC && poolUoC < s.electiveUoC) add('error', p, `Stage ${s.id}: students must choose ${s.electiveUoC} UoC of electives but the pool only has ${poolUoC} UoC.`);
+    });
+    p.streams.forEach(st => {
+      st.codes.forEach(c => {
+        const t = tileByCode(p, c);
+        if (!t) add('warn', p, `Stream "${st.name}" lists <b>${c}</b>, which is not on this program's map.`);
+        else if (t.type === 'core') add('warn', p, `Stream "${st.name}" lists <b>${c}</b>, which is a core course (streams should only list electives).`);
+      });
+      if (!/^#[0-9a-f]{6}$/i.test(st.colour)) add('warn', p, `Stream "${st.name}" colour "${st.colour}" is not a hex colour like #2471a3.`);
+    });
+  });
+  return issues;
+}
+function uocOf(tile) { const c = tile.primary && course(tile.primary); const u = c && Number(c.UoC); return Number.isFinite(u) && c.UoC !== '' ? u : 6; }
+
+/* ── Rendering ──────────────────────────────────────────────────────────── */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const app = document.getElementById('app');
+
+function render() {
+  if (state.error) { app.innerHTML = renderError(state.error); return; }
+  const prog = currentProgram();
+  if (!prog) { app.innerHTML = '<div class="loading">No programs to show. Check programs.xlsx.</div>'; return; }
+  const issues = runChecks();
+  const rel = relations(prog, state.selected);
+  const stream = prog.streams.find(s => s.id === state.streamId) || null;
+
+  app.innerHTML = `
+    ${renderHeader(prog, stream, issues)}
+    <main>
+      ${renderIntro(prog, stream)}
+      ${prog.layout === 'pool' ? renderPool(prog, rel, stream) : prog.stages.map(s => renderStage(prog, s, rel, stream)).join('')}
+      ${renderNotes(prog)}
+    </main>
+    ${renderFooter(prog)}
+    ${state.selected ? `<div class="overlay" data-act="deselect"></div>${renderPanel(prog, state.selected, rel)}` : ''}
+    ${state.modal === 'help' ? renderHelp() : ''}
+    ${state.modal === 'check' ? renderCheck(issues) : ''}
+  `;
+}
+
+function renderHeader(prog, stream, issues) {
+  const majors = [...new Set(state.programs.map(p => p.major))];
+  const siblings = state.programs.filter(p => p.major === prog.major);
+  const progName = `${prog.info.Degree || ''}${prog.info['Program code'] ? ` (${prog.info['Program code']})` : ''}`;
+  const errors = issues.filter(i => i.level === 'error').length;
+  const titleHtml = majors.length > 1
+    ? `<span class="site">${esc(state.settings.Title || 'Course maps')}</span>
+       <select class="major" data-act="major" aria-label="Choose a major">${majors.map(m => `<option value="${esc(m)}" ${m === prog.major ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select>`
+    : `${esc(prog.major || state.settings.Title || 'Course map')}`;
+  return `<header>
+    <div class="hrow">
+      <h1>${titleHtml}<small>${esc(progName)} · ${esc(prog.info['Plan code'] || '')} · ${esc(prog.info['Structure year'] ? prog.info['Structure year'] + ' structure' : '')}</small></h1>
+      <div class="grow"></div>
+      ${siblings.length > 1 ? `<div class="seg">${siblings.map(p => `<button data-act="program" data-id="${p.id}" class="${p.id === prog.id ? 'on' : ''}">${esc(p.button)}</button>`).join('')}</div>` : ''}
+      <div class="tools">
+        <button data-act="print" title="Print this program">Print</button>
+        <button data-act="modal" data-id="check" title="Data checks">Check${issues.length ? `<span class="n" style="${errors ? '' : 'background:#d68910'}">${issues.length}</span>` : ''}</button>
+        <button data-act="modal" data-id="help">Help</button>
+      </div>
+    </div>
+    ${prog.streams.length ? `<div class="hrow chips">
+      <span class="streamlabel">Suggested pathways</span>
+      <button class="chip all ${!stream ? 'on' : ''}" data-act="stream" data-id="">All</button>
+      ${prog.streams.map(s => `<button class="chip ${stream && stream.id === s.id ? 'on' : ''}" style="--c:${esc(s.colour)}" data-act="stream" data-id="${s.id}">${esc(s.name)}</button>`).join('')}
+    </div>` : ''}
+  </header>`;
+}
+
+function renderIntro(prog, stream) {
+  const sub = prog.info.Subtitle ? `<p class="intro">${esc(prog.info.Subtitle)}</p>` : '';
+  const hint = `<p class="hint no-print"><b>Click any course</b> for its description, prerequisites and what it leads on to. Badges show the terms it runs in.${prog.streams.length ? ' <b>Pick a pathway</b> above to see which electives suit an interest.' : ''}</p>`;
+  const streamNote = stream ? `<p class="intro" style="border-left:4px solid ${esc(stream.colour)};padding-left:10px;color:var(--ink)"><b>${esc(stream.name)}.</b> ${esc(stream.description)}. The highlighted electives are a suggested path for this interest; any elective in the pool still counts.</p>` : '';
+  return sub + hint + streamNote;
+}
+
+function renderStage(prog, s, rel, stream) {
+  if (s.honours) {
+    return `<section class="stage"><div class="stage-head"><h2>${esc(s.label)}</h2><span class="uoc"><b>${s.coreUoC} UoC</b></span></div>
+      <div class="honours">${esc(prog.info['Honours note'] || s.note)}</div></section>`;
+  }
+  const nElect = s.elective.length ? Math.round(s.electiveUoC / uocOf(s.elective[0].options[0])) : 0;
+  const head = `<div class="stage-head"><h2>${esc(s.label)}</h2>
+    ${s.coreUoC ? `<span class="uoc">Core <b>${s.coreUoC} UoC</b></span>` : ''}
+    ${s.electiveUoC ? `<span class="uoc">Prescribed electives: choose <b>${s.electiveUoC} UoC</b> (${nElect} course${nElect === 1 ? '' : 's'}) from ${s.elective.length}</span>` : ''}
+    ${s.note && !s.honours ? `<span class="uoc">${esc(s.note)}</span>` : ''}
+  </div>`;
+  const tier = (cls, label, sub, groups) => groups.length ? `<div class="tier ${cls}">
+      <div class="tier-label"><i class="k"></i>${label}<span>${sub}</span></div>
+      <div class="tiles">${groups.map(g => renderGroup(prog, g, rel, stream)).join('')}</div></div>` : '';
+  return `<section class="stage">${head}
+    ${tier('core', 'Core', 'Everyone in the major takes these', s.core)}
+    ${tier('elective', 'Prescribed electives', `Choose ${nElect} of these ${s.elective.length} courses (${s.electiveUoC} UoC)`, s.elective)}
+    ${tier('degree', 'Also required by your degree', 'Faculty of Science courses that all students in the degree take; not part of the major', s.degree)}
+  </section>`;
+}
+
+function renderPool(prog, rel, stream) {
+  const s = prog.stages[0];
+  const n = s ? Math.round(s.electiveUoC / 6) : 0;
+  return `<section class="stage pool">
+    <div class="stage-head"><h2>${esc(s ? s.label : 'Courses')}</h2>${s ? `<span class="uoc">Choose <b>${s.electiveUoC} UoC</b> (${n} courses) from the ${s.elective.length} below</span>` : ''}</div>
+    <div class="tiles">${(s ? s.elective : []).map(g => renderGroup(prog, g, rel, stream)).join('')}</div>
+  </section>`;
+}
+
+function renderGroup(prog, g, rel, stream) {
+  const inner = g.options.map(t => renderTile(prog, t, rel, stream)).join('<span class="or">or</span>');
+  return `<div class="group${g.options.length > 1 ? ' multi' : ''}">${inner}</div>`;
+}
+
+function renderTile(prog, t, rel, stream) {
+  const sel = state.selected && state.selected.id === t.id;
+  const streams = tileStreams(prog, t);
+  const inStream = stream ? streams.some(s => s.id === stream.id) : false;
+  const dim = stream && t.type === 'elective' && !inStream;
+  const related = sel || rel.pre.has(t.id) || rel.unlock.has(t.id);
+  const unrelated = state.selected && !related;
+  const cls = ['tile', t.type, t.cobadged ? 'cob' : '', sel ? 'is-selected' : '', rel.pre.has(t.id) ? 'is-prereq' : '', rel.unlock.has(t.id) ? 'is-unlock' : '', dim ? 'dim' : '', unrelated ? 'unrelated' : '', inStream && !state.selected ? 'instream' : ''].join(' ');
+  const h = t.primary ? course(t.primary) : null;
+  const title = t.codes.length ? (t.label || (h && h.Title) || '') : (t.label || '');
+  const codeHtml = t.codes.length
+    ? t.codes.map((c, i) => `<span style="color:${DISC_COLORS[c.slice(0, 4)] || 'inherit'}">${c}</span>`).join('<small>/</small>')
+    : esc(t.cell || '?');
+  const terms = t.primary ? [...new Set(t.codes.flatMap(termsOf))] : [];
+  const uoc = h && h.UoC !== '' && h.UoC !== undefined ? Number(h.UoC) : null;
+  return `<button class="${cls}" data-act="select" data-id="${esc(t.id)}" style="${inStream ? `--sc:${esc(stream.colour)}` : ''}" title="${esc(title)}">
+    <span class="code">${codeHtml}${uoc === 0 ? '<small>0 UoC</small>' : ''}</span>
+    ${t.cobadged ? '<span class="cobadge">co-badged</span>' : ''}
+    <span class="title ${title ? '' : 'tbc'}">${esc(title || 'Title to be confirmed')}</span>
+    ${terms.length ? `<span class="terms">${terms.map(x => `<span class="term">${esc(x)}</span>`).join('')}</span>` : ''}
+  </button>`;
+}
+
+function renderNotes(prog) {
+  const notes = [...(prog.info._notes || [])];
+  if (prog.streams.length && state.settings['Pathways note']) notes.push(state.settings['Pathways note']);
+  if (!notes.length) return '';
+  return `<div class="notes">${notes.map(n => `<p>${esc(n)}</p>`).join('')}</div>`;
+}
+
+function renderFooter(prog) {
+  const hb = state.hbInfo;
+  const links = [];
+  if (prog.info['Handbook link']) links.push(`<a href="${esc(prog.info['Handbook link'])}" target="_blank" rel="noopener">Official handbook entry</a>`);
+  if (state.settings['myPlan link']) links.push(`<a href="${esc(state.settings['myPlan link'])}" target="_blank" rel="noopener">myPlan</a>`);
+  if (state.settings['WIL link']) links.push(`<a href="${esc(state.settings['WIL link'])}" target="_blank" rel="noopener">Work Integrated Learning</a>`);
+  if (state.settings['Feedback email']) links.push(`<a href="mailto:${esc(state.settings['Feedback email'])}">Report a problem</a>`);
+  return `<footer>
+    <p>${esc(prog.info['Structure year'] || '')} program structure. Course titles and offering terms from the ${esc(hb['Handbook year'] || '?')} UNSW Handbook, refreshed ${esc(hb['Scraped on'] || '?')}. The official handbook is the authority on requirements; this map is a guide.</p>
+    <p>${links.join(' · ')}</p>
+    <p class="print-only">Printed from the interactive course map.</p>
+  </footer>`;
+}
+
+function renderPanel(prog, t, rel) {
+  const h = t.primary ? course(t.primary) : null;
+  const streams = tileStreams(prog, t);
+  const pillList = (ids, cls) => [...ids].map(id => { const x = prog.allTiles.find(a => a.id === id); return x ? `<span class="pill ${cls}" data-act="select" data-id="${esc(x.id)}" style="cursor:pointer">${esc(x.codes.join('/') || x.label)}</span>` : ''; }).join('');
+  const external = h ? codesIn(h['Prerequisite codes'] || h.Prerequisites).filter(c => !tileByCode(prog, c)) : [];
+  const stageLabel = t.stage.label;
+  return `<aside class="panel">
+    <button class="close" data-act="deselect" aria-label="Close">×</button>
+    <h3>${esc(t.codes.join(' / ') || t.label)}</h3>
+    <div class="sub">${esc(t.label && t.codes.length ? t.label : (h && h.Title) || 'Title to be confirmed')}</div>
+    <dl class="meta">
+      <dt>Role</dt><dd>${t.type === 'core' ? 'Core course' : t.type === 'elective' ? 'Prescribed elective' : 'Degree requirement (outside the major)'} · ${esc(stageLabel)}</dd>
+      ${h && h.UoC !== '' ? `<dt>Units</dt><dd>${esc(h.UoC)} UoC</dd>` : ''}
+      ${h && h.Terms ? `<dt>Offered</dt><dd>${esc(h.Terms)}</dd>` : ''}
+      ${h && h.School ? `<dt>School</dt><dd>${esc(h.School)}</dd>` : ''}
+      ${h && h.Delivery ? `<dt>Delivery</dt><dd>${esc(h.Delivery)}${h['Contact hours'] ? `, ${esc(h['Contact hours'])}` : ''}</dd>` : ''}
+    </dl>
+    ${t.cobadged ? `<p style="margin-top:8px;font-size:.85rem;color:var(--muted)">Co-badged: one enrolment, offered under either code (${esc(t.codes.join(' or '))}). Enrol in the one your program allows.</p>` : ''}
+    ${t.note ? `<p style="margin-top:8px;font-size:.85rem">${esc(t.note)}</p>` : ''}
+    ${streams.length ? `<h4>Suggested pathways</h4>${streams.map(s => `<span class="pill s" style="background:${esc(s.colour)}">${esc(s.name)}</span>`).join('')}` : ''}
+    ${h && h.Prerequisites ? `<h4>Prerequisites (handbook wording)</h4><div class="rule">${esc(h.Prerequisites)}</div>` : (t.codes.length ? '<h4>Prerequisites</h4><p style="color:var(--muted)">None listed.</p>' : '')}
+    ${rel.pre.size || rel.unlock.size ? `<div class="key" style="margin-top:14px">${rel.pre.size ? '<span><i style="border-color:var(--prereq)"></i>green outline on the map: prerequisites</span>' : ''}${rel.unlock.size ? '<span><i style="border-color:var(--unlock)"></i>blue outline: courses this leads on to</span>' : ''}</div>` : ''}
+    ${rel.pre.size ? `<h4>Prerequisites on this map</h4>${pillList(rel.pre, 'g')}` : ''}
+    ${external.length ? `<p style="font-size:.8rem;color:var(--muted);margin-top:6px">Also mentions courses outside this map: ${external.map(esc).join(', ')}</p>` : ''}
+    ${rel.unlock.size ? `<h4>Needed for</h4>${pillList(rel.unlock, 'b')}` : ''}
+    ${h && h.Exclusions ? `<h4>Exclusions</h4>${h.Exclusions.split(/,\s*/).map(x => `<span class="pill x">${esc(x)}</span>`).join('')}` : ''}
+    ${h && h.Overview ? `<h4>Overview</h4><p>${esc(h.Overview.length > 700 ? h.Overview.slice(0, 700) + '…' : h.Overview)}</p>` : ''}
+    <h4>Links</h4>
+    ${t.codes.map(c => { const x = course(c); const u = (x && x['Handbook URL']) || ''; return u ? `<p><a href="${esc(u)}" target="_blank" rel="noopener">${esc(c)} in the UNSW Handbook</a></p>` : ''; }).join('')}
+    ${t.link ? `<p><a href="${esc(t.link)}" target="_blank" rel="noopener">More information</a></p>` : ''}
+  </aside>`;
+}
+
+function renderHelp() {
+  return `<div class="modal-bg" data-act="modal-close"><div class="modal" data-stop>
+    <button class="close" data-act="modal-close" aria-label="Close">×</button>
+    <h3>How to read this map</h3>
+    <p>Each stage (year) shows three rows. <b>Core</b> courses are compulsory. <b>Prescribed electives</b> are a pool: the stage heading tells you how many units of credit to choose from it. <b>Degree requirements</b> are courses your degree needs that sit outside the major, such as the Faculty of Science skills and employability courses.</p>
+    <h4>"or" between tiles</h4><p>Pick one. Usually a standard and a higher version of the same course.</p>
+    <h4>Co-badged</h4><p>One course offered under two codes (for example an undergraduate and a postgraduate code). You enrol in one of them.</p>
+    <h4>Suggested pathways</h4><p>Click a pathway to highlight electives that fit an interest such as meteorology or policy. They are advice, not rules: any course in the elective pool counts. Pathways are not formal specialisations and do not appear on your transcript.</p>
+    <h4>Clicking a course</h4><p>Opens details: offering terms, prerequisites (green outlines show prerequisites that are on this map, blue shows what the course leads to), exclusions and a link to the handbook.</p>
+    <h4>Printing</h4><p>The Print button gives a one-page landscape summary of the program currently shown.</p>
+    <p style="margin-top:14px;color:var(--muted)">The official UNSW Handbook is the authority on program rules. If something here looks wrong, use the "Report a problem" link at the bottom of the page.</p>
+  </div></div>`;
+}
+
+function renderCheck(issues) {
+  return `<div class="modal-bg" data-act="modal-close"><div class="modal" data-stop>
+    <button class="close" data-act="modal-close" aria-label="Close">×</button>
+    <h3>Data checks</h3>
+    <p style="color:var(--muted)">Problems found in the Excel input files. Red items will show on the map as missing or wrong; amber items are worth a look.</p>
+    ${issues.length ? issues.map(i => `<div class="issue ${i.level}"><b>${esc(i.prog)}</b> ${i.msg}</div>`).join('') : '<div class="ok">No problems found.</div>'}
+    <h4>Files loaded</h4>
+    <p>programs.xlsx · ${state.programs.map(p => esc(p.file)).join(' · ')} · ${esc(state.settings['Handbook file'] || 'handbook.xlsx')} (${esc(state.hbInfo['Handbook year'] || '?')} handbook, ${Object.keys(state.handbook).length} courses)</p>
+  </div></div>`;
+}
+
+function renderError(err) {
+  return `<div class="error"><h3>Could not load the course map</h3><p style="margin:8px 0">${esc(err.message || err)}</p>
+    <p>Things to check: the page must be opened through a web server (not by double-clicking the file), and <code>programs.xlsx</code>, the program workbooks it lists, and <code>handbook.xlsx</code> must be in the same folder as this page.</p></div>`;
+}
+
+/* ── Events (one delegated listener) ────────────────────────────────────── */
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  if (el.hasAttribute('data-stop') && el === e.target) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  if (act === 'program') { state.programId = id; state.streamId = null; state.selected = null; }
+  else if (act === 'major') { return; }
+  else if (act === 'stream') { state.streamId = id || null; }
+  else if (act === 'select') { const p = currentProgram(); const t = p.allTiles.find(x => x.id === id); state.selected = (state.selected && state.selected.id === id) ? null : t; }
+  else if (act === 'deselect') { state.selected = null; }
+  else if (act === 'modal') { state.modal = id; }
+  else if (act === 'modal-close') { if (e.target.closest('.modal') && !e.target.classList.contains('close')) return; state.modal = null; }
+  else if (act === 'print') { state.selected = null; render(); window.print(); return; }
+  render();
+  try { if (act === 'program' || act === 'stream') history.replaceState(null, '', '#' + (state.programId || '') + (state.streamId ? '/' + state.streamId : '')); } catch {}
+});
+app.addEventListener('change', e => {
+  const el = e.target.closest('select[data-act=major]');
+  if (!el) return;
+  const first = state.programs.find(p => p.major === el.value);
+  if (first) { state.programId = first.id; state.streamId = null; state.selected = null; render(); try { history.replaceState(null, '', '#' + first.id); } catch {} }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { state.selected = null; state.modal = null; render(); } });
+
+/* ── Startup ────────────────────────────────────────────────────────────── */
+(async () => {
+  try {
+    const idx = await fetchWorkbook('programs.xlsx');
+    state.settings = kvOf(idx, 'Settings');
+    const list = (rowsOf(idx, 'Programs', 'File') || []).filter(r => r.File && (r.Show === '' || yes(r.Show)));
+    if (!list.length) throw new Error('programs.xlsx lists no programs to show.');
+    document.title = state.settings.Title ? `${state.settings.Title} – Course map` : 'Course map';
+
+    const [hbWb, ...progWbs] = await Promise.all([
+      fetchWorkbook(state.settings['Handbook file'] || 'handbook.xlsx'),
+      ...list.map(r => fetchWorkbook(r.File))
+    ]);
+    const { hb, info } = parseHandbook(hbWb);
+    state.handbook = hb; state.hbInfo = info;
+    state.programs = list.map((r, i) => {
+      const p = parseProgram(r.File, progWbs[i]);
+      return { ...p, button: r['Button label'] || r.File.replace(/\.xlsx$/i, ''), major: r.Major || p.info.Name || r.File };
+    });
+
+    const hash = location.hash.replace(/^#/, '').split('/');
+    state.programId = state.programs.find(p => p.id === hash[0])?.id || state.programs[0].id;
+    state.streamId = hash[1] || null;
+    render();
+  } catch (err) {
+    console.error(err);
+    state.error = err; render();
+  }
+})();
+</script>
+</body>
+</html>

@@ -247,10 +247,12 @@ const map = L.map('map', {
   maxBoundsViscosity: 1.0,
   worldCopyJump: true,
 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; CARTO | SST data: NOAA OI SSTv2',
-  subdomains: 'abcd',
-  maxZoom: 19,
+// Background land/coast tiles. CARTO's free basemaps started requiring an API
+// key (tiles come back watermarked "API KEY REQUIRED"), so this uses Esri's
+// keyless light-grey canvas instead. Esri caps it at zoom 16.
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Basemap &copy; Esri, HERE, Garmin, OpenStreetMap contributors | SST data: NOAA OI SSTv2',
+  maxZoom: 16,
 }).addTo(map);
 
 // ═══════════════════════════════════════════════════════════════════

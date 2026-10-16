@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N scopus_monthly
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+#PBS -o /home/z3045790/SCOPUS/logs/
+
+# Self-resubmitting monthly Scopus refresh. Each run queues the next one
+# (03:00 on the 1st of next month) BEFORE doing any work, so a failed update
+# cannot break the chain. Start the chain once with:  qsub ~/SCOPUS/scopus_monthly.pbs
+
+SELF=/home/z3045790/SCOPUS/scopus_monthly.pbs
+echo "=== scopus_monthly start $(date) on $(hostname) ==="
+
+# 1. Queue next month's run first. Skip if a deferred copy is already waiting.
+WAITING=$(qselect -u z3045790 -N scopus_monthly -s W)
+if [ -z "$WAITING" ]; then
+    NEXT=$(date -d "$(date +%Y-%m-01) +1 month" +%Y%m%d0300)
+    if qsub -a "$NEXT" "$SELF"; then
+        echo "Queued next run for $NEXT"
+    else
+        echo "WARNING: failed to queue next run"
+    fi
+else
+    echo "Next run already queued: $WAITING"
+fi
+
+# 2. Run the update
+/home/z3045790/SCOPUS/run_monthly_update.sh
+rc=$?
+echo "=== scopus_monthly done $(date), exit $rc ==="
+exit $rc

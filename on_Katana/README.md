@@ -46,31 +46,34 @@ python3 scopus_download_with_abstracts.py
 A full run of the broad MHW script can take a couple of hours because each paper
 needs its own abstract call. The other three are much quicker.
 
-## Scheduled (monthly) run via cron
+## Scheduled (monthly) run via a self-resubmitting PBS job
 
-`run_monthly_update.sh` is the cron wrapper. It loads the env file, runs all
-four scripts using the venv's Python, and logs to `logs/cron_YYYYMMDD_HHMMSS.log`.
+`run_monthly_update.sh` is the wrapper. It loads the env file, runs all four
+scripts using the venv's Python, and logs to `logs/cron_YYYYMMDD_HHMMSS.log`
+(the name is historical; there is no cron).
 
-Install:
+`scopus_monthly.pbs` runs the wrapper on a compute node. Each run first queues
+the next one for 03:00 on the 1st of the following month (`qsub -a`), then runs
+the update, so a failed update cannot break the chain. PBS output goes to
+`logs/<jobid>.OU`.
+
+Start (or restart) the chain once:
 
 ```bash
-chmod +x ~/SCOPUS/run_monthly_update.sh
-crontab -e
+qsub ~/SCOPUS/scopus_monthly.pbs     # runs now and queues next month
+qstat -u z3045790                    # expect one job in state W
+qstat -f $(qselect -u z3045790 -N scopus_monthly -s W) | grep Execution_Time
 ```
 
-Add the line:
+> **Why not cron?** Login-node crontabs live on the node's local disk and are
+> wiped when the node is reimaged. That silently stopped this pipeline from
+> July to October 2026. PBS keeps deferred jobs in its server database. Never
+> run cron and the PBS chain together: two simultaneous runs would write the
+> same CSVs. Compute nodes can reach the Scopus API (tested October 2026).
 
-```
-0 3 1 * * /home/z3045790/SCOPUS/run_monthly_update.sh
-```
-
-That fires at 03:00 on the 1st of every month. Verify with `crontab -l`.
-
-> **Katana caveat.** Cron on an HPC login node only fires if you happen to be on
-> that node when the time comes (e.g. this is installed on `katana3`). It also
-> assumes the login node hasn't rebooted and that long-running outbound HTTP
-> jobs are tolerated by UNSW's policy. If runs go missing, check
-> `logs/cron_*.log`, and consider a SLURM-scheduled job instead.
+The Nectar VM runs `MarineHeatwaves/check_scopus_pipeline.py` daily and emails
+if the last run is >35 days old, a script failed, no next run is queued, or the
+website copy differs from Katana's.
 
 ## Cache files (regenerated automatically — do not delete unless you want a full re-fetch)
 
@@ -86,20 +89,18 @@ That fires at 03:00 on the 1st of every month. Verify with `crontab -l`.
 > title (`title[:100]`). Two papers sharing a long title prefix will collide and
 > inherit each other's themes. Worth re-keying on `eid` or `doi`.
 
-## Pulling the CSVs down to the website
+## Getting the CSVs onto the website
 
-From your Mac, in `Alex_web/MarineHeatwaves/`:
-
-```bash
-bash download_katana_csv.sh
-```
-
-This `scp`s `*.csv` from Katana's `SCOPUS/` into the local folder and moves
-`scopus_alex_sen_gupta_articles_with_abstracts.csv` into `../assets/data/`.
+The Nectar VM pulls them automatically: `MarineHeatwaves/download_katana_csv.sh`
+runs from the VM's crontab at 03:00 UTC on the 1st (about 11 h after the Katana
+run), `scp`s `*.csv` from `~/SCOPUS/` into `MarineHeatwaves/`, and moves
+`scopus_alex_sen_gupta_articles_with_abstracts.csv` into `assets/data/`. Logs
+go to `MarineHeatwaves/cron.log` on the VM. Run it by hand after a manual
+Katana run to publish immediately.
 
 ## Folders
 
 - `old/` — superseded scripts (`scopus_download.py` and older copies). Archive only.
 - `venv/` — Python virtualenv for this pipeline. Recreate from `requirements.txt`
   if it's ever lost: `python3 -m venv venv && venv/bin/pip install -r requirements.txt`.
-- `logs/` — created by the cron wrapper; logs auto-pruned after 180 days.
+- `logs/` — run logs (`cron_*.log`, auto-pruned after 180 days) and PBS output (`*.OU`).

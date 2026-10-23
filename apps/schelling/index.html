@@ -652,7 +652,7 @@ function layout() {
   var N = town.N, blocks = Math.ceil(N / 5);
   var pad = 8;
   // reserve room for HUD at top (step chip / key) on small screens
-  var top = L.w < 640 ? (P.groups > 2 ? 78 : 60) : 50, bottom = L.w < 640 ? 58 : 76 + (P.groups - 2) * 19;
+  var top = L.w < 640 ? (P.groups > 2 ? 78 : 60) : 50, bottom = L.w < 640 ? 58 : 76 + (P.groups - 2) * 27;
   var avail = Math.min(L.w - 2 * pad, L.h - top - bottom);
   var street = 0;      // no streets: they play no part in the model, and bigger houses read better
   L.cell = (avail - street * (blocks - 1)) / N;

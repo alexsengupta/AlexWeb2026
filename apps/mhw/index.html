@@ -81,6 +81,10 @@
   .dots button { width: 9px; height: 9px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
   .dots button.on { background: var(--accent); } .dots button.done { background: var(--muted); }
 
+  .play-row { margin: 2px 0 10px; }
+  .scrub { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; animation: fadein 0.4s ease; }
+  .scrub-hint { font-size: 12.5px; color: var(--muted); }
+  @keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .slider-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 14px; color: var(--ink-2); margin-top: 8px; }
   .slider-row output { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; min-width: 62px; text-align: right; }
@@ -168,21 +172,21 @@
       <h2 id="stepTitle"></h2>
       <div class="look" id="look"></div>
       <div class="text" id="stepText"></div>
+      <div class="controls play-row" id="playRow">
+        <button class="btn primary" id="playBtn">&#9654; Play the warming</button>
+      </div>
       <div id="calloutBox"></div>
+      <div class="scrub" id="scrub">
+        <div class="scrub-hint" id="scrubHint">Drag to move back and forth through the warming</div>
+        <div class="slider-row"><label for="muSlider">Warming added, &mu;</label><input type="range" id="muSlider" min="0" max="1" step="0.005" value="0"><output id="muOut">0.00 °C</output></div>
+        <div class="slider-row" id="muMaxRow"><label for="muMaxSlider">Maximum warming</label><input type="range" id="muMaxSlider" min="0.5" max="3" step="0.1" value="1"><output id="muMaxOut">1.0 °C</output></div>
+      </div>
       <div class="keymsg hidden" id="keyMsg"><div class="lab">Key message</div><div id="keyText"></div></div>
       <div class="story-nav">
         <button class="btn" id="prevBtn">&larr; Back</button>
         <div class="dots" id="dots"></div>
         <button class="btn primary" id="nextBtn">Next &rarr;</button>
       </div>
-    </div>
-    <div class="card" id="playCard">
-      <div class="controls">
-        <button class="btn primary" id="playBtn">Play the warming</button>
-        <button class="btn" id="resetBtn">Back to no warming</button>
-      </div>
-      <div class="slider-row"><label for="muSlider">Warming added, &mu;</label><input type="range" id="muSlider" min="0" max="1" step="0.005" value="0"><output id="muOut">0.00 °C</output></div>
-      <div class="slider-row" id="muMaxRow"><label for="muMaxSlider">Maximum warming</label><input type="range" id="muMaxSlider" min="0.5" max="3" step="0.1" value="1"><output id="muMaxOut">1.0 °C</output></div>
     </div>
   </section>
 
@@ -422,7 +426,7 @@ var STORY = {
     { title: 'A single hot spell', focus: ['ts'],
       text: '<p>Here is a made-up temperature record with one hot spell: a single peak. The <b>dashed line</b> is a fixed heatwave threshold, like a 90th percentile from a past baseline.</p><p>Days above the threshold are <b>marine heatwave days</b>, shown in <b style="color:var(--hot)">red</b>. Right now only the tip of the peak qualifies.</p>' },
     { title: 'Warm it steadily', focus: ['ts', 'days'], play: true,
-      text: '<p>Now we add the same warming, &mu;, to every day, in small equal steps. Press <b>Play the warming</b> and watch the red stretch at the top of the peak, and the heatwave-day curve below.</p>',
+      text: '<p>Now we add the same warming, &mu;, to every day, in small equal steps. Press <b>Play</b> below and watch the red stretch at the top of the peak, and the heatwave-day curve below.</p>',
       checkpoints: [{ mu: 0.5, text: 'Halfway. The red stretch has widened at a steady rate, because the sides of the peak are straight. So the heatwave-day curve is a <b>straight line</b>: each 0.1 °C of warming adds about 14 days.', ann: 'width' }] },
     { title: 'The other measures', focus: ['events', 'dur', 'int'], atEnd: true,
       text: '<p>With one peak there is always <b>one event</b>. Its duration is simply the number of heatwave days, and its peak intensity rises exactly in step with the warming (the dashed line: "if peaks just rose by &mu;").</p>' },
@@ -432,7 +436,7 @@ var STORY = {
     { title: 'Three hot spells of different sizes', focus: ['ts'],
       text: '<p>Now there are three peaks. Only the tallest one (on the right) reaches the threshold at first. The other two are below it.</p>' },
     { title: 'Warm it steadily', focus: ['ts', 'days'], play: true,
-      text: '<p>Press <b>Play the warming</b>. The animation will pause each time a new peak reaches the threshold.</p>',
+      text: '<p>Press <b>Play</b> below. The animation will pause each time a new peak reaches the threshold.</p>',
       checkpoints: 'crossings' },
     { title: 'Compare with a straight line', focus: ['days'], atEnd: true, tangent: true,
       text: '<p>The dashed line continues the <b>early rate</b> of increase. The real curve bends away from it, upwards: heatwave days are <b>accelerating</b>, even though the warming steps were all equal.</p><p>Each kink is a new peak joining in. After that, warming adds days to three heatwaves at once instead of one.</p>' },
@@ -478,7 +482,7 @@ var STORY = {
 };
 
 /* ---------- State ---------- */
-var state = { ex: 0, step: 0, i: 0, playing: false, acc: 0, last: 0, pausedAt: null, passed: {}, exploreSrc: 3 };
+var state = { unlocked: {}, ex: 0, step: 0, i: 0, playing: false, acc: 0, last: 0, pausedAt: null, passed: {}, exploreSrc: 3 };
 function steps() { return STORY[ex.id]; }
 function curStep() { return steps()[state.step]; }
 function checkpointsOf(st) {
@@ -525,9 +529,22 @@ function renderStep() {
   var last = state.step === list.length - 1;
   $('nextBtn').textContent = last ? (state.ex < EX.length - 1 ? (EX[state.ex + 1].explore ? 'Explore →' : 'Next example →') : 'Done') : 'Next →';
   $('nextBtn').disabled = last && state.ex === EX.length - 1;
-  $('muMaxRow').classList.toggle('hidden', !ex.explore);
   if (ex.explore) renderExploreChooser();
   renderCallout();
+  updateControls();
+}
+// Play button sits in the text, only on steps that animate (and in Explore).
+// The slider appears only once that step's staged animation has played to the end,
+// and on the later steps of the same example.
+function updateControls() {
+  var st = curStep(), end = state.i >= cur.mu.length - 1;
+  if (st.play && end && !state.playing) state.unlocked[ex.id] = true;
+  var showPlay = (st.play || st.explore) && !(state.pausedAt && !end);
+  var showScrub = st.explore || st.atEnd || (st.play && state.unlocked[ex.id] && !state.playing);
+  $('playRow').classList.toggle('hidden', !showPlay);
+  $('scrub').classList.toggle('hidden', !showScrub);
+  $('muMaxRow').classList.toggle('hidden', !st.explore);
+  $('scrubHint').classList.toggle('hidden', !!st.explore);
   setPlayLabel();
 }
 function renderExploreChooser() {
@@ -545,7 +562,7 @@ function renderCallout() {
   var d = document.createElement('div'); d.className = 'callout'; d.innerHTML = state.pausedAt.text;
   if (state.i < cur.mu.length - 1) {
     var b = document.createElement('button'); b.className = 'btn primary'; b.textContent = 'Continue ▶';
-    b.addEventListener('click', function () { state.pausedAt = null; renderCallout(); play(true); });
+    b.addEventListener('click', function () { state.pausedAt = null; renderCallout(); play(true); updateControls(); });
     d.appendChild(document.createElement('br')); d.appendChild(b);
   }
   box.appendChild(d);
@@ -585,7 +602,7 @@ $('prevBtn').addEventListener('click', function () {
 /* ---------- Playback ---------- */
 function setPlayLabel() {
   var st = curStep();
-  $('playBtn').textContent = state.playing ? 'Pause' : (state.i >= cur.mu.length - 1 ? 'Replay the warming' : (state.i > 0 ? 'Continue' : 'Play the warming'));
+  $('playBtn').innerHTML = state.playing ? '&#10073;&#10073; Pause' : (state.i >= cur.mu.length - 1 ? '&#8635; Replay the warming' : (state.i > 0 ? '&#9654; Continue' : '&#9654; Play the warming'));
 }
 function play(fromCallout) {
   if (state.i >= cur.mu.length - 1) { state.i = 0; state.passed = {}; }
@@ -597,10 +614,8 @@ function stop() { state.playing = false; setPlayLabel(); }
 $('playBtn').addEventListener('click', function () {
   if (state.playing) { stop(); return; }
   state.pausedAt = null; renderCallout();
-  // make sure the panels that matter are in view when the warming is played from a static step
-  play();
+  play(); updateControls();
 });
-$('resetBtn').addEventListener('click', function () { stop(); state.i = 0; state.passed = {}; state.pausedAt = null; renderCallout(); syncSlider(); drawAll(); });
 $('muSlider').addEventListener('input', function (e) { stop(); state.i = stepAt(parseFloat(e.target.value)); state.pausedAt = null; renderCallout(); syncSlider(); drawAll(); });
 $('muMaxSlider').addEventListener('input', function (e) {
   var v = parseFloat(e.target.value); $('muMaxOut').textContent = v.toFixed(1) + ' °C';
@@ -619,6 +634,10 @@ function frame(ts) {
     state.acc -= STEP_MS;
     if (state.i >= cur.mu.length - 1) { stop(); break; }
     state.i++;
+    if (state.i >= cur.mu.length - 1 && st.play) {
+      stop(); state.pausedAt = { text: 'That is the full warming. Drag the slider below to move back and forth, then press <b>Next</b>.' };
+      renderCallout(); break;
+    }
     var mu = cur.mu[state.i];
     for (var k = 0; k < cps.length; k++) {
       if (!state.passed[k] && mu >= cps[k].mu - 1e-9) {
@@ -628,7 +647,7 @@ function frame(ts) {
     if (!state.playing) break;
   }
   syncSlider(); drawAll();
-  if (!state.playing) setPlayLabel();
+  if (!state.playing) updateControls();
 }
 
 /* ---------- Charts ---------- */
@@ -797,7 +816,7 @@ document.addEventListener('keydown', function (e) {
   var tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input') return;
   if (e.key === 'ArrowRight') $('nextBtn').click();
   else if (e.key === 'ArrowLeft') $('prevBtn').click();
-  else if (e.key === ' ' && tag !== 'button') { e.preventDefault(); $('playBtn').click(); }
+  else if (e.key === ' ' && tag !== 'button' && !$('playRow').classList.contains('hidden')) { e.preventDefault(); $('playBtn').click(); }
 });
 
 /* ---------- Boot ---------- */

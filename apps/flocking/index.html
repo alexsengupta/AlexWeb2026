@@ -144,6 +144,10 @@
   }
   .tank.touring { touch-action: none; }
   .tank canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #bg, #ov { pointer-events: none; }
+  .tank.touring #fg { cursor: default; }
+  .tank.touring #fg.can-drag { cursor: grab; }
+  .tank.touring #fg.dragging { cursor: grabbing; }
 
   /* HUD elements over the tank */
   .hud {
@@ -172,6 +176,12 @@
   }
   .toolbar .tb:hover { background: var(--surface-2); }
   .toolbar .tb[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .toolbar .tb.wide { width: auto; padding: 0 14px 0 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; font-weight: 500; }
+  .toolbar .tb.go { background: var(--accent); color: var(--accent-ink); }
+  .toolbar .tb.go:hover { filter: brightness(1.08); background: var(--accent); }
+  .toolbar .tb.wide svg { width: 18px; height: 18px; }
+  .preset-desc { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; min-height: 2.9em; }
+  .rules-note { margin: -4px 0 10px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
   .toolbar svg { width: 20px; height: 20px; }
 
   .tour-prompt {
@@ -363,9 +373,9 @@
       </div>
 
       <div class="hud toolbar" id="toolbar">
-        <button class="tb" id="playBtn" aria-label="Pause" title="Play / pause (space)"></button>
+        <button class="tb wide go" id="playBtn" title="Start / pause (space bar)"></button>
         <button class="tb" id="stepBtn" aria-label="Advance one step" title="One step"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5l9 7-9 7z"/><rect x="16" y="5" width="2.6" height="14" rx="1"/></svg></button>
-        <button class="tb" id="resetBtn" aria-label="Scatter the fish again" title="Scatter again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+        <button class="tb wide" id="resetBtn" title="New random starting positions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Reset</button>
       </div>
 
       <div class="hud tour-prompt" id="tourPrompt">
@@ -400,24 +410,26 @@
           <button class="chip" data-preset="loners">Loners</button>
           <button class="chip" data-preset="attack">Under attack</button>
         </div>
+        <p class="preset-desc" id="presetDesc">Pick a starting point. Each one resets the fish to new random positions; press Start to run.</p>
       </div>
 
       <div class="group">
         <h3>The three rules</h3>
+        <p class="rules-note">The sliders are <b>weights</b>: how much every fish cares about each rule. The size of each force is set separately, at every step, by where the neighbours are.</p>
         <div class="ctl">
           <div class="ctl-head"><label for="c-sep"><span class="sw sep"></span>Separation</label><output id="o-sep"></output></div>
           <input type="range" id="c-sep" min="0" max="3" step="0.1">
-          <p class="hint">Steer away from fish inside your personal space.</p>
+          <p class="hint">Push directly away from fish inside your personal space; stronger the closer they are.</p>
         </div>
         <div class="ctl">
           <div class="ctl-head"><label for="c-ali"><span class="sw ali"></span>Alignment</label><output id="o-ali"></output></div>
           <input type="range" id="c-ali" min="0" max="3" step="0.1">
-          <p class="hint">Turn to swim the same way as your neighbours.</p>
+          <p class="hint">Push to match your neighbours' velocity; stronger the more out of step you are.</p>
         </div>
         <div class="ctl">
           <div class="ctl-head"><label for="c-coh"><span class="sw coh"></span>Cohesion</label><output id="o-coh"></output></div>
           <input type="range" id="c-coh" min="0" max="3" step="0.1">
-          <p class="hint">Head towards the middle of your neighbours.</p>
+          <p class="hint">Pull towards the centre of your neighbours; stronger the further away it is.</p>
         </div>
       </div>
 
@@ -479,9 +491,9 @@
           <button class="btn" data-try="nosep">Set separation to 0</button>
         </details>
         <details class="try">
-          <summary>Predators and the safety of numbers</summary>
+          <summary>Predators: is the school safer?</summary>
           <p>Add two predators. The dashed line shows each predator's current target: it prefers fish with few neighbours, so stragglers are chased first. When a predator dives into the school, nearby fish scatter away from it and then regroup.</p>
-          <p>Does schooling protect the fish here? Compare the catch count over the same time with cohesion at 1.2 and at 0.2. In this simple model the difference is small, because the predator is faster than the fish and is never confused by a crowd. In real schools, the <b>confusion effect</b> (a predator struggling to single out one target from many similar fish) is a big part of why schooling is safer.</p>
+          <p>Now test whether schooling helps. Note the catch count after a minute on <b>Under attack</b>, then repeat on <b>Loners</b> with two predators. Surprisingly, in this model schooling fish are caught <i>more</i> often (about twice as often in our test runs). The model leaves out the things thought to make real schools safer: the <b>confusion effect</b> (a predator struggling to single out one fish from many), many eyes spotting danger early, and predators that can only eat so much. A model only shows what you put into it.</p>
           <button class="btn" data-try="predators">Add 2 predators</button>
         </details>
         <details class="try">
@@ -506,27 +518,28 @@
     <p><b>Separation</b>: steer away from neighbours that are inside your personal space. Closer neighbours count more when choosing which way to go.<br>
        <b>Alignment</b>: turn towards the average heading of your neighbours.<br>
        <b>Cohesion</b>: steer towards the average position (centre) of your neighbours.</p>
-    <p>A neighbour is any fish within the perception radius. Each rule gives a <b>steering force</b>. The forces are multiplied by their weights (the sliders), added together, and used to change the fish's velocity.</p>
+    <p>A neighbour is any fish within the perception radius. Each rule gives a <b>force</b> whose direction and size depend on where the neighbours are at that moment. Separation is stronger the closer an intruder is, alignment is stronger the more out of step the fish is, and cohesion is stronger the further the fish is from the centre of its neighbours.</p>
+    <p>The forces are multiplied by <b>weights</b> (the sliders) and added to give the overall push, which changes the fish's velocity. The weights are fixed traits shared by every fish: how much it cares about each rule. Changing them is how you move between different kinds of collective behaviour.</p>
     <details>
       <summary>Show the maths</summary>
-      <p>Each rule first works out a <em>desired velocity</em> (a direction, at the cruising speed <i>v</i><sub>max</sub>). The steering force is the difference between desired and current velocity, capped at a maximum force <i>F</i><sub>max</sub>. That cap is what makes fish turn gradually rather than instantly.</p>
-<div class="eq">steer(d) = limit( v_max · d/|d|  −  v_i ,  F_max )
+<div class="eq">Separation:  F_sep = Σ_{j : r_ij &lt; R_sep} (1 − r_ij/R_sep) · (x_i − x_j)/r_ij
+Alignment:   F_ali = ( v̄ − v_i ) / v_0        v̄ = mean velocity of neighbours
+Cohesion:    F_coh = ( x̄ − x_i ) / R          x̄ = mean position of neighbours
 
-Separation:  d_sep = Σ_{j : r_ij &lt; R_sep}  −(x_j − x_i) / r_ij²
-Alignment:   d_ali = Σ_{j : r_ij &lt; R}  v_j
-Cohesion:    d_coh = (1/n) Σ_{j : r_ij &lt; R} (x_j − x_i)
-
-a_i = w_sep·steer(d_sep) + w_ali·steer(d_ali) + w_coh·steer(d_coh)
-v_i ← limit(v_i + a_i, v_max)      x_i ← x_i + v_i</div>
-      <p>In the separation sum, each term is a unit vector pointing away from neighbour <i>j</i>, divided by the distance <i>r</i><sub>ij</sub>, so closer fish dominate the direction. Parameter values: <i>v</i><sub>max</sub> = 3 units per step, <i>F</i><sub>max</sub> = 0.05, and one body length is 8 units. Distances are measured across the edges of the tank, which wraps around like a torus (a fish leaving on the right reappears on the left and can see fish on the other side).</p>
+push_i = g · ( w_sep F_sep + w_ali F_ali + w_coh F_coh )
+a_i    = limit(push_i, F_max)  +  k (v_0 − |v_i|) v_i/|v_i|
+v_i ← v_i + a_i        x_i ← x_i + v_i</div>
+      <p>Each separation term is a unit vector pointing directly away from neighbour <i>j</i>, scaled from 0 at the edge of personal space to 1 at contact. The three forces are dimensionless and of similar size (roughly 0 to 1), so the weights compare like with like. The gain <i>g</i> = 0.06 converts them into an acceleration. The cap <i>F</i><sub>max</sub> = 0.1 limits how much a fish can change its velocity in one step, which acts like inertia and is why turns are gradual. The last term gently returns each fish to its cruising speed <i>v</i><sub>0</sub> = 3 units per step (<i>k</i> = 0.05). One body length is 8 units.</p>
+      <p>Distances are measured across the edges of the tank, which wraps around like a torus: a fish leaving on the right reappears on the left and can see fish on the other side.</p>
+      <p>This is a "social force" form of the boids rules. In Reynolds' original form, each rule steers towards a desired velocity at full strength, so arrow lengths mostly show the cap rather than how strongly a rule is triggered. The force form used here makes the geometry visible, and produces the same kinds of collective behaviour.</p>
     </details>
 
     <h3>One time step</h3>
-    <p>At each step, <b>every fish first works out its steering from the same snapshot</b> of positions and velocities, and only then do all fish move together. Updating fish one at a time would let later fish react to where earlier fish have already moved, a subtle but common bug in simple implementations. Use the step button (or pause and press <b>&rarr;</b>) to advance one step at a time.</p>
+    <p>At each step, <b>every fish first works out its steering from the same snapshot</b> of positions and velocities, and only then do all fish move together. Updating fish one at a time would let later fish react to where earlier fish have already moved, a subtle but common bug in simple implementations. Use the step button next to Start (or press <b>&rarr;</b> while paused) to advance one step at a time.</p>
 
     <h3>Predators and startles</h3>
     <p>A predator picks a target within range, preferring fish that are close and have few neighbours. It reconsiders its choice every 45 steps and aims at where the target is heading, not where it is now. Predators are faster than cruising fish. After a catch, the predator pauses briefly to "handle" its prey, and the caught fish is replaced at a random spot away from the predators.</p>
-    <p>A fish within about 14 body lengths of a predator, or of a spot where you click, becomes alarmed. Its alarm level <i>u</i> rises from 0 to 1 as the threat gets closer. Its flocking forces are scaled down by (1 − 0.8<i>u</i>), and an escape force up to six times the normal maximum steers it directly away. It can also briefly swim up to 50% faster.</p>
+    <p>A fish within about 14 body lengths of a predator, or of a spot where you click, becomes alarmed. Its alarm level <i>u</i> rises from 0 to 1 as the threat gets closer. Its flocking forces are scaled down by (1 − 0.8<i>u</i>), and an escape force of up to three times the normal maximum steers it directly away. It can also briefly swim faster than usual.</p>
 
     <h3>Measuring order: polarisation</h3>
     <p>The plot shows the <b>polarisation</b>, a standard measure of how aligned a group is. It is the length of the average heading vector:</p>
@@ -563,8 +576,10 @@ v_i ← limit(v_i + a_i, v_max)      x_i ← x_i + v_i</div>
    MODEL-BEGIN  (pure simulation code; no DOM access, testable in Node)
    ===================================================================== */
 var FIX = {
-  maxSpeed: 3,        // cruising speed, units per step
-  maxForce: 0.05,     // steering limit per rule
+  cruise: 3,          // preferred swimming speed, units per step
+  maxForce: 0.1,      // largest change in velocity per step (inertia / turning limit)
+  socialGain: 0.06,   // converts the (dimensionless) social forces into acceleration
+  speedRelax: 0.05,   // how quickly a fish returns to its cruising speed
   bodyLength: 8,      // units
   predSpeed: 5,
   predForce: 0.08,
@@ -575,6 +590,7 @@ var FIX = {
   fearR: 110,
   scareLife: 40
 };
+FIX.maxSpeed = FIX.cruise;
 
 function Model(W, H, p) {
   this.p = p;          // live parameter object: sep, ali, coh, R, Rsep
@@ -634,6 +650,7 @@ Model.prototype.scatter = function () {
   for (var i = 0; i < n; i++) this.addFish();
   for (var k = 0; k < this.preds.length; k++) this.preds[k] = this._newPred();
   this.catches = 0; this.t = 0; this.histLen = 0; this.histPos = 0; this.scares = [];
+  this.polar = this.polarisation();
 };
 
 Model.prototype._newPred = function () {
@@ -698,7 +715,7 @@ Model.prototype.buildGrid = function () {
   for (i = 0; i < this.n; i++) this.cellIdx[fill[this.cellOf[i]]++] = i;
 };
 
-// Steering helper: desired = speed * d/|d|; steer = desired - v, limited to maxF.
+// Steering helper for predators: desired = speed * d/|d|; steer = desired - v, limited to maxF.
 Model.prototype._seek = function (dx, dy, vx, vy, speed, maxF) {
   var t = this._tmp;
   var m = Math.sqrt(dx * dx + dy * dy);
@@ -710,12 +727,18 @@ Model.prototype._seek = function (dx, dy, vx, vy, speed, maxF) {
   return t;
 };
 
-// Compute the three (unweighted) steering forces for fish i into object o.
+// The three social forces on fish i (unweighted, dimensionless), written into o.
+//   Separation: for each neighbour inside personal space, a unit push directly away
+//               from it, scaled by (1 - d/Rsep): zero at the edge, 1 when touching.
+//   Alignment:  (average neighbour velocity - own velocity) / cruise speed.
+//               Zero when already matching, larger the more mismatched.
+//   Cohesion:   (centre of neighbours - own position) / R.
+//               Points straight at the centre, stronger the further away it is.
 // If o.list / o.sepList are arrays, neighbour indices are recorded (for drawing).
 Model.prototype.steer = function (i, o) {
   var x = this.x, y = this.y, vx = this.vx, vy = this.vy;
   var W = this.W, H = this.H, hw = W * 0.5, hh = H * 0.5;
-  var R2 = this.p.R * this.p.R, Rs = Math.min(this.p.Rsep, this.p.R), Rs2 = Rs * Rs;
+  var R = this.p.R, R2 = R * R, Rs = Math.min(this.p.Rsep, R), Rs2 = Rs * Rs;
   var xi = x[i], yi = y[i];
   var n = 0, ns = 0, svx = 0, svy = 0, sdx = 0, sdy = 0, px = 0, py = 0;
   var cells = this.nbrCells[this.cellOf[i]];
@@ -732,33 +755,51 @@ Model.prototype.steer = function (i, o) {
       n++; svx += vx[j]; svy += vy[j]; sdx += dx; sdy += dy;
       if (o.list) o.list.push(j);
       if (d2 < Rs2 && d2 > 1e-12) {
-        px -= dx / d2; py -= dy / d2;      // unit vector away, divided by distance
+        var d = Math.sqrt(d2), w = (1 - d / Rs) / d;
+        px -= dx * w; py -= dy * w;
         ns++;
         if (o.sepList) o.sepList.push(j);
       }
     }
   }
-  var ms = FIX.maxSpeed, mf = FIX.maxForce, t;
+  var cr = FIX.cruise;
   o.n = n; o.ns = ns;
-  o.sepX = o.sepY = o.aliX = o.aliY = o.cohX = o.cohY = 0;
-  o.cx = o.cy = o.avx = o.avy = 0;
-  if (ns > 0) { t = this._seek(px, py, vx[i], vy[i], ms, mf); o.sepX = t.sx; o.sepY = t.sy; }
+  o.sepX = px; o.sepY = py;
+  o.aliX = o.aliY = o.cohX = o.cohY = o.cx = o.cy = o.avx = o.avy = 0;
   if (n > 0) {
     o.avx = svx / n; o.avy = svy / n;
-    t = this._seek(svx, svy, vx[i], vy[i], ms, mf); o.aliX = t.sx; o.aliY = t.sy;
+    o.aliX = (o.avx - vx[i]) / cr; o.aliY = (o.avy - vy[i]) / cr;
     o.cx = sdx / n; o.cy = sdy / n;           // centre of neighbours, relative to fish i
-    t = this._seek(o.cx, o.cy, vx[i], vy[i], ms, mf); o.cohX = t.sx; o.cohY = t.sy;
+    o.cohX = o.cx / R; o.cohY = o.cy / R;
   }
   return o;
 };
 
+// Social acceleration of fish i (before any fear response): weighted sum of the
+// three forces, times socialGain, capped at maxForce, plus a gentle pull back
+// towards cruising speed. Written into o.accX / o.accY; o.pushX/Y is the uncapped push.
+Model.prototype.accel = function (i, o) {
+  var p = this.p;
+  this.steer(i, o);
+  var g = FIX.socialGain;
+  var ax = g * (p.sep * o.sepX + p.ali * o.aliX + p.coh * o.cohX);
+  var ay = g * (p.sep * o.sepY + p.ali * o.aliY + p.coh * o.cohY);
+  o.pushX = ax; o.pushY = ay;
+  var f = Math.sqrt(ax * ax + ay * ay), mf = FIX.maxForce;
+  if (f > mf) { ax *= mf / f; ay *= mf / f; }
+  var vx = this.vx[i], vy = this.vy[i], s = Math.sqrt(vx * vx + vy * vy) || 1;
+  var rel = FIX.speedRelax * (FIX.cruise - s);
+  o.accX = ax + rel * vx / s; o.accY = ay + rel * vy / s;
+  return o;
+};
+
 Model.prototype.step = function () {
-  var p = this.p, n = this.n, W = this.W, H = this.H;
+  var n = this.n, W = this.W, H = this.H;
   var x = this.x, y = this.y, vx = this.vx, vy = this.vy, ax = this.ax, ay = this.ay;
-  var ms = FIX.maxSpeed, mf = FIX.maxForce, fearR = FIX.fearR;
+  var cr = FIX.cruise, mf = FIX.maxForce, fearR = FIX.fearR;
   this.buildGrid();
 
-  // Threat sources: predators that are hunting, plus click/tap scares.
+  // Threat sources: predators plus click/tap scares.
   var src = [];
   for (var k = 0; k < this.preds.length; k++) src.push(this.preds[k]);
   for (k = 0; k < this.scares.length; k++) src.push(this.scares[k]);
@@ -766,10 +807,9 @@ Model.prototype.step = function () {
   // 1. Every fish computes its acceleration from the same snapshot.
   var o = this.o; o.list = null; o.sepList = null;
   for (var i = 0; i < n; i++) {
-    this.steer(i, o);
+    this.accel(i, o);
     this.nb[i] = o.n;
-    var axi = p.sep * o.sepX + p.ali * o.aliX + p.coh * o.cohX;
-    var ayi = p.sep * o.sepY + p.ali * o.aliY + p.coh * o.cohY;
+    var axi = o.accX, ayi = o.accY;
     var u = 0, fx = 0, fy = 0;
     for (k = 0; k < src.length; k++) {
       var dx = this.wrapD(x[i] - src[k].x, W), dy = this.wrapD(y[i] - src[k].y, H);
@@ -781,7 +821,7 @@ Model.prototype.step = function () {
       }
     }
     if (u > 0) {
-      var t = this._seek(fx, fy, vx[i], vy[i], ms * (1 + 0.5 * u), mf * 6 * u);
+      var t = this._seek(fx, fy, vx[i], vy[i], cr * (1 + 0.5 * u), mf * 3 * u);
       axi = axi * (1 - 0.8 * u) + t.sx;
       ayi = ayi * (1 - 0.8 * u) + t.sy;
     }
@@ -791,7 +831,7 @@ Model.prototype.step = function () {
   // 2. Then everyone moves.
   for (i = 0; i < n; i++) {
     var nvx = vx[i] + ax[i], nvy = vy[i] + ay[i];
-    var cap = ms * (1 + 0.5 * this.fear[i]);
+    var cap = cr * (1.5 + 0.5 * this.fear[i]);
     var s = Math.sqrt(nvx * nvx + nvy * nvy);
     if (s > cap) { nvx *= cap / s; nvy *= cap / s; }
     vx[i] = nvx; vy[i] = nvy;
@@ -911,11 +951,17 @@ var PRESETS = {
   loners:   { sep: 1.5, ali: 0.0, coh: 0.0, R: 48, Rsep: 24, preds: 0 },
   attack:   { sep: 1.5, ali: 1.0, coh: 1.2, R: 56, Rsep: 24, preds: 2 }
 };
+var PRESET_DESC = {
+  default:  'Balanced rules. Fish gather into a few schools that each swim in one direction, and merge or split as they meet.',
+  swarm:    'Alignment switched off. Fish still gather into clusters, but each cluster mills about with no shared direction, like a swarm of midges.',
+  parallel: 'Strong alignment and longer sight. Fish quickly form one or two tightly aligned schools, like sardines on the move.',
+  loners:   'No alignment and no cohesion. Fish only avoid bumping into each other, so they wander independently: a baseline with no social behaviour.',
+  attack:   'The default school plus two predators. Watch the school split around a predator and then reform.'
+};
 var P = { sep: 1.5, ali: 1.0, coh: 1.0, R: 48, Rsep: 24, n: 120, preds: 0, speed: 1 };
 
-var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 var state = {
-  running: !reduceMotion,
+  running: false,       // the page opens paused, showing the starting positions
   trails: true,
   heading: false,
   spot: false,
@@ -955,6 +1001,7 @@ function resize() {
     syncControls();
     model.setCount(P.n);
     model.setPredators(P.preds);
+    model.polar = model.polarisation();
   } else {
     model.resize(W, H);
   }
@@ -1116,6 +1163,7 @@ function drawFishAt(ctx, i, s, L) {
 }
 
 var spotO = { list: [], sepList: [] };
+var FORCE_LEN = 27;   // on-screen length (world units) of a force of size 1 = one cruising velocity drawn at KV scale
 function renderOverlay() {
   var c = state.colors, d = state.dpr, s = state.scale * d;
   ovx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1138,10 +1186,41 @@ function renderOverlay() {
       circle(ovx, tx * s, ty * s, 7 * s, alpha(c.pred, 0.8), null, 1.5 * d);
     }
   }
+  // While paused, show which way every fish is heading (bold before the first Start, faint after).
+  if (!state.running) {
+    var started = model.t > 0, AL = 4.2 * s;     // arrow length: 4.2 steps of travel
+    ovx.save();
+    ovx.strokeStyle = alpha(c.ink, started ? 0.35 : 0.75);
+    ovx.fillStyle = ovx.strokeStyle;
+    ovx.lineWidth = (started ? 1 : 1.4) * d; ovx.lineCap = 'round';
+    ovx.beginPath();
+    var heads = [];
+    for (var a = 0; a < model.n; a++) {
+      var ax0 = model.x[a] * s, ay0 = model.y[a] * s;
+      var avx = model.vx[a], avy = model.vy[a], asp = Math.sqrt(avx * avx + avy * avy) || 1;
+      var ux = avx / asp, uy = avy / asp;
+      var x1 = ax0 + ux * BL * 0.6 * s, y1 = ay0 + uy * BL * 0.6 * s;
+      var x2 = x1 + avx * AL, y2 = y1 + avy * AL;
+      ovx.moveTo(x1, y1); ovx.lineTo(x2, y2);
+      heads.push(x2, y2, ux, uy);
+    }
+    ovx.stroke();
+    ovx.beginPath();
+    var hl = 4.5 * d;
+    for (var h = 0; h < heads.length; h += 4) {
+      var hx = heads[h], hy = heads[h + 1], hux = heads[h + 2], huy = heads[h + 3];
+      ovx.moveTo(hx + hux * hl * 0.4, hy + huy * hl * 0.4);
+      ovx.lineTo(hx - hux * hl - huy * hl * 0.6, hy - huy * hl + hux * hl * 0.6);
+      ovx.lineTo(hx - hux * hl + huy * hl * 0.6, hy - huy * hl - hux * hl * 0.6);
+      ovx.closePath();
+    }
+    ovx.fill();
+    ovx.restore();
+  }
   if (!state.spot || model.n === 0) return;
   // Spotlight: fish 0, its perception, neighbours and live forces.
   var i = 0, fx = model.x[0] * s, fy = model.y[0] * s;
-  if (!model.nbrCells) model.buildGrid();
+  model.buildGrid();
   spotO.list = []; spotO.sepList = [];
   model.steer(i, spotO);
   circle(ovx, fx, fy, P.R * s, alpha(c.ink, 0.55), alpha(c.ink, 0.04), 1.2 * d, [4 * d, 4 * d]);
@@ -1152,7 +1231,7 @@ function renderOverlay() {
     var jy = fy + model.wrapD(model.y[j] - model.y[i], model.H) * s;
     circle(ovx, jx, jy, 6 * s, alpha(c.ink, 0.6), null, 1 * d);
   }
-  var FS = 380 * s;
+  var FS = FORCE_LEN * s;
   arrow(ovx, fx, fy, spotO.sepX * P.sep * FS, spotO.sepY * P.sep * FS, c.sep, 2.5 * d);
   arrow(ovx, fx, fy, spotO.aliX * P.ali * FS, spotO.aliY * P.ali * FS, c.ali, 2.5 * d);
   arrow(ovx, fx, fy, spotO.cohX * P.coh * FS, spotO.cohY * P.coh * FS, c.coh, 2.5 * d);
@@ -1272,10 +1351,11 @@ function applyPreset(name) {
   syncControls();
   document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === name); });
   if (name === 'attack') { state.spot = false; $('t-spot').checked = false; }
-  model.catches = 0;
-  if (!state.running) renderNow();
+  $('presetDesc').textContent = PRESET_DESC[name];
+  resetSim();
 }
 document.querySelectorAll('#presets .chip').forEach(function (b) {
+  b.title = PRESET_DESC[b.dataset.preset];
   b.addEventListener('click', function () { applyPreset(b.dataset.preset); });
 });
 
@@ -1301,18 +1381,24 @@ var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
 var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1"/></svg>';
 function setRunning(on) {
   state.running = on;
-  $('playBtn').innerHTML = on ? ICON_PAUSE : ICON_PLAY;
-  $('playBtn').setAttribute('aria-label', on ? 'Pause' : 'Play');
+  var started = model && model.t > 0;
+  var b = $('playBtn');
+  b.innerHTML = on ? ICON_PAUSE + 'Pause' : ICON_PLAY + (started ? 'Resume' : 'Start');
+  b.classList.toggle('go', !on);
   $('stepBtn').disabled = on;
   if (!on) renderNow();
 }
-$('playBtn').addEventListener('click', function () { setRunning(!state.running); });
-$('stepBtn').addEventListener('click', function () { model.step(); renderSim(); updateHud(true); });
-$('resetBtn').addEventListener('click', function () {
+// New random starting positions, paused, so the starting state can be inspected.
+function resetSim() {
   model.scatter();
+  state.ripples = [];
   fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
-  renderSim(); updateHud(true);
-});
+  setRunning(false);
+}
+function stepOnce() { model.step(); setRunning(false); }
+$('playBtn').addEventListener('click', function () { setRunning(!state.running); });
+$('stepBtn').addEventListener('click', stepOnce);
+$('resetBtn').addEventListener('click', resetSim);
 
 // Click / tap the water to startle the fish.
 fg.addEventListener('pointerdown', function (e) {
@@ -1321,7 +1407,7 @@ fg.addEventListener('pointerdown', function (e) {
   var wx = (e.clientX - r.left) / state.scale, wy = (e.clientY - r.top) / state.scale;
   model.scare(wx, wy);
   state.ripples.push({ x: wx, y: wy, t0: performance.now() });
-  if (!state.running) setRunning(true);
+  if (!state.running) setRunning(true);   // a startle only makes sense while the fish are moving
 });
 
 /* ---------- Theme, panel, about ---------- */
@@ -1354,7 +1440,7 @@ document.addEventListener('keydown', function (e) {
     return;
   }
   if (e.key === ' ' && tag !== 'button') { setRunning(!state.running); e.preventDefault(); }
-  else if (e.key === 'ArrowRight' && !state.running) { model.step(); renderSim(); updateHud(true); }
+  else if (e.key === 'ArrowRight' && !state.running) { stepOnce(); }
 });
 
 /* =====================================================================
@@ -1366,8 +1452,8 @@ var tour = { on: false, step: 0, model: null, dirty: false, playing: false, play
 
 // [x, y, heading in degrees] relative to the focal fish (index 0). Screen y points down.
 var TOUR_FISH = [
-  [0, 0, -30],
-  [9, 18, -21], [-36, 4, -48], [-13, -38, -55], [-24, 18, -20], [-19, 37, -30],
+  [0, 0, -70],
+  [6, 12, -40], [-36, 4, -30], [-26, 26, -20], [-30, -24, -35], [-10, 40, -25],
   [70, -45, 100], [-82, -42, 10], [40, 76, 170]
 ];
 
@@ -1401,38 +1487,40 @@ function tourForces(i) {
   var m = tour.model;
   m.buildGrid();
   tourO.list = []; tourO.sepList = [];
-  m.steer(i, tourO);
+  m.accel(i, tourO);
   return tourO;
 }
 
 function fmt(v) { return (Math.round(v * 10) / 10).toString(); }
+function pct(v) { return Math.round(v * 100) + '%'; }
 
 var STEPS = [
   { title: 'Meet the school',
     text: function () { return '<p>Real fish schools have no leader. Each fish follows a few simple rules using only what it can sense nearby, and the school <b>emerges</b> from those rules.</p><p>We’ll follow one fish <span class="key focal"></span><b>(pink)</b> through a single time step of the model.</p>'; } },
-  { title: 'Who counts as a neighbour?',
-    text: function (o) { return '<p>The fish only reacts to others inside its <b>perception radius</b> (dashed circle, ' + fmt(P.R / BL) + ' body lengths). Right now it has <b>' + o.n + ' neighbour' + (o.n === 1 ? '' : 's') + '</b>. Fish outside the circle are ignored completely.</p>'; } },
+  { title: 'What each fish senses',
+    text: function (o) { return '<p>Two distances matter.</p><p>The <b>perception radius</b> (dashed circle, ' + fmt(P.R / BL) + ' body lengths): fish inside it are <b>neighbours</b> (ringed), and they are the only fish it pays attention to. Here there ' + (o.n === 1 ? 'is <b>1 neighbour</b>' : 'are <b>' + o.n + ' neighbours</b>') + '.</p><p>The <b>personal space</b> (red circle, ' + fmt(Math.min(P.Rsep, P.R) / BL) + ' body lengths): neighbours inside it are too close. Here there ' + (o.ns === 1 ? 'is <b>1</b>' : 'are <b>' + o.ns + '</b>') + '.</p>'; } },
   { title: 'Rule 1: Separation',
     text: function (o) { return o.ns > 0
-      ? '<p><b>' + o.ns + '</b> neighbour' + (o.ns === 1 ? ' is' : 's are') + ' inside its <b>personal space</b> (inner circle). The fish steers away <span class="key sep"></span>, giving more weight to closer fish (each push is weighted by 1/distance).</p><p>This stops fish from colliding.</p>'
-      : '<p>No neighbour is inside its <b>personal space</b> (inner circle), so there is <b>no separation force</b> this step. Try dragging a fish into the circle.</p>'; } },
+      ? '<p>Each neighbour inside personal space pushes the fish <b>directly away from it</b> <span class="key sep"></span>. The push is zero at the edge of personal space and grows as the neighbour gets closer' + (o.ns > 1 ? '; pushes from several neighbours add up' : '') + '.</p><p>Drag the intruding fish closer or further away and watch the arrow change.</p>'
+      : '<p>No neighbour is inside personal space, so there is <b>no separation push</b> this step. Drag a fish into the red circle to see one appear.</p>'; } },
   { title: 'Rule 2: Alignment',
     text: function (o) { return o.n > 0
-      ? '<p>The fish looks at which way its neighbours are swimming (thin arrows) and works out their <b>average heading</b> (dashed). It steers towards that heading <span class="key ali"></span>.</p><p>Note: the steering force is the <i>difference</i> between where it wants to go and where it is going now, so it points "sideways" to turn the fish.</p>'
+      ? '<p>The fish compares its own velocity (grey) with the <b>average velocity of its neighbours</b> (dashed blue). The alignment push <span class="key ali"></span> is the <b>difference</b> between the two (dotted line).</p><p>It is zero if the fish already swims like its neighbours, and larger the more out of step it is.</p>'
       : '<p>No neighbours, so nothing to align with.</p>'; } },
   { title: 'Rule 3: Cohesion',
     text: function (o) { return o.n > 0
-      ? '<p>The fish finds the <b>centre of its neighbours</b> (⊕) and steers towards it <span class="key coh"></span>. This keeps the school together.</p><p>Again, the force is the turn needed to head for the centre, not a line straight to it.</p>'
+      ? '<p>The fish is pulled <b>straight towards the centre of its neighbours</b> (⊕) <span class="key coh"></span>.</p><p>The pull grows with distance: zero at the centre, and strongest when the centre is a full perception radius away. Here it is ' + pct(Math.sqrt(o.cohX * o.cohX + o.cohY * o.cohY)) + ' of that maximum.</p>'
       : '<p>No neighbours, so no pull towards a group.</p>'; } },
-  { title: 'Adding the rules together',
-    text: function () { return '<p>Each force is multiplied by its weight (the sliders) and the arrows are added tip to tail:</p><p><b>' + fmt(P.sep) + '</b> × separation + <b>' + fmt(P.ali) + '</b> × alignment + <b>' + fmt(P.coh) + '</b> × cohesion = <span class="key res"></span><b>total steering</b>.</p><p>Try changing a weight in the controls and watch the total change.</p>'; } },
+  { title: 'The overall push',
+    text: function () { return '<p>At each step the fish is pushed by these three forces. Each is multiplied by a <b>weight</b>, and adding them tip to tail gives the <span class="key res"></span><b>overall push</b>:</p><p><b>' + fmt(P.sep) + '</b> × separation + <b>' + fmt(P.ali) + '</b> × alignment + <b>' + fmt(P.coh) + '</b> × cohesion</p><p>The <b>sizes</b> of the forces come from where the neighbours are, and change every step. The <b>weights</b> (the sliders) are fixed traits shared by all fish: how much they care about each rule. Changing the weights is how you get different kinds of collective behaviour. Try it now.</p>'; } },
   { title: 'Turning, gradually',
-    text: function (o, extra) { return '<p>The total steering is added to the fish’s velocity. Steering is capped, so in one step the heading changes by only <b>' + extra.turn.toFixed(1) + '°</b>. The steering arrow is drawn 10× larger than reality so you can see it.</p><p>This limit acts like inertia: it is why schools turn smoothly.</p>'; } },
+    text: function (o, extra) { return '<p>The overall push changes the fish’s velocity. The change per step is capped' + (extra.capped ? ' (the cap is active right now)' : '') + ', which acts like inertia, and the fish also drifts back towards its cruising speed.</p><p>So in one step its heading changes by only <b>' + extra.turn.toFixed(1) + '°</b>. The change is drawn 10× larger than reality so you can see it. This is why schools turn smoothly.</p>'; } },
   { title: 'Everyone at once',
-    text: function () { return '<p>Every fish does the same calculation from the <b>same snapshot</b>, then they all move together. (If fish moved one at a time, later fish would react to where others had already gone.)</p><p>Press play to run this small group for a few seconds.</p>'; } },
+    text: function () { return '<p>Every fish does the same calculation from the <b>same snapshot</b>, then they all move together. The arrows show each fish’s overall push. (If fish moved one at a time, later fish would react to where others had already gone.)</p><p>Press play to run this small group for a few seconds.</p>'; } },
   { title: 'Now scale it up',
-    text: function () { return '<p>The full simulation applies exactly these rules to over a hundred fish. Watch the <b>polarisation</b> plot: it measures how aligned the school is, from 0 (random headings) to 1 (everyone swimming the same way).</p><p>Then try the experiments in the controls panel.</p>'; } }
+    text: function () { return '<p>The full simulation applies exactly these rules to over a hundred fish. Watch the <b>polarisation</b> plot: it measures how aligned the school is, from 0 (random headings) to 1 (everyone swimming the same way).</p><p>The simulation opens paused so you can see where each fish starts and which way it is heading. Press <b>Start</b> when ready, then try the experiments in the controls panel.</p>'; } }
 ];
+var DRAG_STEPS = { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 };
 
 function renderTour() {
   tour.dirty = false;
@@ -1442,57 +1530,61 @@ function renderTour() {
   ovx.setTransform(1, 0, 0, 1, 0, 0); ovx.clearRect(0, 0, ov.width, ov.height);
   var o = tourForces(0);
   var nbSet = {}; o.list.forEach(function (j) { nbSet[j] = 1; });
-  var sepSet = {}; o.sepList.forEach(function (j) { sepSet[j] = 1; });
   var f = T(m.x[0], m.y[0]), fx = f[0], fy = f[1];
   var showCircle = step >= 1 && step <= 5 && !tour.playing;
   var L = BL * 0.5 * k;
+  var Rs = Math.min(P.Rsep, P.R);
 
   if (showCircle) {
     circle(fgx, fx, fy, P.R * k, alpha(c.ink, 0.6), alpha(c.ink, 0.05), 1.5 * d, [6 * d, 6 * d]);
-    if (step === 1) label(fgx, fx, fy - P.R * k - 16 * d, 'perception radius', null, 'center');
-  }
-  if (showCircle && step >= 2) {
-    var Rs = Math.min(P.Rsep, P.R);
     circle(fgx, fx, fy, Rs * k, alpha(c.sep, 0.9), alpha(c.sep, 0.07), 1.5 * d);
-    if (step === 2) label(fgx, fx, fy - Rs * k - 14 * d, 'personal space', c.sep, 'center');
+    if (step === 1) {
+      label(fgx, fx, fy - P.R * k - 16 * d, 'perception radius', null, 'center');
+      label(fgx, fx, fy - Rs * k - 14 * d, 'personal space', c.sep, 'center');
+    }
   }
 
-  // Fish
-  for (var i = 0; i < m.n; i++) {
+  // Other fish (the focal fish is drawn last, on top)
+  for (var i = 1; i < m.n; i++) {
     var p = T(m.x[i], m.y[i]);
     var sp = Math.sqrt(m.vx[i] * m.vx[i] + m.vy[i] * m.vy[i]) || 1;
-    var dim = step >= 1 && step <= 6 && i !== 0 && !nbSet[i] && !tour.playing;
+    var dim = step >= 1 && step <= 6 && !nbSet[i] && !tour.playing;
     fgx.beginPath(); fishPath(fgx, p[0], p[1], m.vx[i] / sp, m.vy[i] / sp, L);
-    if (i === 0) continue;                       // focal fish is drawn last, on top
     fgx.fillStyle = dim ? alpha(c.fish, 0.28) : c.fish;
     fgx.fill();
-    if (i !== 0 && nbSet[i] && step >= 1 && step <= 5 && !tour.playing) circle(fgx, p[0], p[1], L * 1.35, alpha(c.ink, 0.55), null, 1.2 * d);
+    if (nbSet[i] && step >= 1 && step <= 5 && !tour.playing) circle(fgx, p[0], p[1], L * 1.35, alpha(c.ink, 0.55), null, 1.2 * d);
   }
 
   if (tour.playing) { drawFocal(); return; }
-  var FS = 300 * tour.k * d;        // force -> px
-  var KV = 9 * tour.k * d;          // velocity -> px
+  var KV = 9 * tour.k * d;              // velocity (units/step) -> device px
+  var FS = FORCE_LEN * tour.k * d;      // dimensionless force -> device px (force 1 = one cruise-speed arrow)
   var sepV = [o.sepX * FS, o.sepY * FS], aliV = [o.aliX * FS, o.aliY * FS], cohV = [o.cohX * FS, o.cohY * FS];
   var W3 = 3 * d;
 
   if (step === 2) {
     o.sepList.forEach(function (j) {
-      var p = T(m.x[j], m.y[j]);
+      var q = T(m.x[j], m.y[j]);
       fgx.save(); fgx.setLineDash([3 * d, 4 * d]); fgx.strokeStyle = alpha(c.sep, 0.8); fgx.lineWidth = 1.5 * d;
-      fgx.beginPath(); fgx.moveTo(fx, fy); fgx.lineTo(p[0], p[1]); fgx.stroke(); fgx.restore();
+      fgx.beginPath(); fgx.moveTo(fx, fy); fgx.lineTo(q[0], q[1]); fgx.stroke(); fgx.restore();
     });
     arrow(fgx, fx, fy, sepV[0], sepV[1], c.sep, W3);
     if (o.ns) tipLabel(fgx, fx, fy, sepV[0], sepV[1], 'separation', c.sep);
   }
   if (step === 3 && o.n) {
     o.list.forEach(function (j) {
-      var p = T(m.x[j], m.y[j]);
-      arrow(fgx, p[0], p[1], m.vx[j] * KV * 0.6, m.vy[j] * KV * 0.6, alpha(c.ink, 0.6), 1.2 * d);
+      var q = T(m.x[j], m.y[j]);
+      arrow(fgx, q[0], q[1], m.vx[j] * KV * 0.6, m.vy[j] * KV * 0.6, alpha(c.ink, 0.45), 1.2 * d);
     });
-    var am = Math.sqrt(o.avx * o.avx + o.avy * o.avy) || 1;
-    arrow(fgx, fx, fy, o.avx / am * FIX.maxSpeed * KV, o.avy / am * FIX.maxSpeed * KV, alpha(c.ali, 0.85), 1.8 * d, true);
+    var vx0 = m.vx[0] * KV, vy0 = m.vy[0] * KV, avx = o.avx * KV, avy = o.avy * KV;
+    arrow(fgx, fx, fy, vx0, vy0, alpha(c.ink, 0.7), 2 * d);
+    arrow(fgx, fx, fy, avx, avy, alpha(c.ali, 0.9), 2 * d, true);
+    fgx.save(); fgx.setLineDash([2 * d, 4 * d]); fgx.strokeStyle = alpha(c.ali, 0.9); fgx.lineWidth = 1.5 * d;
+    fgx.beginPath(); fgx.moveTo(fx + vx0, fy + vy0); fgx.lineTo(fx + avx, fy + avy); fgx.stroke(); fgx.restore();
     arrow(fgx, fx, fy, aliV[0], aliV[1], c.ali, W3);
     tipLabel(fgx, fx, fy, aliV[0], aliV[1], 'alignment', c.ali);
+    var crs = vx0 * avy - vy0 * avx, sd = crs >= 0 ? 1 : -1;   // put the two labels on opposite sides
+    tipLabel(fgx, fx, fy, vx0, vy0, 'own velocity', null, -sd);
+    tipLabel(fgx, fx, fy, avx, avy, 'neighbours’ average', null, sd);
   }
   if (step === 4 && o.n) {
     var cp = [fx + o.cx * k, fy + o.cy * k];
@@ -1501,10 +1593,10 @@ function renderTour() {
     circle(fgx, cp[0], cp[1], 7 * d, c.coh, alpha(c.coh, 0.25), 2 * d);
     fgx.save(); fgx.strokeStyle = c.coh; fgx.lineWidth = 2 * d; fgx.beginPath();
     fgx.moveTo(cp[0] - 7 * d, cp[1]); fgx.lineTo(cp[0] + 7 * d, cp[1]); fgx.moveTo(cp[0], cp[1] - 7 * d); fgx.lineTo(cp[0], cp[1] + 7 * d); fgx.stroke(); fgx.restore();
-    label(fgx, cp[0], cp[1] + 22 * d, 'centre of neighbours', null, 'center');
-    var cside = cohV[0] >= 0 ? 1 : -1;
+    var offLen = Math.sqrt(o.cx * o.cx + o.cy * o.cy) || 1;
+    label(fgx, cp[0] + o.cx / offLen * 18 * d, cp[1] + o.cy / offLen * 18 * d + 4 * d, 'centre of neighbours', null, o.cx >= 0 ? 'left' : 'right');
     arrow(fgx, fx, fy, cohV[0], cohV[1], c.coh, W3);
-    tipLabel(fgx, fx, fy, cohV[0], cohV[1], 'cohesion', c.coh, -cside);
+    tipLabel(fgx, fx, fy, cohV[0], cohV[1], 'cohesion', c.coh, cohV[0] >= 0 ? -1 : 1);
   }
   if (step === 5) {
     var a1 = [sepV[0] * P.sep, sepV[1] * P.sep], a2 = [aliV[0] * P.ali, aliV[1] * P.ali], a3 = [cohV[0] * P.coh, cohV[1] * P.coh];
@@ -1513,30 +1605,28 @@ function renderTour() {
     arrow(fgx, fx, fy, a1[0], a1[1], c.sep, W3);
     arrow(fgx, fx + a1[0], fy + a1[1], a2[0], a2[1], c.ali, W3);
     arrow(fgx, fx + a1[0] + a2[0], fy + a1[1] + a2[1], a3[0], a3[1], c.coh, W3);
-    tipLabel(fgx, fx, fy, tx, ty, 'total steering', c.ink);
+    tipLabel(fgx, fx, fy, tx, ty, 'overall push', c.ink);
   }
   if (step === 6) {
     var vx = m.vx[0], vy = m.vy[0];
-    var sx = P.sep * o.sepX + P.ali * o.aliX + P.coh * o.cohX, sy = P.sep * o.sepY + P.ali * o.aliY + P.coh * o.cohY;
-    var nvx = vx + sx, nvy = vy + sy, ns = Math.sqrt(nvx * nvx + nvy * nvy);
-    if (ns > FIX.maxSpeed) { nvx *= FIX.maxSpeed / ns; nvy *= FIX.maxSpeed / ns; }
+    var nvx = vx + o.accX, nvy = vy + o.accY;
     var KV6 = KV * 1.6;
-    // Which side of the velocity does the steering push? Put labels on opposite sides.
-    var cross = vx * sy - vy * sx, side = cross >= 0 ? 1 : -1;
+    var cross = vx * o.accY - vy * o.accX, side = cross >= 0 ? 1 : -1;
     arrow(fgx, fx, fy, vx * KV6, vy * KV6, alpha(c.ink, 0.65), 2.2 * d);
     tipLabel(fgx, fx, fy, vx * KV6, vy * KV6, 'current velocity', null, -side);
     arrow(fgx, fx, fy, nvx * KV6, nvy * KV6, c.focal, 2.2 * d, true);
-    arrow(fgx, fx + vx * KV6, fy + vy * KV6, sx * KV6 * 10, sy * KV6 * 10, c.ink, 2.8 * d);
-    tipLabel(fgx, fx + vx * KV6, fy + vy * KV6, sx * KV6 * 10, sy * KV6 * 10, 'steering \u00d710', c.ink);
-    tipLabel(fgx, fx + vx * KV6 * 0.35, fy + vy * KV6 * 0.35, vx * KV6 * 0.65, vy * KV6 * 0.65, 'new velocity (dashed)', c.focal, side);
+    arrow(fgx, fx + vx * KV6, fy + vy * KV6, o.accX * KV6 * 10, o.accY * KV6 * 10, c.ink, 2.8 * d);
+    tipLabel(fgx, fx + vx * KV6, fy + vy * KV6, o.accX * KV6 * 10, o.accY * KV6 * 10, 'change ×10', c.ink);
+    tipLabel(fgx, fx, fy, vx * KV6 * 0.6, vy * KV6 * 0.6, 'new velocity (dashed)', c.focal, side);
   }
   if (step === 7) {
+    var oo = { list: null, sepList: null };
     for (i = 0; i < m.n; i++) {
-      var oo = { list: null, sepList: null };
-      m.steer(i, oo);
+      m.accel(i, oo);
       var p2 = T(m.x[i], m.y[i]);
-      var gx = (P.sep * oo.sepX + P.ali * oo.aliX + P.coh * oo.cohX) * FS, gy = (P.sep * oo.sepY + P.ali * oo.aliY + P.coh * oo.cohY) * FS;
-      arrow(fgx, p2[0], p2[1], gx * 0.6, gy * 0.6, c.ink, 2.2 * d);
+      var gx = (P.sep * oo.sepX + P.ali * oo.aliX + P.coh * oo.cohX) * FS * 0.6;
+      var gy = (P.sep * oo.sepY + P.ali * oo.aliY + P.coh * oo.cohY) * FS * 0.6;
+      arrow(fgx, p2[0], p2[1], gx, gy, c.ink, 2.2 * d);
     }
   }
   drawFocal();
@@ -1549,22 +1639,22 @@ function renderTour() {
   }
 }
 
-function tourStepTurn() {
+function tourStepInfo() {
   var m = tour.model, o = tourForces(0);
   var vx = m.vx[0], vy = m.vy[0];
-  var sx = P.sep * o.sepX + P.ali * o.aliX + P.coh * o.cohX, sy = P.sep * o.sepY + P.ali * o.aliY + P.coh * o.cohY;
-  var a0 = Math.atan2(vy, vx), a1 = Math.atan2(vy + sy, vx + sx);
+  var a0 = Math.atan2(vy, vx), a1 = Math.atan2(vy + o.accY, vx + o.accX);
   var da = (a1 - a0) * 180 / Math.PI; if (da > 180) da -= 360; if (da < -180) da += 360;
-  return Math.abs(da);
+  var push = Math.sqrt(o.pushX * o.pushX + o.pushY * o.pushY);
+  return { turn: Math.abs(da), capped: push > FIX.maxForce };
 }
 
 function updateTourText() {
   var s = STEPS[tour.step], o = tourForces(0);
   $('tourStepLabel').textContent = 'Step ' + (tour.step + 1) + ' of ' + STEPS.length;
   $('tourTitle').textContent = s.title;
-  $('tourText').innerHTML = s.text(o, { turn: tourStepTurn() });
+  $('tourText').innerHTML = s.text(o, tourStepInfo());
   $('tourPrev').disabled = tour.step === 0;
-  $('tourNext').textContent = tour.step === STEPS.length - 1 ? 'Start simulation' : 'Next →';
+  $('tourNext').textContent = tour.step === STEPS.length - 1 ? 'Go to simulation' : 'Next →';
   var dots = $('tourDots').children;
   for (var i = 0; i < dots.length; i++) {
     dots[i].className = i === tour.step ? 'on' : (i < tour.step ? 'done' : '');
@@ -1576,7 +1666,7 @@ function updateTourExtra() {
   var ex = $('tourExtra');
   ex.innerHTML = '';
   if (tour.step >= 1 && tour.step <= 6) {
-    ex.innerHTML = '<div class="drag-hint">Tip: drag any fish to move it. The arrows update instantly.</div>';
+    ex.innerHTML = '<div class="drag-hint">Tip: drag any fish (including the pink one) to move it. Everything updates instantly.</div>';
   }
   if (tour.step === 7) {
     var b = document.createElement('button');
@@ -1635,37 +1725,47 @@ function endTour(startSim) {
   fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
   ovx.setTransform(1, 0, 0, 1, 0, 0); ovx.clearRect(0, 0, ov.width, ov.height);
   if (startSim) {
+    // Arrive paused, with the starting headings shown, ready for the user to press Start.
     state.spot = true; $('t-spot').checked = true;
-    setRunning(true);
+    resetSim();
   } else {
     setRunning(tour.wasRunning);
   }
   renderNow();
 }
 
-function tourPointerDown(e) {
-  if (tour.step === 0 || tour.step >= 7 || tour.playing) return;
+function tourHit(e) {
   var r = fg.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  var m = tour.model, best = -1, bd = 26 * 26;
+  var m = tour.model, best = -1, bd = 28 * 28;
   for (var i = 0; i < m.n; i++) {
     var sx = tour.ox + (m.x[i] - tour.cx) * tour.k, sy = tour.oy + (m.y[i] - tour.cy) * tour.k;
     var dd = (sx - mx) * (sx - mx) + (sy - my) * (sy - my);
     if (dd < bd) { bd = dd; best = i; }
   }
+  return best;
+}
+function tourPointerDown(e) {
+  if (!DRAG_STEPS[tour.step] || tour.playing) return;
+  var best = tourHit(e);
   if (best < 0) return;
   tour.drag = best;
-  fg.setPointerCapture(e.pointerId);
+  try { fg.setPointerCapture(e.pointerId); } catch (err) {}
+  fg.classList.add('dragging');
   e.preventDefault();
 }
 fg.addEventListener('pointermove', function (e) {
-  if (!tour.on || tour.drag < 0) return;
+  if (!tour.on) return;
+  if (tour.drag < 0) {                 // hover feedback: show a grab cursor over draggable fish
+    fg.classList.toggle('can-drag', !!DRAG_STEPS[tour.step] && !tour.playing && tourHit(e) >= 0);
+    return;
+  }
   var r = fg.getBoundingClientRect();
   tour.model.x[tour.drag] = tour.cx + (e.clientX - r.left - tour.ox) / tour.k;
   tour.model.y[tour.drag] = tour.cy + (e.clientY - r.top - tour.oy) / tour.k;
   updateTourText();
   tour.dirty = true;
 });
-function endDrag() { tour.drag = -1; }
+function endDrag() { tour.drag = -1; fg.classList.remove('dragging'); }
 fg.addEventListener('pointerup', endDrag);
 fg.addEventListener('pointercancel', endDrag);
 

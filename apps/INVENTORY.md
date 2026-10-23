@@ -321,6 +321,7 @@ A random town starts at about 50%. The jump between 25% and 30% is the step from
 - Four examples (one peak, three peaks, many peaks, real ocean) plus an Explore tab.
 - Each example is a short sequence of steps: set-up → warm it → compare with a straight line → other measures → key message.
 - "Look at" chips name the panels that matter; the other panels fade. On tablet and phone the focused panels move up to sit directly under the text.
+- Controls follow the story (revision 23 Oct): the set-up step has no controls; on the warming step the Play button sits in the text card; the slider appears only after the staged animation has played to the end, and stays for the later steps of that example. Explore has everything.
 - Playback pauses automatically at key moments with a callout in the text and labels on the charts (e.g. each new peak crossing in example 2, 150 and 300 days a year in the real example).
 - "Early rate, continued" dashed line on the MHW-days chart shows the acceleration; "if peaks just rose by μ" line on the intensity chart shows the lag.
 - Light theme by default, dark available. Colours: warmed series blue, MHW days red, just-crossed amber, threshold black dashed, climatology grey.

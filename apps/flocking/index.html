@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schooling Fish | Alex Sen Gupta</title>
+<meta name="description" content="An interactive agent-based model of fish schooling: three local rules (separation, alignment, cohesion) produce an ordered school. Includes a guided step-by-step tour, predators and a live polarisation measure.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  // Set the theme before first paint to avoid a flash.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('flock-theme'); } catch (e) {}
+    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<style>
+  :root, :root[data-theme="dark"] {
+    --bg: #07141c;
+    --surface: #0c1e2a;
+    --surface-2: #112a39;
+    --ink: #e6f1f6;
+    --ink-2: #a8c0cc;
+    --muted: #7a95a3;
+    --line: rgba(230, 241, 246, 0.10);
+    --accent: #4fd1c5;
+    --accent-ink: #04211f;
+    --water-top: #0f3a52;
+    --water-bot: #05121a;
+    --fish: #cfe6f0;
+    --focal: #ff7ac0;
+    --pred: #ffc15e;
+    --sep: #f2754f;
+    --ali: #5b9bf0;
+    --coh: #2fbf86;
+    --hud: rgba(7, 20, 28, 0.72);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef4f7;
+    --surface: #ffffff;
+    --surface-2: #f2f7f9;
+    --ink: #12313f;
+    --ink-2: #3f5d6b;
+    --muted: #6b8592;
+    --line: rgba(18, 49, 63, 0.12);
+    --accent: #0f8f86;
+    --accent-ink: #ffffff;
+    --water-top: #dff0f6;
+    --water-bot: #a9d3e4;
+    --fish: #1d4357;
+    --focal: #c0287a;
+    --pred: #b4540a;
+    --sep: #c8461f;
+    --ali: #2f6fd0;
+    --coh: #14875d;
+    --hud: rgba(255, 255, 255, 0.82);
+    --shadow: 0 10px 30px rgba(18, 49, 63, 0.15);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex: none;
+  }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; color: var(--ink-2);
+    font-size: 14px; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+  .back:hover { color: var(--ink); background: var(--surface-2); }
+  .titles { flex: 1; min-width: 0; }
+  .titles h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.2px; }
+  .titles p { margin: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.icon { width: 38px; height: 38px; padding: 0; display: inline-grid; place-items: center; }
+  .btn:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---------- Layout ---------- */
+  .layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+  .layout.panel-hidden { grid-template-columns: minmax(0, 1fr); }
+  .layout.panel-hidden .panel { display: none; }
+
+  .stage { position: relative; min-height: 0; padding: 14px; display: flex; flex-direction: column; }
+  .tank {
+    position: relative;
+    flex: 1;
+    min-height: 320px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .tank.touring { touch-action: none; }
+  .tank canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* HUD elements over the tank */
+  .hud {
+    position: absolute;
+    background: var(--hud);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .hud-stats { top: 12px; left: 12px; padding: 6px 10px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hud-stats b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hud-plot { right: 12px; bottom: 12px; padding: 8px 10px 6px; width: 250px; }
+  .hud-plot .plot-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+  .hud-plot .plot-head span:first-child { color: var(--ink); font-weight: 500; }
+  .hud-plot .plot-head b { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 15px; }
+  .hud-plot canvas { position: static; width: 100%; height: 64px; }
+  .hud-plot .plot-foot { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+  .toolbar { left: 12px; bottom: 12px; padding: 5px; display: flex; gap: 4px; }
+  .toolbar .tb {
+    width: 40px; height: 40px; border-radius: 9px; border: 0; background: transparent;
+    display: grid; place-items: center; cursor: pointer; color: var(--ink);
+  }
+  .toolbar .tb:hover { background: var(--surface-2); }
+  .toolbar .tb[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .toolbar svg { width: 20px; height: 20px; }
+
+  .tour-prompt {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 14px;
+    font-size: 14px; color: var(--ink); white-space: nowrap;
+  }
+  .tour-prompt button { border: 0; background: transparent; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+  .tour-prompt .go { color: var(--accent); font-weight: 600; }
+  .tour-prompt .x { color: var(--muted); }
+
+  .hidden { display: none !important; }
+
+  /* ---------- Tour card ---------- */
+  .tour-card {
+    position: absolute;
+    left: 30px; bottom: 30px;
+    width: 400px; max-width: calc(100% - 60px);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 16px 18px 14px;
+  }
+  .tour-card .step-label { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .tour-card h2 { margin: 0 0 6px; font-size: 19px; font-weight: 600; }
+  .tour-card .tour-text { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .tour-card .tour-text p { margin: 0 0 8px; }
+  .tour-card .tour-text b { color: var(--ink); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: 0; }
+  .key.sep { background: var(--sep); } .key.ali { background: var(--ali); } .key.coh { background: var(--coh); }
+  .key.focal { background: var(--focal); border-radius: 50%; } .key.res { background: var(--ink); }
+  .tour-nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .dots { display: flex; gap: 5px; flex: 1; flex-wrap: wrap; }
+  .dots button { width: 9px; height: 9px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+  .dots button.on { background: var(--accent); }
+  .dots button.done { background: var(--muted); }
+  .tour-extra { margin-top: 6px; }
+  .tour-close { position: absolute; top: 10px; right: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+  .tour-close:hover { color: var(--ink); background: var(--surface-2); }
+  .drag-hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- Control panel ---------- */
+  .panel {
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+  }
+  .panel-inner { padding: 14px 18px 24px; }
+  .group { padding: 12px 0 14px; border-bottom: 1px solid var(--line); }
+  .group:last-child { border-bottom: 0; }
+  .group h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.on { border-color: var(--accent); color: var(--accent); }
+  .ctl { margin-bottom: 12px; }
+  .ctl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ctl-head label { font-size: 14.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; }
+  .ctl-head output { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .hint { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .sw.sep { background: var(--sep); } .sw.ali { background: var(--ali); } .sw.coh { background: var(--coh); }
+
+  input[type="range"] { width: 100%; height: 28px; margin: 2px 0 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 14.5px; cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  details.try { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; margin-bottom: 8px; background: var(--surface-2); }
+  details.try summary { cursor: pointer; padding: 10px 0; font-size: 14.5px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 8px; }
+  details.try summary::-webkit-details-marker { display: none; }
+  details.try summary::after { content: '+'; color: var(--muted); }
+  details.try[open] summary::after { content: '\2212'; }
+  details.try p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  details.try .btn { font-size: 13px; padding: 6px 12px; margin-bottom: 10px; }
+
+  /* ---------- About dialog ---------- */
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0;
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100dvh - 48px);
+    box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(3, 10, 14, 0.6); }
+  .dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+  .dlg-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  .dlg-body { padding: 6px 22px 22px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+  .dlg-body h3 { color: var(--ink); font-size: 16.5px; margin: 20px 0 6px; font-weight: 600; }
+  .dlg-body b, .dlg-body strong { color: var(--ink); font-weight: 600; }
+  .dlg-body details { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin: 8px 0; }
+  .dlg-body summary { cursor: pointer; color: var(--accent); font-size: 14.5px; }
+  .eq { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13.5px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; color: var(--ink); line-height: 1.55; margin: 8px 0; }
+  .refs { font-size: 13.5px; }
+  .refs li { margin-bottom: 6px; }
+
+  /* ---------- Tablet ---------- */
+  @media (max-width: 980px) {
+    body { display: block; height: auto; overflow: visible; }
+    .layout { display: block; }
+    .stage { height: min(66svh, 640px); padding: 10px; }
+    .tank { min-height: 0; }
+    .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+    .panel-inner { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+    .group.span { grid-column: 1 / -1; }
+    #panelBtn { display: none; }
+    .stage.touring { height: auto; }
+    .stage.touring .tank { height: 56svh; flex: none; }
+    .stage.touring .tour-card { position: relative; left: auto; bottom: auto; width: auto; max-width: none; margin-top: 10px; }
+  }
+  /* ---------- Phone ---------- */
+  @media (max-width: 640px) {
+    .topbar { gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+    .titles h1 { font-size: 17px; white-space: nowrap; }
+    .titles p { display: none; }
+    .back span { display: none; }
+    #aboutBtn .long { display: none; }
+    .btn { padding: 7px 11px; font-size: 13.5px; }
+    .stage { height: 62svh; padding: 8px; }
+    .tank { border-radius: 12px; }
+    .panel-inner { grid-template-columns: 1fr; padding: 8px 16px 28px; }
+    .hud-stats { top: 8px; left: 8px; gap: 10px; font-size: 12px; padding: 4px 8px; }
+    .hud-plot { right: 8px; bottom: 8px; width: 46%; padding: 6px 8px 4px; }
+    .hud-plot canvas { height: 44px; }
+    .hud-plot .plot-foot { display: none; }
+    .toolbar { left: 8px; bottom: 8px; padding: 3px; }
+    .toolbar .tb { width: 38px; height: 38px; }
+    .tour-prompt { top: 44px; left: 8px; transform: none; font-size: 13px; padding-left: 10px; }
+    .stage.touring .tank { height: 48svh; }
+    .tour-card { padding: 14px 14px 12px; }
+    .tour-card .tour-text { font-size: 14.5px; }
+    dialog { width: 100vw; max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; margin: 0; }
+    .dlg-body { padding: 4px 16px 24px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back" href="../../academic_apps.html" aria-label="Back to Academic Apps">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    <span>Apps</span>
+  </a>
+  <div class="titles">
+    <h1>Schooling fish</h1>
+    <p>How a school emerges from three simple rules, with no leader</p>
+  </div>
+  <div class="top-actions">
+    <button class="btn primary" id="tourBtn">Guided tour</button>
+    <button class="btn" id="aboutBtn">About<span class="long"> the model</span></button>
+    <button class="btn icon" id="panelBtn" aria-label="Show or hide controls" title="Show / hide controls">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+    </button>
+    <button class="btn icon" id="themeBtn" aria-label="Switch light or dark theme" title="Light / dark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="layout" id="layout">
+  <section class="stage" id="stage">
+    <div class="tank" id="tank">
+      <canvas id="bg" aria-hidden="true"></canvas>
+      <canvas id="fg" aria-label="Simulation of a school of fish. Tap or click the water to startle them."></canvas>
+      <canvas id="ov" aria-hidden="true"></canvas>
+
+      <div class="hud hud-stats" id="hudStats">
+        <span>Fish <b id="statN">0</b></span>
+        <span id="statCatchWrap" class="hidden">Caught <b id="statCatch">0</b></span>
+        <span id="statTime">Step <b id="statT">0</b></span>
+      </div>
+
+      <div class="hud hud-plot" id="hudPlot">
+        <div class="plot-head"><span>Polarisation</span><b id="statP">0.00</b></div>
+        <canvas id="plot" aria-label="Polarisation over time"></canvas>
+        <div class="plot-foot"><span>last 900 steps</span><span>0 = random, 1 = aligned</span></div>
+      </div>
+
+      <div class="hud toolbar" id="toolbar">
+        <button class="tb" id="playBtn" aria-label="Pause" title="Play / pause (space)"></button>
+        <button class="tb" id="stepBtn" aria-label="Advance one step" title="One step"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5l9 7-9 7z"/><rect x="16" y="5" width="2.6" height="14" rx="1"/></svg></button>
+        <button class="tb" id="resetBtn" aria-label="Scatter the fish again" title="Scatter again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+      </div>
+
+      <div class="hud tour-prompt" id="tourPrompt">
+        New here?
+        <button class="go" id="tourPromptGo">Take the 2-minute tour &rarr;</button>
+        <button class="x" id="tourPromptX" aria-label="Dismiss">&times;</button>
+      </div>
+    </div>
+
+    <div class="tour-card hidden" id="tourCard" role="region" aria-live="polite" aria-label="Guided tour">
+      <button class="tour-close" id="tourClose" aria-label="Exit tour">&times;</button>
+      <div class="step-label" id="tourStepLabel">Step 1 of 9</div>
+      <h2 id="tourTitle"></h2>
+      <div class="tour-text" id="tourText"></div>
+      <div class="tour-extra" id="tourExtra"></div>
+      <div class="tour-nav">
+        <button class="btn" id="tourPrev">&larr; Back</button>
+        <div class="dots" id="tourDots"></div>
+        <button class="btn primary" id="tourNext">Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel" aria-label="Controls">
+    <div class="panel-inner">
+      <div class="group span">
+        <h3>Start from</h3>
+        <div class="chips" id="presets">
+          <button class="chip" data-preset="default">Default school</button>
+          <button class="chip" data-preset="swarm">Swarm (no alignment)</button>
+          <button class="chip" data-preset="parallel">Tight school</button>
+          <button class="chip" data-preset="loners">Loners</button>
+          <button class="chip" data-preset="attack">Under attack</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>The three rules</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-sep"><span class="sw sep"></span>Separation</label><output id="o-sep"></output></div>
+          <input type="range" id="c-sep" min="0" max="3" step="0.1">
+          <p class="hint">Steer away from fish inside your personal space.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-ali"><span class="sw ali"></span>Alignment</label><output id="o-ali"></output></div>
+          <input type="range" id="c-ali" min="0" max="3" step="0.1">
+          <p class="hint">Turn to swim the same way as your neighbours.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-coh"><span class="sw coh"></span>Cohesion</label><output id="o-coh"></output></div>
+          <input type="range" id="c-coh" min="0" max="3" step="0.1">
+          <p class="hint">Head towards the middle of your neighbours.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>What a fish can sense</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-R">Perception radius</label><output id="o-R"></output></div>
+          <input type="range" id="c-R" min="16" max="160" step="4">
+          <p class="hint">How far a fish can see its neighbours. One body length (BL) = 8 units.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-Rsep">Personal space</label><output id="o-Rsep"></output></div>
+          <input type="range" id="c-Rsep" min="8" max="64" step="4">
+          <p class="hint">Neighbours closer than this trigger separation. Never larger than the perception radius.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Population</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-n">Number of fish</label><output id="o-n"></output></div>
+          <input type="range" id="c-n" min="10" max="400" step="10">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-preds">Predators</label><output id="o-preds"></output></div>
+          <input type="range" id="c-preds" min="0" max="4" step="1">
+          <p class="hint">Predators chase fish with few neighbours. Fish flee when one comes close.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-speed">Simulation speed</label><output id="o-speed"></output></div>
+          <input type="range" id="c-speed" min="1" max="6" step="1">
+          <p class="hint">Model steps per screen frame. Changes how fast time runs, not the fish themselves.</p>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Display</h3>
+        <label class="toggle">Spotlight one fish (show its forces)<input type="checkbox" id="t-spot"></label>
+        <label class="toggle">Colour fish by heading<input type="checkbox" id="t-heading"></label>
+        <label class="toggle">Motion trails<input type="checkbox" id="t-trails" checked></label>
+      </div>
+
+      <div class="group span">
+        <h3>Experiments to try</h3>
+        <details class="try">
+          <summary>What does alignment actually do?</summary>
+          <p>Set alignment to zero. The fish still cluster (cohesion) and keep their distance (separation), but each cluster churns with no common heading. Polarisation falls to roughly the level you would get from random headings.</p>
+          <p>Now slide alignment back up slowly. Watch how quickly the school locks into a common direction.</p>
+          <button class="btn" data-try="noalign">Set alignment to 0</button>
+        </details>
+        <details class="try">
+          <summary>Short-sighted fish</summary>
+          <p>Reduce the perception radius to about 2 body lengths. Fish align with their immediate neighbours only, so you get many small groups heading in different directions. Polarisation for the whole tank drops even though each group is internally ordered.</p>
+          <button class="btn" data-try="shortsight">Set perception to 2 BL</button>
+        </details>
+        <details class="try">
+          <summary>No personal space</summary>
+          <p>Turn separation off. Cohesion now pulls fish together with nothing to stop them, and groups collapse into tight balls that stack fish on top of each other. Real fish can't do this, which is why separation is needed.</p>
+          <button class="btn" data-try="nosep">Set separation to 0</button>
+        </details>
+        <details class="try">
+          <summary>Predators and the safety of numbers</summary>
+          <p>Add two predators. The dashed line shows each predator's current target: it prefers fish with few neighbours, so stragglers are chased first. When a predator dives into the school, nearby fish scatter away from it and then regroup.</p>
+          <p>Does schooling protect the fish here? Compare the catch count over the same time with cohesion at 1.2 and at 0.2. In this simple model the difference is small, because the predator is faster than the fish and is never confused by a crowd. In real schools, the <b>confusion effect</b> (a predator struggling to single out one target from many similar fish) is a big part of why schooling is safer.</p>
+          <button class="btn" data-try="predators">Add 2 predators</button>
+        </details>
+        <details class="try">
+          <summary>Startle the school</summary>
+          <p>Click or tap the water. Fish near the disturbance flee, and the disturbance spreads outward as each fish reacts to its neighbours turning. Information travels through the school faster than any one fish can see.</p>
+        </details>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="about" aria-labelledby="aboutTitle">
+  <div class="dlg-head">
+    <h2 id="aboutTitle">About the model</h2>
+    <button class="btn icon" id="aboutClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="dlg-body">
+    <h3>What you are looking at</h3>
+    <p>Each small shape is a fish. Every fish follows the same three steering rules, using only the fish it can sense nearby. There is no leader and no fish knows the shape of the school. Yet together they form a moving school that turns, splits and reforms. This is an <b>agent-based model</b>: complex group behaviour <b>emerges</b> from simple individual rules. The approach was introduced by Craig Reynolds (1987) to animate bird flocks ("boids") and is now widely used in the study of collective animal behaviour.</p>
+
+    <h3>The three rules</h3>
+    <p><b>Separation</b>: steer away from neighbours that are inside your personal space. Closer neighbours count more when choosing which way to go.<br>
+       <b>Alignment</b>: turn towards the average heading of your neighbours.<br>
+       <b>Cohesion</b>: steer towards the average position (centre) of your neighbours.</p>
+    <p>A neighbour is any fish within the perception radius. Each rule gives a <b>steering force</b>. The forces are multiplied by their weights (the sliders), added together, and used to change the fish's velocity.</p>
+    <details>
+      <summary>Show the maths</summary>
+      <p>Each rule first works out a <em>desired velocity</em> (a direction, at the cruising speed <i>v</i><sub>max</sub>). The steering force is the difference between desired and current velocity, capped at a maximum force <i>F</i><sub>max</sub>. That cap is what makes fish turn gradually rather than instantly.</p>
+<div class="eq">steer(d) = limit( v_max · d/|d|  −  v_i ,  F_max )
+
+Separation:  d_sep = Σ_{j : r_ij &lt; R_sep}  −(x_j − x_i) / r_ij²
+Alignment:   d_ali = Σ_{j : r_ij &lt; R}  v_j
+Cohesion:    d_coh = (1/n) Σ_{j : r_ij &lt; R} (x_j − x_i)
+
+a_i = w_sep·steer(d_sep) + w_ali·steer(d_ali) + w_coh·steer(d_coh)
+v_i ← limit(v_i + a_i, v_max)      x_i ← x_i + v_i</div>
+      <p>In the separation sum, each term is a unit vector pointing away from neighbour <i>j</i>, divided by the distance <i>r</i><sub>ij</sub>, so closer fish dominate the direction. Parameter values: <i>v</i><sub>max</sub> = 3 units per step, <i>F</i><sub>max</sub> = 0.05, and one body length is 8 units. Distances are measured across the edges of the tank, which wraps around like a torus (a fish leaving on the right reappears on the left and can see fish on the other side).</p>
+    </details>
+
+    <h3>One time step</h3>
+    <p>At each step, <b>every fish first works out its steering from the same snapshot</b> of positions and velocities, and only then do all fish move together. Updating fish one at a time would let later fish react to where earlier fish have already moved, a subtle but common bug in simple implementations. Use the step button (or pause and press <b>&rarr;</b>) to advance one step at a time.</p>
+
+    <h3>Predators and startles</h3>
+    <p>A predator picks a target within range, preferring fish that are close and have few neighbours. It reconsiders its choice every 45 steps and aims at where the target is heading, not where it is now. Predators are faster than cruising fish. After a catch, the predator pauses briefly to "handle" its prey, and the caught fish is replaced at a random spot away from the predators.</p>
+    <p>A fish within about 14 body lengths of a predator, or of a spot where you click, becomes alarmed. Its alarm level <i>u</i> rises from 0 to 1 as the threat gets closer. Its flocking forces are scaled down by (1 − 0.8<i>u</i>), and an escape force up to six times the normal maximum steers it directly away. It can also briefly swim up to 50% faster.</p>
+
+    <h3>Measuring order: polarisation</h3>
+    <p>The plot shows the <b>polarisation</b>, a standard measure of how aligned a group is. It is the length of the average heading vector:</p>
+<div class="eq">P = | (1/N) Σ_i  v_i / |v_i| |</div>
+    <p><i>P</i> = 1 when every fish swims in the same direction and is close to 0 when headings are random. With a finite number of fish, random headings still give a small value (about 0.08 for 120 fish), so values below about 0.15 mean "no shared direction". Physicists use the same quantity as the order parameter in the Vicsek model of collective motion, and it has been measured directly in real schools of fish.</p>
+
+    <h3>What this model leaves out</h3>
+    <p>The model is deliberately minimal, so it is worth being clear about its limits:</p>
+    <ul>
+      <li>Fish see equally well in all directions. Real fish have a blind area behind them, which strongly affects school shape.</li>
+      <li>The tank is flat and has no walls (it wraps around). Real schools are three-dimensional and interact with boundaries, currents and the seabed.</li>
+      <li>Perception is perfect and instant. Real fish use vision and their lateral line, with noise and delays.</li>
+      <li>Every fish is identical. Real schools mix sizes, hunger levels and boldness, which affects who ends up at the front.</li>
+      <li>The rules are added together with fixed weights. Couzin et al. (2002) instead used separate zones (repulsion, then orientation, then attraction) and showed that changing their sizes switches a group between a swarm, a rotating mill and a polarised school.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul class="refs">
+      <li>Reynolds, C. W. (1987). Flocks, herds and schools: a distributed behavioral model. <i>Computer Graphics</i> 21(4), 25–34.</li>
+      <li>Vicsek, T., Czirók, A., Ben-Jacob, E., Cohen, I. &amp; Shochet, O. (1995). Novel type of phase transition in a system of self-driven particles. <i>Physical Review Letters</i> 75, 1226–1229.</li>
+      <li>Couzin, I. D., Krause, J., James, R., Ruxton, G. D. &amp; Franks, N. R. (2002). Collective memory and spatial sorting in animal groups. <i>Journal of Theoretical Biology</i> 218, 1–11.</li>
+      <li>Tunstrøm, K., Katz, Y., Ioannou, C. C., Huepe, C., Lutz, M. J. &amp; Couzin, I. D. (2013). Collective states, multistability and transitional behavior in schooling fish. <i>PLoS Computational Biology</i> 9(2), e1002915.</li>
+    </ul>
+  </div>
+</dialog>
+
+<noscript><p style="padding:16px">This simulation needs JavaScript.</p></noscript>
+
+<script>
+(function () {
+'use strict';
+
+/* =====================================================================
+   MODEL-BEGIN  (pure simulation code; no DOM access, testable in Node)
+   ===================================================================== */
+var FIX = {
+  maxSpeed: 3,        // cruising speed, units per step
+  maxForce: 0.05,     // steering limit per rule
+  bodyLength: 8,      // units
+  predSpeed: 5,
+  predForce: 0.08,
+  huntRange: 300,
+  retarget: 45,       // steps between target re-evaluation
+  catchR: 7,
+  handling: 90,       // steps a predator pauses after a catch
+  fearR: 110,
+  scareLife: 40
+};
+
+function Model(W, H, p) {
+  this.p = p;          // live parameter object: sep, ali, coh, R, Rsep
+  this.W = W; this.H = H;
+  this.cap = 0;
+  this.n = 0;
+  this.preds = [];
+  this.scares = [];
+  this.catches = 0;
+  this.t = 0;
+  this.polar = 0;
+  this.hist = new Float32Array(900);
+  this.histLen = 0; this.histPos = 0;
+  this._grow(512);
+  this._gridKey = '';
+  this._tmp = { sx: 0, sy: 0 };
+  this.o = { n: 0, ns: 0, sepX: 0, sepY: 0, aliX: 0, aliY: 0, cohX: 0, cohY: 0,
+             cx: 0, cy: 0, avx: 0, avy: 0, list: null, sepList: null };
+}
+
+Model.prototype._grow = function (cap) {
+  var names = ['x', 'y', 'vx', 'vy', 'ax', 'ay', 'fear'];
+  for (var k = 0; k < names.length; k++) {
+    var a = new Float32Array(cap);
+    if (this[names[k]]) a.set(this[names[k]].subarray(0, this.n));
+    this[names[k]] = a;
+  }
+  var nb = new Uint16Array(cap); if (this.nb) nb.set(this.nb.subarray(0, this.n)); this.nb = nb;
+  this.cellOf = new Int32Array(cap);
+  this.cellIdx = new Int32Array(cap);
+  this.cap = cap;
+};
+
+Model.prototype.wrapD = function (d, L) {
+  return d > L * 0.5 ? d - L : (d < -L * 0.5 ? d + L : d);
+};
+
+Model.prototype.addFish = function (x, y, vx, vy) {
+  if (this.n >= this.cap) this._grow(this.cap * 2);
+  var i = this.n++;
+  var a = Math.random() * Math.PI * 2;
+  this.x[i] = x !== undefined ? x : Math.random() * this.W;
+  this.y[i] = y !== undefined ? y : Math.random() * this.H;
+  this.vx[i] = vx !== undefined ? vx : Math.cos(a) * FIX.maxSpeed;
+  this.vy[i] = vy !== undefined ? vy : Math.sin(a) * FIX.maxSpeed;
+  this.ax[i] = this.ay[i] = this.fear[i] = 0;
+  return i;
+};
+
+Model.prototype.setCount = function (n) {
+  while (this.n < n) this.addFish();
+  if (this.n > n) this.n = n;
+};
+
+Model.prototype.scatter = function () {
+  var n = this.n; this.n = 0;
+  for (var i = 0; i < n; i++) this.addFish();
+  for (var k = 0; k < this.preds.length; k++) this.preds[k] = this._newPred();
+  this.catches = 0; this.t = 0; this.histLen = 0; this.histPos = 0; this.scares = [];
+};
+
+Model.prototype._newPred = function () {
+  var a = Math.random() * Math.PI * 2;
+  return { x: Math.random() * this.W, y: Math.random() * this.H,
+           vx: Math.cos(a) * FIX.predSpeed * 0.6, vy: Math.sin(a) * FIX.predSpeed * 0.6,
+           target: -1, retarget: 0, handle: 0 };
+};
+
+Model.prototype.setPredators = function (k) {
+  while (this.preds.length < k) this.preds.push(this._newPred());
+  this.preds.length = k;
+};
+
+Model.prototype.resize = function (W, H) {
+  var sx = W / this.W, sy = H / this.H;
+  for (var i = 0; i < this.n; i++) { this.x[i] *= sx; this.y[i] *= sy; }
+  for (var k = 0; k < this.preds.length; k++) { this.preds[k].x *= sx; this.preds[k].y *= sy; }
+  this.W = W; this.H = H;
+};
+
+Model.prototype.scare = function (x, y) {
+  this.scares.push({ x: x, y: y, life: FIX.scareLife });
+};
+
+// Uniform grid with cells at least R wide, so all neighbours lie in the 3x3 block.
+Model.prototype.buildGrid = function () {
+  var R = this.p.R;
+  var cols = Math.max(1, Math.floor(this.W / R));
+  var rows = Math.max(1, Math.floor(this.H / R));
+  var key = cols + 'x' + rows;
+  if (key !== this._gridKey) {
+    this._gridKey = key;
+    this.cols = cols; this.rows = rows;
+    this.cellStart = new Int32Array(cols * rows + 1);
+    this.cellFill = new Int32Array(cols * rows);
+    // Precompute the unique set of neighbouring cells (handles grids < 3 cells wide).
+    this.nbrCells = [];
+    for (var cy = 0; cy < rows; cy++) {
+      for (var cx = 0; cx < cols; cx++) {
+        var seen = {}, list = [];
+        for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+          var c = ((cy + dy + rows) % rows) * cols + ((cx + dx + cols) % cols);
+          if (!seen[c]) { seen[c] = 1; list.push(c); }
+        }
+        this.nbrCells.push(new Int32Array(list));
+      }
+    }
+  }
+  var cw = this.W / cols, ch = this.H / rows, ncell = cols * rows;
+  var start = this.cellStart, fill = this.cellFill;
+  start.fill(0);
+  for (var i = 0; i < this.n; i++) {
+    var gx = Math.min(cols - 1, Math.max(0, Math.floor(this.x[i] / cw)));
+    var gy = Math.min(rows - 1, Math.max(0, Math.floor(this.y[i] / ch)));
+    var c2 = gy * cols + gx;
+    this.cellOf[i] = c2;
+    start[c2 + 1]++;
+  }
+  for (var k = 0; k < ncell; k++) start[k + 1] += start[k];
+  for (k = 0; k < ncell; k++) fill[k] = start[k];
+  for (i = 0; i < this.n; i++) this.cellIdx[fill[this.cellOf[i]]++] = i;
+};
+
+// Steering helper: desired = speed * d/|d|; steer = desired - v, limited to maxF.
+Model.prototype._seek = function (dx, dy, vx, vy, speed, maxF) {
+  var t = this._tmp;
+  var m = Math.sqrt(dx * dx + dy * dy);
+  if (m < 1e-9) { t.sx = 0; t.sy = 0; return t; }
+  var sx = dx / m * speed - vx, sy = dy / m * speed - vy;
+  var f = Math.sqrt(sx * sx + sy * sy);
+  if (f > maxF) { sx *= maxF / f; sy *= maxF / f; }
+  t.sx = sx; t.sy = sy;
+  return t;
+};
+
+// Compute the three (unweighted) steering forces for fish i into object o.
+// If o.list / o.sepList are arrays, neighbour indices are recorded (for drawing).
+Model.prototype.steer = function (i, o) {
+  var x = this.x, y = this.y, vx = this.vx, vy = this.vy;
+  var W = this.W, H = this.H, hw = W * 0.5, hh = H * 0.5;
+  var R2 = this.p.R * this.p.R, Rs = Math.min(this.p.Rsep, this.p.R), Rs2 = Rs * Rs;
+  var xi = x[i], yi = y[i];
+  var n = 0, ns = 0, svx = 0, svy = 0, sdx = 0, sdy = 0, px = 0, py = 0;
+  var cells = this.nbrCells[this.cellOf[i]];
+  var start = this.cellStart, idx = this.cellIdx;
+  for (var k = 0; k < cells.length; k++) {
+    var c = cells[k], end = start[c + 1];
+    for (var m = start[c]; m < end; m++) {
+      var j = idx[m];
+      if (j === i) continue;
+      var dx = x[j] - xi; if (dx > hw) dx -= W; else if (dx < -hw) dx += W;
+      var dy = y[j] - yi; if (dy > hh) dy -= H; else if (dy < -hh) dy += H;
+      var d2 = dx * dx + dy * dy;
+      if (d2 >= R2) continue;
+      n++; svx += vx[j]; svy += vy[j]; sdx += dx; sdy += dy;
+      if (o.list) o.list.push(j);
+      if (d2 < Rs2 && d2 > 1e-12) {
+        px -= dx / d2; py -= dy / d2;      // unit vector away, divided by distance
+        ns++;
+        if (o.sepList) o.sepList.push(j);
+      }
+    }
+  }
+  var ms = FIX.maxSpeed, mf = FIX.maxForce, t;
+  o.n = n; o.ns = ns;
+  o.sepX = o.sepY = o.aliX = o.aliY = o.cohX = o.cohY = 0;
+  o.cx = o.cy = o.avx = o.avy = 0;
+  if (ns > 0) { t = this._seek(px, py, vx[i], vy[i], ms, mf); o.sepX = t.sx; o.sepY = t.sy; }
+  if (n > 0) {
+    o.avx = svx / n; o.avy = svy / n;
+    t = this._seek(svx, svy, vx[i], vy[i], ms, mf); o.aliX = t.sx; o.aliY = t.sy;
+    o.cx = sdx / n; o.cy = sdy / n;           // centre of neighbours, relative to fish i
+    t = this._seek(o.cx, o.cy, vx[i], vy[i], ms, mf); o.cohX = t.sx; o.cohY = t.sy;
+  }
+  return o;
+};
+
+Model.prototype.step = function () {
+  var p = this.p, n = this.n, W = this.W, H = this.H;
+  var x = this.x, y = this.y, vx = this.vx, vy = this.vy, ax = this.ax, ay = this.ay;
+  var ms = FIX.maxSpeed, mf = FIX.maxForce, fearR = FIX.fearR;
+  this.buildGrid();
+
+  // Threat sources: predators that are hunting, plus click/tap scares.
+  var src = [];
+  for (var k = 0; k < this.preds.length; k++) src.push(this.preds[k]);
+  for (k = 0; k < this.scares.length; k++) src.push(this.scares[k]);
+
+  // 1. Every fish computes its acceleration from the same snapshot.
+  var o = this.o; o.list = null; o.sepList = null;
+  for (var i = 0; i < n; i++) {
+    this.steer(i, o);
+    this.nb[i] = o.n;
+    var axi = p.sep * o.sepX + p.ali * o.aliX + p.coh * o.cohX;
+    var ayi = p.sep * o.sepY + p.ali * o.aliY + p.coh * o.cohY;
+    var u = 0, fx = 0, fy = 0;
+    for (k = 0; k < src.length; k++) {
+      var dx = this.wrapD(x[i] - src[k].x, W), dy = this.wrapD(y[i] - src[k].y, H);
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < fearR && d > 1e-6) {
+        var w = 1 - d / fearR;
+        fx += dx / d * w; fy += dy / d * w;
+        if (w > u) u = w;
+      }
+    }
+    if (u > 0) {
+      var t = this._seek(fx, fy, vx[i], vy[i], ms * (1 + 0.5 * u), mf * 6 * u);
+      axi = axi * (1 - 0.8 * u) + t.sx;
+      ayi = ayi * (1 - 0.8 * u) + t.sy;
+    }
+    ax[i] = axi; ay[i] = ayi; this.fear[i] = u;
+  }
+
+  // 2. Then everyone moves.
+  for (i = 0; i < n; i++) {
+    var nvx = vx[i] + ax[i], nvy = vy[i] + ay[i];
+    var cap = ms * (1 + 0.5 * this.fear[i]);
+    var s = Math.sqrt(nvx * nvx + nvy * nvy);
+    if (s > cap) { nvx *= cap / s; nvy *= cap / s; }
+    vx[i] = nvx; vy[i] = nvy;
+    var nx = x[i] + nvx, ny = y[i] + nvy;
+    if (nx < 0) nx += W; else if (nx >= W) nx -= W;
+    if (ny < 0) ny += H; else if (ny >= H) ny -= H;
+    x[i] = nx; y[i] = ny;
+  }
+
+  // 3. Predators.
+  for (k = 0; k < this.preds.length; k++) this._stepPred(this.preds[k]);
+
+  // 4. Scares fade.
+  for (k = this.scares.length - 1; k >= 0; k--) if (--this.scares[k].life <= 0) this.scares.splice(k, 1);
+
+  // 5. Polarisation.
+  this.polar = this.polarisation();
+  this.hist[this.histPos] = this.polar;
+  this.histPos = (this.histPos + 1) % this.hist.length;
+  if (this.histLen < this.hist.length) this.histLen++;
+  this.t++;
+};
+
+Model.prototype.polarisation = function () {
+  var sx = 0, sy = 0, n = this.n;
+  if (!n) return 0;
+  for (var i = 0; i < n; i++) {
+    var s = Math.sqrt(this.vx[i] * this.vx[i] + this.vy[i] * this.vy[i]) || 1;
+    sx += this.vx[i] / s; sy += this.vy[i] / s;
+  }
+  return Math.sqrt(sx * sx + sy * sy) / n;
+};
+
+Model.prototype._chooseTarget = function (pr) {
+  var best = -1, bestScore = Infinity;
+  for (var i = 0; i < this.n; i++) {
+    var dx = this.wrapD(this.x[i] - pr.x, this.W), dy = this.wrapD(this.y[i] - pr.y, this.H);
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d > FIX.huntRange) continue;
+    var score = d - Math.max(0, 6 - this.nb[i]) * 25;   // isolated fish look closer
+    if (score < bestScore) { bestScore = score; best = i; }
+  }
+  return best;
+};
+
+Model.prototype._stepPred = function (pr) {
+  var W = this.W, H = this.H, sp = FIX.predSpeed, ax = 0, ay = 0, t, cap = sp;
+  if (pr.handle > 0) {
+    pr.handle--;
+    cap = sp * 0.45;
+    t = this._wander(pr, cap); ax = t.sx; ay = t.sy;
+  } else {
+    if (pr.target >= this.n) pr.target = -1;
+    if (pr.target < 0 || --pr.retarget <= 0) { pr.target = this._chooseTarget(pr); pr.retarget = FIX.retarget; }
+    if (pr.target >= 0) {
+      var i = pr.target;
+      var dx = this.wrapD(this.x[i] - pr.x, W), dy = this.wrapD(this.y[i] - pr.y, H);
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d > FIX.huntRange * 1.3) { pr.target = -1; }
+      else if (d < FIX.catchR) { this._catch(pr, i); }
+      else {
+        var look = Math.min(d / sp, 12);       // aim where the target is going
+        t = this._seek(dx + this.vx[i] * look, dy + this.vy[i] * look, pr.vx, pr.vy, sp, FIX.predForce);
+        ax = t.sx; ay = t.sy;
+      }
+    } else {
+      cap = sp * 0.6;
+      t = this._wander(pr, cap); ax = t.sx; ay = t.sy;
+    }
+  }
+  pr.vx += ax; pr.vy += ay;
+  var s = Math.sqrt(pr.vx * pr.vx + pr.vy * pr.vy);
+  if (s > cap) { pr.vx *= cap / s; pr.vy *= cap / s; }
+  pr.x += pr.vx; pr.y += pr.vy;
+  if (pr.x < 0) pr.x += W; else if (pr.x >= W) pr.x -= W;
+  if (pr.y < 0) pr.y += H; else if (pr.y >= H) pr.y -= H;
+};
+
+Model.prototype._wander = function (pr, speed) {
+  var a = Math.atan2(pr.vy, pr.vx) + (Math.random() - 0.5) * 0.5;
+  return this._seek(Math.cos(a), Math.sin(a), pr.vx, pr.vy, speed, FIX.predForce);
+};
+
+Model.prototype._catch = function (pr, i) {
+  this.catches++;
+  pr.handle = FIX.handling; pr.target = -1;
+  // Replace the fish at a random spot well away from every predator.
+  for (var tries = 0; tries < 20; tries++) {
+    var X = Math.random() * this.W, Y = Math.random() * this.H, ok = true;
+    for (var k = 0; k < this.preds.length; k++) {
+      var dx = this.wrapD(X - this.preds[k].x, this.W), dy = this.wrapD(Y - this.preds[k].y, this.H);
+      if (dx * dx + dy * dy < 200 * 200) { ok = false; break; }
+    }
+    if (ok || tries === 19) {
+      var a = Math.random() * Math.PI * 2;
+      this.x[i] = X; this.y[i] = Y;
+      this.vx[i] = Math.cos(a) * FIX.maxSpeed; this.vy[i] = Math.sin(a) * FIX.maxSpeed;
+      this.fear[i] = 0;
+      break;
+    }
+  }
+};
+/* ===================== MODEL-END ===================== */
+
+if (typeof window === 'undefined') { module.exports = { Model: Model, FIX: FIX }; return; }
+
+/* =====================================================================
+   App: parameters, layout, rendering, UI
+   ===================================================================== */
+var $ = function (id) { return document.getElementById(id); };
+var BL = FIX.bodyLength;
+
+var PRESETS = {
+  default:  { sep: 1.5, ali: 1.0, coh: 1.0, R: 48, Rsep: 24, preds: 0 },
+  swarm:    { sep: 1.5, ali: 0.0, coh: 1.0, R: 48, Rsep: 24, preds: 0 },
+  parallel: { sep: 1.2, ali: 2.0, coh: 1.2, R: 72, Rsep: 20, preds: 0 },
+  loners:   { sep: 1.5, ali: 0.0, coh: 0.0, R: 48, Rsep: 24, preds: 0 },
+  attack:   { sep: 1.5, ali: 1.0, coh: 1.2, R: 56, Rsep: 24, preds: 2 }
+};
+var P = { sep: 1.5, ali: 1.0, coh: 1.0, R: 48, Rsep: 24, n: 120, preds: 0, speed: 1 };
+
+var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state = {
+  running: !reduceMotion,
+  trails: true,
+  heading: false,
+  spot: false,
+  scale: 1,           // CSS px per world unit
+  cssW: 0, cssH: 0, dpr: 1,
+  colors: {},
+  ripples: []
+};
+
+var tank = $('tank'), bg = $('bg'), fg = $('fg'), ov = $('ov'), plot = $('plot');
+var bgx = bg.getContext('2d'), fgx = fg.getContext('2d'), ovx = ov.getContext('2d'), plx = plot.getContext('2d');
+var model = null;
+
+function readColors() {
+  var cs = getComputedStyle(document.documentElement), c = {};
+  ['bg', 'surface', 'ink', 'ink-2', 'muted', 'line', 'accent', 'water-top', 'water-bot', 'fish', 'focal', 'pred', 'sep', 'ali', 'coh']
+    .forEach(function (k) { c[k] = cs.getPropertyValue('--' + k).trim(); });
+  c.dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  state.colors = c;
+}
+
+/* ---------- Sizing: world height ~600 units; px-per-unit adapts to the screen ---------- */
+function worldScale(w, h) { return Math.max(0.75, Math.min(1.6, Math.min(w, h) / 600)); }
+
+function resize() {
+  var r = tank.getBoundingClientRect();
+  var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  if (w === state.cssW && h === state.cssH) return;
+  state.cssW = w; state.cssH = h;
+  state.dpr = Math.min(2, window.devicePixelRatio || 1);
+  [bg, fg, ov].forEach(function (c) { c.width = Math.round(w * state.dpr); c.height = Math.round(h * state.dpr); });
+  state.scale = worldScale(w, h);
+  var W = w / state.scale, H = h / state.scale;
+  if (!model) {
+    model = new Model(W, H, P);
+    P.n = Math.max(30, Math.min(200, Math.round(120 * (W * H) / (900 * 600) / 10) * 10));
+    syncControls();
+    model.setCount(P.n);
+    model.setPredators(P.preds);
+  } else {
+    model.resize(W, H);
+  }
+  sizePlot();
+  drawBackground();
+  fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
+  if (tour.on) tourLayout();
+  if (!state.running || tour.on) renderNow();
+}
+
+function sizePlot() {
+  var r = plot.getBoundingClientRect();
+  plot.width = Math.max(1, Math.round(r.width * state.dpr));
+  plot.height = Math.max(1, Math.round(r.height * state.dpr));
+}
+
+function drawBackground() {
+  var c = state.colors, w = bg.width, h = bg.height;
+  bgx.setTransform(1, 0, 0, 1, 0, 0);
+  var g = bgx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, c['water-top']); g.addColorStop(1, c['water-bot']);
+  bgx.fillStyle = g; bgx.fillRect(0, 0, w, h);
+  // A few soft light patches, fixed per load, for depth.
+  var rg = bgx.createRadialGradient(w * 0.3, -h * 0.1, 0, w * 0.3, -h * 0.1, h * 0.9);
+  rg.addColorStop(0, c.dark ? 'rgba(120,200,230,0.10)' : 'rgba(255,255,255,0.45)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  bgx.fillStyle = rg; bgx.fillRect(0, 0, w, h);
+}
+
+/* ---------- Drawing primitives ---------- */
+// Fish outline in body coordinates (nose at +1, tail fork at -1), drawn with curves.
+function fishPath(ctx, px, py, c, s, L) {
+  var C = c * L, S = s * L;
+  function X(lx, ly) { return px + lx * C - ly * S; }
+  function Y(lx, ly) { return py + lx * S + ly * C; }
+  ctx.moveTo(X(1, 0), Y(1, 0));
+  ctx.quadraticCurveTo(X(0.2, 0.46), Y(0.2, 0.46), X(-0.58, 0.08), Y(-0.58, 0.08));
+  ctx.lineTo(X(-1, 0.42), Y(-1, 0.42));
+  ctx.lineTo(X(-0.84, 0), Y(-0.84, 0));
+  ctx.lineTo(X(-1, -0.42), Y(-1, -0.42));
+  ctx.lineTo(X(-0.58, -0.08), Y(-0.58, -0.08));
+  ctx.quadraticCurveTo(X(0.2, -0.46), Y(0.2, -0.46), X(1, 0), Y(1, 0));
+  ctx.closePath();
+}
+
+function arrow(ctx, x0, y0, dx, dy, color, width, dashed) {
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 3) return;
+  var ux = dx / len, uy = dy / len, head = Math.min(len * 0.45, 5 + width * 2.2);
+  var x1 = x0 + dx, y1 = y0 + dy;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+  if (dashed) ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * head * 0.7, y1 - uy * head * 0.7); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - ux * head - uy * head * 0.55, y1 - uy * head + ux * head * 0.55);
+  ctx.lineTo(x1 - ux * head + uy * head * 0.55, y1 - uy * head - ux * head * 0.55);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function label(ctx, x, y, text, swatch, align) {
+  var c = state.colors;
+  ctx.save();
+  var d = state.dpr;
+  ctx.font = '600 ' + (13 * d) + 'px Outfit, system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  var w = ctx.measureText(text).width + ((swatch ? 16 : 0) + 12) * d, h = 22 * d;
+  var bx = align === 'right' ? x - w : (align === 'center' ? x - w / 2 : x);
+  ctx.fillStyle = c.dark ? 'rgba(7,20,28,0.8)' : 'rgba(255,255,255,0.9)';
+  roundRect(ctx, bx, y - h / 2, w, h, 6 * d); ctx.fill();
+  if (swatch) { ctx.fillStyle = swatch; roundRect(ctx, bx + 7 * d, y - 5 * d, 10 * d, 10 * d, 2.5 * d); ctx.fill(); }
+  ctx.fillStyle = c.ink;
+  ctx.fillText(text, bx + (6 + (swatch ? 16 : 0)) * d, y + 0.5 * d);
+  ctx.restore();
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// Label just beyond an arrow tip (or to one side of it with perp = +1 / -1).
+function tipLabel(ctx, x0, y0, dx, dy, text, swatch, perp) {
+  var len = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / len, uy = dy / len, d = state.dpr;
+  var gap = 16 * d, X, Y;
+  if (perp) { X = x0 + dx * 0.55 - uy * perp * gap * 1.4; Y = y0 + dy * 0.55 + ux * perp * gap * 1.4; }
+  else { X = x0 + dx + ux * gap; Y = y0 + dy + uy * gap; }
+  var nx = perp ? -uy * perp : ux;
+  label(ctx, X, Y, text, swatch, Math.abs(nx) < 0.35 ? 'center' : (nx < 0 ? 'right' : 'left'));
+}
+
+function circle(ctx, x, y, r, stroke, fill, width, dash) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width || 1.5; if (dash) ctx.setLineDash(dash); ctx.stroke(); }
+  ctx.restore();
+}
+
+function alpha(hex, a) {
+  var h = hex.replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return 'rgba(' + parseInt(h.substr(0, 2), 16) + ',' + parseInt(h.substr(2, 2), 16) + ',' + parseInt(h.substr(4, 2), 16) + ',' + a + ')';
+}
+
+/* ---------- Simulation rendering ---------- */
+var HEAD_BINS = 24;
+function headingColor(bin) {
+  var hue = (bin + 0.5) / HEAD_BINS * 360;
+  return state.colors.dark ? 'hsl(' + hue + ',70%,68%)' : 'hsl(' + hue + ',62%,36%)';
+}
+
+function renderSim() {
+  var c = state.colors, d = state.dpr, s = state.scale * d;
+  var W = fg.width, H = fg.height;
+  fgx.setTransform(1, 0, 0, 1, 0, 0);
+  if (state.trails && state.running) {
+    fgx.globalCompositeOperation = 'destination-out';
+    fgx.fillStyle = 'rgba(0,0,0,0.28)';
+    fgx.fillRect(0, 0, W, H);
+    fgx.globalCompositeOperation = 'source-over';
+  } else {
+    fgx.clearRect(0, 0, W, H);
+  }
+  var L = BL * 0.5 * s * 1.05;
+  var n = model.n, x = model.x, y = model.y, vx = model.vx, vy = model.vy;
+  if (state.heading) {
+    var buckets = [];
+    for (var b = 0; b < HEAD_BINS; b++) buckets.push([]);
+    for (var i = 0; i < n; i++) {
+      var a = Math.atan2(vy[i], vx[i]); if (a < 0) a += Math.PI * 2;
+      buckets[Math.min(HEAD_BINS - 1, Math.floor(a / (Math.PI * 2) * HEAD_BINS))].push(i);
+    }
+    for (b = 0; b < HEAD_BINS; b++) {
+      if (!buckets[b].length) continue;
+      fgx.beginPath();
+      for (var q = 0; q < buckets[b].length; q++) drawFishAt(fgx, buckets[b][q], s, L);
+      fgx.fillStyle = headingColor(b); fgx.fill();
+    }
+  } else {
+    fgx.beginPath();
+    for (i = 0; i < n; i++) drawFishAt(fgx, i, s, L);
+    fgx.fillStyle = c.fish; fgx.fill();
+  }
+  // Predators
+  for (var k = 0; k < model.preds.length; k++) {
+    var pr = model.preds[k];
+    var sp = Math.sqrt(pr.vx * pr.vx + pr.vy * pr.vy) || 1;
+    fgx.beginPath(); fishPath(fgx, pr.x * s, pr.y * s, pr.vx / sp, pr.vy / sp, 9 * s);
+    fgx.fillStyle = c.pred; fgx.fill();
+  }
+  renderOverlay();
+}
+
+function drawFishAt(ctx, i, s, L) {
+  var vx = model.vx[i], vy = model.vy[i], sp = Math.sqrt(vx * vx + vy * vy) || 1;
+  fishPath(ctx, model.x[i] * s, model.y[i] * s, vx / sp, vy / sp, L);
+}
+
+var spotO = { list: [], sepList: [] };
+function renderOverlay() {
+  var c = state.colors, d = state.dpr, s = state.scale * d;
+  ovx.setTransform(1, 0, 0, 1, 0, 0);
+  ovx.clearRect(0, 0, ov.width, ov.height);
+  // Click ripples
+  for (var r = state.ripples.length - 1; r >= 0; r--) {
+    var rp = state.ripples[r];
+    var age = (performance.now() - rp.t0) / 900;
+    if (age >= 1) { state.ripples.splice(r, 1); continue; }
+    circle(ovx, rp.x * s, rp.y * s, (10 + age * FIX.fearR) * s, alpha(c.ink, 0.5 * (1 - age)), null, 2 * d);
+  }
+  // Predator target lines
+  for (var k = 0; k < model.preds.length; k++) {
+    var pr = model.preds[k];
+    if (pr.target >= 0 && pr.handle === 0) {
+      var tx = model.x[pr.target], ty = model.y[pr.target];
+      var dx = model.wrapD(tx - pr.x, model.W), dy = model.wrapD(ty - pr.y, model.H);
+      ovx.save(); ovx.setLineDash([3 * d, 5 * d]); ovx.strokeStyle = alpha(c.pred, 0.55); ovx.lineWidth = 1.2 * d;
+      ovx.beginPath(); ovx.moveTo(pr.x * s, pr.y * s); ovx.lineTo((pr.x + dx) * s, (pr.y + dy) * s); ovx.stroke(); ovx.restore();
+      circle(ovx, tx * s, ty * s, 7 * s, alpha(c.pred, 0.8), null, 1.5 * d);
+    }
+  }
+  if (!state.spot || model.n === 0) return;
+  // Spotlight: fish 0, its perception, neighbours and live forces.
+  var i = 0, fx = model.x[0] * s, fy = model.y[0] * s;
+  if (!model.nbrCells) model.buildGrid();
+  spotO.list = []; spotO.sepList = [];
+  model.steer(i, spotO);
+  circle(ovx, fx, fy, P.R * s, alpha(c.ink, 0.55), alpha(c.ink, 0.04), 1.2 * d, [4 * d, 4 * d]);
+  circle(ovx, fx, fy, Math.min(P.Rsep, P.R) * s, alpha(c.sep, 0.8), null, 1.2 * d);
+  for (var q = 0; q < spotO.list.length; q++) {
+    var j = spotO.list[q];
+    var jx = fx + model.wrapD(model.x[j] - model.x[i], model.W) * s;
+    var jy = fy + model.wrapD(model.y[j] - model.y[i], model.H) * s;
+    circle(ovx, jx, jy, 6 * s, alpha(c.ink, 0.6), null, 1 * d);
+  }
+  var FS = 380 * s;
+  arrow(ovx, fx, fy, spotO.sepX * P.sep * FS, spotO.sepY * P.sep * FS, c.sep, 2.5 * d);
+  arrow(ovx, fx, fy, spotO.aliX * P.ali * FS, spotO.aliY * P.ali * FS, c.ali, 2.5 * d);
+  arrow(ovx, fx, fy, spotO.cohX * P.coh * FS, spotO.cohY * P.coh * FS, c.coh, 2.5 * d);
+  ovx.beginPath();
+  var vx = model.vx[0], vy = model.vy[0], sp = Math.sqrt(vx * vx + vy * vy) || 1;
+  fishPath(ovx, fx, fy, vx / sp, vy / sp, BL * 0.75 * s);
+  ovx.fillStyle = c.focal; ovx.fill();
+  ovx.lineWidth = 1.5 * d; ovx.strokeStyle = c.dark ? '#000' : '#fff'; ovx.stroke();
+}
+
+function renderPlot() {
+  var c = state.colors, w = plot.width, h = plot.height, d = state.dpr;
+  plx.setTransform(1, 0, 0, 1, 0, 0);
+  plx.clearRect(0, 0, w, h);
+  var padT = 3 * d, padB = 3 * d, ph = h - padT - padB;
+  plx.strokeStyle = c.line; plx.lineWidth = 1 * d;
+  [0, 0.5, 1].forEach(function (v) {
+    var yy = Math.round(padT + (1 - v) * ph) + 0.5;
+    plx.beginPath(); plx.moveTo(0, yy); plx.lineTo(w, yy); plx.stroke();
+  });
+  plx.fillStyle = c.muted; plx.font = (10 * d) + 'px Outfit, sans-serif'; plx.textBaseline = 'top';
+  plx.fillText('1', 2 * d, padT + 1 * d);
+  plx.textBaseline = 'bottom'; plx.fillText('0', 2 * d, h - 1 * d);
+  var len = model.histLen, N = model.hist.length;
+  if (len < 2) return;
+  plx.beginPath();
+  for (var k = 0; k < len; k++) {
+    var idx = (model.histPos - len + k + N) % N;
+    var X = w - (len - 1 - k) / (N - 1) * w;
+    var Y = padT + (1 - model.hist[idx]) * ph;
+    if (k === 0) plx.moveTo(X, Y); else plx.lineTo(X, Y);
+  }
+  plx.strokeStyle = c.accent; plx.lineWidth = 2 * d; plx.lineJoin = 'round'; plx.stroke();
+}
+
+var hudTick = 0;
+function updateHud(force) {
+  if (!force && (++hudTick % 4)) return;
+  $('statN').textContent = model.n;
+  $('statP').textContent = model.polar.toFixed(2);
+  $('statT').textContent = model.t.toLocaleString();
+  $('statCatchWrap').classList.toggle('hidden', model.preds.length === 0 && model.catches === 0);
+  $('statCatch').textContent = model.catches;
+  renderPlot();
+}
+
+function renderNow() {
+  if (!model) return;
+  if (tour.on) renderTour(); else { renderSim(); updateHud(true); }
+}
+
+/* ---------- Main loop ---------- */
+function frame() {
+  requestAnimationFrame(frame);
+  if (!model) return;
+  if (tour.on) {
+    if (tour.playing) {
+      tour.model.step();
+      if (--tour.playLeft <= 0) { tour.playing = false; updateTourExtra(); }
+      renderTour();
+    } else if (tour.dirty) { renderTour(); }
+    return;
+  }
+  if (state.running) {
+    for (var k = 0; k < P.speed; k++) model.step();
+    renderSim();
+    updateHud(false);
+  } else if (state.ripples.length || state.spotDirty) {
+    state.spotDirty = false;
+    renderOverlay();
+  }
+}
+
+/* ---------- Controls ---------- */
+var CTL = {
+  sep:   { fmt: function (v) { return v.toFixed(1); } },
+  ali:   { fmt: function (v) { return v.toFixed(1); } },
+  coh:   { fmt: function (v) { return v.toFixed(1); } },
+  R:     { fmt: function (v) { return (v / BL).toFixed(1) + ' BL'; } },
+  Rsep:  { fmt: function (v) { return (v / BL).toFixed(1) + ' BL'; } },
+  n:     { fmt: function (v) { return v; }, int: true },
+  preds: { fmt: function (v) { return v === 0 ? 'none' : v; }, int: true },
+  speed: { fmt: function (v) { return v + '×'; }, int: true }
+};
+
+function syncControls() {
+  Object.keys(CTL).forEach(function (k) {
+    var inp = $('c-' + k), out = $('o-' + k);
+    inp.value = P[k];
+    out.textContent = CTL[k].fmt(P[k]);
+  });
+}
+
+function setParam(k, v) {
+  P[k] = v;
+  if (k === 'R' && P.Rsep > v) { P.Rsep = v; }
+  if (k === 'Rsep' && v > P.R) { P.Rsep = P.R; }
+  if (k === 'n') model.setCount(v);
+  if (k === 'preds') model.setPredators(v);
+  syncControls();
+  document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.remove('on'); });
+  if (tour.on) { if (k === 'R') tourLayout(); tour.dirty = true; updateTourText(); }
+  if (!state.running) { state.spotDirty = true; renderNow(); }
+}
+
+Object.keys(CTL).forEach(function (k) {
+  $('c-' + k).addEventListener('input', function (e) {
+    var v = CTL[k].int ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
+    setParam(k, v);
+  });
+});
+
+function applyPreset(name) {
+  var pr = PRESETS[name];
+  Object.keys(pr).forEach(function (k) { P[k] = pr[k]; });
+  model.setPredators(P.preds);
+  syncControls();
+  document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === name); });
+  if (name === 'attack') { state.spot = false; $('t-spot').checked = false; }
+  model.catches = 0;
+  if (!state.running) renderNow();
+}
+document.querySelectorAll('#presets .chip').forEach(function (b) {
+  b.addEventListener('click', function () { applyPreset(b.dataset.preset); });
+});
+
+var TRIES = {
+  noalign:    function () { setParam('ali', 0); },
+  shortsight: function () { setParam('R', 16); setParam('Rsep', 12); },
+  nosep:      function () { setParam('sep', 0); },
+  predators:  function () { setParam('preds', 2); state.spot = true; $('t-spot').checked = true; model.catches = 0; }
+};
+document.querySelectorAll('[data-try]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    TRIES[b.dataset.try]();
+    if (!state.running) setRunning(true);
+    if (window.innerWidth <= 980) tank.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+$('t-spot').addEventListener('change', function (e) { state.spot = e.target.checked; state.spotDirty = true; if (!state.running) renderNow(); });
+$('t-heading').addEventListener('change', function (e) { state.heading = e.target.checked; if (!state.running) renderNow(); });
+$('t-trails').addEventListener('change', function (e) { state.trails = e.target.checked; });
+
+var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1"/></svg>';
+function setRunning(on) {
+  state.running = on;
+  $('playBtn').innerHTML = on ? ICON_PAUSE : ICON_PLAY;
+  $('playBtn').setAttribute('aria-label', on ? 'Pause' : 'Play');
+  $('stepBtn').disabled = on;
+  if (!on) renderNow();
+}
+$('playBtn').addEventListener('click', function () { setRunning(!state.running); });
+$('stepBtn').addEventListener('click', function () { model.step(); renderSim(); updateHud(true); });
+$('resetBtn').addEventListener('click', function () {
+  model.scatter();
+  fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
+  renderSim(); updateHud(true);
+});
+
+// Click / tap the water to startle the fish.
+fg.addEventListener('pointerdown', function (e) {
+  if (tour.on) return tourPointerDown(e);
+  var r = fg.getBoundingClientRect();
+  var wx = (e.clientX - r.left) / state.scale, wy = (e.clientY - r.top) / state.scale;
+  model.scare(wx, wy);
+  state.ripples.push({ x: wx, y: wy, t0: performance.now() });
+  if (!state.running) setRunning(true);
+});
+
+/* ---------- Theme, panel, about ---------- */
+$('themeBtn').addEventListener('click', function () {
+  var t = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('flock-theme', t); } catch (e) {}
+  readColors(); drawBackground();
+  fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
+  renderNow();
+});
+$('panelBtn').addEventListener('click', function () {
+  $('layout').classList.toggle('panel-hidden');
+});
+var about = $('about');
+$('aboutBtn').addEventListener('click', function () {
+  if (typeof about.showModal === 'function') about.showModal(); else about.setAttribute('open', '');
+});
+$('aboutClose').addEventListener('click', function () { about.close ? about.close() : about.removeAttribute('open'); });
+about.addEventListener('click', function (e) { if (e.target === about) about.close(); });
+
+document.addEventListener('keydown', function (e) {
+  if (about.open) return;
+  var tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if (tour.on) {
+    if (e.key === 'ArrowRight') { tourGo(tour.step + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { tourGo(tour.step - 1); e.preventDefault(); }
+    else if (e.key === 'Escape') { endTour(false); }
+    return;
+  }
+  if (e.key === ' ' && tag !== 'button') { setRunning(!state.running); e.preventDefault(); }
+  else if (e.key === 'ArrowRight' && !state.running) { model.step(); renderSim(); updateHud(true); }
+});
+
+/* =====================================================================
+   Guided tour: a small hand-placed school, zoomed in, using the same
+   Model.steer() as the main simulation (so what you see is what runs).
+   ===================================================================== */
+var tour = { on: false, step: 0, model: null, dirty: false, playing: false, playLeft: 0,
+             cx: 500, cy: 500, k: 4, ox: 0, oy: 0, drag: -1, wasRunning: false };
+
+// [x, y, heading in degrees] relative to the focal fish (index 0). Screen y points down.
+var TOUR_FISH = [
+  [0, 0, -30],
+  [9, 18, -21], [-36, 4, -48], [-13, -38, -55], [-24, 18, -20], [-19, 37, -30],
+  [70, -45, 100], [-82, -42, 10], [40, 76, 170]
+];
+
+function tourBuild() {
+  var m = new Model(1000, 1000, P);
+  TOUR_FISH.forEach(function (f) {
+    var a = f[2] * Math.PI / 180;
+    m.addFish(500 + f[0], 500 + f[1], Math.cos(a) * FIX.maxSpeed, Math.sin(a) * FIX.maxSpeed);
+  });
+  m.buildGrid();
+  tour.model = m;
+}
+
+function tourLayout() {
+  var w = state.cssW, h = state.cssH;
+  var cardOverlay = window.innerWidth > 980;
+  var usableW = cardOverlay ? Math.max(w * 0.5, w - 440) : w;
+  tour.k = Math.max(1.6, Math.min(usableW, h) / (P.R * 2 * 1.9));
+  tour.ox = cardOverlay ? w - usableW / 2 : w / 2;
+  tour.oy = cardOverlay ? h * 0.42 : h / 2;
+  tour.dirty = true;
+}
+
+function T(x, y) {      // world -> device pixels in tour view
+  var d = state.dpr;
+  return [(tour.ox + (x - tour.cx) * tour.k) * d, (tour.oy + (y - tour.cy) * tour.k) * d];
+}
+
+var tourO = { list: [], sepList: [] };
+function tourForces(i) {
+  var m = tour.model;
+  m.buildGrid();
+  tourO.list = []; tourO.sepList = [];
+  m.steer(i, tourO);
+  return tourO;
+}
+
+function fmt(v) { return (Math.round(v * 10) / 10).toString(); }
+
+var STEPS = [
+  { title: 'Meet the school',
+    text: function () { return '<p>Real fish schools have no leader. Each fish follows a few simple rules using only what it can sense nearby, and the school <b>emerges</b> from those rules.</p><p>We’ll follow one fish <span class="key focal"></span><b>(pink)</b> through a single time step of the model.</p>'; } },
+  { title: 'Who counts as a neighbour?',
+    text: function (o) { return '<p>The fish only reacts to others inside its <b>perception radius</b> (dashed circle, ' + fmt(P.R / BL) + ' body lengths). Right now it has <b>' + o.n + ' neighbour' + (o.n === 1 ? '' : 's') + '</b>. Fish outside the circle are ignored completely.</p>'; } },
+  { title: 'Rule 1: Separation',
+    text: function (o) { return o.ns > 0
+      ? '<p><b>' + o.ns + '</b> neighbour' + (o.ns === 1 ? ' is' : 's are') + ' inside its <b>personal space</b> (inner circle). The fish steers away <span class="key sep"></span>, giving more weight to closer fish (each push is weighted by 1/distance).</p><p>This stops fish from colliding.</p>'
+      : '<p>No neighbour is inside its <b>personal space</b> (inner circle), so there is <b>no separation force</b> this step. Try dragging a fish into the circle.</p>'; } },
+  { title: 'Rule 2: Alignment',
+    text: function (o) { return o.n > 0
+      ? '<p>The fish looks at which way its neighbours are swimming (thin arrows) and works out their <b>average heading</b> (dashed). It steers towards that heading <span class="key ali"></span>.</p><p>Note: the steering force is the <i>difference</i> between where it wants to go and where it is going now, so it points "sideways" to turn the fish.</p>'
+      : '<p>No neighbours, so nothing to align with.</p>'; } },
+  { title: 'Rule 3: Cohesion',
+    text: function (o) { return o.n > 0
+      ? '<p>The fish finds the <b>centre of its neighbours</b> (⊕) and steers towards it <span class="key coh"></span>. This keeps the school together.</p><p>Again, the force is the turn needed to head for the centre, not a line straight to it.</p>'
+      : '<p>No neighbours, so no pull towards a group.</p>'; } },
+  { title: 'Adding the rules together',
+    text: function () { return '<p>Each force is multiplied by its weight (the sliders) and the arrows are added tip to tail:</p><p><b>' + fmt(P.sep) + '</b> × separation + <b>' + fmt(P.ali) + '</b> × alignment + <b>' + fmt(P.coh) + '</b> × cohesion = <span class="key res"></span><b>total steering</b>.</p><p>Try changing a weight in the controls and watch the total change.</p>'; } },
+  { title: 'Turning, gradually',
+    text: function (o, extra) { return '<p>The total steering is added to the fish’s velocity. Steering is capped, so in one step the heading changes by only <b>' + extra.turn.toFixed(1) + '°</b>. The steering arrow is drawn 10× larger than reality so you can see it.</p><p>This limit acts like inertia: it is why schools turn smoothly.</p>'; } },
+  { title: 'Everyone at once',
+    text: function () { return '<p>Every fish does the same calculation from the <b>same snapshot</b>, then they all move together. (If fish moved one at a time, later fish would react to where others had already gone.)</p><p>Press play to run this small group for a few seconds.</p>'; } },
+  { title: 'Now scale it up',
+    text: function () { return '<p>The full simulation applies exactly these rules to over a hundred fish. Watch the <b>polarisation</b> plot: it measures how aligned the school is, from 0 (random headings) to 1 (everyone swimming the same way).</p><p>Then try the experiments in the controls panel.</p>'; } }
+];
+
+function renderTour() {
+  tour.dirty = false;
+  var c = state.colors, d = state.dpr, m = tour.model, k = tour.k * d, step = tour.step;
+  if (tour.playing) { tour.cx += (m.x[0] - tour.cx) * 0.08; tour.cy += (m.y[0] - tour.cy) * 0.08; }
+  fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
+  ovx.setTransform(1, 0, 0, 1, 0, 0); ovx.clearRect(0, 0, ov.width, ov.height);
+  var o = tourForces(0);
+  var nbSet = {}; o.list.forEach(function (j) { nbSet[j] = 1; });
+  var sepSet = {}; o.sepList.forEach(function (j) { sepSet[j] = 1; });
+  var f = T(m.x[0], m.y[0]), fx = f[0], fy = f[1];
+  var showCircle = step >= 1 && step <= 5 && !tour.playing;
+  var L = BL * 0.5 * k;
+
+  if (showCircle) {
+    circle(fgx, fx, fy, P.R * k, alpha(c.ink, 0.6), alpha(c.ink, 0.05), 1.5 * d, [6 * d, 6 * d]);
+    if (step === 1) label(fgx, fx, fy - P.R * k - 16 * d, 'perception radius', null, 'center');
+  }
+  if (showCircle && step >= 2) {
+    var Rs = Math.min(P.Rsep, P.R);
+    circle(fgx, fx, fy, Rs * k, alpha(c.sep, 0.9), alpha(c.sep, 0.07), 1.5 * d);
+    if (step === 2) label(fgx, fx, fy - Rs * k - 14 * d, 'personal space', c.sep, 'center');
+  }
+
+  // Fish
+  for (var i = 0; i < m.n; i++) {
+    var p = T(m.x[i], m.y[i]);
+    var sp = Math.sqrt(m.vx[i] * m.vx[i] + m.vy[i] * m.vy[i]) || 1;
+    var dim = step >= 1 && step <= 6 && i !== 0 && !nbSet[i] && !tour.playing;
+    fgx.beginPath(); fishPath(fgx, p[0], p[1], m.vx[i] / sp, m.vy[i] / sp, L);
+    if (i === 0) continue;                       // focal fish is drawn last, on top
+    fgx.fillStyle = dim ? alpha(c.fish, 0.28) : c.fish;
+    fgx.fill();
+    if (i !== 0 && nbSet[i] && step >= 1 && step <= 5 && !tour.playing) circle(fgx, p[0], p[1], L * 1.35, alpha(c.ink, 0.55), null, 1.2 * d);
+  }
+
+  if (tour.playing) { drawFocal(); return; }
+  var FS = 300 * tour.k * d;        // force -> px
+  var KV = 9 * tour.k * d;          // velocity -> px
+  var sepV = [o.sepX * FS, o.sepY * FS], aliV = [o.aliX * FS, o.aliY * FS], cohV = [o.cohX * FS, o.cohY * FS];
+  var W3 = 3 * d;
+
+  if (step === 2) {
+    o.sepList.forEach(function (j) {
+      var p = T(m.x[j], m.y[j]);
+      fgx.save(); fgx.setLineDash([3 * d, 4 * d]); fgx.strokeStyle = alpha(c.sep, 0.8); fgx.lineWidth = 1.5 * d;
+      fgx.beginPath(); fgx.moveTo(fx, fy); fgx.lineTo(p[0], p[1]); fgx.stroke(); fgx.restore();
+    });
+    arrow(fgx, fx, fy, sepV[0], sepV[1], c.sep, W3);
+    if (o.ns) tipLabel(fgx, fx, fy, sepV[0], sepV[1], 'separation', c.sep);
+  }
+  if (step === 3 && o.n) {
+    o.list.forEach(function (j) {
+      var p = T(m.x[j], m.y[j]);
+      arrow(fgx, p[0], p[1], m.vx[j] * KV * 0.6, m.vy[j] * KV * 0.6, alpha(c.ink, 0.6), 1.2 * d);
+    });
+    var am = Math.sqrt(o.avx * o.avx + o.avy * o.avy) || 1;
+    arrow(fgx, fx, fy, o.avx / am * FIX.maxSpeed * KV, o.avy / am * FIX.maxSpeed * KV, alpha(c.ali, 0.85), 1.8 * d, true);
+    arrow(fgx, fx, fy, aliV[0], aliV[1], c.ali, W3);
+    tipLabel(fgx, fx, fy, aliV[0], aliV[1], 'alignment', c.ali);
+  }
+  if (step === 4 && o.n) {
+    var cp = [fx + o.cx * k, fy + o.cy * k];
+    fgx.save(); fgx.setLineDash([3 * d, 4 * d]); fgx.strokeStyle = alpha(c.coh, 0.85); fgx.lineWidth = 1.5 * d;
+    fgx.beginPath(); fgx.moveTo(fx, fy); fgx.lineTo(cp[0], cp[1]); fgx.stroke(); fgx.restore();
+    circle(fgx, cp[0], cp[1], 7 * d, c.coh, alpha(c.coh, 0.25), 2 * d);
+    fgx.save(); fgx.strokeStyle = c.coh; fgx.lineWidth = 2 * d; fgx.beginPath();
+    fgx.moveTo(cp[0] - 7 * d, cp[1]); fgx.lineTo(cp[0] + 7 * d, cp[1]); fgx.moveTo(cp[0], cp[1] - 7 * d); fgx.lineTo(cp[0], cp[1] + 7 * d); fgx.stroke(); fgx.restore();
+    label(fgx, cp[0], cp[1] + 22 * d, 'centre of neighbours', null, 'center');
+    var cside = cohV[0] >= 0 ? 1 : -1;
+    arrow(fgx, fx, fy, cohV[0], cohV[1], c.coh, W3);
+    tipLabel(fgx, fx, fy, cohV[0], cohV[1], 'cohesion', c.coh, -cside);
+  }
+  if (step === 5) {
+    var a1 = [sepV[0] * P.sep, sepV[1] * P.sep], a2 = [aliV[0] * P.ali, aliV[1] * P.ali], a3 = [cohV[0] * P.coh, cohV[1] * P.coh];
+    var tx = a1[0] + a2[0] + a3[0], ty = a1[1] + a2[1] + a3[1];
+    arrow(fgx, fx, fy, tx, ty, alpha(c.ink, 0.85), 3 * d);
+    arrow(fgx, fx, fy, a1[0], a1[1], c.sep, W3);
+    arrow(fgx, fx + a1[0], fy + a1[1], a2[0], a2[1], c.ali, W3);
+    arrow(fgx, fx + a1[0] + a2[0], fy + a1[1] + a2[1], a3[0], a3[1], c.coh, W3);
+    tipLabel(fgx, fx, fy, tx, ty, 'total steering', c.ink);
+  }
+  if (step === 6) {
+    var vx = m.vx[0], vy = m.vy[0];
+    var sx = P.sep * o.sepX + P.ali * o.aliX + P.coh * o.cohX, sy = P.sep * o.sepY + P.ali * o.aliY + P.coh * o.cohY;
+    var nvx = vx + sx, nvy = vy + sy, ns = Math.sqrt(nvx * nvx + nvy * nvy);
+    if (ns > FIX.maxSpeed) { nvx *= FIX.maxSpeed / ns; nvy *= FIX.maxSpeed / ns; }
+    var KV6 = KV * 1.6;
+    // Which side of the velocity does the steering push? Put labels on opposite sides.
+    var cross = vx * sy - vy * sx, side = cross >= 0 ? 1 : -1;
+    arrow(fgx, fx, fy, vx * KV6, vy * KV6, alpha(c.ink, 0.65), 2.2 * d);
+    tipLabel(fgx, fx, fy, vx * KV6, vy * KV6, 'current velocity', null, -side);
+    arrow(fgx, fx, fy, nvx * KV6, nvy * KV6, c.focal, 2.2 * d, true);
+    arrow(fgx, fx + vx * KV6, fy + vy * KV6, sx * KV6 * 10, sy * KV6 * 10, c.ink, 2.8 * d);
+    tipLabel(fgx, fx + vx * KV6, fy + vy * KV6, sx * KV6 * 10, sy * KV6 * 10, 'steering \u00d710', c.ink);
+    tipLabel(fgx, fx + vx * KV6 * 0.35, fy + vy * KV6 * 0.35, vx * KV6 * 0.65, vy * KV6 * 0.65, 'new velocity (dashed)', c.focal, side);
+  }
+  if (step === 7) {
+    for (i = 0; i < m.n; i++) {
+      var oo = { list: null, sepList: null };
+      m.steer(i, oo);
+      var p2 = T(m.x[i], m.y[i]);
+      var gx = (P.sep * oo.sepX + P.ali * oo.aliX + P.coh * oo.cohX) * FS, gy = (P.sep * oo.sepY + P.ali * oo.aliY + P.coh * oo.cohY) * FS;
+      arrow(fgx, p2[0], p2[1], gx * 0.6, gy * 0.6, c.ink, 2.2 * d);
+    }
+  }
+  drawFocal();
+
+  function drawFocal() {
+    var sp0 = Math.sqrt(m.vx[0] * m.vx[0] + m.vy[0] * m.vy[0]) || 1;
+    fgx.beginPath(); fishPath(fgx, fx, fy, m.vx[0] / sp0, m.vy[0] / sp0, L * 1.15);
+    fgx.fillStyle = c.focal; fgx.fill();
+    fgx.lineWidth = 1.5 * d; fgx.strokeStyle = c.dark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)'; fgx.stroke();
+  }
+}
+
+function tourStepTurn() {
+  var m = tour.model, o = tourForces(0);
+  var vx = m.vx[0], vy = m.vy[0];
+  var sx = P.sep * o.sepX + P.ali * o.aliX + P.coh * o.cohX, sy = P.sep * o.sepY + P.ali * o.aliY + P.coh * o.cohY;
+  var a0 = Math.atan2(vy, vx), a1 = Math.atan2(vy + sy, vx + sx);
+  var da = (a1 - a0) * 180 / Math.PI; if (da > 180) da -= 360; if (da < -180) da += 360;
+  return Math.abs(da);
+}
+
+function updateTourText() {
+  var s = STEPS[tour.step], o = tourForces(0);
+  $('tourStepLabel').textContent = 'Step ' + (tour.step + 1) + ' of ' + STEPS.length;
+  $('tourTitle').textContent = s.title;
+  $('tourText').innerHTML = s.text(o, { turn: tourStepTurn() });
+  $('tourPrev').disabled = tour.step === 0;
+  $('tourNext').textContent = tour.step === STEPS.length - 1 ? 'Start simulation' : 'Next →';
+  var dots = $('tourDots').children;
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].className = i === tour.step ? 'on' : (i < tour.step ? 'done' : '');
+  }
+  updateTourExtra();
+}
+
+function updateTourExtra() {
+  var ex = $('tourExtra');
+  ex.innerHTML = '';
+  if (tour.step >= 1 && tour.step <= 6) {
+    ex.innerHTML = '<div class="drag-hint">Tip: drag any fish to move it. The arrows update instantly.</div>';
+  }
+  if (tour.step === 7) {
+    var b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = tour.playing ? 'Playing…' : '▶ Play the group';
+    b.disabled = tour.playing;
+    b.addEventListener('click', function () { tour.playing = true; tour.playLeft = 240; updateTourExtra(); });
+    var r = document.createElement('button');
+    r.className = 'btn'; r.style.marginLeft = '6px'; r.textContent = 'Reset';
+    r.addEventListener('click', function () { tour.playing = false; tourBuild(); tour.cx = 500; tour.cy = 500; tour.dirty = true; updateTourExtra(); });
+    ex.appendChild(b); ex.appendChild(r);
+  }
+}
+
+function tourGo(i) {
+  if (i < 0) return;
+  if (i >= STEPS.length) { endTour(true); return; }
+  if (tour.step === 7 && i !== 7) { tour.playing = false; }
+  if (i < 7 && (tour.model.t > 0)) { tourBuild(); tour.cx = 500; tour.cy = 500; }
+  tour.step = i;
+  updateTourText();
+  tour.dirty = true;
+}
+
+function startTour() {
+  hidePrompt();
+  tour.wasRunning = state.running;
+  state.running = false;
+  tour.on = true; tour.step = 0; tour.playing = false; tour.cx = 500; tour.cy = 500;
+  tourBuild();
+  $('stage').classList.add('touring');
+  tank.classList.add('touring');
+  $('tourCard').classList.remove('hidden');
+  ['hudStats', 'hudPlot', 'toolbar'].forEach(function (id) { $(id).classList.add('hidden'); });
+  var dots = $('tourDots'); dots.innerHTML = '';
+  STEPS.forEach(function (_, i) {
+    var b = document.createElement('button');
+    b.setAttribute('aria-label', 'Go to step ' + (i + 1));
+    b.addEventListener('click', function () { tourGo(i); });
+    dots.appendChild(b);
+  });
+  state.cssW = 0; resize();          // layout changes on small screens
+  tourLayout();
+  updateTourText();
+  renderTour();
+  if (window.innerWidth <= 980) $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function endTour(startSim) {
+  tour.on = false; tour.playing = false;
+  $('stage').classList.remove('touring');
+  tank.classList.remove('touring');
+  $('tourCard').classList.add('hidden');
+  ['hudStats', 'hudPlot', 'toolbar'].forEach(function (id) { $(id).classList.remove('hidden'); });
+  state.cssW = 0; resize();
+  fgx.setTransform(1, 0, 0, 1, 0, 0); fgx.clearRect(0, 0, fg.width, fg.height);
+  ovx.setTransform(1, 0, 0, 1, 0, 0); ovx.clearRect(0, 0, ov.width, ov.height);
+  if (startSim) {
+    state.spot = true; $('t-spot').checked = true;
+    setRunning(true);
+  } else {
+    setRunning(tour.wasRunning);
+  }
+  renderNow();
+}
+
+function tourPointerDown(e) {
+  if (tour.step === 0 || tour.step >= 7 || tour.playing) return;
+  var r = fg.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  var m = tour.model, best = -1, bd = 26 * 26;
+  for (var i = 0; i < m.n; i++) {
+    var sx = tour.ox + (m.x[i] - tour.cx) * tour.k, sy = tour.oy + (m.y[i] - tour.cy) * tour.k;
+    var dd = (sx - mx) * (sx - mx) + (sy - my) * (sy - my);
+    if (dd < bd) { bd = dd; best = i; }
+  }
+  if (best < 0) return;
+  tour.drag = best;
+  fg.setPointerCapture(e.pointerId);
+  e.preventDefault();
+}
+fg.addEventListener('pointermove', function (e) {
+  if (!tour.on || tour.drag < 0) return;
+  var r = fg.getBoundingClientRect();
+  tour.model.x[tour.drag] = tour.cx + (e.clientX - r.left - tour.ox) / tour.k;
+  tour.model.y[tour.drag] = tour.cy + (e.clientY - r.top - tour.oy) / tour.k;
+  updateTourText();
+  tour.dirty = true;
+});
+function endDrag() { tour.drag = -1; }
+fg.addEventListener('pointerup', endDrag);
+fg.addEventListener('pointercancel', endDrag);
+
+$('tourBtn').addEventListener('click', function () { tour.on ? endTour(false) : startTour(); });
+$('tourPromptGo').addEventListener('click', startTour);
+$('tourPrev').addEventListener('click', function () { tourGo(tour.step - 1); });
+$('tourNext').addEventListener('click', function () { tourGo(tour.step + 1); });
+$('tourClose').addEventListener('click', function () { endTour(false); });
+
+function hidePrompt() {
+  $('tourPrompt').classList.add('hidden');
+  try { localStorage.setItem('flock-tour-seen', '1'); } catch (e) {}
+}
+$('tourPromptX').addEventListener('click', hidePrompt);
+try { if (localStorage.getItem('flock-tour-seen')) $('tourPrompt').classList.add('hidden'); } catch (e) {}
+
+/* ---------- Boot ---------- */
+readColors();
+syncControls();
+setRunning(state.running);
+if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(tank);
+window.addEventListener('resize', resize);
+resize();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (tour.on) tour.dirty = true; });
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

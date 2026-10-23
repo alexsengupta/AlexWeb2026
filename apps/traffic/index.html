@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phantom Traffic Jams | Alex Sen Gupta</title>
+<meta name="description" content="Why do traffic jams appear when nothing is in the way? An interactive agent-based model of a ring road and a motorway, with a guided story, a space-time diagram and a 'smooth driver' that can dissolve jams.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('traffic-theme'); } catch (e) {}
+    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<style>
+  :root, :root[data-theme="dark"] {
+    --bg: #0d1114;
+    --surface: #151b20;
+    --surface-2: #1c242a;
+    --ink: #eef2f4;
+    --ink-2: #b4c0c7;
+    --muted: #84939b;
+    --line: rgba(238, 242, 244, 0.10);
+    --accent: #f5b335;
+    --accent-ink: #231a05;
+    --land: #12181c;
+    --verge: #1a2620;
+    --island: #1d2b22;
+    --asphalt: #2c3339;
+    --marking: rgba(255, 255, 255, 0.55);
+    --hud: rgba(13, 17, 20, 0.78);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1ec;
+    --surface: #ffffff;
+    --surface-2: #f3f5f2;
+    --ink: #1d2a30;
+    --ink-2: #44555d;
+    --muted: #6f8088;
+    --line: rgba(29, 42, 48, 0.12);
+    --accent: #b46d00;
+    --accent-ink: #ffffff;
+    --land: #e3e9df;
+    --verge: #cfdcc6;
+    --island: #c3d6b8;
+    --asphalt: #4d565d;
+    --marking: rgba(255, 255, 255, 0.7);
+    --hud: rgba(255, 255, 255, 0.86);
+    --shadow: 0 10px 30px rgba(29, 42, 48, 0.15);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    height: 100vh; height: 100dvh; overflow: hidden;
+    display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  .hidden { display: none !important; }
+
+  /* ---------- Top bar ---------- */
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; }
+  .back { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink-2); font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+  .back:hover { color: var(--ink); background: var(--surface-2); }
+  .titles { flex: 1; min-width: 0; }
+  .titles h1 { margin: 0; font-size: 20px; font-weight: 600; white-space: nowrap; }
+  .titles p { margin: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 500; line-height: 1.1; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.icon { width: 38px; height: 38px; padding: 0; display: inline-grid; place-items: center; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .btn:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible, .tb:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Layout ---------- */
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+  .layout.panel-hidden { grid-template-columns: minmax(0, 1fr); }
+  .layout.panel-hidden .panel { display: none; }
+  .stage { position: relative; min-height: 0; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .view { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); background: var(--land); }
+  .ringwrap { position: relative; flex: 1; min-height: 260px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .ringwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #roadCv { pointer-events: none; }
+  #carsCv { cursor: pointer; }
+
+  /* Space-time panel: overlays the bottom of the road; collapses to a header bar */
+  .ringwrap { --stFull: 176px; --stBar: 36px; }
+  .stwrap { position: absolute; left: 0; right: 0; bottom: 0; height: var(--stFull); background: rgba(16, 21, 25, 0.97); border-top: 1px solid rgba(255,255,255,0.10); color: #c8d2d8; z-index: 3; overflow: hidden; transition: height 0.2s ease; }
+  .stwrap.collapsed { height: var(--stBar); }
+  .stwrap.collapsed .st-body { visibility: hidden; }
+  .st-head { position: absolute; left: 0; right: 0; top: 0; height: var(--stBar); display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 13px; background: transparent; border: 0; color: inherit; cursor: pointer; text-align: left; }
+  .st-head:hover { background: rgba(255,255,255,0.04); }
+  .st-head b { font-weight: 600; color: #eef2f4; white-space: nowrap; }
+  .st-head span { color: #93a2aa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .st-head .chev { flex: none; color: #eef2f4; transition: transform 0.2s ease; }
+  .stwrap:not(.collapsed) .st-head .chev { transform: rotate(180deg); }
+  .st-body { position: absolute; left: 0; right: 0; top: var(--stBar); height: calc(var(--stFull) - var(--stBar)); }
+  .st-body canvas { position: absolute; left: 28px; right: 10px; top: 0; bottom: 20px; width: calc(100% - 38px); height: calc(100% - 20px); display: block; }
+  .st-y { position: absolute; left: 4px; top: 0; bottom: 20px; width: 20px; display: flex; align-items: center; justify-content: center; }
+  .st-y span { transform: rotate(-90deg); white-space: nowrap; font-size: 11px; color: #93a2aa; }
+  .st-x { position: absolute; left: 28px; right: 10px; bottom: 2px; display: flex; justify-content: space-between; font-size: 11px; color: #93a2aa; }
+
+  /* HUD over the ring */
+  .hud { position: absolute; background: var(--hud); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 12px; font-size: 13px; color: var(--ink-2); }
+  .stats { top: 12px; left: 12px; padding: 8px 12px; display: grid; grid-template-columns: auto auto; column-gap: 14px; row-gap: 2px; }
+  .stats b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .legend { top: 12px; right: 12px; padding: 8px 12px; width: 236px; }
+  .legend .bar { height: 10px; border-radius: 5px; margin: 6px 0 3px; }
+  .legend .ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .legend .keys { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 12px; }
+  .legend .keys span { display: inline-flex; align-items: center; gap: 7px; }
+  .k-brake { width: 16px; height: 8px; border-radius: 2px; background: #f08a4b; position: relative; box-shadow: -4px 0 6px 1px rgba(255,40,40,0.8); }
+  .k-brake::before { content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 8px; background: #ff2020; }
+  .k-smooth { width: 16px; height: 8px; border-radius: 2px; background: #b14dff; box-shadow: 0 0 0 1.5px #ffffff, 0 0 0 4px rgba(177,77,255,0.45); }
+  .k-sel { width: 16px; height: 8px; border-radius: 2px; background: #ffffff; box-shadow: 0 0 0 1.5px #111111, 0 0 0 4px rgba(255,255,255,0.5); }
+
+  .toolbar { left: 12px; bottom: calc(var(--stBar) + 10px); padding: 5px; display: flex; gap: 4px; transition: bottom 0.2s ease; }
+  .ringwrap.st-open .toolbar, .ringwrap.st-open .hint-chip { bottom: calc(var(--stFull) + 10px); }
+  .tb { height: 40px; min-width: 40px; border-radius: 9px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--ink); padding: 0 10px; font-size: 14.5px; font-weight: 500; }
+  .tb:hover { background: var(--surface-2); }
+  .tb[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .tb svg { width: 18px; height: 18px; flex: none; }
+  .tb.go { background: var(--accent); color: var(--accent-ink); }
+  .tb.go:hover { filter: brightness(1.07); background: var(--accent); }
+  .hint-chip { right: 12px; bottom: calc(var(--stBar) + 10px); padding: 6px 10px; font-size: 12.5px; transition: bottom 0.2s ease; }
+
+  /* ---------- Story card ---------- */
+  .story { position: absolute; left: 28px; bottom: 64px; width: 390px; max-width: calc(100% - 56px); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 16px 18px 14px; z-index: 5; }
+  .story .step-label { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .story h2 { margin: 0 0 6px; font-size: 19px; font-weight: 600; }
+  .story .text { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .story .text p { margin: 0 0 8px; }
+  .story .text b { color: var(--ink); font-weight: 600; }
+  .story .extra { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .story-nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .dots { display: flex; gap: 5px; flex: 1; flex-wrap: wrap; }
+  .dots button { width: 9px; height: 9px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+  .dots button.on { background: var(--accent); }
+  .dots button.done { background: var(--muted); }
+  .story-close { position: absolute; top: 10px; right: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+  .story-close:hover { color: var(--ink); background: var(--surface-2); }
+  .stage.touring .toolbar { left: auto; right: 12px; }
+  .stage.st-open .story { bottom: 204px; }
+  .stage.touring .hint-chip { display: none; }
+
+  /* ---------- Panel ---------- */
+  .panel { min-height: 0; overflow-y: auto; background: var(--surface); border-left: 1px solid var(--line); }
+  .panel-inner { padding: 14px 18px 24px; }
+  .group { padding: 12px 0 14px; border-bottom: 1px solid var(--line); }
+  .group:last-child { border-bottom: 0; }
+  .group h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+  .tab { border: 0; background: transparent; border-radius: 9px; padding: 9px 8px; cursor: pointer; font-weight: 500; font-size: 14.5px; color: var(--ink-2); }
+  .tab.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.on { border-color: var(--accent); color: var(--accent); }
+  .desc { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+  .ctl { margin-bottom: 12px; }
+  .ctl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ctl-head label { font-size: 14.5px; font-weight: 500; }
+  .ctl-head output { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .hint { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  input[type="range"] { width: 100%; height: 28px; margin: 2px 0 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 14.5px; cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  details.try { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; margin-bottom: 8px; background: var(--surface-2); }
+  details.try summary { cursor: pointer; padding: 10px 0; font-size: 14.5px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 8px; }
+  details.try summary::-webkit-details-marker { display: none; }
+  details.try summary::after { content: '+'; color: var(--muted); }
+  details.try[open] summary::after { content: '\2212'; }
+  details.try p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  details.try .btn { font-size: 13px; padding: 6px 12px; margin-bottom: 10px; }
+
+  /* ---------- About ---------- */
+  dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); padding: 0; width: min(780px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgba(3, 6, 8, 0.6); }
+  .dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+  .dlg-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  .dlg-body { padding: 6px 22px 22px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+  .dlg-body h3 { color: var(--ink); font-size: 16.5px; margin: 20px 0 6px; font-weight: 600; }
+  .dlg-body b { color: var(--ink); font-weight: 600; }
+  .dlg-body details { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin: 8px 0; }
+  .dlg-body summary { cursor: pointer; color: var(--accent); font-size: 14.5px; }
+  .eq { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13.5px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; color: var(--ink); line-height: 1.55; margin: 8px 0; }
+  .refs { font-size: 13.5px; } .refs li { margin-bottom: 6px; }
+  .rules-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  .rules-table th, .rules-table td { text-align: left; vertical-align: top; padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); }
+  .rules-table th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: 0.6px; text-transform: uppercase; }
+  .rules-table td:first-child { color: var(--ink); font-weight: 600; width: 22%; }
+  .rules-table code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12.5px; color: var(--ink); background: var(--surface-2); padding: 1px 5px; border-radius: 5px; display: inline-block; margin: 2px 0; }
+  .rules-table .fixed { color: var(--muted); font-size: 13px; }
+  .linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; font-size: 14px; }
+  .now { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  @keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 30% { box-shadow: 0 0 0 3px var(--accent); } }
+  .flash { animation: flash 1.6s ease 2; border-radius: 8px; }
+  @media (max-width: 640px) { .rules-table, .rules-table tbody, .rules-table tr, .rules-table td { display: block; width: auto !important; } .rules-table thead { display: none; } .rules-table tr { border-bottom: 1px solid var(--line); padding: 8px 0; } .rules-table td { border: 0; padding: 2px 0; } }
+  table.mini { border-collapse: collapse; font-size: 13.5px; margin: 6px 0; }
+  table.mini td, table.mini th { padding: 3px 10px 3px 0; text-align: left; border-bottom: 1px solid var(--line); }
+  table.mini th { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Tablet ---------- */
+  @media (max-width: 1000px) {
+    body { display: block; height: auto; overflow: visible; }
+    .layout { display: block; }
+    .stage { height: min(86svh, 980px); padding: 10px; }
+    .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+    .panel-inner { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+    .group.span { grid-column: 1 / -1; }
+    #panelBtn { display: none; }
+    .stage.touring { height: auto; }
+    .stage.touring .view { height: 70svh; flex: none; }
+    .stage.touring .story { position: relative; left: auto; bottom: auto; width: auto; max-width: none; }
+    .stage.touring .toolbar { left: 12px; right: auto; }
+  }
+  /* ---------- Phone ---------- */
+  @media (max-width: 640px) {
+    .topbar { gap: 8px; padding: 8px 12px; }
+    .titles h1 { font-size: 17px; }
+    .titles p, .back span, #aboutBtn .long, #storyBtn .long, .long-t, .st-head span { display: none; }
+    .btn { padding: 7px 11px; font-size: 13.5px; }
+    .stage { height: 84svh; padding: 8px; }
+    .stage.touring .view { height: 66svh; }
+    .view { border-radius: 12px; }
+    .ringwrap { --stFull: 140px; --stBar: 34px; }
+    .panel-inner { grid-template-columns: 1fr; padding: 8px 16px 28px; }
+    .stats { top: 8px; left: 8px; padding: 5px 8px; font-size: 11.5px; column-gap: 8px; }
+    .legend { top: 8px; right: 8px; width: 118px; padding: 5px 8px; font-size: 11.5px; }
+    .legend .keys { display: none; }
+    .legend .title { display: none; }
+    .toolbar { left: 8px; padding: 3px; }
+    .tb { height: 38px; padding: 0 8px; font-size: 13.5px; }
+    .tb .lbl-long { display: none; }
+    .hint-chip { display: none; }
+    .story { padding: 14px 14px 12px; }
+    .story .text { font-size: 14.5px; }
+    dialog { width: 100vw; max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; margin: 0; }
+    .dlg-body { padding: 4px 16px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back" href="../../academic_apps.html" aria-label="Back to Academic Apps">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    <span>Apps</span>
+  </a>
+  <div class="titles">
+    <h1>Phantom<span class="long-t"> traffic</span> jams</h1>
+    <p>Why traffic stops when there is nothing in the way</p>
+  </div>
+  <div class="top-actions">
+    <button class="btn primary" id="storyBtn">Guided<span class="long"> story</span></button>
+    <button class="btn" id="aboutBtn">About<span class="long"> the model</span></button>
+    <button class="btn icon" id="panelBtn" aria-label="Show or hide controls" title="Show / hide controls">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+    </button>
+    <button class="btn icon" id="themeBtn" aria-label="Switch light or dark theme" title="Light / dark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="layout" id="layout">
+  <section class="stage" id="stage">
+    <div class="view">
+      <div class="ringwrap" id="ringwrap">
+        <canvas id="roadCv" aria-hidden="true"></canvas>
+        <canvas id="carsCv" aria-label="Cars driving around a circular road, coloured by speed. Click or tap a car to make it brake."></canvas>
+
+        <div class="hud stats" aria-live="off">
+          <span>Average speed</span><b id="sSpeed">0 km/h</b>
+          <span>Cars stopped</span><b id="sStopped">0%</b>
+          <span>Flow</span><b id="sFlow">0</b>
+          <span>Time</span><b id="sTime">0:00</b>
+        </div>
+
+        <div class="hud legend">
+          <div class="title">Car colour = speed</div>
+          <div class="bar" id="legendBar"></div>
+          <div class="ticks"><span>stopped</span><span id="legendMax">40 km/h</span></div>
+          <div class="keys">
+            <span><i class="k-brake"></i>Red glow at the back: braking</span>
+            <span id="keySel" class="hidden"><i class="k-sel"></i>Car you braked: brakes for 2 s, then drives normally (kept white so you can follow it)</span>
+            <span id="keySmooth" class="hidden"><i class="k-smooth"></i>Smooth driver</span>
+          </div>
+        </div>
+
+        <div class="hud toolbar">
+          <button class="tb go" id="playBtn" title="Start / pause (space bar)"></button>
+          <button class="tb" id="stepBtn" title="Advance one second" aria-label="Advance one second"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5l9 7-9 7z"/><rect x="16" y="5" width="2.6" height="14" rx="1"/></svg></button>
+          <button class="tb" id="resetBtn" title="Put the cars back to evenly spaced"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span class="lbl-long">Reset</span></button>
+          <button class="tb" id="tapBtn" title="Make one driver brake for 2 seconds (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r="0.6" fill="currentColor"/></svg>Brake<span class="lbl-long"> one car</span></button>
+        </div>
+        <div class="hud hint-chip">Tip: click any car to make it brake for 2 seconds</div>
+
+        <div class="stwrap" id="stwrap">
+          <button class="st-head" id="stToggle" aria-expanded="false" aria-controls="stBody">
+            <b>Space–time diagram</b><span id="stSub">each line is one car moving round the road · red bands are jams</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+          </button>
+          <div class="st-body" id="stBody">
+            <div class="st-y"><span>position&nbsp;round&nbsp;road&nbsp;&rarr;</span></div>
+            <canvas id="stCv" aria-label="Space-time diagram: position of every car around the road over time"></canvas>
+            <div class="st-x"><span id="stSpan">earlier</span><span>time &rarr; now</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="story hidden" id="story" role="region" aria-live="polite" aria-label="Guided story">
+      <button class="story-close" id="storyClose" aria-label="Close the story">&times;</button>
+      <div class="step-label" id="storyStep"></div>
+      <h2 id="storyTitle"></h2>
+      <div class="text" id="storyText"></div>
+      <div class="extra" id="storyExtra"></div>
+      <div class="story-nav">
+        <button class="btn" id="storyPrev">&larr; Back</button>
+        <div class="dots" id="storyDots"></div>
+        <button class="btn primary" id="storyNext">Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="Controls">
+    <div class="panel-inner">
+      <div class="group span">
+        <h3>Road</h3>
+        <div class="tabs" role="tablist">
+          <button class="tab on" role="tab" data-mode="ring" aria-selected="true">Ring experiment</button>
+          <button class="tab" role="tab" data-mode="motorway" aria-selected="false">Motorway</button>
+        </div>
+        <p class="desc" id="modeDesc"></p>
+      </div>
+
+      <div class="group span">
+        <h3>Start from</h3>
+        <div class="chips" id="presets"></div>
+        <p class="desc" id="presetDesc">Pick a starting point. Each one resets the road; press Start to run.</p>
+      </div>
+
+      <div class="group">
+        <h3>Drivers</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-react">Reaction time</label><output id="o-react"></output></div>
+          <input type="range" id="c-react" min="0" max="1.5" step="0.1">
+          <p class="hint">How long a driver takes to respond to the car in front.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-T">Preferred time gap</label><output id="o-T"></output></div>
+          <input type="range" id="c-T" min="0.5" max="2.5" step="0.1">
+          <p class="hint">How far behind the car in front drivers like to be, in seconds of travel.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-wobble">Wobble</label><output id="o-wobble"></output></div>
+          <input type="range" id="c-wobble" min="0" max="1" step="0.05">
+          <p class="hint">Small random speed changes, like a driver glancing away or easing off.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-v0kmh">Desired speed</label><output id="o-v0kmh"></output></div>
+          <input type="range" id="c-v0kmh" min="20" max="60" step="5">
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Traffic</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-n">Number of vehicles</label><output id="o-n"></output></div>
+          <input type="range" id="c-n" min="6" max="32" step="1">
+          <p class="hint" id="densityHint"></p>
+        </div>
+        <div class="ctl motorway-only">
+          <div class="ctl-head"><label for="c-lorries">Lorries</label><output id="o-lorries"></output></div>
+          <input type="range" id="c-lorries" min="0" max="0.3" step="0.05">
+          <p class="hint">Longer, slower and less nimble than cars.</p>
+        </div>
+        <div class="ctl motorway-only">
+          <div class="ctl-head"><label for="c-polite">Politeness</label><output id="o-polite"></output></div>
+          <input type="range" id="c-polite" min="0" max="1" step="0.1">
+          <p class="hint">How much a driver changing lanes cares about the drivers they cut in front of.</p>
+        </div>
+        <label class="toggle">Add a smooth driver<input type="checkbox" id="t-smooth"></label>
+        <p class="hint" style="margin-top:0">One driver who reacts instantly and keeps a steady speed with a generous gap (the purple car).</p>
+      </div>
+
+      <div class="group">
+        <h3>Display</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-speed">Simulation speed</label><output id="o-speed"></output></div>
+          <input type="range" id="c-speed" min="1" max="10" step="1">
+          <p class="hint">How many seconds of traffic pass in each real second.</p>
+        </div>
+        <label class="toggle">Show space–time diagram<input type="checkbox" id="t-st"></label>
+        <p class="hint" style="margin-top:0">It slides up over the bottom of the road. You can also click its title bar.</p>
+      </div>
+
+      <div class="group span">
+        <h3>Things to try</h3>
+        <p style="margin:0 0 10px"><button class="btn" id="panelRules" style="white-space:normal;text-align:left">Rules and parameters (for advanced users)</button></p>
+        <details class="try">
+          <summary>Instant reactions</summary>
+          <p>Set the reaction time to zero, press Reset, then brake one car. The disturbance fades away instead of growing. In this model, jams on the ring only appear when reaction times are longer than about 0.4 seconds, and real drivers typically take 0.5 to 1.5 seconds.</p>
+          <button class="btn" data-try="instant">Set reaction time to 0 and reset</button>
+        </details>
+        <details class="try">
+          <summary>How many cars before it jams?</summary>
+          <p>On the ring, try 14 cars, then 16, 18 and 22, pressing Reset each time and leaving it for a few minutes. In our tests, 16 or fewer cars flowed freely. At 18 cars jams appeared on their own, and the number of cars getting round each hour <b>fell by about 40%</b>. Adding two cars made the road carry fewer of them.</p>
+          <button class="btn" data-try="dense">Try 18 cars</button>
+        </details>
+        <details class="try">
+          <summary>Does leaving a bigger gap help?</summary>
+          <p>Increase the preferred time gap to 2 seconds. The jams disappear, but everyone drives more slowly, because on a crowded ring the gaps can only be as big as the space allows. A bigger gap helps most when it absorbs a disturbance instead of slowing everyone, which is exactly what the smooth driver does.</p>
+          <button class="btn" data-try="gap">Set time gap to 2 s</button>
+        </details>
+        <details class="try">
+          <summary>Rush hour on the motorway</summary>
+          <p>Switch to the motorway and compare "Busy" with "Rush hour". In our tests, flow peaked at around 2,000 vehicles per hour per lane with about 30 vehicles per kilometre per lane. With more vehicles it fell to about 1,400, as stop-and-go waves formed. Lane changes add extra disturbances.</p>
+          <button class="btn" data-try="rush">Go to motorway rush hour</button>
+        </details>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="about" aria-labelledby="aboutTitle">
+  <div class="dlg-head">
+    <h2 id="aboutTitle">About the model</h2>
+    <button class="btn icon" id="aboutClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="dlg-body">
+    <p><button class="btn" id="aboutRules">See all rules and their controls</button></p>
+    <p>This app began on London's M25 orbital motorway ("the road to hell"), after many hours of wondering why traffic suddenly stops with no accident in sight.</p>
+
+    <h3>Jams without a cause</h3>
+    <p>In 2008, Sugiyama and colleagues asked 22 drivers to drive steadily around a 230 m circular track in Japan. There were no junctions, lane changes or bottlenecks. Within minutes, a stop-and-go wave formed and travelled backwards round the track. The jam came from the drivers themselves: each one reacts a little late and brakes a little harder than the driver in front, so a small slowdown grows as it passes back along the line. Traffic scientists call this <b>string instability</b>. On real motorways these waves travel backwards at roughly 15 to 20 km/h.</p>
+    <p>The <b>ring experiment</b> mode recreates that set-up. The <b>motorway</b> mode is a 600 m, three-lane ring with lane changes, a mix of cars and lorries, and drivers whose preferred speeds vary by ±10%.</p>
+
+    <h3>How each driver behaves</h3>
+    <p>Every vehicle is an agent that follows the <b>Intelligent Driver Model</b> (IDM), a standard car-following model from traffic research. A driver accelerates towards their desired speed but brakes as they close on the vehicle in front, aiming to keep a safe distance that grows with speed. The model is written so that, with instant reactions, cars never collide.</p>
+    <details>
+      <summary>Show the maths</summary>
+<div class="eq">dv/dt = a [ 1 − (v/v₀)⁴ − (s*/s)² ]
+
+s* = s₀ + max(0,  v·T + v·Δv / (2√(ab)) )</div>
+      <p><i>v</i> is the speed, <i>s</i> is the bumper-to-bumper gap to the vehicle in front, and Δ<i>v</i> is the closing speed. <i>v</i>₀ is the desired speed, <i>T</i> is the preferred time gap, <i>s</i>₀ = 2 m is the minimum gap when stopped, <i>a</i> is the maximum acceleration (2 m/s² for cars, 1 m/s² for lorries) and <i>b</i> = 1.5 m/s² is the comfortable braking. Cars are 4.5 m long and lorries 12 m. The model steps forward 0.1 s at a time.</p>
+      <p><b>Reaction time</b>: human drivers use the gap and speeds as they were one reaction time ago. <b>Wobble</b>: a slowly varying random acceleration (an Ornstein–Uhlenbeck process with a 2 s memory, size 0.5 × wobble m/s²). <b>Emergency braking</b>: if a driver is about to hit the vehicle in front using what is happening <i>now</i>, they brake as hard as needed, up to 9 m/s². Without this, long reaction times would cause crashes. All drivers decide from the same snapshot, then all move together. <b>Braking a car</b> (click it, or press Brake one car) forces that driver to brake at 4 m/s² for 2 s; after that it follows the normal rules again and is only highlighted so you can follow it.</p>
+      <p><b>Lane changes</b> (motorway) follow the MOBIL rule. A driver changes lane if their own gain in acceleration, plus <i>politeness</i> × the change in acceleration of the drivers behind them in both lanes, is more than 0.2 m/s². They never change lane if it would force the new follower to brake harder than 4 m/s². Each driver considers changing lanes about twice a second, then waits at least 4 s before changing again.</p>
+    </details>
+
+    <h3>The smooth driver</h3>
+    <p>Stern and colleagues (2018) repeated the ring experiment with about 20 cars, one of which was automated. That car aimed for the average speed of the recent past instead of chasing the car in front. It left a large gap that soaked up the waves, and stop-and-go traffic largely disappeared. Our smooth driver uses a simplified version of that controller.</p>
+    <ul>
+      <li>It reacts instantly and has no wobble.</li>
+      <li>It aims for its own average speed over the last 38 s, creeping up to 0.3 m/s faster when the gap ahead is large.</li>
+      <li>It only matches the speed of the car in front when the gap becomes small.</li>
+    </ul>
+    <p>In our tests on the ring with 22 cars, the smooth driver dissolved an existing jam completely within about three minutes when there was no wobble. With wobble, waves kept re-forming, but the share of cars stopped roughly halved (from about 30% to 15%).</p>
+
+    <h3>What these numbers mean</h3>
+    <p><b>Flow</b> is the number of vehicles passing a point per hour, per lane. It equals density × average speed. More cars means higher density, but beyond a critical density the flow <i>falls</i>, because jams waste road space. Measured in this model (10-minute runs, averaged over the final 5 minutes):</p>
+    <table class="mini">
+      <tr><th>Ring, cars</th><td>12</td><td>14</td><td>16</td><td>18</td><td>22</td><td>26</td></tr>
+      <tr><th>Flow (veh/h)</th><td>1,690</td><td>1,770</td><td>1,760</td><td>1,040</td><td>940</td><td>620</td></tr>
+      <tr><th>Stopped</th><td>0%</td><td>0%</td><td>0%</td><td>22%</td><td>29%</td><td>47%</td></tr>
+    </table>
+
+    <h3>What the model leaves out</h3>
+    <ul>
+      <li>All lanes are treated as the same length (the lanes are drawn at slightly different radii only to make them visible).</li>
+      <li>There are no junctions, on-ramps, roadworks or weather. Real jams are often triggered at these bottlenecks, but the same string instability then makes them grow and travel.</li>
+      <li>Drivers differ only in desired speed and vehicle type. Real drivers differ in many more ways, and also anticipate several cars ahead.</li>
+      <li>The parameters were chosen to be realistic, not fitted to data, so treat the exact numbers as illustrations.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul class="refs">
+      <li>Sugiyama, Y., Fukui, M., Kikuchi, M., Hasebe, K., Nakayama, A., Nishinari, K., Tadaki, S. &amp; Yukawa, S. (2008). Traffic jams without bottlenecks: experimental evidence for the physical mechanism of the formation of a jam. <i>New Journal of Physics</i> 10, 033001.</li>
+      <li>Treiber, M., Hennecke, A. &amp; Helbing, D. (2000). Congested traffic states in empirical observations and microscopic simulations. <i>Physical Review E</i> 62, 1805–1824.</li>
+      <li>Kesting, A., Treiber, M. &amp; Helbing, D. (2007). General lane-changing model MOBIL for car-following models. <i>Transportation Research Record</i> 1999, 86–94.</li>
+      <li>Stern, R. E. et al. (2018). Dissipation of stop-and-go waves via control of autonomous vehicles: field experiments. <i>Transportation Research Part C</i> 89, 205–221.</li>
+      <li>Treiber, M. &amp; Kesting, A. (2013). <i>Traffic Flow Dynamics: Data, Models and Simulation</i>. Springer.</li>
+    </ul>
+  </div>
+</dialog>
+
+<dialog id="rules" aria-labelledby="rulesTitle">
+  <div class="dlg-head">
+    <h2 id="rulesTitle">Rules and parameters</h2>
+    <button class="btn icon" id="rulesClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="dlg-body">
+    <p>Every vehicle follows the rules below at every 0.1 s time step. Click a control name to jump to its slider. Values marked <i>fixed</i> are built in. Full equations and references are in <b>About the model</b>.</p>
+    <table class="rules-table">
+      <thead><tr><th>Rule</th><th>What it does, and how</th><th>Control</th></tr></thead>
+      <tbody id="rulesBody"></tbody>
+    </table>
+  </div>
+</dialog>
+
+<noscript><p style="padding:16px">This simulation needs JavaScript.</p></noscript>
+
+<script>
+(function () {
+'use strict';
+/* =====================================================================
+   MODEL-BEGIN  (pure simulation code; no DOM access, testable in Node)
+   Units: metres, seconds. Positions are arc length along the ring.
+   ===================================================================== */
+var DT = 0.1;                 // model time step (s)
+var MAX_DELAY_STEPS = 20;     // reaction time up to 1.9 s
+
+var VEH = {
+  car:   { len: 4.5, a: 2.0, b: 1.5, s0: 2.0 },
+  lorry: { len: 12,  a: 1.0, b: 1.5, s0: 2.5, v0max: 85 / 3.6 }
+};
+var SMOOTH = { avgTime: 38, vCatch: 0.3, gLow: 7, gHigh: 40, Tsafe: 0.8, gamma: 4, k: 0.2 };
+var SAFE = { bEmergency: 3.0, aMin: -9, bSafe: 4.0, lcThreshold: 0.2, lcCooldown: 4, noiseTau: 2.0 };
+
+function Traffic(L, lanes, p) {
+  this.L = L; this.lanes = lanes; this.p = p;
+  this.n = 0; this.t = 0; this.stepCount = 0;
+  this.events = [];
+  this._alloc(260);
+}
+
+Traffic.prototype._alloc = function (cap) {
+  this.cap = cap;
+  var f = ['s', 'v', 'acc', 'len', 'v0f', 'eta', 'brakeT', 'lcT', 'lcCool', 'vbar', 'aMax', 'bCom', 's0'];
+  for (var k = 0; k < f.length; k++) this[f[k]] = new Float64Array(cap);
+  this.lane = new Int16Array(cap); this.lcFrom = new Int16Array(cap);
+  this.lorry = new Uint8Array(cap); this.smooth = new Uint8Array(cap);
+  this.posIdx = new Int32Array(cap);
+  this.hs = []; this.hv = [];
+  for (k = 0; k < MAX_DELAY_STEPS; k++) { this.hs.push(new Float64Array(cap)); this.hv.push(new Float64Array(cap)); }
+  this.hptr = 0; this.hfill = 0;
+};
+
+// Intelligent Driver Model acceleration.
+function idm(v, gap, dv, v0, T, a, b, s0) {
+  var ss = s0 + Math.max(0, v * T + v * dv / (2 * Math.sqrt(a * b)));
+  var g = Math.max(gap, 0.1);
+  return a * (1 - Math.pow(v / v0, 4) - (ss / g) * (ss / g));
+}
+
+// Equilibrium speed for a given gap (bisection on the IDM with dv = 0).
+function eqSpeed(gap, v0, T, a, b, s0) {
+  var lo = 0, hi = v0;
+  for (var k = 0; k < 40; k++) {
+    var m = 0.5 * (lo + hi);
+    if (idm(m, gap, 0, v0, T, a, b, s0) > 0) lo = m; else hi = m;
+  }
+  return lo;
+}
+
+Traffic.prototype.v0Of = function (i) {
+  var v0 = this.p.v0kmh / 3.6;
+  if (this.lorry[i]) v0 = Math.min(v0, VEH.lorry.v0max);
+  return v0 * this.v0f[i];
+};
+Traffic.prototype.TOf = function (i) {
+  var T = this.p.T;
+  return T;
+};
+
+// Place n vehicles evenly (round-robin across lanes), at the equilibrium speed for their spacing.
+Traffic.prototype.reset = function (n) {
+  if (n !== undefined) this.p.n = n;
+  n = this.p.n;
+  this.n = n; this.t = 0; this.stepCount = 0; this.events = [];
+  this.hptr = 0; this.hfill = 0;
+  var lanes = this.lanes, L = this.L, p = this.p;
+  var counts = []; for (var l = 0; l < lanes; l++) counts.push(0);
+  // lorries spread through the population
+  var nl = Math.round(n * (lanes > 1 ? p.lorries : 0));
+  var lorryEvery = nl > 0 ? n / nl : Infinity;
+  for (var i = 0; i < n; i++) {
+    this.lane[i] = i % lanes; this.lcFrom[i] = this.lane[i]; this.lcT[i] = 1;
+    counts[this.lane[i]]++;
+    this.lorry[i] = nl > 0 && (Math.floor((i + 0.5) / lorryEvery) !== Math.floor((i - 0.5) / lorryEvery)) ? 1 : 0;
+    this.smooth[i] = 0;
+    var spec = this.lorry[i] ? VEH.lorry : VEH.car;
+    this.len[i] = spec.len; this.aMax[i] = spec.a; this.bCom[i] = spec.b; this.s0[i] = spec.s0;
+    this.v0f[i] = lanes > 1 ? 0.9 + 0.2 * Math.random() : 1;
+    this.eta[i] = 0; this.brakeT[i] = 0; this.lcCool[i] = SAFE.lcCooldown * Math.random();
+  }
+  // positions: evenly spaced within each lane, lanes offset from each other
+  var seen = []; for (l = 0; l < lanes; l++) seen.push(0);
+  var totLen = []; for (l = 0; l < lanes; l++) totLen.push(0);
+  for (i = 0; i < n; i++) totLen[this.lane[i]] += this.len[i];
+  for (i = 0; i < n; i++) {
+    l = this.lane[i];
+    var k = seen[l]++;
+    var spacing = L / counts[l];
+    this.s[i] = ((k + l / lanes) * spacing + (lanes > 1 ? (Math.random() - 0.5) * 2 : 0) + L) % L;
+    var gap = (L - totLen[l]) / counts[l];
+    this.v[i] = eqSpeed(gap, this.v0Of(i), this.TOf(i), this.aMax[i], this.bCom[i], this.s0[i]);
+    this.vbar[i] = this.v[i];
+    this.acc[i] = 0;
+  }
+  this.setSmooth(!!p.smooth);
+  this.sortLanes(true);
+};
+
+Traffic.prototype.setSmooth = function (on) {
+  for (var i = 0; i < this.n; i++) this.smooth[i] = 0;
+  if (on && this.n > 0) {
+    // the smooth driver is always a car (never a lorry), in the slow lane on the motorway
+    var pick = 0;
+    for (var i2 = 0; i2 < this.n; i2++) if (!this.lorry[i2]) { pick = i2; break; }
+    this.smooth[pick] = 1;
+    this.vbar[pick] = this.v[pick];
+  }
+};
+
+Traffic.prototype.sortLanes = function (full) {
+  if (full || !this.laneList) {
+    this.laneList = [];
+    for (var l = 0; l < this.lanes; l++) this.laneList.push([]);
+    for (var i = 0; i < this.n; i++) this.laneList[this.lane[i]].push(i);
+  }
+  var s = this.s;
+  for (l = 0; l < this.lanes; l++) {
+    var a = this.laneList[l];
+    // insertion sort: lists are almost sorted from the previous step
+    for (var k = 1; k < a.length; k++) {
+      var x = a[k], sx = s[x], j = k - 1;
+      while (j >= 0 && s[a[j]] > sx) { a[j + 1] = a[j]; j--; }
+      a[j + 1] = x;
+    }
+    for (k = 0; k < a.length; k++) this.posIdx[a[k]] = k;
+  }
+};
+
+Traffic.prototype.leaderOf = function (i) {
+  var a = this.laneList[this.lane[i]];
+  if (a.length < 2) return -1;
+  return a[(this.posIdx[i] + 1) % a.length];
+};
+Traffic.prototype.followerOf = function (i) {
+  var a = this.laneList[this.lane[i]];
+  if (a.length < 2) return -1;
+  return a[(this.posIdx[i] - 1 + a.length) % a.length];
+};
+Traffic.prototype.gapTo = function (i, j) {     // bumper-to-bumper gap from i forward to j
+  var d = this.s[j] - this.s[i]; if (d < 0) d += this.L;
+  return d - this.len[j];
+};
+
+// Leader and follower of a position in a given lane (binary search in the sorted list).
+Traffic.prototype.neighboursAt = function (pos, l, exclude) {
+  var a = this.laneList[l], s = this.s, m = a.length;
+  if (m === 0 || (m === 1 && a[0] === exclude)) return { lead: -1, follow: -1 };
+  var lo = 0, hi = m;
+  while (lo < hi) { var mid = (lo + hi) >> 1; if (s[a[mid]] <= pos) lo = mid + 1; else hi = mid; }
+  var lead = a[lo % m], follow = a[(lo - 1 + m) % m];
+  if (lead === exclude) lead = a[(lo + 1) % m];
+  if (follow === exclude) follow = a[(lo - 2 + 2 * m) % m];
+  return { lead: lead, follow: follow };
+};
+
+// Current (undelayed) IDM acceleration of i behind leader j (j = -1: free road).
+Traffic.prototype.idmNow = function (i, j, gapOverride) {
+  var v = this.v[i], v0 = this.v0Of(i), T = this.TOf(i);
+  if (j < 0) return idm(v, 1e6, 0, v0, T, this.aMax[i], this.bCom[i], this.s0[i]);
+  var gap = gapOverride !== undefined ? gapOverride : this.gapTo(i, j);
+  return idm(v, gap, v - this.v[j], v0, T, this.aMax[i], this.bCom[i], this.s0[i]);
+};
+
+Traffic.prototype.tap = function (i, seconds) {
+  if (i < 0 || i >= this.n) return;
+  this.brakeT[i] = seconds || 2.0;
+  this.events.push({ t: this.t, s: this.s[i], lane: this.lane[i], i: i });
+};
+
+Traffic.prototype.step = function () {
+  var n = this.n, L = this.L, p = this.p, s = this.s, v = this.v;
+  // store history for reaction delays
+  var hs = this.hs[this.hptr], hv = this.hv[this.hptr];
+  for (var i = 0; i < n; i++) { hs[i] = s[i]; hv[i] = v[i]; }
+  var d = Math.max(0, Math.min(MAX_DELAY_STEPS - 1, Math.round(p.react / DT)));
+  if (this.hfill < MAX_DELAY_STEPS) this.hfill++;
+  d = Math.min(d, this.hfill - 1);
+  var dslot = (this.hptr - d + MAX_DELAY_STEPS) % MAX_DELAY_STEPS;
+  var ds = this.hs[dslot], dv = this.hv[dslot];
+  this.hptr = (this.hptr + 1) % MAX_DELAY_STEPS;
+
+  var sigma = p.wobble * 0.5, th = SAFE.noiseTau;
+  var nf = Math.sqrt(2 * DT / th);
+
+  // 1. Every driver decides on an acceleration from the same snapshot.
+  for (i = 0; i < n; i++) {
+    var j = this.leaderOf(i);
+    var smooth = this.smooth[i];
+    var v0 = this.v0Of(i), T = this.TOf(i), a = this.aMax[i], b = this.bCom[i], s0 = this.s0[i];
+    var acc;
+    if (smooth) {
+      // Smooth driver, after the controller used by Stern et al. (2018): aim for the average
+      // speed of the recent past (U), creep a little faster only when there is plenty of room,
+      // and blend towards the leader's speed only when the gap gets small. It reacts instantly
+      // and ignores wobble, so its gap acts as a buffer that soaks up the stop-and-go wave.
+      this.vbar[i] += (v[i] - this.vbar[i]) * DT / SMOOTH.avgTime;
+      var U = this.vbar[i];
+      if (j < 0) acc = SMOOTH.k * (v0 - v[i]);
+      else {
+        var gS = this.gapTo(i, j);
+        var vT = U + SMOOTH.vCatch * Math.max(0, Math.min(1, (gS - SMOOTH.gLow) / (SMOOTH.gHigh - SMOOTH.gLow)));
+        var alpha = Math.max(0, Math.min(1, (gS - (s0 + v[i] * SMOOTH.Tsafe)) / SMOOTH.gamma));
+        var vCmd = Math.min(v0, alpha * vT + (1 - alpha) * v[j]);
+        acc = SMOOTH.k * (vCmd - v[i]);
+      }
+      acc = Math.max(-3, acc);
+    } else {
+      // Human driver: perceives the situation as it was `react` seconds ago.
+      if (j < 0) acc = idm(dv[i], 1e6, 0, v0, T, a, b, s0);
+      else {
+        var gd = ds[j] - ds[i]; if (gd < 0) gd += L; gd -= this.len[j];
+        if (gd < 0 || gd > L - 1) gd = this.gapTo(i, j);
+        acc = idm(dv[i], gd, dv[i] - dv[j], v0, T, a, b, s0);
+      }
+      // wobble: slowly varying random fluctuation in acceleration
+      this.eta[i] += -this.eta[i] * DT / th + sigma * nf * gauss();
+      if (v[i] > 0.5) acc += this.eta[i];
+    }
+    // Emergency braking on what is happening *now* (stops delayed drivers crashing).
+    if (j >= 0) {
+      var g = this.gapTo(i, j), closing = v[i] - v[j];
+      if (closing > 0) {
+        var bkin = closing * closing / (2 * Math.max(g - 0.5, 0.1));
+        if (bkin > SAFE.bEmergency) acc = Math.min(acc, -bkin);
+      }
+    }
+    if (this.brakeT[i] > 0) { acc = Math.min(acc, -4); this.brakeT[i] -= DT; }
+    this.acc[i] = Math.max(SAFE.aMin, Math.min(acc, a));
+  }
+
+  // 2. Everyone moves together.
+  for (i = 0; i < n; i++) {
+    var vi = v[i], ai = this.acc[i];
+    var vn = vi + ai * DT, ds2;
+    if (vn < 0) { ds2 = vi > 0 ? -vi * vi / (2 * ai) : 0; vn = 0; }
+    else ds2 = vi * DT + 0.5 * ai * DT * DT;
+    v[i] = vn;
+    s[i] = (s[i] + ds2) % L;
+    if (this.lcT[i] < 1) this.lcT[i] = Math.min(1, this.lcT[i] + DT / 2);
+    if (this.lcCool[i] > 0) this.lcCool[i] -= DT;
+  }
+  this.sortLanes(false);
+
+  // 3. No overlaps (a physical constraint, rarely needed).
+  for (var l = 0; l < this.lanes; l++) {
+    var list = this.laneList[l], m = list.length;
+    if (m < 2) continue;
+    for (var k = 0; k < m; k++) {
+      i = list[k]; j = list[(k + 1) % m];
+      var gp = this.gapTo(i, j);
+      if (gp < 0.3) {
+        s[i] = (s[j] - this.len[j] - 0.3 + 2 * L) % L;
+        v[i] = Math.min(v[i], v[j]);
+      }
+    }
+  }
+  this.sortLanes(false);
+
+  // 4. Lane changes (MOBIL), each driver considers it about twice a second.
+  if (this.lanes > 1) this.laneChanges();
+
+  this.t += DT;
+  this.stepCount++;
+};
+
+Traffic.prototype.laneChanges = function () {
+  var n = this.n, p = this.p, phase = this.stepCount % 5;
+  for (var i = 0; i < n; i++) {
+    if ((i % 5) !== phase || this.lcCool[i] > 0 || this.smooth[i] || this.brakeT[i] > 0) continue;
+    var l = this.lane[i];
+    var oldLead = this.leaderOf(i), oldFollow = this.followerOf(i);
+    var aSelfOld = this.idmNow(i, oldLead);
+    // old follower: currently behind i; after i leaves it follows i's leader
+    var aOldFOld = 0, aOldFNew = 0;
+    if (oldFollow >= 0 && oldFollow !== i) {
+      aOldFOld = this.idmNow(oldFollow, i);
+      aOldFNew = (oldLead >= 0 && oldLead !== oldFollow) ? this.idmNow(oldFollow, oldLead) : this.idmNow(oldFollow, -1);
+    }
+    var best = -1, bestGain = SAFE.lcThreshold;
+    for (var dl = -1; dl <= 1; dl += 2) {
+      var nl = l + dl;
+      if (nl < 0 || nl >= this.lanes) continue;
+      var nb = this.neighboursAt(this.s[i], nl, i);
+      var gLead = 1e6, gFol = 1e6;
+      if (nb.lead >= 0) gLead = this.gapTo(i, nb.lead);
+      if (nb.follow >= 0) gFol = this.gapTo(nb.follow, i);
+      if (gLead < this.s0[i] || gFol < 2) continue;
+      var aSelfNew = nb.lead >= 0 ? this.idmNow(i, nb.lead, gLead) : this.idmNow(i, -1);
+      var aNewFOld = 0, aNewFNew = 0;
+      if (nb.follow >= 0) {
+        aNewFNew = this.idmNow(nb.follow, i, gFol);
+        if (aNewFNew < -SAFE.bSafe) continue;               // unsafe for the car behind
+        aNewFOld = nb.lead >= 0 && nb.lead !== nb.follow ? this.idmNow(nb.follow, nb.lead) : this.idmNow(nb.follow, -1);
+      }
+      var gain = (aSelfNew - aSelfOld) + p.polite * ((aNewFNew - aNewFOld) + (aOldFNew - aOldFOld));
+      if (gain > bestGain) { bestGain = gain; best = nl; }
+    }
+    if (best >= 0) {
+      this.lcFrom[i] = l; this.lcT[i] = 0; this.lane[i] = best; this.lcCool[i] = SAFE.lcCooldown;
+      this.sortLanes(true);
+    }
+  }
+};
+
+// Summary numbers for the display.
+Traffic.prototype.metrics = function () {
+  var n = this.n, sum = 0, stopped = 0;
+  for (var i = 0; i < n; i++) { sum += this.v[i]; if (this.v[i] < 5 / 3.6) stopped++; }
+  var mean = n ? sum / n : 0;
+  var flowPerLane = (n / this.lanes) / this.L * mean * 3600;   // vehicles per hour per lane
+  return { mean: mean, stopped: n ? stopped / n : 0, flow: flowPerLane };
+};
+
+var _g2 = null;
+function gauss() {
+  if (_g2 !== null) { var r = _g2; _g2 = null; return r; }
+  var u = 0, w = 0;
+  while (u === 0) u = Math.random();
+  w = Math.random();
+  var m = Math.sqrt(-2 * Math.log(u));
+  _g2 = m * Math.sin(2 * Math.PI * w);
+  return m * Math.cos(2 * Math.PI * w);
+}
+/* ===================== MODEL-END ===================== */
+if (typeof module !== 'undefined') module.exports = { Traffic: Traffic, DT: DT, idm: idm, eqSpeed: eqSpeed, SMOOTH: SMOOTH };
+
+
+/* =====================================================================
+   App
+   ===================================================================== */
+var $ = function (id) { return document.getElementById(id); };
+
+var MODES = {
+  ring: {
+    L: 230, lanes: 1,
+    desc: 'A 230 m circular track with a single lane, like the 2008 Japanese experiment. No junctions, no lane changes, nothing in the way.',
+    defaults: { n: 22, v0kmh: 40, T: 1.0, react: 0.5, wobble: 0.2, lorries: 0, polite: 0.3, smooth: false, speed: 3 },
+    ranges: { n: [6, 32, 1], v0kmh: [20, 60, 5] },
+    presets: {
+      sugiyama: { label: 'The 2008 experiment', set: {}, desc: '22 cars on a 230 m track, drivers with half-second reactions and a little wobble. A jam forms on its own within about half a minute.' },
+      light:    { label: 'Light traffic', set: { n: 14 }, desc: '14 cars with the same drivers. There is enough space for disturbances to die out, so traffic keeps flowing.' },
+      robots:   { label: 'Instant reactions', set: { react: 0 }, desc: '22 cars, but drivers react instantly. Even with wobble, no jam forms: the delay is what makes small slowdowns grow.' },
+      smooth:   { label: 'One smooth driver', set: { smooth: true }, desc: 'The 2008 experiment with one smooth driver. Jams still try to form, but the smooth driver soaks up much of the stop-and-go.' }
+    }
+  },
+  motorway: {
+    L: 600, lanes: 3,
+    desc: 'A 600 m, three-lane ring with lane changes, about 10% lorries, and drivers whose desired speeds differ. Inspired by the M25.',
+    defaults: { n: 72, v0kmh: 110, T: 1.2, react: 0.5, wobble: 0.2, lorries: 0.1, polite: 0.3, smooth: false, speed: 2 },
+    ranges: { n: [12, 150, 3], v0kmh: [60, 130, 10] },
+    presets: {
+      light: { label: 'Light traffic', set: { n: 36 }, desc: '36 vehicles (20 per km per lane). Plenty of space: everyone cruises near their desired speed.' },
+      busy:  { label: 'Busy', set: {}, desc: '72 vehicles (40 per km per lane). Close to the road’s capacity: occasional slow waves appear and fade.' },
+      rush:  { label: 'Rush hour', set: { n: 108 }, desc: '108 vehicles (60 per km per lane). Stop-and-go waves form and travel backwards across all three lanes.' },
+      nolorry: { label: 'Rush hour, no lorries', set: { n: 108, lorries: 0 }, desc: 'Same number of vehicles, but all cars. Compare the flow and the number of stopped vehicles with normal rush hour.' }
+    }
+  }
+};
+
+var state = {
+  mode: 'ring', running: false, stOpen: false, selected: -1,
+  cssW: 0, cssH: 0, dpr: 1, colors: {},
+  acc: 0, lastT: 0, nextSample: 0, prevS: null
+};
+var P = {};          // live parameters shared with the model
+var sim = null;
+
+var roadCv = $('roadCv'), carsCv = $('carsCv'), stCv = $('stCv'), ringwrap = $('ringwrap');
+var rx = roadCv.getContext('2d'), cx = carsCv.getContext('2d'), sx = stCv.getContext('2d');
+
+/* ---------- Colours ---------- */
+function readColors() {
+  var cs = getComputedStyle(document.documentElement), c = {};
+  ['ink', 'ink-2', 'muted', 'line', 'accent', 'land', 'verge', 'island', 'asphalt', 'marking', 'surface']
+    .forEach(function (k) { c[k] = cs.getPropertyValue('--' + k).trim(); });
+  c.dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  state.colors = c;
+}
+// Speed scale: red (stopped) -> orange -> yellow -> light blue (free flow).
+var SPEED_STOPS = [[0, [214, 54, 44]], [0.25, [240, 138, 75]], [0.55, [242, 193, 78]], [1, [127, 209, 227]]];
+function speedRGB(f) {
+  f = Math.max(0, Math.min(1, f));
+  for (var k = 1; k < SPEED_STOPS.length; k++) {
+    if (f <= SPEED_STOPS[k][0]) {
+      var a = SPEED_STOPS[k - 1], b = SPEED_STOPS[k], t = (f - a[0]) / (b[0] - a[0]);
+      return [Math.round(a[1][0] + (b[1][0] - a[1][0]) * t), Math.round(a[1][1] + (b[1][1] - a[1][1]) * t), Math.round(a[1][2] + (b[1][2] - a[1][2]) * t)];
+    }
+  }
+  return SPEED_STOPS[SPEED_STOPS.length - 1][1];
+}
+var COLOR_CACHE = [];
+for (var ci = 0; ci <= 40; ci++) { var rgb = speedRGB(ci / 40); COLOR_CACHE.push('rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')'); }
+function speedColor(v) {
+  var f = v / (P.v0kmh / 3.6 * 0.95);
+  return COLOR_CACHE[Math.max(0, Math.min(40, Math.round(f * 40)))];
+}
+$('legendBar').style.background = 'linear-gradient(90deg,' + SPEED_STOPS.map(function (s) { return 'rgb(' + s[1].join(',') + ') ' + (s[0] * 100) + '%'; }).join(',') + ')';
+
+/* ---------- Geometry ----------
+   The ring experiment is drawn as a circle. The motorway is drawn as a long
+   "stadium" loop (two straights joined by half-circles) so it fills a wide
+   screen, turned upright on tall screens. Positions along the road (metres)
+   are mapped onto the centre line; lanes sit at fixed sideways offsets. */
+var G = {};
+function geometry() {
+  var w = state.cssW, h = state.cssH, M = MODES[state.mode];
+  var phone = w < 640;
+  var x0 = story.on && window.innerWidth > 1000 ? 440 : 0;      // room for the story card
+  var top = phone ? 86 : 108, bottom = phone ? 92 : 100, side = 14;
+  var W = w - x0 - 2 * side, H = h - top - bottom;
+  G.lanes = M.lanes;
+  G.kind = M.lanes > 1 ? 'stadium' : 'circle';
+  G.cx = x0 + side + W / 2; G.cy = top + H / 2;
+  // two passes: road width depends on scale, which depends on the loop size
+  var laneW = M.lanes > 1 ? 14 : 22, hw;
+  for (var pass = 0; pass < 2; pass++) {
+    hw = G.lanes * laneW / 2 + 9;                       // half road width incl. verge
+    if (G.kind === 'circle') {
+      G.R = Math.max(50, Math.min(W / 2, H / 2) - hw);
+      G.perim = 2 * Math.PI * G.R;
+    } else {
+      G.vertical = H > W * 1.1;
+      var long = G.vertical ? H : W, short = G.vertical ? W : H;
+      G.r = Math.max(40, short / 2 - hw);
+      G.Ls = Math.max(0, long / 2 - hw - G.r);          // half length of each straight
+      G.perim = 4 * G.Ls + 2 * Math.PI * G.r;
+    }
+    G.scale = G.perim / M.L;                             // px per metre along the road
+    // lanes drawn ~1.4x real width (3.6 m) so cars are easy to see
+    laneW = Math.max(M.lanes > 1 ? 9 : 16, Math.min(M.lanes > 1 ? 26 : 34, 3.6 * G.scale * 1.4));
+  }
+  G.laneW = laneW;
+  G.halfRoad = G.lanes * laneW / 2;
+  G.carW = Math.max(3.5, Math.min(1.9 * G.scale, laneW * 0.62));
+}
+// Lane 0 (the nearside / slow lane) is on the outside of the loop.
+function laneOffset(l) { return ((G.lanes - 1) / 2 - l) * G.laneW; }
+// Point on the road at distance s (m) and sideways offset off (px, + = outward).
+// Returns {x, y, hx, hy}: position and unit heading (direction of travel, clockwise).
+var _pt = { x: 0, y: 0, hx: 1, hy: 0 };
+function roadPoint(s, off, out) {
+  out = out || _pt;
+  var u = ((s % sim.L) + sim.L) % sim.L / sim.L * G.perim, x, y, hx, hy;
+  if (G.kind === 'circle') {
+    var th = -Math.PI / 2 + u / G.R;
+    hx = -Math.sin(th); hy = Math.cos(th);
+    x = G.cx + (G.R + off) * Math.cos(th); y = G.cy + (G.R + off) * Math.sin(th);
+  } else {
+    var Ls = G.Ls, r = G.r, L2 = 2 * Ls, arc = Math.PI * r, dx, dy;
+    // horizontal frame, centred on (0,0); start at the left end of the top straight
+    if (u < L2) { dx = -Ls + u; dy = -r; hx = 1; hy = 0; }
+    else if (u < L2 + arc) { var a1 = -Math.PI / 2 + (u - L2) / r; dx = Ls + r * Math.cos(a1); dy = r * Math.sin(a1); hx = -Math.sin(a1); hy = Math.cos(a1); }
+    else if (u < 2 * L2 + arc) { dx = Ls - (u - L2 - arc); dy = r; hx = -1; hy = 0; }
+    else { var a2 = Math.PI / 2 + (u - 2 * L2 - arc) / r; dx = -Ls + r * Math.cos(a2); dy = r * Math.sin(a2); hx = -Math.sin(a2); hy = Math.cos(a2); }
+    // outward normal for clockwise travel = (hy, -hx)
+    dx += off * hy; dy += -off * hx;
+    if (G.vertical) { var t1 = dx; dx = -dy; dy = t1; var t2 = hx; hx = -hy; hy = t2; }
+    x = G.cx + dx; y = G.cy + dy;
+  }
+  out.x = x; out.y = y; out.hx = hx; out.hy = hy;
+  return out;
+}
+// Trace the loop at a sideways offset (for drawing the road).
+function tracePath(ctx, off) {
+  ctx.beginPath();
+  if (G.kind === 'circle') { ctx.arc(G.cx, G.cy, G.R + off, 0, Math.PI * 2); return; }
+  var r = G.r + off, Ls = G.Ls;
+  if (!G.vertical) {
+    ctx.moveTo(G.cx - Ls, G.cy - r); ctx.lineTo(G.cx + Ls, G.cy - r);
+    ctx.arc(G.cx + Ls, G.cy, r, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(G.cx - Ls, G.cy + r);
+    ctx.arc(G.cx - Ls, G.cy, r, Math.PI / 2, 3 * Math.PI / 2);
+  } else {
+    ctx.moveTo(G.cx + r, G.cy - Ls); ctx.lineTo(G.cx + r, G.cy + Ls);
+    ctx.arc(G.cx, G.cy + Ls, r, 0, Math.PI);
+    ctx.lineTo(G.cx - r, G.cy - Ls);
+    ctx.arc(G.cx, G.cy - Ls, r, Math.PI, 2 * Math.PI);
+  }
+  ctx.closePath();
+}
+
+function resize() {
+  var r = ringwrap.getBoundingClientRect();
+  var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  state.dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (w !== state.cssW || h !== state.cssH) {
+    state.cssW = w; state.cssH = h;
+    [roadCv, carsCv].forEach(function (c) { c.width = Math.round(w * state.dpr); c.height = Math.round(h * state.dpr); });
+  }
+  var sr = stCv.getBoundingClientRect();
+  var sw = Math.max(1, Math.round(sr.width * state.dpr)), sh = Math.max(1, Math.round(sr.height * state.dpr));
+  if (sw !== stCv.width || sh !== stCv.height) { stCv.width = sw; stCv.height = sh; clearST(); }
+  if (!sim) return;
+  geometry();
+  drawRoad();
+  drawCars();
+}
+
+/* ---------- Road ---------- */
+function drawRoad() {
+  var c = state.colors, d = state.dpr, hr = G.halfRoad;
+  rx.setTransform(d, 0, 0, d, 0, 0);
+  rx.fillStyle = c.land; rx.fillRect(0, 0, state.cssW, state.cssH);
+  rx.lineJoin = 'round';
+  // verge, asphalt, island
+  tracePath(rx, 0); rx.strokeStyle = c.verge; rx.lineWidth = 2 * hr + 18; rx.stroke();
+  tracePath(rx, 0); rx.strokeStyle = c.asphalt; rx.lineWidth = 2 * hr; rx.stroke();
+  tracePath(rx, -hr - 9); rx.fillStyle = c.island; rx.fill();
+  // edge lines
+  rx.strokeStyle = c.marking; rx.lineWidth = 1.5;
+  tracePath(rx, hr - 2.5); rx.stroke();
+  tracePath(rx, -hr + 2.5); rx.stroke();
+  // lane dividers
+  rx.setLineDash([Math.max(5, 3 * G.scale), Math.max(7, 6 * G.scale)]);
+  for (var l = 0; l < G.lanes - 1; l++) { tracePath(rx, (laneOffset(l) + laneOffset(l + 1)) / 2); rx.stroke(); }
+  rx.setLineDash([]);
+  // start mark and labels in the middle
+  var p0 = roadPoint(0, hr + 2, {}), p1 = roadPoint(0, hr + 11, {});
+  rx.strokeStyle = c.marking; rx.lineWidth = 2;
+  rx.beginPath(); rx.moveTo(p0.x, p0.y); rx.lineTo(p1.x, p1.y); rx.stroke();
+  rx.fillStyle = c['ink-2'];
+  rx.font = '500 12px Outfit, system-ui, sans-serif'; rx.textAlign = 'center'; rx.textBaseline = 'middle';
+  var room = G.kind === 'circle' ? G.R - hr : G.r - hr;
+  if (room > 50) {
+    rx.fillText('Traffic moves clockwise', G.cx, G.cy - 8);
+    rx.fillText(MODES[state.mode].L + ' m round the loop' + (G.lanes > 1 ? ', ' + G.lanes + ' lanes' : ''), G.cx, G.cy + 10);
+  }
+}
+
+/* ---------- Cars ---------- */
+function rr(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function carPos(i) {
+  var off = laneOffset(sim.lane[i]);
+  if (sim.lcT[i] < 1) {
+    var t = sim.lcT[i], e = t * t * (3 - 2 * t), o0 = laneOffset(sim.lcFrom[i]);
+    off = o0 + (off - o0) * e;
+  }
+  var p = roadPoint(sim.s[i], off, {});
+  p.th = Math.atan2(p.hy, p.hx);
+  return p;
+}
+var SMOOTH_COL = '#b14dff', SELECT_COL = '#ffffff';
+function drawCars() {
+  if (!sim) return;
+  var c = state.colors, d = state.dpr, now = performance.now() / 1000;
+  cx.setTransform(1, 0, 0, 1, 0, 0);
+  cx.clearRect(0, 0, carsCv.width, carsCv.height);
+  cx.setTransform(d, 0, 0, d, 0, 0);
+  var W = G.carW, pos = [], i, p, Lc;
+  for (i = 0; i < sim.n; i++) pos.push(carPos(i));
+
+  // 1. halos behind the two special cars, so they can be spotted at a glance
+  for (i = 0; i < sim.n; i++) {
+    if (!sim.smooth[i] && i !== state.selected) continue;
+    p = pos[i]; Lc = sim.len[i] * G.scale;
+    var mx = p.x - p.hx * Lc / 2, my = p.y - p.hy * Lc / 2;
+    var R = Math.max(Lc * 0.85, 13);
+    if (i === state.selected) {
+      if (sim.brakeT[i] > 0) {                          // expanding pulse only while it is being made to brake
+        var ph = (now * 1.6) % 1;
+        cx.beginPath(); cx.arc(mx, my, R * (0.9 + ph * 0.9), 0, Math.PI * 2);
+        cx.strokeStyle = 'rgba(255,255,255,' + (0.85 * (1 - ph)) + ')'; cx.lineWidth = 2.5; cx.stroke();
+      }
+      cx.beginPath(); cx.arc(mx, my, R, 0, Math.PI * 2);
+      cx.strokeStyle = c.dark ? 'rgba(255,255,255,0.9)' : 'rgba(20,20,20,0.85)'; cx.lineWidth = 2; cx.stroke();
+    } else {
+      cx.beginPath(); cx.arc(mx, my, R, 0, Math.PI * 2);
+      cx.fillStyle = 'rgba(177,77,255,0.28)'; cx.fill();
+      cx.strokeStyle = SMOOTH_COL; cx.lineWidth = 2; cx.stroke();
+    }
+  }
+
+  // 2. vehicles
+  for (i = 0; i < sim.n; i++) {
+    p = pos[i]; Lc = sim.len[i] * G.scale;
+    cx.save();
+    cx.translate(p.x, p.y);
+    cx.rotate(Math.atan2(p.hy, p.hx));                // +x points along the direction of travel
+    var x0 = -Lc, y0 = -W / 2, special = sim.smooth[i] || i === state.selected;
+    rr(cx, x0, y0, Lc, W, Math.min(3, W / 2.5));
+    cx.fillStyle = sim.smooth[i] ? SMOOTH_COL : (i === state.selected ? SELECT_COL : speedColor(sim.v[i]));
+    cx.fill();
+    if (special) { cx.lineWidth = 1.5; cx.strokeStyle = sim.smooth[i] ? '#ffffff' : '#111111'; cx.stroke(); }
+    if (Lc > 9) {
+      cx.fillStyle = 'rgba(20,28,34,0.55)';
+      var ws = sim.lorry[i] ? Lc - Math.min(Lc * 0.2, 2.2 * G.scale) : Lc * 0.62;
+      cx.fillRect(x0 + ws, y0 + W * 0.15, Math.max(2, Lc * 0.13), W * 0.7);
+    }
+    cx.restore();
+  }
+
+  // 3. brake lights: a bright bar across the back plus a red glow spilling onto the road
+  for (i = 0; i < sim.n; i++) {
+    if (sim.acc[i] >= -0.8) continue;
+    p = pos[i]; Lc = sim.len[i] * G.scale;
+    var k = Math.min(1, (-sim.acc[i] - 0.8) / 2.5);
+    var bx = p.x - p.hx * Lc, by = p.y - p.hy * Lc;     // rear bumper
+    var gr = Math.max(9, W * 1.9) * (0.7 + 0.5 * k);
+    var g = cx.createRadialGradient(bx, by, 0, bx, by, gr);
+    g.addColorStop(0, 'rgba(255,40,40,' + (0.55 + 0.35 * k) + ')');
+    g.addColorStop(1, 'rgba(255,40,40,0)');
+    cx.fillStyle = g;
+    cx.beginPath(); cx.arc(bx, by, gr, 0, Math.PI * 2); cx.fill();
+    cx.save();
+    cx.translate(bx, by); cx.rotate(Math.atan2(p.hy, p.hx));
+    var bl = Math.max(2.5, Math.min(Lc * 0.16, 5));
+    cx.fillStyle = '#ff2020'; cx.fillRect(-0.5, -W / 2 - 0.5, bl, W + 1);
+    cx.fillStyle = '#ffe1e1'; cx.fillRect(0, -W / 2 + W * 0.12, bl * 0.45, W * 0.22); cx.fillRect(0, W / 2 - W * 0.34, bl * 0.45, W * 0.22);
+    cx.restore();
+  }
+
+  // 4. a label on the braked car for the first few seconds
+  // Brakes for 2 s, then drives normally again; it stays white so you can follow it.
+  var since = sim.t - (state.selT || 0);
+  if (state.selected >= 0 && since < 10) {
+    p = pos[state.selected]; Lc = sim.len[state.selected] * G.scale;
+    var lx = p.x - p.hx * Lc / 2, ly = p.y - p.hy * Lc / 2 - Math.max(Lc * 0.85, 13) - 14;
+    var txt = sim.brakeT[state.selected] > 0 ? 'braking for 2 s' : 'driving normally again';
+    cx.font = '600 12px Outfit, system-ui, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    var tw = cx.measureText(txt).width + 14;
+    cx.fillStyle = 'rgba(17,17,17,0.85)'; rr(cx, lx - tw / 2, ly - 10, tw, 20, 6); cx.fill();
+    cx.fillStyle = '#ffffff'; cx.fillText(txt, lx, ly + 0.5);
+  }
+}
+
+/* ---------- Space-time diagram ---------- */
+var SAMPLE_DT = 0.5;
+function clearST() {
+  sx.setTransform(1, 0, 0, 1, 0, 0);
+  sx.fillStyle = '#12171b'; sx.fillRect(0, 0, stCv.width, stCv.height);
+  state.prevS = null; state.prevL = null;
+  updateSTLabel();
+  if (sim) $('stSub').textContent = sim.lanes > 1
+    ? 'middle lane only · each line is one vehicle · red bands are jams'
+    : 'each line is one car moving round the road · red bands are jams';
+}
+var ST_SAMPLES = 360;            // 3 minutes of history at one sample every 0.5 s
+function stCol() { return Math.max(1, stCv.width / ST_SAMPLES); }
+function updateSTLabel() {
+  var cols = stCv.width / stCol();
+  var secs = cols * SAMPLE_DT;
+  $('stSpan').textContent = '← ' + (secs >= 120 ? Math.round(secs / 60) + ' min' : Math.round(secs) + ' s') + ' ago';
+}
+function sampleST(events) {
+  var W = stCv.width, H = stCv.height, col = stCol(), n = sim.n, L = sim.L;
+  sx.setTransform(1, 0, 0, 1, 0, 0);
+  sx.globalCompositeOperation = 'copy';
+  sx.drawImage(stCv, -col, 0);
+  sx.globalCompositeOperation = 'source-over';
+  sx.fillStyle = '#12171b'; sx.fillRect(W - col, 0, col, H);
+  if (!state.prevS || state.prevS.length !== n) { state.prevS = new Float64Array(n); for (var q = 0; q < n; q++) state.prevS[q] = sim.s[q]; }
+  var x1 = W - col - 0.5, x2 = W - 0.5, lw = 1.5 * state.dpr;
+  sx.lineWidth = lw; sx.lineCap = 'butt';
+  var special = [], plotLane = sim.lanes > 1 ? 1 : 0;
+  if (!state.prevL || state.prevL.length !== n) { state.prevL = new Int16Array(n); for (q = 0; q < n; q++) state.prevL[q] = sim.lane[q]; }
+  for (var i = 0; i < n; i++) {
+    var s0 = state.prevS[i], s1 = sim.s[i], l0 = state.prevL[i];
+    state.prevS[i] = s1; state.prevL[i] = sim.lane[i];
+    if (sim.lane[i] !== plotLane || l0 !== plotLane) continue;   // motorway: middle lane only
+    if (Math.abs(s1 - s0) > L / 2) continue;           // wrapped round the ring this sample
+    if (i === state.selected || sim.smooth[i]) { special.push([i, s0, s1]); continue; }
+    sx.strokeStyle = speedColor(sim.v[i]);
+    sx.beginPath(); sx.moveTo(x1, H - s0 / L * H); sx.lineTo(x2, H - s1 / L * H); sx.stroke();
+  }
+  special.forEach(function (sp) {
+    sx.strokeStyle = sim.smooth[sp[0]] ? '#c77dff' : '#ffffff';
+    sx.lineWidth = lw * 1.8;
+    sx.beginPath(); sx.moveTo(x1, H - sp[1] / L * H); sx.lineTo(x2, H - sp[2] / L * H); sx.stroke();
+  });
+  events.forEach(function (ev) {
+    var y = H - ev.s / L * H;
+    sx.fillStyle = '#ffffff';
+    sx.beginPath(); sx.arc(W - 4 * state.dpr, y, 3.2 * state.dpr, 0, Math.PI * 2); sx.fill();
+  });
+}
+
+/* ---------- HUD ---------- */
+var hudTick = 0;
+function updateHud(force) {
+  if (!force && (++hudTick % 8)) return;
+  var m = sim.metrics();
+  $('sSpeed').textContent = Math.round(m.mean * 3.6) + ' km/h';
+  $('sStopped').textContent = Math.round(m.stopped * 100) + '%';
+  $('sFlow').textContent = Math.round(m.flow).toLocaleString() + ' /h' + (sim.lanes > 1 ? ' per lane' : '');
+  var t = Math.floor(sim.t), mm = Math.floor(t / 60), ss = t % 60;
+  $('sTime').textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
+}
+
+/* ---------- Main loop ---------- */
+function frame(ts) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.1, (ts - (state.lastT || ts)) / 1000);
+  state.lastT = ts;
+  if (!sim) return;
+  if (state.running) {
+    state.acc += dt * P.speed;
+    var steps = 0, evStart = sim.events.length;
+    while (state.acc >= DT && steps < 400) {
+      sim.step(); state.acc -= DT; steps++;
+      if (sim.t >= state.nextSample) {
+        sampleST(sim.events.slice(state.evSeen || 0));
+        state.evSeen = sim.events.length;
+        state.nextSample += SAMPLE_DT;
+      }
+    }
+    drawCars();
+    updateHud(false);
+    if (story.on) storyTick();
+  }
+}
+
+/* ---------- Simulation setup ---------- */
+function buildSim(keepParams) {
+  var M = MODES[state.mode];
+  if (!keepParams) { P = Object.assign({}, M.defaults); }
+  sim = new Traffic(M.L, M.lanes, P);
+  sim.reset(P.n);
+  state.selected = -1; state.acc = 0; state.nextSample = SAMPLE_DT; state.evSeen = 0; state.prevS = null; $('keySel').classList.add('hidden');
+  clearST();
+  geometry(); drawRoad(); drawCars(); updateHud(true);
+  syncControls();
+  $('keySmooth').classList.toggle('hidden', !P.smooth);
+}
+function resetSim() {
+  sim.reset(P.n);
+  state.selected = -1; state.acc = 0; state.nextSample = SAMPLE_DT; state.evSeen = 0; state.prevS = null; $('keySel').classList.add('hidden');
+  clearST(); drawCars(); updateHud(true);
+  setRunning(false);
+}
+
+/* ---------- Controls ---------- */
+var CTL = {
+  react:   { fmt: function (v) { return v.toFixed(1) + ' s'; } },
+  T:       { fmt: function (v) { return v.toFixed(1) + ' s'; } },
+  wobble:  { fmt: function (v) { return v === 0 ? 'none' : (v < 0.3 ? 'low' : v < 0.6 ? 'medium' : 'high') + ' (' + v.toFixed(2) + ')'; } },
+  v0kmh:   { fmt: function (v) { return v + ' km/h'; }, int: true },
+  n:       { fmt: function (v) { return v; }, int: true, reset: true },
+  lorries: { fmt: function (v) { return Math.round(v * 100) + '%'; }, reset: true },
+  polite:  { fmt: function (v) { return v.toFixed(1); } },
+  speed:   { fmt: function (v) { return v + '×'; }, int: true }
+};
+function syncControls() {
+  var M = MODES[state.mode];
+  var rn = M.ranges.n, rv = M.ranges.v0kmh;
+  var cn = $('c-n'); cn.min = rn[0]; cn.max = rn[1]; cn.step = rn[2];
+  var cv = $('c-v0kmh'); cv.min = rv[0]; cv.max = rv[1]; cv.step = rv[2];
+  Object.keys(CTL).forEach(function (k) { $('c-' + k).value = P[k]; $('o-' + k).textContent = CTL[k].fmt(P[k]); });
+  $('t-smooth').checked = !!P.smooth;
+  document.querySelectorAll('.motorway-only').forEach(function (el) { el.classList.toggle('hidden', state.mode !== 'motorway'); });
+  var dens = P.n / (M.L / 1000) / M.lanes;
+  $('densityHint').textContent = Math.round(dens) + ' vehicles per km' + (M.lanes > 1 ? ' per lane' : '') + '. Changing this resets the road.';
+  $('legendMax').textContent = P.v0kmh + ' km/h';
+  $('modeDesc').textContent = M.desc;
+}
+Object.keys(CTL).forEach(function (k) {
+  $('c-' + k).addEventListener('input', function (e) {
+    var v = CTL[k].int ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
+    P[k] = v;
+    $('o-' + k).textContent = CTL[k].fmt(v);
+    clearPresetMark();
+    if (CTL[k].reset) { var was = state.running; resetSim(); setRunning(was); }
+    syncControls();
+    if (k === 'v0kmh') drawCars();
+  });
+});
+$('t-smooth').addEventListener('change', function (e) { setSmooth(e.target.checked); clearPresetMark(); });
+function setSmooth(on) {
+  P.smooth = on; sim.setSmooth(on);
+  $('t-smooth').checked = on;
+  $('keySmooth').classList.toggle('hidden', !on);
+  drawCars();
+}
+function setST(open) {
+  state.stOpen = open;
+  $('stwrap').classList.toggle('collapsed', !open);
+  ringwrap.classList.toggle('st-open', open);
+  $('stage').classList.toggle('st-open', open);
+  $('stToggle').setAttribute('aria-expanded', open);
+  $('t-st').checked = open;
+}
+$('t-st').addEventListener('change', function (e) { setST(e.target.checked); });
+$('stToggle').addEventListener('click', function () { setST(!state.stOpen); });
+
+function renderPresets() {
+  var box = $('presets'); box.innerHTML = '';
+  var pr = MODES[state.mode].presets;
+  Object.keys(pr).forEach(function (key) {
+    var b = document.createElement('button');
+    b.className = 'chip'; b.textContent = pr[key].label; b.title = pr[key].desc; b.dataset.preset = key;
+    b.addEventListener('click', function () { applyPreset(key); });
+    box.appendChild(b);
+  });
+  $('presetDesc').textContent = 'Pick a starting point. Each one resets the road; press Start to run.';
+}
+function applyPreset(key) {
+  var M = MODES[state.mode], pr = M.presets[key];
+  P = Object.assign({}, M.defaults, pr.set);
+  sim.p = P;
+  document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === key); });
+  $('presetDesc').textContent = pr.desc;
+  syncControls();
+  resetSim();
+  setSmooth(!!P.smooth);
+}
+function clearPresetMark() { document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.remove('on'); }); }
+
+function setMode(mode, keepRunning) {
+  state.mode = mode;
+  document.querySelectorAll('.tab').forEach(function (t) {
+    var on = t.dataset.mode === mode; t.classList.toggle('on', on); t.setAttribute('aria-selected', on);
+  });
+  buildSim(false);
+  renderPresets();
+  setRunning(!!keepRunning);
+}
+document.querySelectorAll('.tab').forEach(function (t) { t.addEventListener('click', function () { if (story.on) endStory(); setMode(t.dataset.mode); }); });
+
+var TRIES = {
+  instant: function () { if (state.mode !== 'ring') setMode('ring'); P.react = 0; syncControls(); resetSim(); },
+  dense:   function () { if (state.mode !== 'ring') setMode('ring'); P.n = 18; syncControls(); resetSim(); setRunning(true); },
+  gap:     function () { P.T = 2.0; syncControls(); },
+  rush:    function () { setMode('motorway'); applyPreset('rush'); setRunning(true); }
+};
+document.querySelectorAll('[data-try]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    clearPresetMark(); TRIES[b.dataset.try]();
+    if (window.innerWidth <= 1000) $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+/* ---------- Start / pause / brake ---------- */
+var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1"/></svg>';
+function setRunning(on) {
+  state.running = on;
+  var b = $('playBtn');
+  b.innerHTML = on ? ICON_PAUSE + 'Pause' : ICON_PLAY + (sim && sim.t > 0 ? 'Resume' : 'Start');
+  b.classList.toggle('go', !on);
+  $('stepBtn').disabled = on;
+}
+$('playBtn').addEventListener('click', function () { setRunning(!state.running); });
+$('stepBtn').addEventListener('click', function () {
+  for (var k = 0; k < 10; k++) {
+    sim.step();
+    if (sim.t >= state.nextSample) { sampleST(sim.events.slice(state.evSeen || 0)); state.evSeen = sim.events.length; state.nextSample += SAMPLE_DT; }
+  }
+  setRunning(false); drawCars(); updateHud(true);
+});
+$('resetBtn').addEventListener('click', resetSim);
+
+function brakeCar(i) {
+  if (i < 0) {
+    // pick the car nearest the top of the ring that is not the smooth driver
+    var best = -1, bd = 1e9;
+    for (var k = 0; k < sim.n; k++) {
+      if (sim.smooth[k]) continue;
+      var dd = Math.min(sim.s[k], sim.L - sim.s[k]);
+      if (dd < bd) { bd = dd; best = k; }
+    }
+    i = best;
+  }
+  sim.tap(i, 2.0);
+  state.selected = i; state.selT = sim.t;
+  $('keySel').classList.remove('hidden');
+  if (!state.running) setRunning(true);
+  drawCars();
+}
+$('tapBtn').addEventListener('click', function () { brakeCar(-1); });
+carsCv.addEventListener('pointerdown', function (e) {
+  var r = carsCv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  var best = -1, bd = 22 * 22;
+  for (var i = 0; i < sim.n; i++) {
+    var p = carPos(i);
+    var back = sim.len[i] * G.scale / 2;            // aim at the middle of the vehicle
+    var px = p.x - p.hx * back, py = p.y - p.hy * back;
+    var dd = (px - mx) * (px - mx) + (py - my) * (py - my);
+    if (dd < bd) { bd = dd; best = i; }
+  }
+  if (best >= 0) brakeCar(best);
+});
+
+/* ---------- Theme / panel / about / keys ---------- */
+$('themeBtn').addEventListener('click', function () {
+  var t = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('traffic-theme', t); } catch (e) {}
+  readColors(); drawRoad(); drawCars();
+});
+$('panelBtn').addEventListener('click', function () { $('layout').classList.toggle('panel-hidden'); setTimeout(resize, 0); });
+var about = $('about');
+$('aboutBtn').addEventListener('click', function () { if (about.showModal) about.showModal(); else about.setAttribute('open', ''); });
+$('aboutClose').addEventListener('click', function () { about.close ? about.close() : about.removeAttribute('open'); });
+about.addEventListener('click', function (e) { if (e.target === about) about.close(); });
+document.addEventListener('keydown', function (e) {
+  if (about.open || $('rules').open) return;
+  var tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === ' ' && tag !== 'button') { setRunning(!state.running); e.preventDefault(); }
+  else if (e.key === 'b' || e.key === 'B') brakeCar(-1);
+  else if (story.on && e.key === 'ArrowRight') storyGo(story.step + 1);
+  else if (story.on && e.key === 'ArrowLeft') storyGo(story.step - 1);
+  else if (story.on && e.key === 'Escape') endStory();
+});
+
+/* ---------- Rules & parameters dialog ---------- */
+var RULES = [
+  { rule: 'Speed up towards a desired speed',
+    how: 'Accelerate gently, less and less as you approach your desired speed.', eq: 'a [1 \u2212 (v/v\u2080)\u2074]',
+    ctl: 'v0kmh', name: 'Desired speed v\u2080', fixed: 'Maximum acceleration a = 2 m/s\u00b2 (cars), 1 m/s\u00b2 (lorries). Motorway drivers vary \u00b110%.' },
+  { rule: 'Keep a safe distance',
+    how: 'Brake as the gap to the vehicle in front shrinks below a safe gap that grows with speed and with how fast you are closing.', eq: '\u2212a (s*/s)\u00b2,  s* = s\u2080 + vT + v\u0394v / 2\u221a(ab)',
+    ctl: 'T', name: 'Preferred time gap T', fixed: 'Minimum gap s\u2080 = 2 m; comfortable braking b = 1.5 m/s\u00b2.' },
+  { rule: 'React late',
+    how: 'Each driver uses the gap and speeds as they were one reaction time ago. This delay is what lets small disturbances grow.', eq: 'inputs taken at t \u2212 \u03c4',
+    ctl: 'react', name: 'Reaction time \u03c4', fixed: 'The smooth driver always reacts instantly.' },
+  { rule: 'Wobble',
+    how: 'A small, slowly changing random acceleration: attention drifting, easing off, speeding up.', eq: 'random process with 2 s memory, size 0.5 \u00d7 wobble m/s\u00b2',
+    ctl: 'wobble', name: 'Wobble' },
+  { rule: 'You brake a car',
+    how: 'Clicking a car (or Brake one car) makes that driver brake at 4 m/s\u00b2 for 2 s. After that it follows exactly the same rules as everyone else; it stays white only so you can follow it.', eq: '',
+    ctl: null, name: 'fixed' },
+  { rule: 'Never crash',
+    how: 'If what is happening right now needs harder braking than 3 m/s\u00b2 to avoid the vehicle in front, brake as hard as needed.', eq: 'brake if \u0394v\u00b2 / 2(s \u2212 0.5) > 3 m/s\u00b2 (up to 9 m/s\u00b2)',
+    ctl: null, name: 'fixed' },
+  { rule: 'Change lanes when it pays',
+    how: 'Motorway only. Move over if you gain enough, counting the effect on the drivers behind you in proportion to politeness, and never force anyone to brake hard.', eq: '\u0394a(you) + p \u00d7 [\u0394a(new follower) + \u0394a(old follower)] > 0.2 m/s\u00b2',
+    ctl: 'polite', name: 'Politeness p', fixed: 'New follower may not need to brake harder than 4 m/s\u00b2. At least 4 s between lane changes.' },
+  { rule: 'Vehicle mix',
+    how: 'Lorries are 12 m long, slower (at most 85 km/h) and accelerate at half the rate of cars (4.5 m).', eq: '',
+    ctl: 'lorries', name: 'Lorries' },
+  { rule: 'How crowded the road is',
+    how: 'More vehicles on the same road means smaller gaps. Above a critical density, steady traffic becomes unstable.', eq: 'density = N / (road length \u00d7 lanes)',
+    ctl: 'n', name: 'Number of vehicles' },
+  { rule: 'The smooth driver',
+    how: 'Aims for its own average speed over the last 38 s, creeps a little faster only when the gap ahead is large, and matches the vehicle in front only when the gap gets small.', eq: 'v_cmd = \u03b1(U + catch-up) + (1 \u2212 \u03b1) v_lead',
+    ctl: 'smooth', name: 'Add a smooth driver' },
+  { rule: 'Time and updating',
+    how: 'All drivers decide from the same snapshot, then all move together, every 0.1 s of road time. The speed control only changes how fast you watch it.', eq: '\u0394t = 0.1 s',
+    ctl: 'speed', name: 'Simulation speed' }
+];
+function currentValue(key) {
+  if (key === 'smooth') return P.smooth ? 'on' : 'off';
+  return CTL[key] ? CTL[key].fmt(P[key]) : '';
+}
+function openRules() {
+  var tb = $('rulesBody'); tb.innerHTML = '';
+  RULES.forEach(function (r) {
+    if (r.ctl === 'polite' || r.ctl === 'lorries') { if (state.mode !== 'motorway') r = Object.assign({}, r, { modeNote: true }); }
+    var tr = document.createElement('tr');
+    var c1 = document.createElement('td'); c1.textContent = r.rule;
+    var c2 = document.createElement('td'); c2.textContent = r.how;
+    if (r.eq) { var code = document.createElement('code'); code.textContent = r.eq; c2.appendChild(document.createElement('br')); c2.appendChild(code); }
+    if (r.fixed) { var fx = document.createElement('span'); fx.className = 'now fixed'; fx.textContent = 'Fixed: ' + r.fixed; c2.appendChild(fx); }
+    var c3 = document.createElement('td');
+    if (r.ctl) {
+      var b = document.createElement('button'); b.className = 'linkbtn'; b.textContent = r.name;
+      b.addEventListener('click', function () { gotoControl(r.ctl); });
+      c3.appendChild(b);
+      var now = document.createElement('span'); now.className = 'now';
+      now.textContent = r.modeNote ? 'motorway mode only' : 'now: ' + currentValue(r.ctl);
+      c3.appendChild(now);
+    } else { c3.innerHTML = '<span class="fixed">built in</span>'; }
+    tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3);
+    tb.appendChild(tr);
+  });
+  if (about.open) about.close();
+  var dl = $('rules');
+  if (dl.showModal) dl.showModal(); else dl.setAttribute('open', '');
+}
+function gotoControl(key) {
+  var dl = $('rules'); if (dl.close) dl.close(); else dl.removeAttribute('open');
+  if ((key === 'polite' || key === 'lorries') && state.mode !== 'motorway') { setMode('motorway'); applyPreset('busy'); }
+  $('layout').classList.remove('panel-hidden');
+  setTimeout(resize, 0);
+  var el = key === 'smooth' ? $('t-smooth').closest('.toggle') : $('c-' + key).closest('.ctl');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  var inp = key === 'smooth' ? $('t-smooth') : $('c-' + key);
+  setTimeout(function () { inp.focus({ preventScroll: true }); }, 400);
+}
+$('rulesClose').addEventListener('click', function () { var dl = $('rules'); dl.close ? dl.close() : dl.removeAttribute('open'); });
+$('rules').addEventListener('click', function (e) { if (e.target === $('rules')) $('rules').close(); });
+$('aboutRules').addEventListener('click', openRules);
+$('panelRules').addEventListener('click', openRules);
+
+/* =====================================================================
+   Guided story: drives the real simulation, ring mode
+   ===================================================================== */
+var story = { on: false, step: 0, mark: 0 };
+function storyBase(extra) {
+  if (state.mode !== 'ring') setMode('ring');
+  P = Object.assign({}, MODES.ring.defaults, { wobble: 0, speed: 3 }, extra || {});
+  sim.p = P; clearPresetMark(); syncControls();
+  resetSim(); setSmooth(!!P.smooth);
+}
+function btn(label, fn, primary) {
+  var b = document.createElement('button');
+  b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = label;
+  b.addEventListener('click', fn);
+  return b;
+}
+var STORY = [
+  { title: 'Traffic jams from nowhere',
+    text: '<p>Ever crawled through a jam that simply ends, with no accident or roadworks in sight?</p><p>In 2008, physicists in Japan tested this on a circular track. They asked <b>22 drivers</b> to drive steadily around it. There were no junctions and nothing in the way.</p><p>This model recreates their experiment. Each car is an agent with simple driving rules.</p>',
+    enter: function () { storyBase(); setRunning(true); } },
+  { title: 'Steady traffic',
+    text: '<p>The cars start evenly spaced, all at the same speed. Colour shows speed: <b>blue is cruising</b>, yellow is slower and <b>red is stopped</b>.</p><p>Below is the <b>space–time diagram</b>. Each line is one car going round: up the diagram is further round the road, right is later in time. Steady traffic gives neat, parallel lines.</p>',
+    enter: function () { setST(true); if (sim.t === 0 || story.fromBack) { storyBase(); setRunning(true); } } },
+  { title: 'One driver brakes',
+    text: '<p>Now one driver brakes for just two seconds, perhaps distracted by their phone. Press the button (or click any car), then watch what happens behind them.</p><p>That car turns <b>white</b>. After its two seconds it drives exactly like everyone else again; it stays white only so you can follow it.</p>',
+    extra: function (ex) { ex.appendChild(btn('Brake one car', function () { brakeCar(-1); }, true)); },
+    enter: function () { if (story.fromBack) { storyBase(); setRunning(true); } } },
+  { title: 'Why it grows',
+    text: '<p>Each driver takes about <b>half a second to react</b>. By the time they respond, they are closer to the car in front than they would like, so they brake a little <b>harder</b>.</p><p>The driver behind does the same, and so on. A short tap on the brakes grows into a full stop a few cars back. Watch the <b>brake lights</b>.</p><p>Try it: set reaction time to 0 in the controls, press Reset and brake a car. The disturbance fades instead.</p>',
+    enter: function () { if (story.fromBack || sim.events.length === 0) { storyBase(); setRunning(true); brakeCar(-1); } } },
+  { title: 'The jam moves backwards',
+    text: '<p>Look at the space–time diagram. The <b>red band slopes downwards</b>: the jam travels <b>backwards</b> round the ring, even though every car keeps moving forwards.</p><p>Cars drive into the back of the jam, crawl through it and leave from the front. The <b>white car</b> is the one that braked. It has been driving normally ever since, yet the jam it started keeps going without it. Its white line in the diagram lets you follow it through the jam each lap. On real motorways, these waves travel backwards at about 15 to 20 km/h, which is why you can meet a jam whose cause is long gone.</p>',
+    enter: function () { if (story.fromBack || sim.events.length === 0) { storyBase(); setRunning(true); brakeCar(-1); } } },
+  { title: 'No one needs to brake',
+    text: '<p>Real drivers are never perfectly steady: they glance away, ease off and speed up a little. Here every driver has a small amount of this <b>wobble</b>, and nobody brakes on purpose.</p><p>Within about 20 seconds of road time, a jam forms on its own, just as one did on the Japanese track. With 22 cars on this ring, steady traffic is <b>unstable</b>: any small disturbance grows.</p>',
+    enter: function () { storyBase({ wobble: 0.2 }); setRunning(true); } },
+  { title: 'Can one driver fix it?',
+    text: '<p>Now add a <b>smooth driver</b> (the <b>purple car</b>). It reacts instantly and holds a steady speed close to the recent average, leaving a big gap in front instead of rushing up to the car ahead. That gap soaks up the stop-and-go wave.</p><p>In our tests, waves kept re-forming because of the wobble, but the share of cars stopped <b>roughly halved</b>. Remove the wobble and it dissolves the jam completely within about three minutes.</p>',
+    extra: function (ex) {
+      ex.appendChild(btn(P.smooth ? 'Smooth driver added' : 'Add the smooth driver', function () { setSmooth(true); renderStory(); }, !P.smooth));
+      ex.appendChild(btn('Remove the wobble', function () { P.wobble = 0; syncControls(); renderStory(); }));
+    },
+    enter: function () { if (story.fromBack || sim.t < 60) { storyBase({ wobble: 0.2 }); for (var k = 0; k < 1200; k++) sim.step(); clearST(); state.nextSample = sim.t + SAMPLE_DT; state.evSeen = sim.events.length; drawCars(); updateHud(true); setRunning(true); } } },
+  { title: 'Your turn',
+    text: '<p>The lessons: jams can appear with <b>no cause at all</b> once a road is busy enough. They grow because of <b>reaction time and over-braking</b>, travel <b>backwards</b>, and can be calmed by drivers who keep a steady speed and a generous gap.</p><p>Explore the ring with the controls, or try the three-lane <b>motorway</b>, where lane changes and lorries add their own disturbances.</p>',
+    extra: function (ex) {
+      ex.appendChild(btn('Explore the ring', function () { endStory(); }, true));
+      ex.appendChild(btn('Try the motorway', function () { endStory(); setMode('motorway'); applyPreset('busy'); setRunning(true); }));
+      ex.appendChild(btn('Rules and parameters (advanced)', openRules));
+    } }
+];
+function renderStory() {
+  var s = STORY[story.step];
+  $('storyStep').textContent = 'Step ' + (story.step + 1) + ' of ' + STORY.length;
+  $('storyTitle').textContent = s.title;
+  $('storyText').innerHTML = s.text;
+  var ex = $('storyExtra'); ex.innerHTML = '';
+  if (s.extra) s.extra(ex);
+  $('storyPrev').disabled = story.step === 0;
+  $('storyNext').classList.toggle('hidden', story.step === STORY.length - 1);
+  var dots = $('storyDots').children;
+  for (var i = 0; i < dots.length; i++) dots[i].className = i === story.step ? 'on' : (i < story.step ? 'done' : '');
+}
+function storyGo(i) {
+  if (i < 0 || i >= STORY.length) return;
+  story.fromBack = i < story.step;
+  story.step = i;
+  if (STORY[i].enter) STORY[i].enter();
+  story.fromBack = false;
+  renderStory();
+}
+function storyTick() {}
+function startStory() {
+  story.on = true;
+  $('stage').classList.add('touring');
+  $('story').classList.remove('hidden');
+  var dots = $('storyDots'); dots.innerHTML = '';
+  STORY.forEach(function (_, i) {
+    var b = document.createElement('button'); b.setAttribute('aria-label', 'Go to step ' + (i + 1));
+    b.addEventListener('click', function () { storyGo(i); });
+    dots.appendChild(b);
+  });
+  story.step = 0;
+  resize();
+  storyGo(0);
+  if (window.innerWidth <= 1000) $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function endStory() {
+  story.on = false;
+  $('stage').classList.remove('touring');
+  $('story').classList.add('hidden');
+  resize();
+}
+$('storyBtn').addEventListener('click', function () { story.on ? endStory() : startStory(); });
+$('storyClose').addEventListener('click', endStory);
+$('storyPrev').addEventListener('click', function () { storyGo(story.step - 1); });
+$('storyNext').addEventListener('click', function () { storyGo(story.step + 1); });
+
+/* ---------- Boot ---------- */
+readColors();
+P = Object.assign({}, MODES.ring.defaults);
+state.mode = 'ring';
+renderPresets();
+resize();          // sets canvas sizes (sim not built yet -> geometry needs sim? no)
+buildSim(true);
+setST(false);
+resize();
+setRunning(false);
+if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(ringwrap);
+window.addEventListener('resize', resize);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

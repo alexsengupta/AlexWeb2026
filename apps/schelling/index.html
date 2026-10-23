@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schelling's Town | Alex Sen Gupta</title>
+<meta name="description" content="Schelling's segregation model: households with only a mild preference for similar neighbours end up strongly separated. Interactive town, guided story and advanced variants.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('schelling-theme'); } catch (e) {}
+    if (!t) t = 'dark';   // dark reads best for this app; light is one click away
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<style>
+  :root, :root[data-theme="dark"] {
+    --bg: #101413; --surface: #171d1c; --surface-2: #1f2725;
+    --ink: #edf2f0; --ink-2: #b3c1bd; --muted: #84948f; --line: rgba(237, 242, 240, 0.10);
+    --accent: #e8eeec; --accent-ink: #121716;
+    --road: #0c110e; --plot: #141c17; --plot-empty: #2e4a37; --roof-shade: rgba(0,0,0,0.3); --house-edge: rgba(0,0,0,0.55);
+    --g1: #3f9cff; --g2: #ff9d00; --g3: #60e0d0; --g4: #e8508a;
+    --hud: rgba(16, 20, 19, 0.82); --shadow: 0 10px 30px rgba(0,0,0,0.4);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f1f4f1; --surface: #ffffff; --surface-2: #f3f6f3;
+    --ink: #1c2725; --ink-2: #455651; --muted: #708079; --line: rgba(28, 39, 37, 0.12);
+    --accent: #23302d; --accent-ink: #ffffff;
+    --road: #b9c3bc; --plot: #e9efe6; --plot-empty: #bcd8ab; --roof-shade: rgba(0,0,0,0.2); --house-edge: rgba(20,30,28,0.75);
+    --g1: #1565c0; --g2: #e08600; --g3: #11a394; --g4: #c2185b;
+    --hud: rgba(255,255,255,0.88); --shadow: 0 10px 30px rgba(28,39,37,0.14);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--ink);
+         height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: var(--ink); }
+  .hidden { display: none !important; }
+
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line); flex: none; }
+  .back { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--ink-2); font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+  .back:hover { color: var(--ink); background: var(--surface-2); }
+  .titles { flex: 1; min-width: 0; }
+  .titles h1 { margin: 0; font-size: 20px; font-weight: 600; white-space: nowrap; }
+  .titles p { margin: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .btn { border: 1px solid var(--line); background: var(--surface-2); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 500; line-height: 1.1; white-space: nowrap; }
+  .btn:hover { border-color: var(--ink-2); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.icon { width: 38px; height: 38px; padding: 0; display: inline-grid; place-items: center; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .btn:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible, .tb:focus-visible { outline: 2px solid var(--g1); outline-offset: 2px; }
+
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+  .layout.panel-hidden { grid-template-columns: minmax(0, 1fr); }
+  .layout.panel-hidden .panel { display: none; }
+  .stage { position: relative; min-height: 0; padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; }
+  .townwrap { position: relative; min-height: 0; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); background: var(--road); }
+  .townwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+  .results { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .card h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .headline { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; }
+  .headline .big { font-size: 40px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .headline .lab { font-size: 13px; color: var(--ink-2); margin-top: 4px; line-height: 1.3; }
+  .headline .arrow { font-size: 26px; color: var(--muted); padding-bottom: 14px; }
+  .headline-note { margin: 10px 0 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+  .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 13px; color: var(--ink-2); }
+  .mini-stats b { display: block; font-size: 18px; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chart { width: 100%; height: 130px; display: block; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+  .legend-row i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+  .legend-row i.box { height: 10px; width: 10px; }
+  .inspect { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  .inspect b { color: var(--ink); }
+
+  .hud { position: absolute; background: var(--hud); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 12px; font-size: 13px; color: var(--ink-2); }
+  .toolbar { left: 12px; bottom: 12px; padding: 5px; display: flex; gap: 4px; }
+  .tb { height: 40px; min-width: 40px; border-radius: 9px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--ink); padding: 0 10px; font-size: 14.5px; font-weight: 500; }
+  .tb:hover { background: var(--surface-2); }
+  .tb[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .tb svg { width: 18px; height: 18px; flex: none; }
+  .tb.go { background: var(--accent); color: var(--accent-ink); }
+  .keybox { right: 12px; bottom: 12px; padding: 7px 11px; display: flex; flex-direction: column; gap: 4px; }
+  .keybox span { display: inline-flex; align-items: center; gap: 7px; }
+  .keybox b { font-weight: 400; } .keybox .ks { display: none; }
+  .kh { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+  .kbadge { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #1b1b1b; display: inline-block; }
+  .stepchip { left: 12px; top: 12px; padding: 6px 10px; }
+  .stepchip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .story { position: absolute; left: 28px; bottom: 76px; width: 380px; max-width: calc(100% - 56px); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 16px 18px 14px; z-index: 5; }
+  .story .step-label { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .story h2 { margin: 0 0 6px; font-size: 19px; font-weight: 600; }
+  .story .text { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .story .text p { margin: 0 0 8px; }
+  .story .text b { color: var(--ink); font-weight: 600; }
+  .story .extra { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .story-nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .dots { display: flex; gap: 5px; flex: 1; flex-wrap: wrap; }
+  .dots button { width: 9px; height: 9px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+  .dots button.on { background: var(--ink); } .dots button.done { background: var(--muted); }
+  .story-close { position: absolute; top: 10px; right: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+
+  .panel { min-height: 0; overflow-y: auto; background: var(--surface); border-left: 1px solid var(--line); }
+  .panel-inner { padding: 14px 18px 24px; }
+  .group { padding: 12px 0 14px; border-bottom: 1px solid var(--line); }
+  .group:last-child { border-bottom: 0; }
+  .group h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; }
+  .chip:hover { border-color: var(--ink-2); } .chip.on { border-color: var(--ink); font-weight: 600; }
+  .desc { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+  .ctl { margin-bottom: 12px; }
+  .ctl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ctl-head label { font-size: 14.5px; font-weight: 500; }
+  .ctl-head output { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hint { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  input[type="range"] { width: 100%; height: 28px; margin: 2px 0 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--line); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); }
+  input[type="range"]:disabled { opacity: 0.35; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 14.5px; font-weight: 500; cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--ink); flex: none; }
+  details.adv { border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); padding: 0 14px; }
+  details.adv > summary { cursor: pointer; padding: 12px 0; font-size: 15px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+  details.adv > summary::-webkit-details-marker { display: none; }
+  details.adv > summary::after { content: '+'; color: var(--muted); }
+  details.adv[open] > summary::after { content: '\2212'; }
+  .adv-block { border-top: 1px solid var(--line); padding: 10px 0 8px; }
+  .adv-block .sub { padding-left: 2px; margin-top: 4px; }
+  .adv-block .sub.off { opacity: 0.45; pointer-events: none; }
+
+  dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); padding: 0; width: min(780px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgba(3, 6, 8, 0.6); }
+  .dlg-head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+  .dlg-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  .dlg-body { padding: 6px 22px 22px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+  .dlg-body h3 { color: var(--ink); font-size: 16.5px; margin: 20px 0 6px; font-weight: 600; }
+  .dlg-body b { color: var(--ink); font-weight: 600; }
+  .dlg-body details { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin: 8px 0; }
+  .dlg-body summary { cursor: pointer; color: var(--ink); font-size: 14.5px; text-decoration: underline; }
+  .eq { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13.5px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; color: var(--ink); line-height: 1.55; margin: 8px 0; }
+  table.mini { border-collapse: collapse; font-size: 13.5px; margin: 6px 0; width: 100%; }
+  table.mini td, table.mini th { padding: 4px 10px 4px 0; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.mini th { color: var(--ink); font-weight: 600; }
+  .refs { font-size: 13.5px; } .refs li { margin-bottom: 6px; }
+
+  @media (max-width: 1250px) { .stage { grid-template-columns: minmax(0, 1fr) 280px; } }
+  @media (max-width: 1000px) {
+    body { display: block; height: auto; overflow: visible; }
+    .layout { display: block; }
+    .stage { display: block; padding: 10px; }
+    .townwrap { height: min(92vw, 78svh); }
+    .results { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
+    .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+    #panelBtn { display: none; }
+    .stage.touring .story { position: relative; left: auto; bottom: auto; width: auto; max-width: none; margin-top: 12px; }
+  }
+  @media (max-width: 640px) {
+    .topbar { gap: 8px; padding: 8px 12px; }
+    .titles h1 { font-size: 17px; }
+    .titles p, .back span, #aboutBtn .long, #storyBtn .long { display: none; }
+    .btn { padding: 7px 11px; font-size: 13.5px; }
+    .townwrap { height: calc(100vw + 76px); border-radius: 12px; }
+    .keybox { top: 8px; bottom: auto; right: 8px; flex-direction: row; flex-wrap: wrap; gap: 4px 10px; max-width: calc(100% - 100px); }
+    .keybox .kl { display: none; } .keybox .ks { display: inline; }
+    .stepchip { left: 8px; top: 8px; }
+    .titles h1 { overflow: hidden; text-overflow: ellipsis; }
+    .results { grid-template-columns: 1fr; }
+    .headline .big { font-size: 34px; }
+    .keybox { font-size: 11.5px; padding: 5px 8px; }
+    .toolbar { left: 8px; bottom: 8px; }
+    .tb .lbl-long { display: none; }
+    .story { padding: 14px 14px 12px; }
+    dialog { width: 100vw; max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; margin: 0; }
+    .dlg-body { padding: 4px 16px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back" href="../../academic_apps.html" aria-label="Back to Academic Apps">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    <span>Apps</span>
+  </a>
+  <div class="titles">
+    <h1>Schelling's town</h1>
+    <p>How mild preferences add up to a strongly divided town</p>
+  </div>
+  <div class="top-actions">
+    <button class="btn primary" id="storyBtn">Guided<span class="long"> story</span></button>
+    <button class="btn" id="aboutBtn">About<span class="long"> the model</span></button>
+    <button class="btn icon" id="panelBtn" aria-label="Show or hide controls" title="Show / hide controls">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+    </button>
+    <button class="btn icon" id="themeBtn" aria-label="Switch light or dark theme" title="Light / dark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="layout" id="layout">
+  <section class="stage" id="stage">
+    <div class="townwrap" id="townwrap">
+      <canvas id="townCv" aria-label="A town of houses in two colours. Click a house to inspect its neighbourhood."></canvas>
+      <div class="hud stepchip">Round <b id="sRound">0</b></div>
+      <div class="hud keybox" id="keybox"></div>
+      <div class="hud toolbar">
+        <button class="tb go" id="playBtn" title="Start / pause (space bar)"></button>
+        <button class="tb" id="stepBtn" title="One round of moves" aria-label="One round of moves"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5l9 7-9 7z"/><rect x="16" y="5" width="2.6" height="14" rx="1"/></svg></button>
+        <button class="tb" id="resetBtn" title="New random town"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span class="lbl-long">New town</span></button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="card">
+        <h3>What they wanted, what they got</h3>
+        <div class="headline">
+          <div><div class="big" id="hWant">30%</div><div class="lab" id="hWantLab">similar neighbours each household needs to be happy</div></div>
+          <div class="arrow">&rarr;</div>
+          <div><div class="big" id="hGot">50%</div><div class="lab">similar neighbours they actually have, on average</div></div>
+        </div>
+        <p class="headline-note" id="hNote"></p>
+      </div>
+      <div class="card">
+        <div class="mini-stats">
+          <div><b id="sUnhappy">0%</b>want to move</div>
+          <div><b id="sAllSame">0%</b>have no neighbours of another colour</div>
+          <div><b id="sMoves">0</b>moved last round</div>
+          <div><b id="sStuck">0</b>unhappy but stuck</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>How similar is each household's neighbourhood?</h3>
+        <canvas class="chart" id="histCv" aria-label="Histogram of the share of similar neighbours"></canvas>
+        <div class="legend-row"><span><i class="box" style="background:var(--ink-2)"></i>now</span><span><i class="box" style="background:transparent;border:1.5px solid var(--muted)"></i>at the start</span><span><i style="background:var(--g2)"></i>wanted</span></div>
+      </div>
+      <div class="card">
+        <h3>Over time</h3>
+        <canvas class="chart" id="timeCv" aria-label="Average share of similar neighbours and share wanting to move, by round"></canvas>
+        <div class="legend-row"><span><i style="background:var(--ink)"></i>similar neighbours (average)</span><span><i style="background:var(--g2)"></i>want to move</span></div>
+      </div>
+      <div class="card" id="inspectCard">
+        <h3>Inspect a household</h3>
+        <div class="inspect" id="inspect">Click any house in the town to see its neighbourhood and why it is happy or not.</div>
+      </div>
+    </div>
+
+    <div class="story hidden" id="story" role="region" aria-live="polite" aria-label="Guided story">
+      <button class="story-close" id="storyClose" aria-label="Close the story">&times;</button>
+      <div class="step-label" id="storyStep"></div>
+      <h2 id="storyTitle"></h2>
+      <div class="text" id="storyText"></div>
+      <div class="extra" id="storyExtra"></div>
+      <div class="story-nav">
+        <button class="btn" id="storyPrev">&larr; Back</button>
+        <div class="dots" id="storyDots"></div>
+        <button class="btn primary" id="storyNext">Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="Controls">
+    <div class="panel-inner">
+      <div class="group">
+        <h3>Start from</h3>
+        <div class="chips" id="presets"></div>
+        <p class="desc" id="presetDesc">Each starting point builds a new, randomly mixed town; press Start to run.</p>
+      </div>
+
+      <div class="group">
+        <h3>The rule</h3>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-want">Happy if at least</label><output id="o-want"></output></div>
+          <input type="range" id="c-want" min="0" max="1" step="0.05">
+          <p class="hint" id="wantHint"></p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-vacancy">Empty homes</label><output id="o-vacancy"></output></div>
+          <input type="range" id="c-vacancy" min="0.02" max="0.4" step="0.01">
+          <p class="hint">Unhappy households can only move into an empty home. Changing this builds a new town.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-size">Town size</label><output id="o-size"></output></div>
+          <input type="range" id="c-size" min="20" max="70" step="10">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="c-speed">Speed</label><output id="o-speed"></output></div>
+          <input type="range" id="c-speed" min="1" max="12" step="1">
+        </div>
+      </div>
+
+      <div class="group">
+        <details class="adv" id="adv">
+          <summary>Advanced options</summary>
+          <p class="hint" style="margin:0 0 8px">Variations studied by researchers since Schelling. All are off by default; changing one builds a new town.</p>
+
+          <div class="adv-block">
+            <label class="toggle">Mixed preferences<input type="checkbox" id="t-mixed"></label>
+            <p class="hint">Most households use the main rule, but a minority are much less tolerant.</p>
+            <div class="sub" id="sub-mixed">
+              <div class="ctl"><div class="ctl-head"><label for="c-intolerant">Share who are intolerant</label><output id="o-intolerant"></output></div><input type="range" id="c-intolerant" min="0.05" max="0.5" step="0.05"></div>
+              <div class="ctl"><div class="ctl-head"><label for="c-wantHigh">They need at least</label><output id="o-wantHigh"></output></div><input type="range" id="c-wantHigh" min="0.4" max="1" step="0.05"></div>
+            </div>
+          </div>
+
+          <div class="adv-block">
+            <label class="toggle">Unequal groups<input type="checkbox" id="t-unequal"></label>
+            <p class="hint">A majority and a minority instead of two equal groups.</p>
+            <div class="sub" id="sub-unequal">
+              <div class="ctl"><div class="ctl-head"><label for="c-majority">Blue share</label><output id="o-majority"></output></div><input type="range" id="c-majority" min="0.55" max="0.9" step="0.05"></div>
+            </div>
+            <div class="ctl" style="margin-top:6px"><div class="ctl-head"><label for="c-groups">Number of colours</label><output id="o-groups"></output></div><input type="range" id="c-groups" min="2" max="4" step="1"></div>
+          </div>
+
+          <div class="adv-block">
+            <label class="toggle">Diversity seekers<input type="checkbox" id="t-diverse"></label>
+            <p class="hint">Everyone's ideal is a 50/50 mixed neighbourhood. Households look at several empty homes and move to the best. (After Pancs &amp; Vriend, 2007.)</p>
+            <div class="sub" id="sub-diverse">
+              <div class="ctl"><div class="ctl-head"><label for="c-asym">Being outnumbered feels</label><output id="o-asym"></output></div><input type="range" id="c-asym" min="0.5" max="2" step="0.25">
+              <p class="hint">Compared with being in the majority by the same amount.</p></div>
+            </div>
+          </div>
+
+          <div class="adv-block">
+            <label class="toggle">Choosy movers<input type="checkbox" id="t-smart"></label>
+            <p class="hint">Instead of taking any empty home, a mover visits several and picks the one it likes best (only moving if it is better).</p>
+            <div class="sub" id="sub-smart">
+              <div class="ctl"><div class="ctl-head"><label for="c-looks">Homes visited</label><output id="o-looks"></output></div><input type="range" id="c-looks" min="2" max="50" step="1"></div>
+            </div>
+          </div>
+
+          <div class="adv-block">
+            <div class="ctl"><div class="ctl-head"><label for="c-restless">Restlessness</label><output id="o-restless"></output></div><input type="range" id="c-restless" min="0" max="0.1" step="0.01">
+            <p class="hint">Chance each round that a <i>happy</i> household moves anyway (new job, bigger house).</p></div>
+          </div>
+
+          <div class="adv-block">
+            <label class="toggle">Move only nearby<input type="checkbox" id="t-local"></label>
+            <div class="sub" id="sub-local">
+              <div class="ctl"><div class="ctl-head"><label for="c-moveRadius">Maximum distance</label><output id="o-moveRadius"></output></div><input type="range" id="c-moveRadius" min="1" max="10" step="1"></div>
+            </div>
+          </div>
+
+          <div class="adv-block">
+            <div class="ctl"><div class="ctl-head"><label for="c-radius">Neighbourhood size</label><output id="o-radius"></output></div><input type="range" id="c-radius" min="1" max="3" step="1">
+            <p class="hint">How far a household looks when judging its neighbours.</p></div>
+          </div>
+          <p style="margin:6px 0 12px"><button class="btn" id="advReset">Turn all advanced options off</button></p>
+        </details>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="about" aria-labelledby="aboutTitle">
+  <div class="dlg-head"><h2 id="aboutTitle">About the model</h2><button class="btn icon" id="aboutClose" aria-label="Close">&times;</button></div>
+  <div class="dlg-body">
+    <h3>The idea</h3>
+    <p>In 1971 the economist Thomas Schelling asked a simple question. If people have only a <b>mild</b> preference for living near others like themselves, what happens to a whole town? He was thinking about racial segregation in US cities, but the model applies to any visible difference, which is why the households here are simply blue and orange. He worked it out with coins on a chessboard. The surprising answer is that mild individual preferences can produce a strongly divided town, which nobody intended and nobody necessarily wants.</p>
+
+    <h3>How the model works</h3>
+    <ul>
+      <li>Each square is a home: occupied by a blue or orange household, or empty. The town wraps around at the edges, so every home has the same number of neighbours.</li>
+      <li>A household looks at the 8 homes around it (or more in the advanced options) and counts the share of its <i>occupied</i> neighbours that are its colour.</li>
+      <li>If that share is below its threshold, it is <b>unhappy</b> (white badge).</li>
+      <li>Each round, unhappy households move one at a time, in random order, to a randomly chosen empty home. A household that has already become happy because others moved stays put.</li>
+      <li>The model stops when everyone is happy.</li>
+    </ul>
+    <details><summary>Show the maths</summary>
+<div class="eq">similarity of household i:   f_i = (same-colour neighbours) / (occupied neighbours)
+happy if                       f_i ≥ θ          (θ = the "happy if at least" slider)
+average similarity             S = mean of f_i over all households with any neighbours</div>
+      <p>With 8 neighbours the possible shares are 0, 1/8, 2/8 and so on, so the threshold behaves in steps. For example, 25% means at least 2 of 8, and 30% means at least 3 of 8. That is why the outcome jumps between those two settings.</p>
+    </details>
+
+    <h3>What it does (tested in this model)</h3>
+    <p>For a 40 × 40 town with 10% empty homes and two equal groups, averaged over several runs:</p>
+    <table class="mini">
+      <tr><th>Happy if at least</th><td>20%</td><td>25%</td><td>30%</td><td>50%</td><td>60%</td><td>70%</td></tr>
+      <tr><th>Average similar neighbours at the end</th><td>57%</td><td>57%</td><td>74%</td><td>85%</td><td>97%</td><td>99%</td></tr>
+      <tr><th>No other-colour neighbours at all</th><td>6%</td><td>6%</td><td>26%</td><td>51%</td><td>86%</td><td>96%</td></tr>
+    </table>
+    <p>A random town starts at about 50%. So households that would happily be outnumbered 5 to 3 end up, on average, in neighbourhoods that are three-quarters their own colour.</p>
+
+    <h3>The advanced options</h3>
+    <table class="mini">
+      <tr><th>Option</th><th>What we found in this model</th></tr>
+      <tr><td>Mixed preferences</td><td>With most households needing only 20%, the town ends at 57% similar. Make 10% of households intolerant (needing 75%) and it reaches 65%; with 20% intolerant, 71%. A small intolerant minority pushes everyone apart.</td></tr>
+      <tr><td>Unequal groups (80/20, threshold 30%)</td><td>At the start, about 79% of the minority are unhappy and none of the majority are. With random moves the minority stays largely unhappy for a long time: the empty homes are mostly in majority areas.</td></tr>
+      <tr><td>Diversity seekers</td><td>Everyone's ideal is a 50/50 neighbourhood. If being outnumbered feels no worse than being in the majority, the town stays mixed (about 49% similar). If being outnumbered feels <b>twice as bad</b>, the town drifts to about 69% similar, and <b>more</b> households end up dissatisfied than at the start. This reproduces the key result of Pancs and Vriend (2007): segregation can emerge even when everyone prefers integration. In our tests it needs that asymmetry. A simple "leave if too similar or too different" rule did not produce it.</td></tr>
+      <tr><td>Choosy movers</td><td>Similar final pattern, reached much faster (about 7 rounds instead of 12–14).</td></tr>
+      <tr><td>Restlessness</td><td>A little restlessness (2% per round) makes the town <b>more</b> segregated (about 86% vs 74%). Random moves shake households out of awkward mixed pockets, and clusters grow. More restlessness (10%) keeps things churning at about 74%.</td></tr>
+      <tr><td>Move only nearby</td><td>Slower and somewhat less segregation (about 70%). With very few empty homes (3%), some unhappy households are stuck with nowhere to go.</td></tr>
+    </table>
+
+    <h3>What the model does and does not show</h3>
+    <p>It shows that strong segregation <b>can</b> arise from mild preferences, without anyone wanting it. It does <b>not</b> show that real segregation happens this way. Housing costs, discrimination, history and policy (for example, mortgage redlining in the United States) all play large roles. Researchers use models like this to ask which mechanisms are enough to produce the patterns we see, and then test them against data.</p>
+
+    <h3>References</h3>
+    <ul class="refs">
+      <li>Schelling, T. C. (1971). Dynamic models of segregation. <i>Journal of Mathematical Sociology</i> 1(2), 143–186.</li>
+      <li>Zhang, J. (2004). Residential segregation in an all-integrationist world. <i>Journal of Economic Behavior &amp; Organization</i> 54, 533–550.</li>
+      <li>Pancs, R. &amp; Vriend, N. J. (2007). Schelling's spatial proximity model of segregation revisited. <i>Journal of Public Economics</i> 91, 1–24.</li>
+      <li>Clark, W. A. V. &amp; Fossett, M. (2008). Understanding the social context of the Schelling segregation model. <i>PNAS</i> 105(11), 4109–4114.</li>
+    </ul>
+  </div>
+</dialog>
+
+<noscript><p style="padding:16px">This simulation needs JavaScript.</p></noscript>
+
+<script>
+(function () {
+'use strict';
+/* =====================================================================
+   MODEL-BEGIN  (pure simulation code; no DOM access, testable in Node)
+   A Schelling town on an N x N grid that wraps at the edges.
+   cell value: 0 = empty, 1..G = household of that group.
+   ===================================================================== */
+function Town(p) {
+  this.p = p;              // live parameters (see DEFAULTS in the app)
+  this.t = 0;
+  this.moves = [];         // moves made in the last step [{from, to, g}]
+}
+
+Town.prototype.reset = function () {
+  var p = this.p, N = p.size;
+  this.N = N;
+  this.cells = new Int8Array(N * N);
+  this.intol = new Uint8Array(N * N);          // 1 = member of the intolerant minority
+  this.t = 0; this.moves = []; this.stuck = 0;
+  var n = N * N, occ = Math.round(n * (1 - p.vacancy));
+  // group sizes: group 1 gets `majority` share when there are 2 groups, otherwise equal
+  var shares = [];
+  if (p.groups === 2) shares = [p.majority, 1 - p.majority];
+  else for (var g = 0; g < p.groups; g++) shares.push(1 / p.groups);
+  var list = [];
+  var assigned = 0;
+  for (g = 0; g < p.groups; g++) {
+    var k = g === p.groups - 1 ? occ - assigned : Math.round(occ * shares[g]);
+    for (var q = 0; q < k; q++) list.push(g + 1);
+    assigned += k;
+  }
+  while (list.length < n) list.push(0);
+  shuffle(list);
+  for (var i = 0; i < n; i++) this.cells[i] = list[i];
+  this.assignThresholds();
+  this.start = this.histogram();
+  this.startSimilar = this.meanSimilar();
+};
+
+// Everyone uses `want`, except an optional intolerant minority who use `wantHigh`.
+// Membership is fixed at reset; the two thresholds themselves can change live.
+Town.prototype.assignThresholds = function () {
+  var p = this.p, n = this.N * this.N;
+  for (var i = 0; i < n; i++) this.intol[i] = (this.cells[i] && p.intolerant > 0 && Math.random() < p.intolerant) ? 1 : 0;
+};
+Town.prototype.thrOf = function (i) { return this.intol[i] ? this.p.wantHigh : this.p.want; };
+
+// Fraction of occupied neighbours (within radius, square neighbourhood) that share group g,
+// imagining cell i occupied by g. `skip` is a cell to treat as empty (the mover's old home).
+Town.prototype.share = function (i, g, skip) {
+  var N = this.N, r = this.p.radius, x = i % N, y = (i / N) | 0, same = 0, tot = 0, c = this.cells;
+  for (var dy = -r; dy <= r; dy++) {
+    var yy = (y + dy + N) % N;
+    for (var dx = -r; dx <= r; dx++) {
+      if (!dx && !dy) continue;
+      var j = yy * N + (x + dx + N) % N;
+      if (j === skip) continue;
+      var v = c[j];
+      if (v) { tot++; if (v === g) same++; }
+    }
+  }
+  return tot ? same / tot : -1;      // -1: no neighbours at all
+};
+
+// How content household (with threshold lo, upper limit hi) would be with share f.
+// 1 = happy; otherwise negative, the further from the acceptable range the worse.
+function utility(f, lo, hi) {
+  if (f < 0) return 0.5;                         // alone: not unhappy, but not ideal either
+  if (f < lo) return -(lo - f);
+  if (f > hi) return -(f - hi);
+  return 1;
+}
+// Diversity seekers (after Pancs & Vriend 2007): everyone's ideal is a 50/50 neighbourhood.
+// Utility rises linearly to 1 at 50% similar, then falls with slope `asym`. asym = 2 is
+// symmetric (being in the majority is as bad as being in the minority); asym < 2 means
+// people mind being outnumbered more than they mind being in the majority.
+function peaked(f, asym) {
+  if (f < 0) return 0.5;
+  return f <= 0.5 ? f / 0.5 : 1 - (f - 0.5) * asym;
+}
+var CONTENT = 0.8;     // diversity mode: households below this utility are shown as unsatisfied
+Town.prototype.util = function (i, f) {
+  return this.p.diverse ? peaked(f, this.p.asym) : utility(f, this.thrOf(i), 2);
+};
+Town.prototype.unhappyAt = function (i, f) {
+  return this.p.diverse ? peaked(f, this.p.asym) < CONTENT : utility(f, this.thrOf(i), 2) <= 0;
+};
+Town.prototype.isHappy = function (i) {
+  return !this.unhappyAt(i, this.share(i, this.cells[i], -1));
+};
+
+Town.prototype.step = function () {
+  var p = this.p, N = this.N, n = N * N, c = this.cells;
+  var empties = [];
+  for (var i = 0; i < n; i++) if (!c[i]) empties.push(i);
+  // who wants to move this step: unhappy households, plus (if restless) a few happy ones
+  var movers = [];
+  for (i = 0; i < n; i++) {
+    if (!c[i]) continue;
+    if (p.diverse) {
+      // everyone not at their ideal keeps an eye out for something better (20% look each step)
+      if (Math.random() < 0.2 && this.util(i, this.share(i, c[i], -1)) < 1) movers.push(i);
+      continue;
+    }
+    if (!this.isHappy(i)) movers.push(i);
+    else if (p.restless > 0 && Math.random() < p.restless) movers.push(-1 - i);   // negative = restless move
+  }
+  shuffle(movers);
+  this.moves = []; this.stuck = 0;
+  for (var m = 0; m < movers.length; m++) {
+    i = movers[m];
+    var restlessMove = i < 0; if (restlessMove) i = -1 - i;
+    var g = c[i];
+    if (!g) continue;
+    var cur = this.util(i, this.share(i, g, -1));
+    var wasUnhappy = p.diverse ? cur < 1 : cur <= 0;
+    if (!wasUnhappy && !restlessMove) continue;      // someone else's move already made them happy
+    // candidate vacancies: anywhere, or only nearby
+    var cand = this.candidates(i, empties);
+    if (!cand.length) { if (wasUnhappy) this.stuck++; continue; }
+    var dest = -1;
+    if (p.smart || p.diverse) {
+      // look at a handful of vacancies and take the best (only if it beats staying put)
+      var best = -Infinity;
+      var k = Math.min(p.looks, cand.length);
+      for (var q = 0; q < k; q++) {
+        var e = cand[(Math.random() * cand.length) | 0];
+        var u = this.util(i, this.share(e, g, i));
+        if (u > best) { best = u; dest = e; }
+      }
+      if (!wasUnhappy) { /* restless: move to the best spot found if it is acceptable */ if (best <= 0) dest = -1; }
+      else if (best <= cur) dest = -1;
+    } else {
+      dest = cand[(Math.random() * cand.length) | 0];
+    }
+    if (dest < 0) { if (wasUnhappy) this.stuck++; continue; }
+    c[dest] = g; c[i] = 0;
+    this.intol[dest] = this.intol[i]; this.intol[i] = 0;
+    var ei = empties.indexOf(dest); empties[ei] = i;
+    this.moves.push({ from: i, to: dest, g: g });
+  }
+  this.t++;
+};
+
+Town.prototype.candidates = function (i, empties) {
+  var p = this.p;
+  if (!p.local) return empties;
+  var N = this.N, D = p.moveRadius, x = i % N, y = (i / N) | 0, out = [];
+  for (var dy = -D; dy <= D; dy++) for (var dx = -D; dx <= D; dx++) {
+    if (!dx && !dy) continue;
+    var j = ((y + dy + N) % N) * N + (x + dx + N) % N;
+    if (!this.cells[j]) out.push(j);
+  }
+  return out;
+};
+
+// Summary statistics.
+Town.prototype.stats = function () {
+  var n = this.N * this.N, c = this.cells, sum = 0, cnt = 0, unhappy = 0, allSame = 0, wantSum = 0, hh = 0;
+  var byGroup = {};
+  for (var i = 0; i < n; i++) {
+    if (!c[i]) continue;
+    hh++; wantSum += this.thrOf(i);
+    var f = this.share(i, c[i], -1);
+    var uh = this.unhappyAt(i, f);
+    if (uh) unhappy++;
+    if (f >= 0) {
+      sum += f; cnt++; if (f === 1) allSame++;
+      var bg = byGroup[c[i]] || (byGroup[c[i]] = { n: 0, unhappy: 0, sim: 0 });
+      bg.n++; bg.sim += f; if (uh) bg.unhappy++;
+    }
+  }
+  return { similar: cnt ? sum / cnt : 0, unhappy: hh ? unhappy / hh : 0, unhappyN: unhappy,
+           allSame: cnt ? allSame / cnt : 0, want: this.p.diverse ? 0.5 : (hh ? wantSum / hh : 0), households: hh, byGroup: byGroup };
+};
+Town.prototype.meanSimilar = function () { return this.stats().similar; };
+
+// Histogram of each household's share of similar neighbours (10 bins).
+Town.prototype.histogram = function () {
+  var h = new Float32Array(10), n = this.N * this.N, c = this.cells, tot = 0;
+  for (var i = 0; i < n; i++) {
+    if (!c[i]) continue;
+    var f = this.share(i, c[i], -1);
+    if (f < 0) continue;
+    h[Math.min(9, Math.floor(f * 10))]++; tot++;
+  }
+  for (var b = 0; b < 10; b++) h[b] = tot ? h[b] / tot : 0;
+  return h;
+};
+
+function shuffle(a) {
+  for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+/* ===================== MODEL-END ===================== */
+if (typeof module !== 'undefined') module.exports = { Town: Town, utility: utility, peaked: peaked };
+
+
+var $ = function (id) { return document.getElementById(id); };
+var DEFAULTS = { size: 40, vacancy: 0.1, groups: 2, majority: 0.5, want: 0.3, wantHigh: 0.75, intolerant: 0, radius: 1,
+                 smart: false, looks: 10, restless: 0, local: false, moveRadius: 3, diverse: false, asym: 1, speed: 4,
+                 mixedOn: false, unequalOn: false };
+var ADV_DEF = { intolerantVal: 0.1, majorityVal: 0.8 };
+var PRESETS = {
+  classic:  { label: 'Classic (30%)', set: { want: 0.3 }, desc: 'Schelling’s classic set-up. Households are happy as long as at least 3 of their 8 neighbours are like them, so they are fine being outnumbered 5 to 3.' },
+  tolerant: { label: 'Very tolerant (20%)', set: { want: 0.2 }, desc: 'Happy with just 2 of 8 neighbours alike. Some clustering, but the town stays fairly mixed.' },
+  half:     { label: 'Half and half (50%)', set: { want: 0.5 }, desc: 'Happy only if at least half of the neighbours are alike. Still not a wish to live apart, yet the town splits strongly.' },
+  strong:   { label: 'Strong (70%)', set: { want: 0.7 }, desc: 'A strong preference. The town separates almost completely, slowly, as the last mixed areas break up.' }
+};
+var P = Object.assign({}, DEFAULTS);
+var town = null;
+var state = { running: false, acc: 0, last: 0, histT: [], histU: [], inspect: -1, anim: [], colors: {} };
+var townCv = $('townCv'), tx = townCv.getContext('2d'), histCv = $('histCv'), hx = histCv.getContext('2d'), timeCv = $('timeCv'), tmx = timeCv.getContext('2d');
+
+function readColors() {
+  var cs = getComputedStyle(document.documentElement), c = {};
+  ['ink', 'ink-2', 'muted', 'line', 'road', 'plot', 'plot-empty', 'roof-shade', 'house-edge', 'g1', 'g2', 'g3', 'g4', 'surface'].forEach(function (k) { c[k] = cs.getPropertyValue('--' + k).trim(); });
+  c.dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  state.colors = c;
+}
+var NAMES = ['', 'blue', 'orange', 'teal', 'pink'];
+function gcol(g) { return state.colors['g' + g]; }
+
+/* ---------- Town layout: a square grid of plots (street gaps set to 0) ---------- */
+var L = {};
+function layout() {
+  var r = $('townwrap').getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+  L.w = Math.max(1, Math.round(r.width)); L.h = Math.max(1, Math.round(r.height)); L.d = d;
+  townCv.width = Math.round(L.w * d); townCv.height = Math.round(L.h * d);
+  var N = town.N, blocks = Math.ceil(N / 5);
+  var pad = 8;
+  // reserve room for HUD at top (step chip / key) on small screens
+  var top = L.w < 640 ? (P.groups > 2 ? 78 : 60) : 50, bottom = L.w < 640 ? 58 : 76 + (P.groups - 2) * 19;
+  var avail = Math.min(L.w - 2 * pad, L.h - top - bottom);
+  var street = 0;      // no streets: they play no part in the model, and bigger houses read better
+  L.cell = (avail - street * (blocks - 1)) / N;
+  L.street = street;
+  var total = N * L.cell + street * (blocks - 1);
+  L.ox = (L.w - total) / 2; L.oy = top + (L.h - top - bottom - total) / 2;
+}
+function cellXY(i) {
+  var N = town.N, x = i % N, y = (i / N) | 0;
+  return [L.ox + x * L.cell + Math.floor(x / 5) * L.street, L.oy + y * L.cell + Math.floor(y / 5) * L.street];
+}
+function cellAt(px, py) {
+  var N = town.N;
+  for (var x = 0; x < N; x++) { var cx0 = L.ox + x * L.cell + Math.floor(x / 5) * L.street; if (px >= cx0 && px < cx0 + L.cell) break; }
+  for (var y = 0; y < N; y++) { var cy0 = L.oy + y * L.cell + Math.floor(y / 5) * L.street; if (py >= cy0 && py < cy0 + L.cell) break; }
+  if (x >= N || y >= N) return -1;
+  return y * N + x;
+}
+
+function drawHouse(ctx, x, y, s, col, scale) {
+  var c = state.colors;
+  if (scale !== undefined && scale !== 1) { var cx0 = x + s / 2, cy0 = y + s / 2; s *= scale; x = cx0 - s / 2; y = cy0 - s / 2; }
+  if (s < 7) { ctx.fillStyle = col; ctx.fillRect(x + s * 0.08, y + s * 0.08, s * 0.84, s * 0.84); return; }
+  var m = s * 0.07, bw = s - 2 * m, roofH = s * 0.36, bodyY = y + m + roofH * 0.85, bodyH = y + s - m - bodyY;
+  // one outline path: walls + roof, so the house stands out from the plot
+  ctx.beginPath();
+  ctx.moveTo(x + m + bw * 0.08, y + s - m);
+  ctx.lineTo(x + m + bw * 0.08, bodyY);
+  ctx.lineTo(x + m - s * 0.01, bodyY);
+  ctx.lineTo(x + s / 2, y + m);
+  ctx.lineTo(x + s - m + s * 0.01, bodyY);
+  ctx.lineTo(x + s - m - bw * 0.08, bodyY);
+  ctx.lineTo(x + s - m - bw * 0.08, y + s - m);
+  ctx.closePath();
+  ctx.fillStyle = col; ctx.fill();
+  ctx.lineWidth = Math.max(0.8, s * 0.06); ctx.strokeStyle = c['house-edge']; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = c['roof-shade'];
+  ctx.beginPath(); ctx.moveTo(x + s / 2, y + m + 1); ctx.lineTo(x + s - m - s * 0.02, bodyY - 0.5); ctx.lineTo(x + s / 2, bodyY - 0.5); ctx.closePath(); ctx.fill();
+  if (s >= 12) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x + s / 2 - s * 0.07, bodyY + bodyH * 0.45, s * 0.14, bodyH * 0.55); }
+}
+
+function drawTown() {
+  if (!town) return;
+  var c = state.colors, d = L.d, N = town.N, n = N * N, s = L.cell, now = performance.now();
+  tx.setTransform(1, 0, 0, 1, 0, 0);
+  tx.fillStyle = c.road; tx.fillRect(0, 0, townCv.width, townCv.height);
+  tx.setTransform(d, 0, 0, d, 0, 0);
+  // plots
+  for (var i = 0; i < n; i++) {
+    var p = cellXY(i);
+    tx.fillStyle = town.cells[i] ? c.plot : c['plot-empty'];
+    tx.fillRect(p[0] + 0.5, p[1] + 0.5, s - 1, s - 1);
+  }
+  // animation state for recent moves
+  var fresh = {}, ghosts = [];
+  state.anim = state.anim.filter(function (a) { return now - a.t0 < 500; });
+  state.anim.forEach(function (a) { var k = (now - a.t0) / 500; fresh[a.to] = k; ghosts.push([a.from, a.g, k]); });
+  // houses
+  for (i = 0; i < n; i++) {
+    var g = town.cells[i]; if (!g) continue;
+    p = cellXY(i);
+    var k = fresh[i];
+    drawHouse(tx, p[0], p[1], s, gcol(g), k === undefined ? 1 : 0.4 + 0.6 * easeOut(k));
+  }
+  // ghosts of houses that just left
+  ghosts.forEach(function (gh) {
+    var q = cellXY(gh[0]);
+    tx.globalAlpha = 0.6 * (1 - gh[2]);
+    drawHouse(tx, q[0], q[1], s, gcol(gh[1]), 1 - 0.3 * gh[2]);
+    tx.globalAlpha = 1;
+  });
+  // unhappy badges
+  var br = Math.max(2.2, s * 0.17);
+  for (i = 0; i < n; i++) {
+    if (!town.cells[i] || town.isHappy(i)) continue;
+    p = cellXY(i);
+    var bx = p[0] + s - br - 0.5, by = p[1] + br + 0.5;
+    tx.beginPath(); tx.arc(bx, by, br, 0, Math.PI * 2);
+    tx.fillStyle = '#ffffff'; tx.fill();
+    tx.lineWidth = Math.max(1, br * 0.38); tx.strokeStyle = '#1b1b1b'; tx.stroke();
+  }
+  // inspected household: outline its neighbourhood
+  if (state.inspect >= 0) {
+    var r = P.radius, ix = state.inspect % N, iy = (state.inspect / N) | 0;
+    tx.lineWidth = 2.5; tx.strokeStyle = c.dark ? '#ffffff' : '#111111';
+    for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+      var j = ((iy + dy + N) % N) * N + (ix + dx + N) % N;
+      var qq = cellXY(j);
+      tx.setLineDash(dx || dy ? [3, 3] : []);
+      tx.strokeRect(qq[0] + 1, qq[1] + 1, s - 2, s - 2);
+    }
+    tx.setLineDash([]);
+  }
+}
+function easeOut(k) { return 1 - (1 - k) * (1 - k); }
+
+/* ---------- Charts ---------- */
+function sizeChart(cv) {
+  var r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
+  return d;
+}
+function drawHist() {
+  var d = sizeChart(histCv), c = state.colors, W = histCv.width / d, H = histCv.height / d;
+  hx.setTransform(d, 0, 0, d, 0, 0); hx.clearRect(0, 0, W, H);
+  var h = town.histogram(), h0 = town.start, padB = 18, padL = 2, ph = H - padB - 6;
+  var maxv = 0.0001; for (var b = 0; b < 10; b++) maxv = Math.max(maxv, h[b], h0[b]);
+  var bw = (W - padL) / 10;
+  for (b = 0; b < 10; b++) {
+    var x = padL + b * bw;
+    var y1 = 6 + ph * (1 - h[b] / maxv);
+    hx.fillStyle = c['ink-2']; hx.beginPath(); hx.rect(x + 2, y1, bw - 4, H - padB - y1); hx.fill();
+    var y0 = 6 + ph * (1 - h0[b] / maxv);
+    hx.strokeStyle = c.muted; hx.lineWidth = 1.5; hx.strokeRect(x + 2.5, y0, bw - 5, H - padB - y0);
+  }
+  // wanted marker
+  var want = P.diverse ? 0.5 : P.want;
+  var wx = padL + want * (W - padL);
+  hx.strokeStyle = c.g2; hx.lineWidth = 2; hx.setLineDash([4, 3]);
+  hx.beginPath(); hx.moveTo(wx, 2); hx.lineTo(wx, H - padB); hx.stroke(); hx.setLineDash([]);
+  hx.fillStyle = c.muted; hx.font = '11px Outfit, sans-serif'; hx.textBaseline = 'top';
+  hx.textAlign = 'left'; hx.fillText('0% alike', 0, H - padB + 4);
+  hx.textAlign = 'right'; hx.fillText('100% alike', W, H - padB + 4);
+}
+function drawTime() {
+  var d = sizeChart(timeCv), c = state.colors, W = timeCv.width / d, H = timeCv.height / d;
+  tmx.setTransform(d, 0, 0, d, 0, 0); tmx.clearRect(0, 0, W, H);
+  var padL = 38, padB = 16, pw = W - padL - 4, ph = H - padB - 6;
+  tmx.strokeStyle = c.line; tmx.lineWidth = 1; tmx.fillStyle = c.muted; tmx.font = '11px Outfit, sans-serif'; tmx.textAlign = 'right'; tmx.textBaseline = 'middle';
+  [0, 0.5, 1].forEach(function (v) { var y = 6 + ph * (1 - v); tmx.beginPath(); tmx.moveTo(padL, y + 0.5); tmx.lineTo(W - 4, y + 0.5); tmx.stroke(); tmx.fillText(Math.round(v * 100) + '%', padL - 5, y); });
+  var T = state.histT, U = state.histU, n = T.length;
+  if (n < 2) return;
+  var span = Math.max(20, n - 1);
+  function line(arr, col, w) {
+    tmx.beginPath();
+    for (var k = 0; k < n; k++) { var x = padL + k / span * pw, y = 6 + ph * (1 - arr[k]); if (k) tmx.lineTo(x, y); else tmx.moveTo(x, y); }
+    tmx.strokeStyle = col; tmx.lineWidth = w; tmx.lineJoin = 'round'; tmx.stroke();
+  }
+  line(U, c.g2, 2); line(T, c.ink, 2.2);
+  tmx.textAlign = 'left'; tmx.textBaseline = 'top'; tmx.fillStyle = c.muted;
+  tmx.fillText('round ' + (n - 1), padL, H - padB + 3);
+}
+
+/* ---------- Results text ---------- */
+function updateResults() {
+  var S = town.stats();
+  var want = S.want;
+  $('hWant').textContent = Math.round(want * 100) + '%';
+  $('hWantLab').textContent = P.diverse ? 'similar neighbours everyone would ideally have (a 50/50 mix)'
+    : (P.mixedOn ? 'average similar neighbours needed to be happy (some need more)' : 'similar neighbours each household needs to be happy');
+  $('hGot').textContent = Math.round(S.similar * 100) + '%';
+  var note;
+  if (town.t === 0) note = 'A randomly mixed town starts at about ' + Math.round(town.startSimilar * 100) + '% similar. Press Start and watch the right-hand number.';
+  else if (P.diverse) note = S.similar > 0.56 ? 'Everyone wants a 50/50 mix, yet neighbourhoods have become more one-colour than at the start.' : 'The town is still mixed: so far nobody has drifted into one-colour areas.';
+  else if (S.similar - want > 0.25) note = 'Households end up with far more similar neighbours than they asked for. Nobody chose this outcome.';
+  else note = 'The town has changed less than you might expect.';
+  if (S.unhappyN === 0 && town.t > 0 && !P.restless && !P.diverse) note += ' Everyone is now happy, so nobody moves.';
+  $('hNote').textContent = note;
+  $('sUnhappy').textContent = Math.round(S.unhappy * 100) + '%';
+  $('sAllSame').textContent = Math.round(S.allSame * 100) + '%';
+  $('sMoves').textContent = town.moves.length;
+  $('sStuck').textContent = P.diverse ? '\u2013' : (town.stuck || 0);
+  $('sRound').textContent = town.t;
+  updateInspect();
+  return S;
+}
+function updateInspect() {
+  var i = state.inspect, box = $('inspect');
+  if (i < 0) { box.innerHTML = 'Click any house in the town to see its neighbourhood and why it is happy or not.'; return; }
+  var g = town.cells[i];
+  if (!g) { box.innerHTML = 'That is an <b>empty home</b>. Unhappy households can move here.'; return; }
+  var N = town.N, r = P.radius, x = i % N, y = (i / N) | 0, same = 0, tot = 0;
+  for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+    if (!dx && !dy) continue;
+    var v = town.cells[((y + dy + N) % N) * N + (x + dx + N) % N];
+    if (v) { tot++; if (v === g) same++; }
+  }
+  var f = tot ? same / tot : -1, happy = town.isHappy(i);
+  var html = 'A <b style="color:' + gcol(g) + '">' + NAMES[g] + '</b> household with <b>' + tot + '</b> neighbours, <b>' + same + '</b> of them ' + NAMES[g] + ' (' + (f < 0 ? 'none' : Math.round(f * 100) + '%') + ').<br>';
+  if (P.diverse) html += 'It would ideally have a 50/50 mix. ' + (happy ? 'It is <b>reasonably satisfied</b>.' : 'It is <b>not satisfied</b> and will move if it finds somewhere closer to 50/50.');
+  else {
+    var th = town.thrOf(i);
+    html += 'It needs at least <b>' + Math.round(th * 100) + '%</b>' + (town.intol[i] ? ' (one of the intolerant minority)' : '') + ', so it is <b>' + (happy ? 'happy and stays' : 'unhappy and will move') + '</b>.';
+  }
+  box.innerHTML = html;
+}
+
+/* ---------- Simulation control ---------- */
+function newTown() {
+  town = new Town(P);
+  town.reset();
+  state.histT = [town.startSimilar]; state.histU = [town.stats().unhappy];
+  state.inspect = -1; state.anim = [];
+  layout(); drawAll(); setRunning(false);
+}
+function drawAll() { drawTown(); drawHist(); drawTime(); updateResults(); }
+function stepOnce() {
+  town.step();
+  var now = performance.now();
+  if (town.moves.length < 400) town.moves.forEach(function (m) { state.anim.push({ from: m.from, to: m.to, g: m.g, t0: now }); });
+  var S = town.stats();
+  state.histT.push(S.similar); state.histU.push(S.unhappy);
+  drawHist(); drawTime(); updateResults();
+  if (state.running && town.moves.length === 0 && !P.restless && !(P.diverse) && S.unhappyN === 0) setRunning(false);
+}
+var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1"/></svg>';
+function setRunning(on) {
+  state.running = on;
+  var b = $('playBtn');
+  b.innerHTML = on ? ICON_PAUSE + 'Pause' : ICON_PLAY + (town && town.t > 0 ? 'Resume' : 'Start');
+  b.classList.toggle('go', !on);
+  $('stepBtn').disabled = on;
+}
+function frame(ts) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.25, (ts - (state.last || ts)) / 1000); state.last = ts;
+  if (!town) return;
+  if (state.running) {
+    state.acc += dt * P.speed;
+    var k = 0;
+    while (state.acc >= 1 && k < 4) { stepOnce(); state.acc -= 1; k++; }
+  }
+  drawTown();
+}
+$('playBtn').addEventListener('click', function () { setRunning(!state.running); });
+$('stepBtn').addEventListener('click', function () { stepOnce(); setRunning(false); });
+$('resetBtn').addEventListener('click', newTown);
+townCv.addEventListener('pointerdown', function (e) {
+  var r = townCv.getBoundingClientRect();
+  var i = cellAt(e.clientX - r.left, e.clientY - r.top);
+  state.inspect = i === state.inspect ? -1 : i;
+  updateInspect(); drawTown();
+  if (window.innerWidth <= 1000 && i >= 0) $('inspectCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+/* ---------- Controls ---------- */
+function pct(v) { return Math.round(v * 100) + '%'; }
+var CTL = {
+  want:       { fmt: function (v) { return pct(v) + ' alike'; }, live: true },
+  vacancy:    { fmt: pct, rebuild: true },
+  size:       { fmt: function (v) { return v + ' × ' + v; }, rebuild: true, int: true },
+  speed:      { fmt: function (v) { return v + ' rounds/s'; }, live: true, int: true },
+  intolerant: { fmt: pct, rebuild: true },
+  wantHigh:   { fmt: function (v) { return pct(v) + ' alike'; }, live: true },
+  majority:   { fmt: function (v) { return pct(v) + ' blue / ' + pct(1 - v) + ' orange'; }, rebuild: true },
+  groups:     { fmt: function (v) { return v; }, rebuild: true, int: true },
+  asym:       { fmt: function (v) { return v >= 2 ? 'no worse' : (v >= 1.5 ? 'a bit worse' : v >= 1 ? 'twice as bad' : 'much worse'); }, rebuild: true },
+  looks:      { fmt: function (v) { return v; }, live: true, int: true },
+  restless:   { fmt: function (v) { return v === 0 ? 'off' : pct(v) + ' per round'; }, live: true },
+  moveRadius: { fmt: function (v) { return v + (v === 1 ? ' home' : ' homes'); }, live: true, int: true },
+  radius:     { fmt: function (v) { var k = (2 * v + 1) * (2 * v + 1) - 1; return k + ' neighbours'; }, rebuild: true, int: true }
+};
+function syncControls() {
+  Object.keys(CTL).forEach(function (k) { $('c-' + k).value = P[k]; $('o-' + k).textContent = CTL[k].fmt(P[k]); });
+  var k8 = (2 * P.radius + 1) * (2 * P.radius + 1) - 1;
+  $('wantHint').textContent = P.diverse ? 'Not used while "diversity seekers" is on.' :
+    'of a household’s neighbours are its own colour (with ' + k8 + ' neighbours that means at least ' + Math.ceil(P.want * k8 - 1e-9) + ' of ' + k8 + ', when all homes around are occupied). This can be changed while the town runs.';
+  $('c-want').disabled = P.diverse;
+  $('t-mixed').checked = P.mixedOn; $('sub-mixed').classList.toggle('off', !P.mixedOn);
+  $('t-unequal').checked = P.unequalOn; $('sub-unequal').classList.toggle('off', !P.unequalOn || P.groups !== 2);
+  $('t-diverse').checked = P.diverse; $('sub-diverse').classList.toggle('off', !P.diverse);
+  $('t-smart').checked = P.smart || P.diverse; $('t-smart').disabled = P.diverse; $('sub-smart').classList.toggle('off', !(P.smart || P.diverse));
+  $('t-local').checked = P.local; $('sub-local').classList.toggle('off', !P.local);
+  // key
+  var html = '';
+  for (var g = 1; g <= P.groups; g++) html += '<span><i class="kh" style="background:' + gcol(g) + '"></i><b class="kl">' + NAMES[g] + ' household</b><b class="ks">' + NAMES[g] + '</b></span>';
+  html += '<span><i class="kh" style="background:var(--plot-empty);outline:1px solid var(--line)"></i><b class="kl">empty home</b><b class="ks">empty</b></span><span><i class="kbadge"></i>wants to move</span>';
+  $('keybox').innerHTML = html;
+}
+function clearPresetMark() { document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.remove('on'); }); }
+Object.keys(CTL).forEach(function (k) {
+  $('c-' + k).addEventListener('input', function (e) {
+    var v = CTL[k].int ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
+    P[k] = v; $('o-' + k).textContent = CTL[k].fmt(v);
+    if (k !== 'speed') clearPresetMark();
+    if (CTL[k].rebuild) { var was = state.running; newTown(); setRunning(was); }
+    else { syncControls(); drawAll(); }
+  });
+});
+function advToggle(id, fn) { $(id).addEventListener('change', function (e) { fn(e.target.checked); clearPresetMark(); syncControls(); var was = state.running; newTown(); setRunning(was); }); }
+advToggle('t-mixed', function (on) { P.mixedOn = on; P.intolerant = on ? (P.intolerant || ADV_DEF.intolerantVal) : 0; });
+advToggle('t-unequal', function (on) { P.unequalOn = on; P.majority = on ? Math.max(0.55, P.majority === 0.5 ? ADV_DEF.majorityVal : P.majority) : 0.5; if (on) P.groups = 2; });
+advToggle('t-diverse', function (on) { P.diverse = on; });
+advToggle('t-smart', function (on) { P.smart = on; });
+advToggle('t-local', function (on) { P.local = on; });
+$('c-groups').addEventListener('input', function () { if (P.groups !== 2) { P.unequalOn = false; P.majority = 0.5; } syncControls(); });
+$('c-intolerant').addEventListener('input', function () { P.mixedOn = true; syncControls(); });
+$('advReset').addEventListener('click', function () { advOff(); syncControls(); newTown(); });
+function advOff() {
+  Object.assign(P, { mixedOn: false, intolerant: 0, wantHigh: 0.75, unequalOn: false, majority: 0.5, groups: 2, diverse: false, asym: 1,
+                     smart: false, looks: 10, restless: 0, local: false, moveRadius: 3, radius: 1 });
+}
+
+function renderPresets() {
+  var box = $('presets');
+  Object.keys(PRESETS).forEach(function (key) {
+    var b = document.createElement('button');
+    b.className = 'chip'; b.textContent = PRESETS[key].label; b.title = PRESETS[key].desc; b.dataset.preset = key;
+    b.addEventListener('click', function () { applyPreset(key); });
+    box.appendChild(b);
+  });
+}
+function applyPreset(key) {
+  advOff();
+  Object.assign(P, PRESETS[key].set);
+  document.querySelectorAll('#presets .chip').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === key); });
+  $('presetDesc').textContent = PRESETS[key].desc;
+  syncControls(); newTown();
+}
+
+/* ---------- Theme / panel / about / keys ---------- */
+$('themeBtn').addEventListener('click', function () {
+  var t = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('schelling-theme', t); } catch (e) {}
+  readColors(); syncControls(); drawAll();
+});
+$('panelBtn').addEventListener('click', function () { $('layout').classList.toggle('panel-hidden'); setTimeout(function () { layout(); drawAll(); }, 0); });
+var about = $('about');
+$('aboutBtn').addEventListener('click', function () { if (about.showModal) about.showModal(); else about.setAttribute('open', ''); });
+$('aboutClose').addEventListener('click', function () { about.close ? about.close() : about.removeAttribute('open'); });
+about.addEventListener('click', function (e) { if (e.target === about) about.close(); });
+document.addEventListener('keydown', function (e) {
+  if (about.open) return;
+  var tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === ' ' && tag !== 'button') { setRunning(!state.running); e.preventDefault(); }
+  else if (story.on && e.key === 'ArrowRight') storyGo(story.step + 1);
+  else if (story.on && e.key === 'ArrowLeft') storyGo(story.step - 1);
+  else if (story.on && e.key === 'Escape') endStory();
+  else if (e.key === 'ArrowRight' && !state.running) stepOnce();
+});
+
+/* =====================================================================
+   Guided story
+   ===================================================================== */
+var story = { on: false, step: 0 };
+function storyBase(extra) {
+  advOff(); Object.assign(P, { want: 0.3, vacancy: 0.1, size: 40, speed: 3 }, extra || {});
+  clearPresetMark(); syncControls(); newTown();
+}
+function btn(label, fn, primary) {
+  var b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = label;
+  b.addEventListener('click', fn); return b;
+}
+function pickUnhappy() {
+  var n = town.N * town.N, best = -1;
+  for (var i = 0; i < n; i++) if (town.cells[i] && !town.isHappy(i)) { var x = i % town.N, y = (i / town.N) | 0; if (x > 4 && y > 4 && x < town.N - 5 && y < town.N - 5) { best = i; break; } }
+  return best;
+}
+var STORY = [
+  { title: 'A mixed town',
+    text: function () { return '<p>This is a town of <b>blue</b> and <b>orange</b> households, scattered at random, with a few empty homes. The colours could stand for any visible difference. Schelling had racial segregation in US cities in mind.</p><p>Right now the town is thoroughly mixed: on average, about <b>half</b> of each household’s neighbours are its own colour.</p>'; },
+    enter: function () { storyBase(); } },
+  { title: 'A very mild preference',
+    text: function () { var S = town.stats(); return '<p>Each household follows one rule: <b>I’m happy as long as at least 30% of my neighbours are like me.</b> That is, at least 3 of the 8 homes around me. They are quite content to be outnumbered.</p><p>Even in this random mix, some households fall short. The <b>white badges</b> mark the ' + Math.round(S.unhappy * 100) + '% who are unhappy. The highlighted house is one of them: its 8 neighbours are outlined.</p>'; },
+    enter: function () { if (story.fromBack || town.t > 0) storyBase(); state.inspect = pickUnhappy(); updateInspect(); } },
+  { title: 'Unhappy households move',
+    text: function () { return '<p>Each round, every unhappy household moves to a random empty home. Press <b>Start</b> and watch.</p><p>Each move changes the neighbourhood the household leaves and the one it joins, which can make other households unhappy in turn.</p>'; },
+    extra: function (ex) { ex.appendChild(btn('Start', function () { setRunning(true); }, true)); },
+    enter: function () { if (story.fromBack) storyBase(); state.inspect = -1; } },
+  { title: 'The surprise',
+    text: function () { var S = town.stats(); return '<p>Look at the numbers on the right. Households asked for just <b>30%</b> similar neighbours. They now have <b>' + Math.round(S.similar * 100) + '%</b> on average, and ' + Math.round(S.allSame * 100) + '% have no neighbours of the other colour at all.</p><p>Nobody wanted a divided town, but that is what their combined moves produced. The histogram shows how the spread of neighbourhoods has shifted.</p>'; },
+    enter: function () { if (town.t === 0 || story.fromBack) { storyBase(); for (var k = 0; k < 60; k++) town.step(); town.moves = []; var S = town.stats(); state.histT.push(S.similar); state.histU.push(S.unhappy); drawAll(); } setRunning(false); } },
+  { title: 'Small changes, big jumps',
+    text: function () { return '<p>Try different preferences. In our tests, needing <b>25%</b> (2 of 8) left the town at about 57% similar. Needing <b>30%</b> (3 of 8) gave 74%, and <b>50%</b> gave 85%.</p><p>The jump between 25% and 30% happens because each household only has 8 neighbours, so a small change in the rule can tip the whole town.</p>'; },
+    extra: function (ex) {
+      [[0.25, '25%'], [0.3, '30%'], [0.5, '50%']].forEach(function (w) {
+        ex.appendChild(btn('Run with ' + w[1], function () { storyBase({ want: w[0] }); setRunning(true); }, false));
+      });
+    } },
+  { title: 'What this does and does not show',
+    text: function () { return '<p>Schelling’s point was that <b>strong segregation can emerge from mild preferences</b>, without anyone intending it. Patterns in a town do not necessarily reflect the wishes of the individuals in it.</p><p>The model does not show that real segregation arises this way. Housing costs, discrimination, history and policy all matter a great deal. Models like this help researchers ask which mechanisms are <i>enough</i> to produce the patterns we see.</p>'; } },
+  { title: 'Going further',
+    text: function () { return '<p>The <b>Advanced options</b> panel contains variations studied since Schelling:</p><p><b>Mixed preferences</b> (a few intolerant households), <b>unequal groups</b>, <b>diversity seekers</b> (everyone ideally wants a 50/50 mix), <b>choosy movers</b>, <b>restlessness</b>, and <b>moving only nearby</b>.</p><p>One surprise: in this model, a little restlessness makes the town <i>more</i> divided, not less.</p>'; },
+    extra: function (ex) {
+      ex.appendChild(btn('Open advanced options', function () { endStory(); $('layout').classList.remove('panel-hidden'); $('adv').open = true; $('adv').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(function () { layout(); drawAll(); }, 0); }, true));
+      ex.appendChild(btn('Explore on my own', function () { endStory(); }));
+    } }
+];
+function renderStory() {
+  var s = STORY[story.step];
+  $('storyStep').textContent = 'Step ' + (story.step + 1) + ' of ' + STORY.length;
+  $('storyTitle').textContent = s.title;
+  $('storyText').innerHTML = s.text();
+  var ex = $('storyExtra'); ex.innerHTML = ''; if (s.extra) s.extra(ex);
+  $('storyPrev').disabled = story.step === 0;
+  $('storyNext').classList.toggle('hidden', story.step === STORY.length - 1);
+  var dots = $('storyDots').children;
+  for (var i = 0; i < dots.length; i++) dots[i].className = i === story.step ? 'on' : (i < story.step ? 'done' : '');
+}
+function storyGo(i) {
+  if (i < 0 || i >= STORY.length) return;
+  story.fromBack = i < story.step; story.step = i;
+  if (STORY[i].enter) STORY[i].enter();
+  story.fromBack = false;
+  renderStory(); drawTown();
+}
+function startStory() {
+  story.on = true; $('stage').classList.add('touring'); $('story').classList.remove('hidden');
+  var dots = $('storyDots'); dots.innerHTML = '';
+  STORY.forEach(function (_, i) { var b = document.createElement('button'); b.setAttribute('aria-label', 'Go to step ' + (i + 1)); b.addEventListener('click', function () { storyGo(i); }); dots.appendChild(b); });
+  story.step = 0; storyGo(0);
+  if (window.innerWidth <= 1000) $('story').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function endStory() { story.on = false; $('stage').classList.remove('touring'); $('story').classList.add('hidden'); }
+$('storyBtn').addEventListener('click', function () { story.on ? endStory() : startStory(); });
+$('storyClose').addEventListener('click', endStory);
+$('storyPrev').addEventListener('click', function () { storyGo(story.step - 1); });
+$('storyNext').addEventListener('click', function () { storyGo(story.step + 1); });
+// keep story text numbers fresh while it runs
+setInterval(function () { if (story.on && (story.step === 3)) $('storyText').innerHTML = STORY[3].text(); }, 600);
+
+/* ---------- Boot ---------- */
+readColors();
+renderPresets();
+syncControls();
+newTown();
+window.addEventListener('resize', function () { layout(); drawAll(); });
+if (window.ResizeObserver) new ResizeObserver(function () { layout(); drawTown(); }).observe($('townwrap'));
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

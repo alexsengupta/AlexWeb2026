@@ -151,14 +151,14 @@ Accessed via `app_playground.html`. Self-contained HTML/JS apps:
 | Directory | Simulation |
 |-----------|-----------|
 | `estuary/` | 2-layer and 3-layer estuary circulation models |
-| `flocking/` | Boids flocking behaviour variants |
+| `flocking/` | Moved: rebuilt app is `apps/flocking/`, old versions in `old_apps/flocking/` |
 | `waves/` | Wave propagation models (w1--w7) |
 | `predator_prey/` | Lotka-Volterra predator-prey dynamics |
 | `monte_carlo_simulation/` | Monte Carlo sampling demonstrations |
 | `coral_lagoon/` | Multi-year coral bleaching model |
 | `counterintuitive_correlations/` | Correlation visualisation |
-| `traffic_model/` | Motorway traffic simulation |
-| `schelling_model/` | Schelling segregation model |
+| `traffic_model/` | Moved: rebuilt app is `apps/traffic/`, old version in `old_apps/traffic_model/` |
+| `schelling_model/` | Moved: rebuilt app is `apps/schelling/`, old version in `old_apps/schelling_model/` |
 | `seasonality/` | Seasonal cycle explorer |
 | `syntheticSST/` | Synthetic sea surface temperature generator |
 

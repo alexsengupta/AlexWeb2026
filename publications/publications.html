@@ -7,6 +7,12 @@
   <title>Alex Sen Gupta - Paper Browser</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    .md-body h4 { font-weight: 600; font-size: 1.05rem; margin: 1.1em 0 0.35em; color: #111827; }
+    .md-body h4:first-child { margin-top: 0; }
+    .md-body p { margin: 0 0 0.8em; }
+    .md-body ul, .md-body ol { margin: 0 0 0.8em 1.3em; }
+    .md-body ul { list-style: disc; } .md-body ol { list-style: decimal; }
+    .md-body li { margin: 0.25em 0; }
     /* Color Variables - Earthy Forest Green/Terracotta/Brown Theme */
     :root {
       --primary: #1e5245;
@@ -616,8 +622,12 @@
           }
 
           if (inSection) {
-            if (line.startsWith('##') || line === '---') {
-              break; // End of section
+            if (section === 'summary') {
+              if (line.startsWith('##') || line.trim() === '---') break; // End of section
+            } else {
+              // The briefing can contain its own headings and '---' rules; it runs to the source note
+              if (/^\*Source:/.test(line.trim())) break;
+              if (line.trim() === '---') continue;
             }
             if (line.trim()) {
               sectionLines.push(line);
@@ -630,6 +640,26 @@
         console.error('Error fetching MD content:', err);
         return 'Failed to load content.';
       }
+    }
+
+    // Minimal Markdown for the summaries: headings, bold/italic, bullet and numbered lists, paragraphs
+    function mdToHtml(text) {
+      const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
+      const out = [];
+      let list = null;
+      const close = () => { if (list) { out.push('</' + list + '>'); list = null; } };
+      String(text || '').split('\n').forEach((raw) => {
+        const line = raw.trim();
+        if (!line) return;
+        let m;
+        if ((m = line.match(/^#{1,6}\s+(.*)$/))) { close(); out.push('<h4>' + inline(m[1]) + '</h4>'); }
+        else if ((m = line.match(/^[-*•]\s+(.*)$/))) { if (list !== 'ul') { close(); out.push('<ul>'); list = 'ul'; } out.push('<li>' + inline(m[1]) + '</li>'); }
+        else if ((m = line.match(/^\d+[.)]\s+(.*)$/))) { if (list !== 'ol') { close(); out.push('<ol>'); list = 'ol'; } out.push('<li>' + inline(m[1]) + '</li>'); }
+        else { close(); out.push('<p>' + inline(line) + '</p>'); }
+      });
+      close();
+      return out.join('');
     }
 
     function ContentModal({ open, onClose, title, content, loading }) {
@@ -649,7 +679,7 @@
                   </div>
                 ) : (
                   <div className="prose prose-sm md:prose max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{content}</div>
+                    <div className="text-gray-900 leading-relaxed md-body" dangerouslySetInnerHTML={{ __html: mdToHtml(content) }}></div>
                   </div>
                 )}
               </div>

@@ -5,7 +5,7 @@ A rebuilt app goes into `apps/<name>/index.html`. It becomes the "master" versio
 
 Status key: ⬜ not started · 🔍 reviewed · 🛠️ rebuilt, awaiting your check · ✅ signed off and linked from the site
 
-_Last updated: 23 Oct 2026 (4 of ~40 apps done)_
+_Last updated: 16 Nov 2026 (6 of ~40 apps done)_
 
 ## Progress
 
@@ -15,6 +15,8 @@ _Last updated: 23 Oct 2026 (4 of ~40 apps done)_
 | 2 | Phantom traffic jams (was Motorway traffic) | was `simulations/traffic_model/` (now `old_apps/traffic_model/`) | ✅ | `apps/traffic/` | Live 18 Oct. Linked from Academic Apps ("Traffic Jam" card) and Vibing (button). |
 | 3 | Schelling's town (was Schelling Segregation Model) | was `simulations/schelling_model/` (now `old_apps/schelling_model/`) | ✅ | `apps/schelling/` | Live 20 Oct. Linked from Academic Apps (card). |
 | 4 | Why marine heatwaves accelerate (was MHW acceleration explainer) | was `simulations/MHW_acceleration/` (now `old_apps/MHW_acceleration/`, including the unused .nc files) | ✅ | `apps/mhw/` | Live 23 Oct. Linked from Academic Apps (card) and the MHW hub page (`MarineHeatwaves/mhw.html`). |
+| 5 | Research group (was honeycomb) | was `students/research_group_honeycomb.html` (now `old_apps/research_group_honeycomb/`) | ✅ | `students/research_group.html` + `research_group.json` | Live 16 Nov. Linked from the homepage (index.html and js/homepage.js). |
+| 6 | Climate indicators (was Climate indices dashboard) | was `climate indices/index.html` (now `old_apps/climate_indices_dashboard/`; data and `climate_dashboard.py` stay in `climate indices/`) | ✅ | `apps/climate-indices/` | Live 16 Nov. Opens from the homepage "Climate Indices" pop-up. ONI download fix confirmed on the VM. |
 
 ## Notes for later
 
@@ -40,6 +42,14 @@ _Last updated: 23 Oct 2026 (4 of ~40 apps done)_
 | Predator–prey model | `simulations/predator_prey/pred_prey_model.html` | ⬜ |
 | Conceptual models (AI Rabbit Hole) | `AIrabbithole/conceptual_models.html` | ⬜ |
 
+### Virtual reality (separate repo: `alexsengupta/quest`, served by GitHub Pages at https://alexsengupta.github.io/quest/; linked from Academic Apps)
+| App | Location | Status |
+|-----|----------|--------|
+| Science in VR landing page | Quest repo `index.html` | ⬜ |
+| Planetary energy balance (VR) | Quest repo `index_energybalance.html` | ⬜ |
+| Bushfire spread (VR) | Quest repo `index_bushfire.html` | ⬜ |
+| Fish school (VR) | Quest repo `index_fishschool.html` | ⬜ |
+
 ### Marine heatwaves
 | App | Current location | Status |
 |-----|------------------|--------|
@@ -52,14 +62,12 @@ _Last updated: 23 Oct 2026 (4 of ~40 apps done)_
 ### Homepage tools and other pages
 | App | Current location | Status |
 |-----|------------------|--------|
-| Climate indices dashboard | `climate indices/index.html` | ⬜ |
 | AI Brief (homepage pop-up + archive) | `index.html` + `ai_brief/` | ⬜ |
 | AI scaling / model growth | `AI_model_growth/index.html` | ⬜ |
 | Carbonator (original) | `Carbonator.html` | ⬜ |
 | Publications paper browser | `publications/publications.html` | ⬜ |
 | Teaching portfolio | `teaching/teaching_portfolio.html` | ⬜ |
 | BEES course map | `teaching/bees_course_maps/course_map.html` | ⬜ |
-| Research group honeycomb | `students/research_group_honeycomb.html` | ⬜ |
 | Scientific schematics gallery | `schematics/index.html` | ⬜ |
 | Seminars | `seminars/index.html` | ⬜ |
 | AI Slop | `AI_SLOP/index.html` | ⬜ |
@@ -342,3 +350,36 @@ A random town starts at about 50%. The jump between 25% and 30% is the step from
 Toy checks: one peak gives a straight line (about 14 days per 0.1 °C) and intensity = 1.75 + μ; three peaks cross at μ = 0.25 and 0.55, with average duration and intensity dropping at each crossing; many peaks give a smooth acceleration, events rising to about 10 then falling to 1 as everything merges by μ ≈ 1.7.
 
 Tested at 1440×900, 820×1180 and 390×844 in both themes: no script errors, no horizontal scrolling.
+
+## 5. Research group (`students/research_group.html`)
+
+- Honeycomb replaced by photo tiles: current members first, alumni below (most recent first). Hover lifts and tilts the tile and slides up the project and "now"; click opens a profile card. Phones: two tiles per row, tap opens the profile.
+- Data moved to `research_group.json` (new schema: type, status, years, title, area, research, now, earlier[], theme). Duplicate entries for people with two degrees merged (Mike, Annette, Yue).
+- Updated 15–16 Nov 2026: added Ronak Rathore, Erika Lehmann (surname to confirm), Leon Jin, Chenyu Zheng; moved Zhaohui, Mike Eabry, Rosa, Tom Schmaltz, Siying Liu to alumni.
+- Fixed: Anand's photo never loaded on the server (case-sensitive filename). Photos now 360 px thumbnails in `students/photos/` (336 KB instead of ~10 MB).
+- To confirm: Tom's and Siying's finishing years.
+
+## 6. Climate indicators (`apps/climate-indices/`)
+
+**Bugs found in the old page**
+- **ENSO showed La Niña during a strong El Niño.** The ONI download (scraping the CPC web page) silently stopped in Feb 2026, so the card used the Dec 2025 value (−0.5). Niño 3.4 was +2.6 °C in Sep 2026.
+- "SST/T2m anomaly" files are actually absolute temperatures; the summary showed e.g. "Last year average +20.9 °C" as if it were an anomaly. Anomalies were relative to the whole record, with no stated baseline.
+- Dates parsed with `new Date()` shift by a day/month for viewers west of UTC.
+- Sea-ice loss coloured green (good); GISTEMP card said 1880–1920 baseline but data are vs 1951–1980; climatologies biased by incomplete first/last years; −9999 missing values written into the sea-ice CSVs.
+- Charts were drawn while their section was collapsed, so they opened at the wrong size; legends overlapped axis titles; no way to zoom except mouse wheel; "last updated" date shown even when individual datasets had stopped updating.
+
+**Downloader fixes (`climate indices/climate_dashboard.py`)**
+- ONI now read from CPC's plain-text `oni.ascii.txt`, with the old web-page scrape as fallback.
+- A file is never replaced by data that end earlier than the existing file.
+- `last_updated.json` now also records each dataset's latest date.
+- Sea-ice −9999 written as missing; dead parsers removed; Niño 3.4 missing-value test made robust.
+- Confirmed by Alex on the VM (16 Nov): ONI download works again.
+
+**New page**
+- Summary cards with sparklines; each scrolls to its chart. ENSO state from the latest 3-month Niño 3.4 mean (uses ONI when current), with strength and whether the 5-season CPC criterion is met. Amber note when any dataset has stopped updating.
+- Every time-series chart has a double-ended range slider (drag either end or the middle; presets 5/10/30 yr/All); the y-axis rescales to the visible window. "By year" views overlay years (current year red, last year orange) with a slider choosing which years.
+- Anomalies vs 1991–2020 (daily climatology on a 365-day calendar, 31-day smoothed; monthly for sea ice). GISTEMP keeps NASA's 1951–1980.
+- CO₂ gets a "yearly increase" view instead of the meaningless anomaly.
+- Charts drawn lazily when scrolled into view (correct size); uses the smaller plotly-basic bundle; no PapaParse.
+- Tested at 1440×900 and 390×844: no script errors, no horizontal scrolling.
+- Homepage tooltip updated (it mentioned IOD and SAM, which the dashboard never showed).

@@ -80,6 +80,7 @@ Structure your briefing to cover:
 - Include numbers, dates, locations, and real events when available
 - Show connections between abstract findings and tangible impacts
 - End with a clear conclusion that synthesizes the main message
+- Format: use "### " for section headings (never "#" or "##"), plain paragraphs, and "- " for bullet points. Do NOT use "---" lines.
 
 CRITICAL: Output ONLY the briefing text. Do NOT include any preamble like "Here is a detailed briefing" or "Of course" or introductory phrases. Do NOT repeat the title. Start directly with the first section (Background/Context).
 """

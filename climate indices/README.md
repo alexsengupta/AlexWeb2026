@@ -38,7 +38,7 @@ Each CSV file has a Date column (YYYY-MM-DD format) and the corresponding data v
 
 ```bash
 # Navigate to the project directory
-cd "/Users/z3045790/Dropbox/AI code/climate indices"
+cd "climate indices"
 
 # Create virtual environment
 python -m venv venv
@@ -115,28 +115,9 @@ All data comes from official scientific organizations:
 - NASA GISS (Goddard Institute for Space Studies)
 - University of Washington JISAO
 
-## Viewing the Interactive Dashboard
+## Viewing the dashboard
 
-After downloading the data, you can view it in an interactive web dashboard:
-
-```bash
-python start_server.py
-```
-
-This will:
-1. Start a local web server on port 8000
-2. Automatically open the dashboard in your browser
-3. Display all climate indices with interactive zoom/pan charts
-
-The dashboard features:
-- Collapsible sections for each climate index
-- Interactive charts with zoom (mouse wheel) and pan (click & drag)
-- Combined plots for related indices (ENSO, Sea Ice)
-- Educational information about each climate indicator
-
-**URL**: http://localhost:8000/index.html
-
-Press `Ctrl+C` in the terminal to stop the server when done.
+The dashboard that displays these files is `apps/climate-indices/index.html` (it reads `../../climate indices/data/`). On the website it opens from the "Climate Indices" button on the homepage. `index.html` in this folder is only a redirect; the old dashboard is in `old_apps/climate_indices_dashboard/`.
 
 ## Using the Data
 

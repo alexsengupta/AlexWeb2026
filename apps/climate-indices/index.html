@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Climate Indicators | Alex Sen Gupta</title>
+<meta name="description" content="Live dashboard of key climate indicators: ENSO, global sea surface and air temperature, sea ice, CO2, GISTEMP and the PDO.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-basic-2.27.0.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-2: #eef2f6; --ink: #142130; --ink-2: #46566b; --muted: #77859a; --line: rgba(20, 33, 48, 0.1);
+    --warm: #d1342f; --cool: #2563c9; --accent: #1767c8; --amber: #b7791f; --amber-bg: #fff4dc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+  header { padding: 18px 0 6px; }
+  .toprow { display: flex; align-items: center; gap: 14px; }
+  .home { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); text-decoration: none; flex: none; }
+  h1 { margin: 0; font-size: clamp(24px, 3.2vw, 34px); font-weight: 600; }
+  .updated { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ---------- Summary cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin: 16px 0 6px; }
+  .card { position: relative; display: flex; flex-direction: column; justify-content: flex-start; text-align: left; font: inherit; color: inherit; border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 14px 16px 12px; cursor: pointer;
+          box-shadow: 0 1px 2px rgba(20,33,48,0.04); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(20,33,48,0.1); border-color: rgba(20,33,48,0.18); }
+  .card .lab { font-size: 13.5px; color: var(--ink-2); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+  .card .lab span { color: var(--muted); font-weight: 400; }
+  .card .big { font-size: 28px; font-weight: 600; margin-top: 4px; line-height: 1.15; }
+  .card .big small { font-size: 15px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+  .card .sub { font-size: 13.5px; color: var(--ink-2); margin-top: 3px; line-height: 1.4; }
+  .card svg.spark { display: block; width: 100%; height: 34px; margin-top: 8px; }
+  .warm { color: var(--warm); } .cool { color: var(--cool); }
+  .stale { display: inline-block; margin-top: 6px; font-size: 12.5px; color: var(--amber); background: var(--amber-bg); border-radius: 8px; padding: 2px 8px; }
+
+  /* ---------- Chart sections ---------- */
+  section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px 16px; margin: 18px 0; scroll-margin-top: 12px; }
+  .p-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 20px; }
+  .p-head h2 { margin: 0; font-size: 21px; font-weight: 600; }
+  .p-head p { margin: 4px 0 0; max-width: 760px; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+  .ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .seg button { border: 0; background: transparent; padding: 6px 13px; border-radius: 999px; cursor: pointer; font-size: 14px; color: var(--ink-2); white-space: nowrap; }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .chart { width: 100%; height: 420px; margin-top: 10px; }
+  .chart.loading { display: grid; place-items: center; color: var(--muted); }
+
+  /* double-ended range slider */
+  .range { margin: 4px 4px 0; }
+  .range-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--ink-2); }
+  .range-top b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .presets button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: 13px; cursor: pointer; }
+  .presets button.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .dual { position: relative; height: 34px; margin-top: 4px; touch-action: none; }
+  .dual .track { position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 4px; background: var(--surface-2); }
+  .dual .fill { position: absolute; top: 15px; height: 4px; border-radius: 4px; background: var(--ink); cursor: grab; }
+  .dual .fill:active { cursor: grabbing; }
+  .dual input { position: absolute; left: 0; top: 0; width: 100%; height: 34px; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+  .dual input::-webkit-slider-runnable-track { background: none; height: 34px; }
+  .dual input::-moz-range-track { background: none; }
+  .dual input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; margin-top: 6px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: ew-resize; }
+  .dual input::-moz-range-thumb { pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); cursor: ew-resize; }
+  .dual input:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .p-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .p-foot a { text-decoration: none; }
+  .note { font-size: 13.5px; color: var(--ink-2); margin-top: 8px; }
+  footer { color: var(--muted); font-size: 13px; padding: 10px 0 40px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 12px; }
+    .cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card { padding: 11px 12px 10px; } .card .big { font-size: 22px; } .card .big small { font-size: 13px; }
+    .card .sub { font-size: 12.5px; } .card .lab { font-size: 12.5px; } .card .lab span { display: none; }
+    section.panel { padding: 14px 12px 12px; border-radius: 14px; }
+    .p-head h2 { font-size: 19px; } .p-head p { font-size: 14px; }
+    .chart { height: 320px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="toprow">
+      <a class="home" id="homeLink" href="../../index.html" aria-label="Back to home">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </a>
+      <div>
+        <h1>Climate indicators</h1>
+        <div class="updated" id="updated">Loading the latest data…</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+  <div id="panels"></div>
+  <footer>Anomalies are relative to 1991–2020 unless stated otherwise (GISTEMP uses NASA's 1951–1980 baseline). Data are downloaded automatically from NOAA, NASA and Climate Reanalyzer; each chart links to its source.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var DATA = '../../climate%20indices/data/';
+  var $ = function (id) { return document.getElementById(id); };
+  if (window.self !== window.top) $('homeLink').style.display = 'none';   // shown inside the homepage pop-up
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var CUM = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  var BASE = [1991, 2020];
+  var MOBILE = matchMedia('(max-width: 640px)').matches;
+
+  /* ---------------- Data ---------------- */
+  var FILES = {
+    oni: { file: 'oni_data.csv', freq: 'm', every: 1 },
+    nino34: { file: 'nino34_data.csv', freq: 'm', every: 1 },
+    sst: { file: 'sst_anomaly_data.csv', freq: 'd' },
+    t2m: { file: 't2m_anomaly_data.csv', freq: 'd' },
+    arctic: { file: 'arctic_seaice_data.csv', freq: 'm' },
+    antarctic: { file: 'antarctic_seaice_data.csv', freq: 'm' },
+    co2: { file: 'co2_data.csv', freq: 'm' },
+    gistemp: { file: 'gistemp_data.csv', freq: 'm' },
+    pdo: { file: 'pdo_data.csv', freq: 'm' }
+  };
+  // Parse "YYYY-MM-DD,value" by hand: no Date objects, so no time-zone shifts.
+  function parseCSV(text) {
+    var lines = text.split('\n'), s = { t: [], y: [], m: [], d: [], v: [] };
+    for (var i = 1; i < lines.length; i++) {
+      var L = lines[i]; if (L.length < 11) continue;
+      var c = L.indexOf(','), t = L.slice(0, 10), val = L.slice(c + 1).trim();
+      var num = val === '' ? null : +val;
+      if (num !== null && (isNaN(num) || num < -900)) num = null;
+      s.t.push(t); s.y.push(+t.slice(0, 4)); s.m.push(+t.slice(5, 7)); s.d.push(+t.slice(8, 10)); s.v.push(num);
+    }
+    return s;
+  }
+  var cache = {}, version = '';
+  function load(id) {
+    if (!cache[id]) cache[id] = fetch(DATA + FILES[id].file + '?v=' + version).then(function (r) { if (!r.ok) throw new Error(FILES[id].file + ' ' + r.status); return r.text(); }).then(parseCSV);
+    return cache[id];
+  }
+
+  /* ---------------- Maths helpers ---------------- */
+  function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  // Day of a 365-day year (0-364). 29 Feb shares 28 Feb's slot, so 1 Mar is always day 59.
+  function doy(m, d) { return CUM[m - 1] + Math.min(d, m === 2 ? 28 : 31) - 1; }
+  function dailyClim(s) {
+    var sum = new Float64Array(365), n = new Float64Array(365);
+    for (var i = 0; i < s.v.length; i++) if (s.v[i] !== null && s.y[i] >= BASE[0] && s.y[i] <= BASE[1]) { var k = doy(s.m[i], s.d[i]); sum[k] += s.v[i]; n[k]++; }
+    var raw = new Float64Array(365), out = new Float64Array(365);
+    for (var k = 0; k < 365; k++) raw[k] = sum[k] / n[k];
+    for (k = 0; k < 365; k++) { var a = 0; for (var j = -15; j <= 15; j++) a += raw[(k + j + 365) % 365]; out[k] = a / 31; }   // 31-day smoothing
+    return out;
+  }
+  function monthlyClim(s) {
+    var sum = new Float64Array(12), n = new Float64Array(12), out = [];
+    for (var i = 0; i < s.v.length; i++) if (s.v[i] !== null && s.y[i] >= BASE[0] && s.y[i] <= BASE[1]) { sum[s.m[i] - 1] += s.v[i]; n[s.m[i] - 1]++; }
+    for (var k = 0; k < 12; k++) out.push(sum[k] / n[k]);
+    return out;
+  }
+  function anomalies(s, clim, daily) {
+    return s.v.map(function (v, i) { return v === null ? null : v - (daily ? clim[doy(s.m[i], s.d[i])] : clim[s.m[i] - 1]); });
+  }
+  // Centred running mean over w points; needs at least 80% of the window present.
+  function runMean(v, w) {
+    var h = Math.floor(w / 2), out = new Array(v.length).fill(null), sum = 0, n = 0;
+    for (var i = 0; i < v.length; i++) {
+      if (v[i] !== null) { sum += v[i]; n++; }
+      var drop = i - w; if (drop >= 0 && v[drop] !== null) { sum -= v[drop]; n--; }
+      var c = i - h; if (i >= w - 1 && n >= 0.8 * w) out[c] = sum / n;
+    }
+    return out;
+  }
+  function mean(a) { var s = 0, n = 0; a.forEach(function (x) { if (x !== null && !isNaN(x)) { s += x; n++; } }); return n ? s / n : null; }
+  function lastIdx(v) { for (var i = v.length - 1; i >= 0; i--) if (v[i] !== null) return i; return -1; }
+  function fmtDate(t, freq) { var y = t.slice(0, 4), m = MONTHS[+t.slice(5, 7) - 1]; return freq === 'd' ? (+t.slice(8, 10)) + ' ' + m + ' ' + y : m + ' ' + y; }
+  function sign(x, dp) { return (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(dp == null ? 2 : dp); }
+  function monthsBetween(t0, t1) { return (+t1.slice(0, 4) - +t0.slice(0, 4)) * 12 + (+t1.slice(5, 7) - +t0.slice(5, 7)); }
+  var TODAY = new Date().toISOString().slice(0, 10);
+  function staleNote(t, freq, label) {
+    var lag = monthsBetween(t, TODAY);
+    if ((freq === 'd' && lag > 1) || (freq === 'm' && lag > 4)) return '<span class="stale">' + (label || 'Data') + ' end ' + fmtDate(t, freq) + ': the source may have stopped updating</span>';
+    return '';
+  }
+  function spark(x, y, color, zero) {
+    var pts = []; for (var i = 0; i < y.length; i++) if (y[i] !== null) pts.push([i, y[i]]);
+    if (pts.length < 2) return '';
+    var lo = Math.min.apply(null, pts.map(function (p) { return p[1]; })), hi = Math.max.apply(null, pts.map(function (p) { return p[1]; }));
+    if (zero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+    var W = 240, H = 34, sx = W / (y.length - 1), sy = (H - 4) / ((hi - lo) || 1);
+    var d = pts.map(function (p, k) { return (k ? 'L' : 'M') + (p[0] * sx).toFixed(1) + ' ' + (H - 2 - (p[1] - lo) * sy).toFixed(1); }).join('');
+    var z = zero ? '<line x1="0" x2="' + W + '" y1="' + (H - 2 + lo * sy).toFixed(1) + '" y2="' + (H - 2 + lo * sy).toFixed(1) + '" stroke="#c9d2dc" stroke-dasharray="3 3"/>' : '';
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + z + '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  /* ---------------- Plotly helpers ---------------- */
+  var FONT = { family: 'Outfit, system-ui, sans-serif', size: 13, color: '#46566b' };
+  function baseLayout(yTitle) {
+    return {
+      font: FONT, paper_bgcolor: '#fff', plot_bgcolor: '#fff', dragmode: false, hovermode: 'x unified',
+      margin: { l: 58, r: 14, t: 10, b: 36 },
+      xaxis: { type: 'date', gridcolor: '#eef2f6', linecolor: '#c9d2dc', automargin: true },
+      yaxis: { title: { text: MOBILE ? yTitle.replace(/ vs [^(]*/, ' ') : yTitle, standoff: 8 }, gridcolor: '#eef2f6', zerolinecolor: '#c9d2dc', automargin: true },
+      legend: { orientation: 'h', x: 0, y: 1.02, xanchor: 'left', yanchor: 'bottom', bgcolor: 'rgba(255,255,255,0.8)' },
+      hoverlabel: { font: { family: FONT.family } }
+    };
+  }
+  var CONFIG = { responsive: true, displayModeBar: false, scrollZoom: false };
+  // y-range that fits only the data inside [x0, x1] (strings compare correctly as ISO dates / numbers)
+  function fitY(traces, x0, x1, incZero) {
+    var lo = Infinity, hi = -Infinity;
+    traces.forEach(function (tr) {
+      if (tr.skipFit || tr.visible === false) return;
+      for (var i = 0; i < tr.x.length; i++) { var x = tr.x[i], y = tr.y[i]; if (y === null || x < x0 || x > x1) continue; if (y < lo) lo = y; if (y > hi) hi = y; }
+    });
+    if (incZero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+    if (!isFinite(lo)) return null;
+    var pad = (hi - lo) * 0.07 || 0.5; return [lo - pad, hi + pad];
+  }
+
+  /* ---------------- Double-ended range slider ---------------- */
+  // values are integers min..max; labelOf(i) formats them; presets: [{label, span}] span in steps (null = all)
+  function RangeSlider(host, o) {
+    var self = this; this.o = o;
+    host.innerHTML = '<div class="range"><div class="range-top"><div>Showing <b class="rl"></b></div><div class="presets"></div></div>' +
+      '<div class="dual"><div class="track"></div><div class="fill"></div><input type="range" aria-label="Start"><input type="range" aria-label="End"></div></div>';
+    var ins = host.querySelectorAll('input'); this.a = ins[0]; this.b = ins[1];
+    this.fill = host.querySelector('.fill'); this.label = host.querySelector('.rl'); this.pre = host.querySelector('.presets');
+    [this.a, this.b].forEach(function (inp) { inp.min = o.min; inp.max = o.max; inp.step = 1; });
+    this.a.value = o.value[0]; this.b.value = o.value[1];
+    var onInput = function (e) {
+      var a = +self.a.value, b = +self.b.value, gap = o.minGap || 1;
+      if (b - a < gap) { if (e.target === self.a) self.a.value = a = b - gap; else self.b.value = b = a + gap; }
+      self.sync(true);
+    };
+    this.a.addEventListener('input', onInput); this.b.addEventListener('input', onInput);
+    // drag the filled middle part to pan the window
+    var drag = null, dual = host.querySelector('.dual');
+    this.fill.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, a: +self.a.value, b: +self.b.value, w: dual.clientWidth }; self.fill.setPointerCapture(e.pointerId); });
+    this.fill.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var steps = Math.round((e.clientX - drag.x) / drag.w * (o.max - o.min)), span = drag.b - drag.a;
+      var a = Math.max(o.min, Math.min(o.max - span, drag.a + steps));
+      self.a.value = a; self.b.value = a + span; self.sync(true);
+    });
+    this.fill.addEventListener('pointerup', function () { drag = null; });
+    (o.presets || []).forEach(function (p) {
+      var bt = document.createElement('button'); bt.textContent = p.label;
+      bt.addEventListener('click', function () { self.set(p.span == null ? o.min : Math.max(o.min, o.max - p.span), o.max); });
+      self.pre.appendChild(bt); p.el = bt;
+    });
+    this.sync(false);
+  }
+  RangeSlider.prototype.set = function (a, b) { this.a.value = a; this.b.value = b; this.sync(true); };
+  RangeSlider.prototype.sync = function (fire) {
+    var o = this.o, a = +this.a.value, b = +this.b.value, span = o.max - o.min || 1;
+    this.fill.style.left = ((a - o.min) / span * 100) + '%'; this.fill.style.width = ((b - a) / span * 100) + '%';
+    this.label.textContent = o.labelOf(a) + ' – ' + o.labelOf(b);
+    (o.presets || []).forEach(function (p) { p.el.classList.toggle('on', b === o.max && (p.span == null ? a === o.min : a === Math.max(o.min, o.max - p.span))); });
+    // the higher thumb must sit on top when both are at the far right
+    this.a.style.zIndex = a > o.max - (o.max - o.min) * 0.05 ? 3 : 2;
+    if (fire) { cancelAnimationFrame(this.raf); var self = this; this.raf = requestAnimationFrame(function () { o.onChange(a, b); }); }
+  };
+
+  /* ---------------- Sections ---------------- */
+  function monthIdx(t) { return +t.slice(0, 4) * 12 + (+t.slice(5, 7) - 1); }
+  function idxToISO(k, end) { var y = Math.floor(k / 12), m = k % 12 + 1; return y + '-' + (m < 10 ? '0' : '') + m + (end ? '-28' : '-01'); }
+  function monthLabel(k) { return MONTHS[k % 12] + ' ' + Math.floor(k / 12); }
+
+  // A time-series chart with a range slider underneath
+  function timeChart(sec, traces, layout, o) {
+    var div = sec.chart, x0 = o.first, x1 = o.last;
+    var k0 = monthIdx(x0), k1 = monthIdx(x1);
+    var start = o.defaultYears ? Math.max(k0, k1 - o.defaultYears * 12) : k0;
+    function apply(a, b) {
+      var ra = idxToISO(a), rb = idxToISO(b, true), r = fitY(traces, ra, rb, o.incZero);
+      Plotly.relayout(div, r ? { 'xaxis.range': [ra, rb], 'yaxis.range': r } : { 'xaxis.range': [ra, rb] });
+    }
+    layout.xaxis.range = [idxToISO(start), idxToISO(k1, true)];
+    var r = fitY(traces, layout.xaxis.range[0], layout.xaxis.range[1], o.incZero); if (r) layout.yaxis.range = r;
+    Plotly.react(div, traces, layout, CONFIG);
+    var spanY = (k1 - k0) / 12, pre = [];
+    [5, 10, 30].forEach(function (y) { if (y < spanY * 0.8) pre.push({ label: y + ' yr', span: y * 12 }); });
+    pre.push({ label: 'All', span: null });
+    sec.slider = new RangeSlider(sec.range, { min: k0, max: k1, value: [start, k1], minGap: 12, labelOf: monthLabel, presets: pre, onChange: apply });
+  }
+
+  // "By year" chart: one line per year against day/month of year; slider picks the years shown
+  function yearChart(sec, s, vals, o) {
+    var div = sec.chart, years = [], byYear = {};
+    for (var i = 0; i < vals.length; i++) {
+      if (vals[i] === null) continue;
+      var y = s.y[i], x = o.daily ? doy(s.m[i], s.d[i]) + 1 : s.m[i];
+      if (o.daily && isLeap(y) && s.m[i] === 2 && s.d[i] === 29) continue;
+      if (!byYear[y]) { byYear[y] = { x: [], y: [] }; years.push(y); }
+      byYear[y].x.push(x); byYear[y].y.push(vals[i]);
+    }
+    var yMin = years[0], yMax = years[years.length - 1];
+    function draw(a, b) {
+      var tr = [], n = b - a;
+      for (var y = a; y <= b; y++) {
+        if (!byYear[y]) continue;
+        var cur = y === yMax, prev = y === yMax - 1, f = n ? (y - a) / n : 1;
+        var col = cur ? '#d1342f' : prev ? '#e8892f' : 'rgb(' + Math.round(196 - 140 * f) + ',' + Math.round(208 - 120 * f) + ',' + Math.round(222 - 70 * f) + ')';
+        tr.push({ x: byYear[y].x, y: byYear[y].y, mode: 'lines', name: String(y), line: { color: col, width: cur ? 3 : prev ? 2.2 : 1.1 },
+                  showlegend: cur || prev, hovertemplate: y + ': %{y:.' + (o.dp || 2) + 'f}<extra></extra>' });
+      }
+      if (o.ref) tr.push({ x: o.ref.x, y: o.ref.y, mode: 'lines', name: o.ref.name, line: { color: '#142130', width: 1.6, dash: 'dash' }, hoverinfo: 'skip' });
+      // draw the most recent years on top
+      var L = baseLayout(o.yTitle); L.hovermode = 'closest';
+      L.xaxis = o.daily
+        ? { tickvals: CUM.map(function (c) { return c + 1; }), ticktext: MONTHS, range: [1, 365], gridcolor: '#eef2f6', linecolor: '#c9d2dc' }
+        : { tickvals: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], ticktext: MONTHS, range: [0.7, 12.3], gridcolor: '#eef2f6', linecolor: '#c9d2dc' };
+      Plotly.react(div, tr, L, CONFIG);
+    }
+    var start = Math.max(yMin, o.firstShown || yMin);
+    draw(start, yMax);
+    sec.slider = new RangeSlider(sec.range, { min: yMin, max: yMax, value: [start, yMax], minGap: 1, labelOf: String,
+      presets: [{ label: '10 yr', span: 9 }, { label: '30 yr', span: 29 }, { label: 'All', span: null }], onChange: draw });
+  }
+
+  var PANELS = [];
+  function panel(p) { PANELS.push(p); }
+  function buildPanels() {
+    var host = $('panels');
+    PANELS.forEach(function (p) {
+      var el = document.createElement('section'); el.className = 'panel'; el.id = 'p-' + p.id;
+      el.innerHTML = '<div class="p-head"><div><h2>' + p.title + '</h2><p>' + p.blurb + '</p></div><div class="ctl"></div></div>' +
+        '<div class="chart loading">Loading…</div><div class="rangehost"></div><div class="note"></div>' +
+        '<div class="p-foot"><span>Source: <a href="' + p.srcUrl + '" target="_blank" rel="noopener">' + p.src + '</a></span><a href="' + DATA + FILES[p.files[0]].file + '" download>Download data (CSV)</a></div>';
+      host.appendChild(el);
+      var sec = { el: el, chart: el.querySelector('.chart'), range: el.querySelector('.rangehost'), note: el.querySelector('.note'), ctl: el.querySelector('.ctl'), state: Object.assign({}, p.state || {}) };
+      p.sec = sec;
+      (p.controls || []).forEach(function (c) {
+        var g = document.createElement('div'); g.className = 'seg'; g.setAttribute('role', 'group');
+        c.options.forEach(function (op) {
+          var b = document.createElement('button'); b.textContent = op[1];
+          b.className = sec.state[c.key] === op[0] ? 'on' : '';
+          b.addEventListener('click', function () {
+            sec.state[c.key] = op[0];
+            g.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+            render(p);
+          });
+          g.appendChild(b);
+        });
+        sec.ctl.appendChild(g);
+      });
+    });
+    // draw each chart when it first scrolls into view, at its real size
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); var p = PANELS.filter(function (x) { return x.sec.el === e.target; })[0]; render(p); } });
+    }, { rootMargin: '200px' });
+    PANELS.forEach(function (p) { io.observe(p.sec.el); });
+  }
+  function render(p) {
+    Promise.all(p.files.map(load)).then(function (ds) {
+      if (p.sec.chart.classList.contains('loading')) { p.sec.chart.classList.remove('loading'); p.sec.chart.textContent = ''; } else Plotly.purge(p.sec.chart);
+      p.sec.note.innerHTML = '';
+      p.draw(p.sec, ds, p.sec.state);
+    }).catch(function (e) { console.error(e); p.sec.chart.textContent = 'Sorry, this data could not be loaded.'; });
+  }
+
+  /* ---------------- ENSO ---------------- */
+  panel({
+    id: 'enso', files: ['nino34', 'oni'], title: 'El Niño–Southern Oscillation',
+    blurb: 'Sea surface temperature anomaly in the Niño 3.4 region of the central equatorial Pacific. Above +0.5 °C indicates El Niño conditions, below −0.5 °C La Niña. The Oceanic Niño Index (ONI) is NOAA\'s official 3-month average.',
+    src: 'NOAA PSL (Niño 3.4) and NOAA CPC (ONI)', srcUrl: 'https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php',
+    draw: function (sec, ds) {
+      var n = ds[0], oni = ds[1];
+      var pos = n.v.map(function (v) { return v === null ? null : Math.max(v, 0); }), neg = n.v.map(function (v) { return v === null ? null : Math.min(v, 0); });
+      var traces = [
+        { x: n.t, y: pos, type: 'scatter', mode: 'lines', line: { width: 0, shape: 'hv' }, fill: 'tozeroy', fillcolor: 'rgba(209,52,47,0.55)', name: 'Niño 3.4 (warm)', hoverinfo: 'skip', showlegend: false },
+        { x: n.t, y: neg, type: 'scatter', mode: 'lines', line: { width: 0, shape: 'hv' }, fill: 'tozeroy', fillcolor: 'rgba(37,99,201,0.55)', name: 'Niño 3.4 (cool)', hoverinfo: 'skip', showlegend: false },
+        { x: n.t, y: n.v, type: 'scatter', mode: 'lines', line: { color: 'rgba(20,33,48,0.35)', width: 0.8, shape: 'hv' }, name: 'Niño 3.4 monthly', hovertemplate: '%{y:+.2f} °C' },
+        { x: oni.t, y: oni.v, type: 'scatter', mode: 'lines', line: { color: '#142130', width: 2 }, name: 'ONI (3-month mean)', hovertemplate: '%{y:+.2f} °C' }
+      ];
+      var L = baseLayout('Anomaly (°C)');
+      L.shapes = [0.5, -0.5].map(function (v) { return { type: 'line', xref: 'paper', x0: 0, x1: 1, y0: v, y1: v, line: { color: v > 0 ? '#d1342f' : '#2563c9', width: 1, dash: 'dot' } }; });
+      timeChart(sec, traces, L, { first: n.t[0], last: n.t[n.t.length - 1], defaultYears: MOBILE ? 20 : 40, incZero: true });
+      var oi = lastIdx(oni.v);
+      sec.note.innerHTML = staleNote(oni.t[oi], 'm', 'ONI data') ? 'Note: the ONI file currently ends in ' + fmtDate(oni.t[oi], 'm') + '; the Niño 3.4 series is used for the current state.' : '';
+    }
+  });
+
+  /* ---------------- Daily global temperature (SST and air) ---------------- */
+  function dailyPanel(id, title, blurb, src, srcUrl, yAbs) {
+    panel({
+      id: id, files: [id], title: title, blurb: blurb, src: src, srcUrl: srcUrl,
+      state: { view: 'ts', mode: 'anom' },
+      controls: [{ key: 'view', options: [['ts', 'Time series'], ['year', 'By year']] }, { key: 'mode', options: [['anom', 'Anomaly'], ['abs', 'Actual']] }],
+      draw: function (sec, ds, st) {
+        var s = ds[0], clim = s.clim || (s.clim = dailyClim(s)), an = s.an || (s.an = anomalies(s, clim, true));
+        var vals = st.mode === 'anom' ? an : s.v, yT = st.mode === 'anom' ? 'Anomaly vs 1991–2020 (°C)' : yAbs;
+        if (st.view === 'ts') {
+          var rm = s.rm || (s.rm = runMean(an, 365));
+          var shown = st.mode === 'anom' ? rm : rm.map(function (v, i) { return v === null ? null : v + mean(clim); });
+          var traces = [
+            { x: s.t, y: vals, type: 'scatter', mode: 'lines', line: { color: 'rgba(37,99,201,0.45)', width: 1 }, name: 'Daily', hovertemplate: '%{y:.2f} °C' },
+            { x: s.t, y: shown, type: 'scatter', mode: 'lines', line: { color: '#d1342f', width: 2.2 }, name: '365-day mean', hovertemplate: '%{y:.2f} °C' }
+          ];
+          var L = baseLayout(yT);
+          timeChart(sec, traces, L, { first: s.t[0], last: s.t[s.t.length - 1], defaultYears: null, incZero: st.mode === 'anom' });
+        } else {
+          var ref = st.mode === 'anom' ? null : { x: Array.from({ length: 365 }, function (_, k) { return k + 1; }), y: Array.from(clim), name: '1991–2020 average' };
+          yearChart(sec, s, vals, { daily: true, yTitle: yT, ref: ref, firstShown: +s.t[s.t.length - 1].slice(0, 4) - 30 });
+        }
+      }
+    });
+  }
+  dailyPanel('sst', 'Global sea surface temperature', 'Daily average sea surface temperature from 60°S to 60°N (NOAA OISST v2.1), the part of the ocean free of sea ice. "By year" overlays each year to compare with past years.',
+    'Climate Reanalyzer (NOAA OISST v2.1)', 'https://climatereanalyzer.org/clim/sst_daily/', 'Sea surface temperature (°C)');
+  dailyPanel('t2m', 'Global air temperature', 'Daily global average air temperature 2 m above the surface, from the ERA5 reanalysis.',
+    'Climate Reanalyzer (ERA5)', 'https://climatereanalyzer.org/clim/t2_daily/', 'Air temperature (°C)');
+
+  /* ---------------- Sea ice ---------------- */
+  panel({
+    id: 'seaice', files: ['arctic', 'antarctic'], title: 'Sea ice extent',
+    blurb: 'Monthly area of ocean with at least 15% sea ice cover. Arctic ice has declined steadily since satellite records began in 1979. Antarctic ice grew slightly until 2015, then fell sharply.',
+    src: 'NOAA NCEI (from NSIDC Sea Ice Index)', srcUrl: 'https://www.ncei.noaa.gov/access/monitoring/snow-and-ice-extent/',
+    state: { hemi: 'arctic', view: 'ts', mode: 'abs' },
+    controls: [{ key: 'hemi', options: [['arctic', 'Arctic'], ['antarctic', 'Antarctic']] }, { key: 'view', options: [['ts', 'Time series'], ['year', 'By year']] }, { key: 'mode', options: [['abs', 'Extent'], ['anom', 'Anomaly']] }],
+    draw: function (sec, ds, st) {
+      var s = st.hemi === 'arctic' ? ds[0] : ds[1], clim = s.clim || (s.clim = monthlyClim(s)), an = s.an || (s.an = anomalies(s, clim, false));
+      var vals = st.mode === 'anom' ? an : s.v, yT = st.mode === 'anom' ? 'Anomaly vs 1991–2020 (million km²)' : 'Extent (million km²)';
+      var col = st.hemi === 'arctic' ? '#2563c9' : '#0f8f84';
+      if (st.view === 'ts') {
+        var rm = s.rm || (s.rm = runMean(an, 12));
+        var shown = st.mode === 'anom' ? rm : rm.map(function (v) { return v === null ? null : v + mean(clim); });
+        var traces = [{ x: s.t, y: vals, type: 'scatter', mode: 'lines', line: { color: col, width: 1.2 }, name: 'Monthly', hovertemplate: '%{y:.2f}', connectgaps: false },
+                      { x: s.t, y: shown, type: 'scatter', mode: 'lines', line: { color: '#142130', width: 2.2 }, name: '12-month mean', hovertemplate: '%{y:.2f}' }];
+        timeChart(sec, traces, baseLayout(yT), { first: s.t[0], last: s.t[s.t.length - 1], incZero: st.mode === 'anom' });
+      } else {
+        var ref = st.mode === 'anom' ? null : { x: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], y: clim, name: '1991–2020 average' };
+        yearChart(sec, s, vals, { yTitle: yT, ref: ref });
+      }
+    }
+  });
+
+  /* ---------------- CO2 ---------------- */
+  panel({
+    id: 'co2', files: ['co2'], title: 'Atmospheric carbon dioxide',
+    blurb: 'Global monthly mean CO₂ at the surface, from NOAA\'s network of marine sampling sites. The yearly wiggle is the Northern Hemisphere growing season; the rise is from burning fossil fuels.',
+    src: 'NOAA Global Monitoring Laboratory', srcUrl: 'https://gml.noaa.gov/ccgg/trends/global.html',
+    state: { view: 'ts' }, controls: [{ key: 'view', options: [['ts', 'Time series'], ['growth', 'Yearly increase'], ['year', 'By year']] }],
+    draw: function (sec, ds, st) {
+      var s = ds[0];
+      if (st.view === 'ts') {
+        var tr = runMean(s.v, 12);
+        timeChart(sec, [{ x: s.t, y: s.v, mode: 'lines', type: 'scatter', line: { color: '#46566b', width: 1.2 }, name: 'Monthly', hovertemplate: '%{y:.1f} ppm' },
+          { x: s.t, y: tr, mode: 'lines', type: 'scatter', line: { color: '#d1342f', width: 2.2 }, name: '12-month mean', hovertemplate: '%{y:.1f} ppm' }],
+          baseLayout('CO₂ (ppm)'), { first: s.t[0], last: s.t[s.t.length - 1] });
+      } else if (st.view === 'growth') {
+        // increase over the previous 12 months, from the 12-month mean (removes the seasonal cycle)
+        var tm = runMean(s.v, 12), g = tm.map(function (v, i) { return v !== null && i >= 12 && tm[i - 12] !== null ? v - tm[i - 12] : null; });
+        timeChart(sec, [{ x: s.t, y: g, mode: 'lines', type: 'scatter', line: { color: '#d1342f', width: 2 }, name: 'Increase over 12 months', hovertemplate: '%{y:.2f} ppm' }],
+          baseLayout('Increase over 12 months (ppm)'), { first: s.t[0], last: s.t[s.t.length - 1], incZero: true });
+        sec.note.textContent = 'Increase in the 12-month mean compared with a year earlier. Peaks often follow El Niño years, when tropical land takes up less carbon.';
+      } else {
+        yearChart(sec, s, s.v, { yTitle: 'CO₂ (ppm)', dp: 1 });
+      }
+    }
+  });
+
+  /* ---------------- GISTEMP ---------------- */
+  panel({
+    id: 'gistemp', files: ['gistemp'], title: 'Global surface temperature (NASA GISTEMP)',
+    blurb: 'Monthly global land and ocean surface temperature anomaly relative to 1951–1980, NASA\'s standard baseline. This record goes back to 1880.',
+    src: 'NASA GISS GISTEMP v4', srcUrl: 'https://data.giss.nasa.gov/gistemp/',
+    state: { view: 'ts' }, controls: [{ key: 'view', options: [['ts', 'Time series'], ['year', 'By year']] }],
+    draw: function (sec, ds, st) {
+      var s = ds[0];
+      if (st.view === 'ts') {
+        timeChart(sec, [{ x: s.t, y: s.v, mode: 'lines', type: 'scatter', line: { color: 'rgba(209,52,47,0.45)', width: 1 }, name: 'Monthly', hovertemplate: '%{y:+.2f} °C' },
+          { x: s.t, y: runMean(s.v, 12), mode: 'lines', type: 'scatter', line: { color: '#d1342f', width: 2.4 }, name: '12-month mean', hovertemplate: '%{y:+.2f} °C' }],
+          baseLayout('Anomaly vs 1951–1980 (°C)'), { first: s.t[0], last: s.t[s.t.length - 1], incZero: true });
+      } else yearChart(sec, s, s.v, { yTitle: 'Anomaly vs 1951–1980 (°C)', firstShown: +s.t[s.t.length - 1].slice(0, 4) - 30 });
+    }
+  });
+
+  /* ---------------- PDO ---------------- */
+  panel({
+    id: 'pdo', files: ['pdo'], title: 'Pacific Decadal Oscillation',
+    blurb: 'The leading pattern of North Pacific sea surface temperature variability. It switches between warm (positive) and cool (negative) phases that can last for decades and affect climate around the Pacific.',
+    src: 'NOAA PSL (ERSST-based ensemble PDO)', srcUrl: 'https://psl.noaa.gov/pdo/',
+    draw: function (sec, ds) {
+      var s = ds[0], rm = runMean(s.v, 121);
+      timeChart(sec, [
+        { x: s.t, y: s.v.map(function (v) { return v === null ? null : Math.max(v, 0); }), mode: 'lines', type: 'scatter', line: { width: 0, shape: 'hv' }, fill: 'tozeroy', fillcolor: 'rgba(209,52,47,0.45)', hoverinfo: 'skip', showlegend: false, skipFit: true },
+        { x: s.t, y: s.v.map(function (v) { return v === null ? null : Math.min(v, 0); }), mode: 'lines', type: 'scatter', line: { width: 0, shape: 'hv' }, fill: 'tozeroy', fillcolor: 'rgba(37,99,201,0.45)', hoverinfo: 'skip', showlegend: false, skipFit: true },
+        { x: s.t, y: s.v, mode: 'lines', type: 'scatter', line: { color: 'rgba(20,33,48,0.3)', width: 0.8, shape: 'hv' }, name: 'Monthly', hovertemplate: '%{y:+.2f}' },
+        { x: s.t, y: rm, mode: 'lines', type: 'scatter', line: { color: '#142130', width: 2.2 }, name: '10-year mean', hovertemplate: '%{y:+.2f}' }],
+        baseLayout('PDO index'), { first: s.t[0], last: s.t[s.t.length - 1], incZero: true });
+    }
+  });
+
+  /* ---------------- Summary cards ---------------- */
+  function card(id, html) { var b = document.createElement('button'); b.className = 'card'; b.innerHTML = html; b.addEventListener('click', function () { $('p-' + id).scrollIntoView({ behavior: 'smooth' }); }); return b; }
+  function lastN(arr, n) { return arr.slice(Math.max(0, arr.length - n)); }
+  function buildCards() {
+    var box = $('cards'), order = ['enso', 'sst', 't2m', 'gistemp', 'co2', 'arctic', 'antarctic', 'pdo'], slots = {};
+    order.forEach(function (k) { var d = document.createElement('div'); d.className = 'card'; d.style.minHeight = '128px'; d.innerHTML = '<div class="lab">…</div>'; box.appendChild(d); slots[k] = d; });
+    function put(k, panelId, html) { var c = card(panelId, html); box.replaceChild(c, slots[k]); slots[k] = c; }
+    function fail(k, name) { slots[k].innerHTML = '<div class="lab">' + name + '</div><div class="sub">Data unavailable</div>'; }
+
+    Promise.all([load('nino34'), load('oni')]).then(function (d) {
+      var n = d[0], oni = d[1], i = lastIdx(n.v), m3 = mean([n.v[i], n.v[i - 1], n.v[i - 2]]);
+      var oi = lastIdx(oni.v), oniCurrent = monthsBetween(oni.t[oi], n.t[i]) <= 2;
+      // Official CPC definition needs 5 overlapping 3-month seasons beyond the threshold
+      var seas = []; for (var k = 0; k < 5; k++) seas.push(mean([n.v[i - k], n.v[i - k - 1], n.v[i - k - 2]]));
+      var state = m3 >= 0.5 ? 'El Niño' : m3 <= -0.5 ? 'La Niña' : 'Neutral';
+      var sustained = seas.every(function (x) { return m3 >= 0.5 ? x >= 0.5 : x <= -0.5; });
+      var strength = Math.abs(m3) >= 2 ? 'Very strong ' : Math.abs(m3) >= 1.5 ? 'Strong ' : Math.abs(m3) >= 1 ? 'Moderate ' : 'Weak ';
+      var cls = m3 >= 0.5 ? 'warm' : m3 <= -0.5 ? 'cool' : '';
+      var desc = state === 'Neutral' ? 'Neither El Niño nor La Niña' : strength + state + (sustained ? '' : ' conditions');
+      put('enso', 'enso', '<div class="lab">ENSO <span>' + fmtDate(n.t[i], 'm') + '</span></div><div class="big ' + cls + '">' + state + '</div>' +
+        '<div class="sub">' + desc + '<br>Niño 3.4, last 3 months: <b>' + sign(m3, 1) + ' °C</b>' + (oniCurrent ? ' · ONI ' + sign(oni.v[oi], 1) : '') + '</div>' +
+        spark(lastN(n.t, 120), lastN(n.v, 120), '#142130', true) + staleNote(n.t[i], 'm', 'Niño 3.4 data') + (oniCurrent ? '' : staleNote(oni.t[oi], 'm', 'ONI data')));
+    }).catch(function () { fail('enso', 'ENSO'); });
+
+    [['sst', 'Global sea surface temperature', 'sst'], ['t2m', 'Global air temperature', 't2m']].forEach(function (c) {
+      load(c[0]).then(function (s) {
+        var clim = s.clim || (s.clim = dailyClim(s)), an = s.an || (s.an = anomalies(s, clim, true));
+        var i = lastIdx(an), last30 = mean(an.slice(i - 29, i + 1)), last365 = mean(an.slice(i - 364, i + 1));
+        var rm = s.rm || (s.rm = runMean(an, 365)), w = [], wt = [];
+        for (var k = Math.max(0, an.length - 3650); k < an.length; k += 15) { w.push(an[k]); wt.push(s.t[k]); }
+        put(c[0], c[2], '<div class="lab">' + c[1] + ' <span>to ' + fmtDate(s.t[i], 'd') + '</span></div><div class="big ' + (last30 >= 0 ? 'warm' : 'cool') + '">' + sign(last30) + ' °C<small>last 30 days</small></div>' +
+          '<div class="sub">Last 12 months: ' + sign(last365) + ' °C vs 1991–2020</div>' + spark(wt, w, '#d1342f', true) + staleNote(s.t[i], 'd'));
+      }).catch(function () { fail(c[0], c[1]); });
+    });
+
+    load('gistemp').then(function (s) {
+      var i = lastIdx(s.v), y12 = mean(s.v.slice(i - 11, i + 1));
+      put('gistemp', 'gistemp', '<div class="lab">Global surface temperature <span>' + fmtDate(s.t[i], 'm') + '</span></div><div class="big warm">' + sign(s.v[i]) + ' °C</div>' +
+        '<div class="sub">vs 1951–1980 · last 12 months ' + sign(y12) + ' °C</div>' + spark(lastN(s.t, 240), runMean(s.v, 12).slice(-240), '#d1342f', true) + staleNote(s.t[i], 'm'));
+    }).catch(function () { fail('gistemp', 'Global surface temperature'); });
+
+    load('co2').then(function (s) {
+      var i = lastIdx(s.v), tm = runMean(s.v, 12), j = lastIdx(tm), g = tm[j] - tm[j - 12];
+      put('co2', 'co2', '<div class="lab">Carbon dioxide <span>' + fmtDate(s.t[i], 'm') + '</span></div><div class="big">' + s.v[i].toFixed(1) + '<small>ppm</small></div>' +
+        '<div class="sub">Rising ' + g.toFixed(1) + ' ppm a year · 1979: ' + mean(s.v.slice(0, 12)).toFixed(0) + ' ppm</div>' + spark(lastN(s.t, 480), lastN(s.v, 480), '#46566b') + staleNote(s.t[i], 'm'));
+    }).catch(function () { fail('co2', 'Carbon dioxide'); });
+
+    [['arctic', 'Arctic sea ice'], ['antarctic', 'Antarctic sea ice']].forEach(function (c) {
+      load(c[0]).then(function (s) {
+        var clim = s.clim || (s.clim = monthlyClim(s)), i = lastIdx(s.v), ref = clim[s.m[i] - 1], pct = (s.v[i] - ref) / ref * 100;
+        var an = s.an || (s.an = anomalies(s, clim, false));
+        put(c[0], 'seaice', '<div class="lab">' + c[1] + ' <span>' + fmtDate(s.t[i], 'm') + '</span></div><div class="big">' + s.v[i].toFixed(2) + '<small>million km²</small></div>' +
+          '<div class="sub"><b class="' + (pct < 0 ? 'warm' : 'cool') + '">' + sign(pct, 1) + '%</b> vs ' + MONTHS[s.m[i] - 1] + ' 1991–2020 average</div>' +
+          spark(lastN(s.t, 240), runMean(an, 12).slice(-240), c[0] === 'arctic' ? '#2563c9' : '#0f8f84', true) + staleNote(s.t[i], 'm'));
+      }).catch(function () { fail(c[0], c[1]); });
+    });
+
+    load('pdo').then(function (s) {
+      var i = lastIdx(s.v), v = s.v[i];
+      put('pdo', 'pdo', '<div class="lab">Pacific Decadal Oscillation <span>' + fmtDate(s.t[i], 'm') + '</span></div><div class="big ' + (v >= 0 ? 'warm' : 'cool') + '">' + sign(v) + '</div>' +
+        '<div class="sub">' + (v >= 0.5 ? 'Warm (positive) phase' : v <= -0.5 ? 'Cool (negative) phase' : 'Near neutral') + ' · 12-month mean ' + sign(mean(s.v.slice(i - 11, i + 1))) + '</div>' +
+        spark(lastN(s.t, 360), runMean(s.v, 12).slice(-360), '#142130', true) + staleNote(s.t[i], 'm'));
+    }).catch(function () { fail('pdo', 'Pacific Decadal Oscillation'); });
+  }
+
+  /* ---------------- Boot ---------------- */
+  fetch(DATA + 'last_updated.json?t=' + Date.now()).then(function (r) { return r.json(); }).then(function (j) {
+    version = j.last_updated || '';
+    var d = j.last_updated; if (d) $('updated').textContent = 'Data last downloaded ' + (+d.slice(8, 10)) + ' ' + MONTHS[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4);
+  }).catch(function () { $('updated').textContent = ''; }).then(function () { buildCards(); buildPanels(); });
+})();
+</script>
+</body>
+</html>

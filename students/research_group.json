@@ -1,0 +1,420 @@
+{
+ "themes": [
+  {
+   "id": "mhw",
+   "name": "Marine heatwaves & extremes"
+  },
+  {
+   "id": "polar",
+   "name": "Antarctic & polar climate"
+  },
+  {
+   "id": "climate",
+   "name": "Climate variability & rainfall"
+  },
+  {
+   "id": "circulation",
+   "name": "Ocean circulation & connectivity"
+  },
+  {
+   "id": "life",
+   "name": "Marine life & coasts"
+  }
+ ],
+ "members": {
+  "neil": {
+   "name": "Dr Neil Malan",
+   "type": "postdoc",
+   "status": "current",
+   "research": "Investigating the drivers and impacts of subsurface marine heatwaves. Developed a comprehensive naming convention for different types of subsurface MHWs (mixed layer, deep, thermocline, full depth, submerged and benthic marine heatwaves) based on their vertical structures and driving mechanisms.",
+   "web": "https://www.unsw.edu.au/staff/neil-malan",
+   "photo": "photos/neil.jpg",
+   "theme": "mhw",
+   "research_area": "Subsurface marine heatwaves",
+   "area": "Subsurface marine heatwaves"
+  },
+  "sandeep": {
+   "name": "Dr Sandeep Mohapatra",
+   "type": "postdoc",
+   "status": "current",
+   "research": "Examining how the large changes in Antarctic sea-ice might have affected the wider climate, particularly over Australia.",
+   "web": "https://discover.utas.edu.au/Sandeep.Mohapatra",
+   "photo": "photos/sandeep.jpg",
+   "theme": "polar",
+   "area": "Antarctic sea-ice & climate"
+  },
+  "zhi": {
+   "name": "Dr Zhi Li",
+   "type": "postdoc",
+   "status": "current",
+   "research": "Using novel physics-based diagnostics to understand how the Thermohaline Circulation has changed over recent decades. Reconstructed AMOC strength and variability since 1940 using a water-mass transformation framework.",
+   "web": "https://www.unsw.edu.au/staff/zhi-li",
+   "photo": "photos/zhi.jpg",
+   "theme": "circulation",
+   "area": "Thermohaline circulation & AMOC"
+  },
+  "chenyu": {
+   "name": "Chenyu Zheng",
+   "type": "visiting",
+   "status": "current",
+   "years": "Sep 2026 – 2027",
+   "title": "Drivers of marine heatwaves in the southwest Indian Ocean",
+   "research": "Visiting PhD student from Ocean University of China, spending a year in the group (from September 2026) working on what drives marine heatwaves in the southwest Indian Ocean.",
+   "theme": "mhw",
+   "area": "Marine heatwave drivers, SW Indian Ocean"
+  },
+  "lyra": {
+   "name": "Lyra Huang",
+   "type": "phd",
+   "status": "current",
+   "research": "Working on three projects: 1) Understanding the dietary dynamics of dugongs, 2) Understanding their current and future distributions based on species distribution models, 3) Examining how thermal preferences of predator and prey species affect population dynamics using idealized models.",
+   "web": "https://www.unsw.edu.au/science/our-schools/bees/about-us/our-people/postgraduate-research-students/lyrahuang-grs-profile",
+   "photo": "photos/lyra.jpg",
+   "theme": "life",
+   "area": "Dugong ecology & thermal dynamics"
+  },
+  "anand": {
+   "name": "Anand Dinesh Singh",
+   "type": "phd",
+   "status": "current",
+   "research": "Working on two projects: 1) Understanding the local lead-lag relationship between SST and precipitation anomalies over the ocean at multi-day timescales, 2) Understanding if and why ocean memory has or will change using satellite observations, reanalysis, ocean and climate models.",
+   "web": "https://www.unsw.edu.au/science/our-schools/bees/about-us/our-people/postgraduate-research-students/AnandSingh-Dinesh-grs-profile-grs-profile",
+   "photo": "photos/anand.jpg",
+   "theme": "climate",
+   "area": "SST-precipitation dynamics & ocean memory"
+  },
+  "shujing": {
+   "name": "Shujing Zhang",
+   "type": "phd",
+   "status": "current",
+   "research": "Examining the drivers of subsurface heatwaves. Project 1 uses the spice/heave framework to understand the processes driving subsurface MHWs. Project 2 uses a 4D tracking scheme to characterize subsurface MHWs and cluster them into different categories.",
+   "web": "https://21centuryweather.org.au/profile/shujing-zhang/",
+   "photo": "photos/shujing.jpg",
+   "theme": "mhw",
+   "area": "Drivers of subsurface heatwaves"
+  },
+  "erika": {
+   "name": "Erika Lehmann",
+   "type": "honours",
+   "status": "current",
+   "years": "Feb – Nov 2026",
+   "title": "A novel Lagrangian–Eulerian framework to examine marine poleward migration in a warming ocean",
+   "research": "Built a deliberately simple model that combines larval drift in ocean currents (Lagrangian connectivity) with local population dynamics and temperature (an Eulerian species distribution model), inspired by the East Australian Current. Uses it to ask whether a poleward current helps a species keep pace with shifting isotherms, whether upwelling refugia prolong survival in and around them, and how a species' own mobility interacts with current speed. Co-supervised with Neil Malan.",
+   "theme": "circulation",
+   "area": "Species range shifts & ocean connectivity"
+  },
+  "leon": {
+   "name": "Leon Jin",
+   "type": "honours",
+   "status": "current",
+   "years": "From Aug 2026",
+   "title": "Drivers of shelf-sea and deep-water marine heatwaves in the Great Australian Bight",
+   "research": "Comparing what drives marine heatwaves on the shelf with those in deeper water in the Great Australian Bight, using a detailed heat budget in an eddy-permitting ocean model.",
+   "theme": "mhw",
+   "area": "Great Australian Bight marine heatwaves"
+  },
+  "ronak": {
+   "name": "Ronak Rathore",
+   "type": "intern",
+   "status": "current",
+   "years": "Aug – Nov 2026",
+   "title": "The 2015/16 south Java coast marine heatwave",
+   "research": "Uses an accurate heat budget in an eddy-permitting ocean model to examine what drove the 2015/16 marine heatwave off the south coast of Java.",
+   "theme": "mhw",
+   "area": "2015/16 south Java marine heatwave"
+  },
+  "zhaohui": {
+   "name": "Dr Zhaohui Wang",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "to Feb 2026",
+   "research": "Used a high resolution atmosphere model on the Antarctic margin to understand the factors influencing the Katabatic winds.",
+   "web": "https://www.unsw.edu.au/staff/zhaohui-wang",
+   "photo": "photos/zhaohui.jpg",
+   "theme": "polar",
+   "area": "Antarctic katabatic winds"
+  },
+  "michael": {
+   "name": "Dr Michael Eabry",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2026",
+   "now": "Research Assistant, UNSW",
+   "research": "Examined the drivers of Antarctic sea ice change, particularly the abrupt 2016/17 decline, including how the Southern Annular Mode and Zonal Wave 3 interact and combine to affect sea ice.",
+   "earlier": [
+    {
+     "role": "MSc",
+     "years": "2020",
+     "research": "Examined Rossby wave propagation in the Indian Ocean associated with ENSO. Used Lagrangian trajectories and reduced-gravity model to identify ENSO-induced wave propagation."
+    }
+   ],
+   "theme": "polar",
+   "area": "Sea ice change & SAM/ZW3 interactions"
+  },
+  "tom": {
+   "name": "Tom Schmaltz",
+   "type": "honours",
+   "status": "alumni",
+   "now": "PhD student, Caltech",
+   "research": "Investigated the unique mechanisms that give rise to marine heatwaves in the marginal ice zone of Antarctica. Found that intense, unseasonably early sea-ice melt can shoal the mixed layer and precondition rapid heat buildup at the surface.",
+   "theme": "mhw",
+   "area": "Antarctic marginal ice zone MHWs"
+  },
+  "siying": {
+   "name": "Siying Liu",
+   "type": "intern",
+   "status": "alumni",
+   "now": "PhD student, University of Hull",
+   "research": "Used Lagrangian techniques in an eddy-resolving ocean hindcast to examine how connectivity has changed between mainland Australia and Tasmania, with a view to understanding the spread of sea urchins.",
+   "theme": "circulation",
+   "area": "Ocean connectivity & sea urchin spread"
+  },
+  "rosa": {
+   "name": "Rosa Fenhalls",
+   "type": "intern",
+   "status": "alumni",
+   "years": "to May 2026",
+   "now": "Undergraduate, University of Bristol",
+   "research": "Examined multi-decadal information from the Hawkesbury estuary. Used machine learning to link local temperatures with large-scale environmental conditions to extend the timeseries.",
+   "theme": "life",
+   "area": "ML for estuary temperature trends"
+  },
+  "rishav": {
+   "name": "Dr Rishav Goyal",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2022",
+   "now": "NSW Department of Climate Change",
+   "research": "Demonstrated that Montreal Protocol prevented equivalent of ~25% of global surface warming by 2050. Showed ZW3 pattern is generated remotely by tropical deep convection. Formulated new index for ZW3 accounting for variability in structure, phase and amplitude.",
+   "web": "https://scholar.google.com/citations?user=EKRCtrwAAAAJ&hl=en",
+   "photo": "photos/rishav.jpg",
+   "awards": "AMOS best thesis award",
+   "theme": "polar",
+   "note": "Also a postdoc in the group after his PhD",
+   "area": "Sea ice decline & SAM/ZW3"
+  },
+  "marine": {
+   "name": "Dr Marine Roge",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "",
+   "now": "Left academia to raise a family",
+   "research": "In collaboration with NSW government, tested the effectiveness of the first regional coupled model for eastern Australia.",
+   "web": "https://fr.linkedin.com/in/marine-rogé-72155b68?trk=people-guest_people_search-card",
+   "theme": "climate",
+   "area": "Regional coupled modeling"
+  },
+  "guillaume": {
+   "name": "Dr Guillaume Serazin",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "",
+   "now": "CNRS France",
+   "research": "Helped develop the first Australian regional coupled model (NOW - NEMO-OASIS-WRF). Investigated the importance of resolving high-resolution air-sea interactions at the mesoscale for representing East Coast Lows.",
+   "web": "https://scholar.google.com/citations?user=-DH6UZkAAAAJ&hl=fr",
+   "theme": "climate",
+   "area": "Australian regional coupled model"
+  },
+  "joe": {
+   "name": "Dr Joe Scutt Phillips",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "",
+   "now": "Secretariat of the Pacific Community",
+   "research": "Developed a Pacific tuna simulator (Ikamoana) to understand how environmental conditions shape tuna distributions. Used Lagrangian modeling to examine connectivity between assessment regions and dFAD dynamics in the Western and Central Pacific Ocean.",
+   "web": "https://oneoceanscience.com/topic/monitoring-the-past-present-and-future-of-the-worlds-largest-tunafishery/",
+   "photo": "photos/joe.jpg",
+   "theme": "life",
+   "area": "Pacific tuna & ocean dynamics"
+  },
+  "nico": {
+   "name": "Dr Nicolas Jourdain",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "",
+   "now": "CNRS France",
+   "research": "Examined IOD-ENSO relationships and their delayed influences, showing that negative IOD events favor El Niño transitions and positive IOD events favor La Niña transitions one year later.",
+   "web": "https://nicojourdain.github.io",
+   "photo": "photos/nico.jpg",
+   "theme": "climate",
+   "area": "IOD-ENSO relationships"
+  },
+  "les": {
+   "name": "Dr Les Muir",
+   "type": "postdoc",
+   "status": "alumni",
+   "years": "",
+   "now": "Last known: Yale University",
+   "research": "Based at CSIRO, worked on climate projections for the Tropical Pacific as part of the AUSAID funded PACSAP project. Investigated time of emergence of climate change signals in models.",
+   "theme": "climate",
+   "area": "Climate projections for Pacific"
+  },
+  "sebastian": {
+   "name": "Dr Sebastian McKenna",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2025",
+   "now": "Senior climate analyst, IAG",
+   "research": "Examined the causes and impacts of sea surface temperatures in the Pacific and Indian Ocean. Analyzed surface layer heat budget to diagnose processes leading to SST biases in CMIP6 models.",
+   "theme": "climate",
+   "area": "Indian Ocean SST biases"
+  },
+  "charuni": {
+   "name": "Dr Charuni Pathmeswaran",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2023",
+   "now": "Senior Knowledge Exchange Officer, NSW Dept of Climate Change",
+   "research": "Provided statistical characterization and physical understanding of compound terrestrial and marine heat extremes. Found significant increase in terrestrial heatwave days when adjacent marine heatwaves co-occur along Australian coast.",
+   "photo": "photos/charuni.jpg",
+   "theme": "mhw",
+   "area": "Compound heat extremes"
+  },
+  "charlotte": {
+   "name": "Dr Charlotte Page",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2022",
+   "now": "Newcastle University",
+   "research": "Used stable isotopes, water quality and oceanographic analysis to localize terrestrially derived pollution inputs to threatened near-shore coral reefs at Norfolk Island.",
+   "web": "https://scholar.google.com/citations?user=nDENdd0AAAAJ&hl=en",
+   "theme": "life",
+   "area": "Coral reef pollution dynamics"
+  },
+  "deepashree": {
+   "name": "Dr Deepashree Dutta",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2022",
+   "now": "Cambridge University",
+   "research": "Examined the role of clouds and large-scale atmospheric circulation in Arctic amplification. Investigated Arctic polar stratospheric clouds using chemistry-climate model.",
+   "web": "https://nesp2climate.com.au/from-northeast-india-to-cambridge/",
+   "theme": "polar",
+   "area": "Arctic amplification & clouds"
+  },
+  "dipayan": {
+   "name": "Dr Dipayan Choudhury",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2017",
+   "now": "Senior Scientist (Climate and Atmospheric Science), NSW Government",
+   "research": "Investigated rainfall prediction over Australia at interannual to decadal timescales using CMIP5 decadal experiments. Showed for the first time that a Pacific-Atlantic transbasin SST index is significantly related to Australian rainfall with predictability rivaling ENSO.",
+   "web": "https://dipayanc.weebly.com",
+   "photo": "photos/dipayan.jpg",
+   "theme": "climate",
+   "area": "Australian rainfall prediction"
+  },
+  "nicola": {
+   "name": "Dr Nicola Maher",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2016",
+   "now": "ANU",
+   "research": "Investigated drivers of decade-long hiatus periods in surface climate using CMIP5 models. Found little chance of hiatus decade beyond 2030 even with large volcanic eruption in high-emission scenarios.",
+   "web": "https://earthsciences.anu.edu.au/people/dr-nicola-maher",
+   "awards": "AMOS best PhD",
+   "theme": "climate",
+   "area": "Climate hiatus periods"
+  },
+  "xeurong": {
+   "name": "Dr Xeurong Qin",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2016",
+   "now": "Guy Carpenter & Company",
+   "research": "Examined Pacific Equatorial Undercurrent variability using Lagrangian trajectories. Developed Lagrangian iron model showing additional NICU source enhances iron concentrations consistent with observations.",
+   "theme": "circulation",
+   "area": "Pacific undercurrent & iron transport"
+  },
+  "claire": {
+   "name": "Claire Roucet",
+   "type": "honours",
+   "status": "alumni",
+   "years": "Honours 2021",
+   "now": "Student in French Polynesia",
+   "research": "Examined the drivers of co-occurring marine heatwaves flanking the equator in the Atlantic Ocean.",
+   "theme": "mhw",
+   "area": "Atlantic marine heatwaves"
+  },
+  "ritwik": {
+   "name": "Ritwik Misra",
+   "type": "honours",
+   "status": "alumni",
+   "years": "Honours 2019",
+   "now": "Senior Manager, Commercial Analytics at HelloFresh",
+   "research": "Examined how marine heatwaves are projected to change in waters around Australia using 0.25° regional downscaled model. Found waters close to Tasmania characterized by largest increase in MHWs.",
+   "web": "https://uk.linkedin.com/in/ritwik-m-510215117?trk=people-guest_people_search-card",
+   "theme": "mhw",
+   "area": "Australian marine heatwave projections"
+  },
+  "kate": {
+   "name": "Kate Simmonds",
+   "type": "honours",
+   "status": "alumni",
+   "years": "Honours 2017",
+   "now": "Senior Manager, Climate Resilience at Investor Group on Climate Change",
+   "research": "Investigated asymmetrical mechanisms influencing Australian temperature extremes in spring and summer. Identified asymmetries in observed relationship between ENSO and temperature extremes.",
+   "web": "https://igcc.org.au/people/kate-simmonds/",
+   "theme": "climate",
+   "area": "ENSO & Australian temperature extremes"
+  },
+  "su": {
+   "name": "Su Nish",
+   "type": "honours",
+   "status": "alumni",
+   "years": "Honours 2017",
+   "now": "Energy consultant",
+   "research": "Provided detailed assessment of seasonal differences of marine heatwaves and marine cold spells in the Indian Ocean Basin. Showed large-scale climate drivers modulate extremes asymmetrically.",
+   "web": "https://au.linkedin.com/in/nish-su",
+   "theme": "mhw",
+   "area": "Indian Ocean marine extremes"
+  },
+  "sarah": {
+   "name": "Sarah Perry",
+   "type": "honours",
+   "status": "alumni",
+   "years": "Honours 2019",
+   "now": "Clean Energy Regulator",
+   "research": "Investigated projected changes in ENSO's teleconnections over global land areas in CMIP5 models. Showed models project robust increase in areal extent of ENSO's teleconnections in high-emission scenarios.",
+   "theme": "climate",
+   "area": "ENSO teleconnection projections"
+  },
+  "annette": {
+   "name": "Dr Annette Stellema",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2024",
+   "now": "CSIRO",
+   "research": "Demonstrated significant projected changes to Indian Ocean circulation under increased greenhouse gas emissions. Found 24% reduction in Indonesian Throughflow, 10% weakening of Leeuwin Current, and 23-11% weakening of Agulhas Current.",
+   "web": "https://people.csiro.au/s/a/annette-stellema",
+   "photo": "photos/annette.jpg",
+   "earlier": [
+    {
+     "role": "Honours",
+     "years": "2018",
+     "research": "Examined projections of the Leeuwin Current in climate models. Using 28 climate models, showed consistent projection of weakening Leeuwin Current and Undercurrent."
+    }
+   ],
+   "theme": "circulation",
+   "area": "Indian Ocean circulation changes"
+  },
+  "yue": {
+   "name": "Dr Yue Li",
+   "type": "phd",
+   "status": "alumni",
+   "years": "PhD 2019",
+   "now": "Climate Scientist, NSW Department of Climate Change",
+   "research": "Investigated high-frequency ocean-atmosphere interactions over the Maritime Continent. Found that suppression of sub-daily coupling significantly affects mean SST and rainfall patterns during Asian monsoon season.",
+   "web": "https://au.linkedin.com/in/sophielee86",
+   "earlier": [
+    {
+     "role": "Masters",
+     "years": "2013",
+     "research": "Evaluated monsoon seasonality and tropospheric biennial oscillation transitions in observations and CMIP models. Found overall improvement in simulation of seasonality in CMIP5 over CMIP3."
+    }
+   ],
+   "theme": "climate",
+   "area": "Maritime Continent air-sea coupling"
+  }
+ }
+}

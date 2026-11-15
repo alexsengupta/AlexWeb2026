@@ -27,10 +27,16 @@ DATASETS_CONFIG = [
         'name': "Oceanic Niño Index (ONI)",
         'id': 'oni',
         'filename': 'oni_data.csv',
-        'url': "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php",
-        'data_type': 'html_oni_cpc',
+        # Plain-text ONI table from CPC (stable format). The HTML table on ONI_v5.php is kept
+        # as a fallback only: scraping it silently stopped working in early 2026.
+        'url': "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+        'data_type': 'txt_oni_cpc',
+        'fallback': {
+            'url': "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php",
+            'data_type': 'html_oni_cpc',
+        },
         'value_column_name': 'ONI_Value',
-        'description': 'CPC ONI v5'
+        'description': 'CPC ONI (ERSSTv5)'
     },
     {
         'name': "Nino 3.4 Monthly Anomaly",
@@ -66,7 +72,7 @@ DATASETS_CONFIG = [
         'url': "https://www.ncei.noaa.gov/access/monitoring/snow-and-ice-extent/sea-ice/S/0/data.csv",
         'data_type': 'csv_ncei_seaice',
         'value_column_name': 'Extent',
-        'description': 'NCEI South Daily'
+        'description': 'NCEI South Monthly'
     },
     {
         'name': "Arctic Sea Ice Extent",
@@ -75,7 +81,7 @@ DATASETS_CONFIG = [
         'url': "https://www.ncei.noaa.gov/access/monitoring/snow-and-ice-extent/sea-ice/N/0/data.csv",
         'data_type': 'csv_ncei_seaice',
         'value_column_name': 'Extent',
-        'description': 'NCEI North Daily'
+        'description': 'NCEI North Monthly'
     },
     {
         'name': "Global Monthly CO2",
@@ -118,7 +124,7 @@ def fetch_raw_data(url, is_binary=False):
         response.raise_for_status()
 
         # Explicitly set encoding for ONI data if it's HTML and not correctly detected
-        if "oni_v5.php" in url and (response.encoding is None or 'windows-1252' not in response.encoding.lower()):
+        if "oni_v5.php" in url.lower() and (response.encoding is None or 'windows-1252' not in response.encoding.lower()):
             response.encoding = 'windows-1252'
 
         if is_binary:
@@ -133,6 +139,28 @@ def fetch_raw_data(url, is_binary=False):
     return None
 
 # --- Specific Parsers ---
+
+SEASON_CENTRE_MONTH = {"DJF": 1, "JFM": 2, "FMA": 3, "MAM": 4, "AMJ": 5, "MJJ": 6,
+                       "JJA": 7, "JAS": 8, "ASO": 9, "SON": 10, "OND": 11, "NDJ": 12}
+
+def parse_txt_oni_cpc(raw_text, value_col_name):
+    """CPC oni.ascii.txt: header 'SEAS YR TOTAL ANOM', then e.g. 'DJF 1950 24.72 -1.53'.
+    Each 3-month season is dated by its centre month (DJF 1950 -> 1950-01-01)."""
+    if raw_text is None: return None
+    records = []
+    for line in raw_text.splitlines():
+        parts = line.split()
+        if len(parts) < 4 or parts[0] not in SEASON_CENTRE_MONTH or not parts[1].isdigit():
+            continue
+        try:
+            anom = float(parts[3])
+        except ValueError:
+            continue
+        if anom < -90:            # missing-value flag
+            continue
+        records.append({'Date': pd.Timestamp(int(parts[1]), SEASON_CENTRE_MONTH[parts[0]], 1), value_col_name: round(anom, 2)})
+    if len(records) < 100: return None   # clearly not the expected file
+    return pd.DataFrame(records).set_index('Date').sort_index()
 
 def parse_html_oni_cpc(raw_html, value_col_name):
     # This is adapted from the previous working ONI parser
@@ -211,7 +239,7 @@ def parse_txt_nino34_psl(raw_text, value_col_name):
             if month_idx < 12: # Ensure we only take 12 months
                 try:
                     value = float(value_str)
-                    if value != -99.99: # Missing value indicator
+                    if value > -90: # -99.99 = missing
                         data_records.append({'Year': year, 'Month': month_idx + 1, value_col_name: value})
                 except ValueError:
                     continue # Skip if value is not a float
@@ -320,21 +348,6 @@ def parse_json_climatereanalyzer_t2m(raw_json_text, value_col_name):
     df = pd.DataFrame(all_records)
     return df.set_index('Date')[[value_col_name]].sort_index()
 
-def parse_csv_nsidc_seaice(raw_csv_text, value_col_name):
-    if raw_csv_text is None: return None
-    try:
-        # Skip first header row, use columns from the second row if present or define
-        # The files typically have one header row: "Year, Month, Day, Extent, Missing, Source Data"
-        df = pd.read_csv(StringIO(raw_csv_text), skiprows=2, # Changed from 1 to 2
-                         names=['Year', 'Month', 'Day', 'Extent', 'Missing', 'Source Data'],
-                         na_values=['-9999', -9999.0]) # Handle missing
-        df = df.dropna(subset=['Year', 'Month', 'Day', 'Extent']) # Drop rows where essential info is missing
-        df['Date'] = pd.to_datetime(df[['Year', 'Month', 'Day']].astype(int))
-        return df.set_index('Date')[[value_col_name]].sort_index() # value_col_name is 'Extent'
-    except Exception as e:
-        print(f"  Error parsing NSIDC CSV: {e}")
-        return None
-
 def parse_csv_ncei_seaice(raw_csv_text, value_col_name):
     if raw_csv_text is None: return None
     try:
@@ -355,6 +368,8 @@ def parse_csv_ncei_seaice(raw_csv_text, value_col_name):
 
         # Rename 'Value' to the specified column name
         df.rename(columns={'Value': value_col_name}, inplace=True)
+        df[value_col_name] = pd.to_numeric(df[value_col_name], errors='coerce')
+        df.loc[df[value_col_name] < -90, value_col_name] = np.nan   # -9999 = missing (Dec 1987, Jan 1988)
 
         return df.set_index('Date')[[value_col_name]].sort_index()
     except Exception as e:
@@ -366,7 +381,7 @@ def parse_txt_co2_gml(raw_text, value_col_name):
     comments_removed = "\n".join([line for line in raw_text.split('\n') if not line.strip().startswith('#')])
     try:
         # Columns: year, month, decimal, average, average_unc, trend, trend_unc
-        df = pd.read_csv(StringIO(comments_removed), sep='\s+', header=None,
+        df = pd.read_csv(StringIO(comments_removed), sep=r'\s+', header=None,
                          names=['year', 'month', 'decimal', 'average', 'average_unc', 'trend', 'trend_unc'])
         df['Date'] = pd.to_datetime(df['year'].astype(str) + '-' + df['month'].astype(str).str.zfill(2) + '-01', format='%Y-%m-%d')
         df.rename(columns={'average': value_col_name}, inplace=True)
@@ -403,38 +418,6 @@ def parse_csv_gistemp_v4(raw_csv_text, value_col_name):
     return df_long.set_index('Date')[[value_col_name]].sort_index()
 
 
-def parse_csv_noaa_globaltemp_monthly(raw_csv_text, value_col_name):
-    if raw_csv_text is None: return None
-    try:
-        # NCEI CSVs usually have a few header lines to skip. The data.csv from the link has 4.
-        df = pd.read_csv(StringIO(raw_csv_text), skiprows=4, names=['YearMonth', value_col_name])
-        df['YearMonth'] = df['YearMonth'].astype(str)
-        df['Date'] = pd.to_datetime(df['YearMonth'].str.slice(0,4) + '-' + df['YearMonth'].str.slice(4,6) + '-01')
-        return df.set_index('Date')[[value_col_name]].sort_index()
-    except Exception as e:
-        print(f"  Error parsing NOAA GlobalTemp CSV: {e}")
-        return None
-
-def parse_txt_cpc_index(raw_text, value_col_name): # For NAO, AO, AAO
-    if raw_text is None: return None
-    lines = raw_text.strip().split('\n')
-    data_records = []
-    for line in lines:
-        parts = line.strip().split()
-        if len(parts) == 13 and parts[0].isdigit(): # Year + 12 months
-            year = int(parts[0])
-            for month_idx, val_str in enumerate(parts[1:]):
-                try:
-                    value = float(val_str)
-                    if value > -999: # Common missing value indicator
-                        data_records.append({'Year': year, 'Month': month_idx + 1, value_col_name: value})
-                except ValueError:
-                    continue
-    if not data_records: return None
-    df = pd.DataFrame(data_records)
-    df['Date'] = pd.to_datetime(df['Year'].astype(str) + '-' + df['Month'].astype(str).str.zfill(2) + '-01')
-    return df.set_index('Date')[[value_col_name]].sort_index()
-
 def parse_txt_pdo_jisao(raw_text, value_col_name):
     if raw_text is None: return None
     lines = raw_text.strip().split('\n')
@@ -470,16 +453,14 @@ def parse_txt_pdo_jisao(raw_text, value_col_name):
 
 # --- Parser Dispatcher ---
 PARSER_MAP = {
+    'txt_oni_cpc': parse_txt_oni_cpc,
     'html_oni_cpc': parse_html_oni_cpc,
     'txt_nino34_psl': parse_txt_nino34_psl,
     'json_climatereanalyzer_sst': parse_json_climatereanalyzer_sst,
     'json_climatereanalyzer_t2m': parse_json_climatereanalyzer_t2m,
-    'csv_nsidc_seaice': parse_csv_nsidc_seaice,
     'csv_ncei_seaice': parse_csv_ncei_seaice,
     'txt_co2_gml': parse_txt_co2_gml,
     'csv_gistemp_v4': parse_csv_gistemp_v4,
-    'csv_noaa_globaltemp_monthly': parse_csv_noaa_globaltemp_monthly,
-    'txt_cpc_index': parse_txt_cpc_index,
     'txt_pdo_psl': parse_txt_pdo_jisao,  # Reusing the parser with new name
 }
 
@@ -499,6 +480,16 @@ def save_dataset_to_csv(df, filename, dataset_name):
 
         # Full path for the output file
         filepath = os.path.join(OUTPUT_DIR, filename)
+
+        # Never replace a file with data that ends earlier than what we already have
+        if os.path.exists(filepath):
+            try:
+                old_last = pd.read_csv(filepath, usecols=[0]).iloc[-1, 0]
+                if pd.Timestamp(old_last) > df.index.max():
+                    print(f"  ✗ Not saving {dataset_name}: new data ends {df.index.max().date()}, existing file ends {old_last}")
+                    return False
+            except Exception:
+                pass
 
         # Save to CSV with date as first column
         df.to_csv(filepath, index=True, date_format='%Y-%m-%d')
@@ -533,37 +524,26 @@ if __name__ == "__main__":
         print(f"\n[{config['id'].upper()}] Processing: {config['name']}")
         print(f"  Source: {config['description']}")
 
-        # Fetch data
-        raw_data = fetch_raw_data(config['url'])
-        if raw_data is None:
-            print(f"  ✗ Failed to fetch data")
-            results['failed'].append({
-                'name': config['name'],
-                'filename': config['filename'],
-                'reason': 'Download failed'
-            })
-            continue
-
-        # Parse data
-        parser_func = PARSER_MAP.get(config['data_type'])
-        if parser_func is None:
-            print(f"  ✗ No parser defined for data_type: {config['data_type']}")
-            results['failed'].append({
-                'name': config['name'],
-                'filename': config['filename'],
-                'reason': 'No parser available'
-            })
-            continue
-
-        df_timeseries = parser_func(raw_data, config['value_column_name'])
+        # Fetch and parse, trying the fallback source if the main one fails
+        df_timeseries = None
+        for source in [config] + ([config['fallback']] if config.get('fallback') else []):
+            raw = fetch_raw_data(source['url'])
+            parser = PARSER_MAP.get(source['data_type'])
+            if raw is not None and parser is not None:
+                df_timeseries = parser(raw, config['value_column_name'])
+            if df_timeseries is not None and not df_timeseries.empty:
+                break
+            print(f"  ! Source failed: {source['url']}")
 
         # Save data
         if df_timeseries is not None and not df_timeseries.empty:
             if save_dataset_to_csv(df_timeseries, config['filename'], config['name']):
                 results['success'].append({
+                    'id': config['id'],
                     'name': config['name'],
                     'filename': config['filename'],
-                    'records': len(df_timeseries)
+                    'records': len(df_timeseries),
+                    'latest': str(df_timeseries.index.max().date())
                 })
             else:
                 results['failed'].append({
@@ -572,11 +552,11 @@ if __name__ == "__main__":
                     'reason': 'Save failed'
                 })
         else:
-            print(f"  ✗ Failed to parse data")
+            print(f"  ✗ Failed to download or parse data")
             results['failed'].append({
                 'name': config['name'],
                 'filename': config['filename'],
-                'reason': 'Parsing failed'
+                'reason': 'Download or parsing failed'
             })
 
     # Print summary
@@ -599,8 +579,20 @@ if __name__ == "__main__":
     # Write timestamp so the dashboard can show when data was last downloaded
     if results['success']:
         timestamp_file = os.path.join(OUTPUT_DIR, 'last_updated.json')
+        # Per-dataset record of the latest data point and when it was last refreshed, so the
+        # dashboard can flag any index that has stopped updating.
+        try:
+            with open(timestamp_file) as f:
+                stamp = json.load(f)
+        except Exception:
+            stamp = {}
+        today = datetime.now().strftime('%Y-%m-%d')
+        stamp['last_updated'] = today
+        stamp.setdefault('datasets', {})
+        for item in results['success']:
+            stamp['datasets'][item['id']] = {'latest': item['latest'], 'refreshed': today}
         with open(timestamp_file, 'w') as f:
-            json.dump({'last_updated': datetime.now().strftime('%Y-%m-%d')}, f)
+            json.dump(stamp, f, indent=1)
         print(f"\nWrote download timestamp to {timestamp_file}")
 
     print(f"\nCompleted at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

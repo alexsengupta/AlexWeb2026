@@ -106,8 +106,8 @@ index.html (landing page)
 │  │                              └─ conceptual_models.html
 │  ├─ Science in Pictures ─────► schematics/index.html
 │  │                              └─ reads schematics.json
-│  ├─ Research Group ──────────► students/research_group_honeycomb.html
-│  │                              └─ reads research_group_data.json
+│  ├─ Research Group ──────────► students/research_group.html
+│  │                              └─ reads research_group.json (photos in students/photos/)
 │  ├─ Marine Heatwaves ────────► MarineHeatwaves/mhw.html
 │  │                              ├─ all_mhw.html (full MHW literature)
 │  │                              └─ subsurface.html

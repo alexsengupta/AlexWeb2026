@@ -1593,7 +1593,7 @@ document.addEventListener('keydown', (e) => {
             { label: 'Academic Apps', tooltip: 'Explore all interactive web apps and simulations', url: 'app_playground.html', icon: 'assets/graphics/02-app-playground.svg' },
             { label: 'Down the AI Rabbit Hole', tooltip: 'My adventures with our intelligent alien neighbours …', url: 'AIrabbithole/index.html', icon: 'assets/graphics/01-ai-rabbit-hole.svg' },
             { label: 'Science in Pictures', tooltip: 'A picture tells a thousand words - scientific schematics …', url: 'schematics/index.html', icon: 'assets/graphics/09-science-in-pictures.svg' },
-            { label: 'Research Group', tooltip: 'The future of climate science …', url: 'students/research_group_honeycomb.html', icon: 'assets/graphics/08-research-group.svg' },
+            { label: 'Research Group', tooltip: 'The future of climate science …', url: 'students/research_group.html', icon: 'assets/graphics/08-research-group.svg' },
             { label: 'Marine Heatwaves', tooltip: 'Latest information on ocean temperature extremes around the world', url: 'https://www.marineheatwaves.org/tracker.html', icon: 'assets/graphics/07-marine-heatwaves.svg' },
             { label: 'Teaching', tooltip: 'My courses at UNSW', url: 'teaching/teaching_portfolio.html', icon: 'assets/graphics/06-teaching.svg' },
             { label: 'Publication Briefs', tooltip: 'Simple summaries of my papers', url: 'publications/publications.html', icon: 'assets/graphics/05-publication-briefs.svg' },

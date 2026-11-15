@@ -1150,7 +1150,7 @@
     <!-- Top Navigation with About Me on right -->
     <div class="top-nav">
         <div class="nav-left">
-            <button class="nav-btn" onclick="openCard('climate')" data-tooltip="Real-time dashboard of global climate indices including ENSO, IOD, and SAM">
+            <button class="nav-btn" onclick="openCard('climate')" data-tooltip="Live dashboard of key climate indicators: ENSO, global ocean and air temperature, sea ice, CO₂ and the PDO">
                 🌍 Climate Indices
             </button>
             <button class="nav-btn" onclick="openCard('ai')" data-tooltip="A daily curated brief on AI in education, research, universities and society -- with the full archive of previous days">
@@ -1219,7 +1219,7 @@
                 <span>Science in Pictures</span>
             </a>
 
-            <a href="students/research_group_honeycomb.html" class="nav-button" data-tooltip="The future of climate science …">
+            <a href="students/research_group.html" class="nav-button" data-tooltip="The future of climate science …">
                 <img src="assets/graphics/08-research-group.svg" alt="Research Group" class="nav-button-icon">
                 <span>Research Group</span>
             </a>
@@ -1988,7 +1988,7 @@
                         // Set src after iframe is in DOM and force reload
                         const iframe = document.getElementById('climateIframe');
                         if (iframe) {
-                            iframe.src = `climate indices/index.html?v=${timestamp}&nocache=${Math.random()}`;
+                            iframe.src = `apps/climate-indices/index.html?v=${timestamp}`;
                         }
                     };
                     break;

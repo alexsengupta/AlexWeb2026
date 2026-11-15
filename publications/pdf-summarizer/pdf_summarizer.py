@@ -10,7 +10,6 @@ import time
 from pathlib import Path
 from typing import Optional, Dict, List
 import json
-import google.generativeai as genai
 
 # Configuration
 DEFAULT_INPUT_FOLDER = "../../my_papers/pdfs"
@@ -18,8 +17,13 @@ DEFAULT_INPUT_FOLDER = "pdfs"
 DEFAULT_OUTPUT_FOLDER = "./summaries"
 PROGRESS_FILE = ".progress.json"
 
-# Gemini model configuration
-MODEL_NAME = "models/gemini-flash-latest"  # Gemini Flash (free tier)
+# Model configuration. Choose the provider with SUMMARIZER_PROVIDER=openai|gemini
+# (default: openai if OPENAI_API_KEY is set, otherwise gemini).
+PROVIDER = os.getenv("SUMMARIZER_PROVIDER") or ("openai" if os.getenv("OPENAI_API_KEY") else "gemini")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-6.1-sol")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-flash-latest")
+MODEL_NAME = OPENAI_MODEL if PROVIDER == "openai" else GEMINI_MODEL
+MAX_TRIES = 3          # retries per request on timeouts / overload (with backoff)
 
 # Prompt templates
 SHORT_SUMMARY_PROMPT = """
@@ -157,9 +161,15 @@ class PDFSummarizer:
         self.output_folder = Path(output_folder)
         self.progress_file = Path(PROGRESS_FILE)
 
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(MODEL_NAME)
+        self.provider = PROVIDER
+        if self.provider == "openai":
+            from openai import OpenAI
+            self.client = OpenAI(api_key=api_key, timeout=600, max_retries=2)
+        else:
+            import google.generativeai as genai
+            self.genai = genai
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel(MODEL_NAME)
 
         # Load progress
         self.progress = self._load_progress()
@@ -180,8 +190,12 @@ class PDFSummarizer:
             json.dump(self.progress, f, indent=2)
 
     def _upload_pdf(self, pdf_path: Path):
-        """Upload PDF to Gemini."""
-        print(f"  Uploading PDF to Gemini...")
+        """Upload the PDF to the provider."""
+        print(f"  Uploading PDF ({self.provider})...")
+        if self.provider == "openai":
+            with open(pdf_path, "rb") as fh:
+                return self.client.files.create(file=fh, purpose="user_data")
+        genai = self.genai
         uploaded_file = genai.upload_file(str(pdf_path))
 
         # Wait for file to be processed
@@ -194,16 +208,45 @@ class PDFSummarizer:
 
         return uploaded_file
 
+    def _ask(self, uploaded_file, prompt: str) -> str:
+        """Send the PDF plus a prompt; retry with backoff on timeouts or overload."""
+        for attempt in range(1, MAX_TRIES + 1):
+            try:
+                if self.provider == "openai":
+                    r = self.client.responses.create(
+                        model=MODEL_NAME,
+                        input=[{"role": "user", "content": [
+                            {"type": "input_file", "file_id": uploaded_file.id},
+                            {"type": "input_text", "text": prompt}]}])
+                    return r.output_text
+                r = self.model.generate_content([uploaded_file, prompt],
+                                                request_options={"timeout": 600})
+                return r.text
+            except Exception as e:
+                msg = str(e)
+                transient = any(k in msg for k in ("504", "503", "500", "Deadline", "overloaded", "timed out", "Timeout", "429"))
+                if not transient or attempt == MAX_TRIES:
+                    raise
+                wait = 20 * attempt
+                print(f"  ...{msg.splitlines()[0][:80]} -- retrying in {wait}s ({attempt}/{MAX_TRIES - 1})")
+                time.sleep(wait)
+
+    def _delete_upload(self, uploaded_file):
+        try:
+            if self.provider == "openai":
+                self.client.files.delete(uploaded_file.id)
+            else:
+                self.genai.delete_file(uploaded_file.name)
+        except Exception:
+            pass
+
     def _generate_summary(self, uploaded_file, prompt: str) -> str:
-        """Generate summary using Gemini."""
-        response = self.model.generate_content([uploaded_file, prompt])
-        return response.text
+        return self._ask(uploaded_file, prompt)
 
     def _extract_metadata(self, uploaded_file) -> Dict:
         """Extract metadata from the PDF."""
         try:
-            response = self.model.generate_content([uploaded_file, METADATA_EXTRACTION_PROMPT])
-            metadata_text = response.text.strip()
+            metadata_text = self._ask(uploaded_file, METADATA_EXTRACTION_PROMPT).strip()
 
             # Try to parse JSON from response
             # Remove markdown code blocks if present
@@ -355,6 +398,9 @@ class PDFSummarizer:
             # Extract metadata first to create proper filename
             print(f"  Extracting metadata...")
             metadata = self._extract_metadata(uploaded_file)
+            if metadata.get("title") == "Not found":
+                self._delete_upload(uploaded_file)
+                raise RuntimeError("metadata extraction failed; skipped so no junk summary is written")
 
             # Create consistent filename from metadata
             summary_filename = self._create_summary_filename(metadata, pdf_name)
@@ -363,7 +409,7 @@ class PDFSummarizer:
             # Check if summary already exists
             if output_file.exists():
                 print(f"  ⏭️  Summary already exists: {summary_filename}")
-                genai.delete_file(uploaded_file.name)
+                self._delete_upload(uploaded_file)
                 return True
 
             # Small delay to avoid rate limiting
@@ -397,7 +443,7 @@ class PDFSummarizer:
             self._save_progress()
 
             # Clean up uploaded file
-            genai.delete_file(uploaded_file.name)
+            self._delete_upload(uploaded_file)
 
             return True
 
@@ -461,10 +507,11 @@ class PDFSummarizer:
 def main():
     """Main entry point."""
     # Get API key from environment
-    api_key = os.getenv("GEMINI_API_KEY")
+    key_name = "OPENAI_API_KEY" if PROVIDER == "openai" else "GEMINI_API_KEY"
+    api_key = os.getenv(key_name)
 
     if not api_key:
-        print("❌ Error: GEMINI_API_KEY environment variable not set")
+        print(f"❌ Error: {key_name} environment variable not set")
         print("\nPlease set your API key:")
         print("  export GEMINI_API_KEY='your-api-key-here'")
         print("\nOr create a .env file with:")
